@@ -1,3 +1,4 @@
+*.so
 *.c
 parameters.pxi
 parameters.h
