@@ -1,0 +1,731 @@
+#pragma once
+#include "grid.h"
+#include "advection_interpolation.h"
+
+
+void second_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+    double* flux, long d_advected, long d_advecting){
+
+        const long istride = dims->nlg[1] * dims->nlg[2];
+        const long jstride = dims->nlg[2];
+
+        const long imin = 0;
+        const long jmin = 0;
+        const long kmin = 0;
+
+        const long imax = dims->nlg[0]-1;
+        const long jmax = dims->nlg[1]-1;
+        const long kmax = dims->nlg[2]-1;
+
+        const long stencil[3] = {istride,jstride,1};
+        const long sp1_ed = stencil[d_advecting];
+        const long sp1_ing = stencil[d_advected];
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        flux[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing])
+                            *interp_2(vel_advected[ijk],vel_advected[ijk + sp1_ed]) )*rho0_half[k];
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        flux[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing])
+                            *interp_2(vel_advected[ijk],vel_advected[ijk + sp1_ed]) )*rho0_half[k+1];
+                    }
+                }
+            }
+        }
+        else{
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        flux[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing])
+                            *interp_2(vel_advected[ijk],vel_advected[ijk + sp1_ed]) )*rho0[k];
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+void fourth_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+    double* flux, long d_advected, long d_advecting){
+
+        const long istride = dims->nlg[1] * dims->nlg[2];
+        const long jstride = dims->nlg[2];
+
+        const long imin = 0;
+        const long jmin = 0;
+        const long kmin = 0;
+
+        const long imax = dims->nlg[0]-1;
+        const long jmax = dims->nlg[1]-1;
+        const long kmax = dims->nlg[2]-1;
+
+        const long stencil[3] = {istride,jstride,1};
+        const long sp1_ed = stencil[d_advecting];
+        const long sp2_ed = 2 * sp1_ed ;
+        const long sm1_ed = -sp1_ed ;
+
+        const long sp1_ing = stencil[d_advected];
+        const long sp2_ing = 2 * sp1_ing;
+        const long sm1_ing = -sp1_ing;
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                    flux[ijk] = (interp_4(vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing]) *
+                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k];
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                    flux[ijk] = (interp_4(vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing]) *
+                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k+1];
+                    }
+                }
+            }
+        }
+        else{
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                    flux[ijk] = (interp_4(vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing]) *
+                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed]))* rho0[k];
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+void sixth_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+    double* flux, long d_advected, long d_advecting){
+
+        const long istride = dims->nlg[1] * dims->nlg[2];
+        const long jstride = dims->nlg[2];
+
+        const long imin = 0;
+        const long jmin = 0;
+        const long kmin = 0;
+
+        const long imax = dims->nlg[0]-1;
+        const long jmax = dims->nlg[1]-1;
+        const long kmax = dims->nlg[2]-1;
+
+        const long stencil[3] = {istride,jstride,1};
+        const long sp1_ed = stencil[d_advecting];
+        const long sp2_ed = 2 * sp1_ed ;
+        const long sp3_ed = 3 * sp1_ed ;
+        const long sm1_ed = -sp1_ed ;
+        const long sm2_ed = -2*sp1_ed;
+
+        const long sp1_ing = stencil[d_advected];
+        const long sp2_ing = 2 * sp1_ing;
+        const long sp3_ing = 3 * sp1_ing;
+        const long sm1_ing = -sp1_ing;
+        const long sm2_ing = -2*sp1_ing;
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                    flux[ijk] = (interp_6(vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing],vel_advecting[ijk+sp3_ing]) *
+                                 interp_6(vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed])) * rho0_half[k];
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                    flux[ijk] = (interp_6(vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing],vel_advecting[ijk+sp3_ing]) *
+                                 interp_6(vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed]))* rho0_half[k+1];
+                    }
+                }
+            }
+        }
+        else{
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                    flux[ijk] = (interp_6(vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing],vel_advecting[ijk+sp3_ing]) *
+                                 interp_6(vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed]))* rho0[k];
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+void eighth_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+    double* flux, long d_advected, long d_advecting){
+
+        const long istride = dims->nlg[1] * dims->nlg[2];
+        const long jstride = dims->nlg[2];
+
+        const long imin = 0;
+        const long jmin = 0;
+        const long kmin = 0;
+
+        const long imax = dims->nlg[0]-1;
+        const long jmax = dims->nlg[1]-1;
+        const long kmax = dims->nlg[2]-1;
+
+        const long stencil[3] = {istride,jstride,1};
+        const long sp1_ed = stencil[d_advecting];
+        const long sp2_ed = 2 * sp1_ed ;
+        const long sp3_ed = 3 * sp1_ed ;
+        const long sp4_ed = 4 * sp1_ed ;
+        const long sm1_ed = -sp1_ed ;
+        const long sm2_ed = -2*sp1_ed;
+        const long sm3_ed = -3*sp1_ed;
+
+        const long sp1_ing = stencil[d_advected];
+        const long sp2_ing = 2 * sp1_ing;
+        const long sp3_ing = 3 * sp1_ing;
+        const long sp4_ing = 4 * sp1_ing;
+        const long sm1_ing = -sp1_ing;
+        const long sm2_ing = -2*sp1_ing;
+        const long sm3_ing = -3*sp1_ing;
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                    flux[ijk] = (interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing],vel_advecting[ijk+sp3_ing],vel_advecting[ijk+sp4_ing]) *
+                                 interp_8(vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed])) * rho0_half[k];
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                    flux[ijk] = (interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing],vel_advecting[ijk+sp3_ing],vel_advecting[ijk+sp4_ing]) *
+                                 interp_8(vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed])) * rho0_half[k+1];
+                    }
+                }
+            }
+        }
+        else{
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                    flux[ijk] = (interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing],vel_advecting[ijk+sp3_ing],vel_advecting[ijk+sp4_ing]) *
+                                 interp_8(vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed])) * rho0[k];
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+void weno_third_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+    double* flux, long d_advected, long d_advecting){
+
+        const long istride = dims->nlg[1] * dims->nlg[2];
+        const long jstride = dims->nlg[2];
+
+        const long imin = 0;
+        const long jmin = 0;
+        const long kmin = 0;
+
+        const long imax = dims->nlg[0]-1;
+        const long jmax = dims->nlg[1]-1;
+        const long kmax = dims->nlg[2]-1;
+
+        const long stencil[3] = {istride,jstride,1};
+        const long sm1_ed = -stencil[d_advecting];
+        const long sp1_ed = stencil[d_advecting];
+        const long sp2_ed = 2*stencil[d_advecting];
+        const long sp1_ing = stencil[d_advected];
+
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno3(vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno3(vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk]);
+                        const double vel_adv = interp_2(vel_advecting[ijk],vel_advecting[ijk + sp1_ing]);
+
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno3(vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed]);
+                        // Up wind for negative velocity
+                        const double phim = interp_weno3(vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk]);
+                        const double vel_adv = interp_2(vel_advecting[ijk],vel_advecting[ijk + sp1_ing]);
+
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                    }
+                }
+            }
+        }
+        else{
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno3(vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed]);
+                        // Up wind for negative velocity
+                        const double phim = interp_weno3(vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk]);
+                        const double vel_adv = interp_2(vel_advecting[ijk],vel_advecting[ijk + sp1_ing]);
+
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+void weno_fifth_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+    double* flux, long d_advected, long d_advecting){
+
+        const long istride = dims->nlg[1] * dims->nlg[2];
+        const long jstride = dims->nlg[2];
+
+        const long imin = 0;
+        const long jmin = 0;
+        const long kmin = 0;
+
+        const long imax = dims->nlg[0]-1;
+        const long jmax = dims->nlg[1]-1;
+        const long kmax = dims->nlg[2]-1;
+
+        const long stencil[3] = {istride,jstride,1};
+
+        const long sp1_ed = stencil[d_advecting];
+        const long sp2_ed = 2*sp1_ed ;
+        const long sp3_ed = 3*sp1_ed ;
+        const long sm1_ed = -sp1_ed ;
+        const long sm2_ed = -2*sp1_ed ;
+
+        const long sp1_ing = stencil[d_advected];
+        const long sp2_ing = 2*sp1_ing ;
+        const long sm1_ing = -sp1_ing ;
+
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno5(vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno5(vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed]);
+                        const double vel_adv = interp_4(vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing]);
+
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno5(vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno5(vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed]);
+                        const double vel_adv = interp_4(vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing]);
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                    }
+                }
+            }
+        }
+        else{
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno5(vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno5(vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed]);
+                        const double vel_adv = interp_4(vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing]);
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+void weno_seventh_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+    double* flux, long d_advected, long d_advecting){
+
+        const long istride = dims->nlg[1] * dims->nlg[2];
+        const long jstride = dims->nlg[2];
+
+        const long imin = 0;
+        const long jmin = 0;
+        const long kmin = 0;
+
+        const long imax = dims->nlg[0]-1;
+        const long jmax = dims->nlg[1]-1;
+        const long kmax = dims->nlg[2]-1;
+
+        const long stencil[3] = {istride,jstride,1};
+
+        const long sm3_ed = -3*stencil[d_advecting];
+        const long sm2_ed = -2*stencil[d_advecting];
+        const long sm1_ed = -stencil[d_advecting];
+        const long sp1_ed = stencil[d_advecting];
+        const long sp2_ed = 2*stencil[d_advecting];
+        const long sp3_ed = 3*stencil[d_advecting];
+        const long sp4_ed = 4*stencil[d_advecting];
+
+        const long sm2_ing = -2*stencil[d_advected];
+        const long sm1_ing = -stencil[d_advected];
+        const long sp1_ing = stencil[d_advected];
+        const long sp2_ing = 2*stencil[d_advected];
+        const long sp3_ing = 3*stencil[d_advected];
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno7(vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno7(vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed]);
+                        const double vel_adv = interp_6(vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing]);
+
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno7(vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno7(vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed]);
+                        const double vel_adv = interp_6(vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing]);
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                    }
+                }
+            }
+        }
+        else{
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno7(vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno7(vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed]);
+                        const double vel_adv = interp_6(vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing]);
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+
+void weno_ninth_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+    double* flux, long d_advected, long d_advecting){
+
+        const long istride = dims->nlg[1] * dims->nlg[2];
+        const long jstride = dims->nlg[2];
+
+        const long imin = 0;
+        const long jmin = 0;
+        const long kmin = 0;
+
+        const long imax = dims->nlg[0]-1;
+        const long jmax = dims->nlg[1]-1;
+        const long kmax = dims->nlg[2]-1;
+
+        const long stencil[3] = {istride,jstride,1};
+
+        const long sm4_ed = -4*stencil[d_advecting];
+        const long sm3_ed = -3*stencil[d_advecting];
+        const long sm2_ed = -2*stencil[d_advecting];
+        const long sm1_ed = -stencil[d_advecting];
+        const long sp1_ed = stencil[d_advecting];
+        const long sp2_ed = 2*stencil[d_advecting];
+        const long sp3_ed = 3*stencil[d_advecting];
+        const long sp4_ed = 4*stencil[d_advecting];
+        const long sp5_ed = 5*stencil[d_advecting];
+
+        const long sm3_ing = -3*stencil[d_advected];
+        const long sm2_ing = -2*stencil[d_advected];
+        const long sm1_ing = -stencil[d_advected];
+        const long sp1_ing = stencil[d_advected];
+        const long sp2_ing = 2*stencil[d_advected];
+        const long sp3_ing = 3*stencil[d_advected];
+        const long sp4_ing = 4*stencil[d_advected];
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno9(vel_advected[ijk+sm4_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno9(vel_advected[ijk+sp5_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed]);
+                        const double vel_adv = interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing]);
+
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno9(vel_advected[ijk+sm4_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno9(vel_advected[ijk+sp5_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed]);
+                        const double vel_adv = interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing]);
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                    }
+                }
+            }
+        }
+        else{
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno9(vel_advected[ijk+sm4_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno9(vel_advected[ijk+sp5_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed]);
+                        const double vel_adv = interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing]);
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+void weno_eleventh_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+    double* flux, long d_advected, long d_advecting){
+
+        const long istride = dims->nlg[1] * dims->nlg[2];
+        const long jstride = dims->nlg[2];
+
+        const long imin = 0;
+        const long jmin = 0;
+        const long kmin = 0;
+
+        const long imax = dims->nlg[0]-1;
+        const long jmax = dims->nlg[1]-1;
+        const long kmax = dims->nlg[2]-1;
+
+        const long stencil[3] = {istride,jstride,1};
+
+        const long sm5_ed = -5*stencil[d_advecting];
+        const long sm4_ed = -4*stencil[d_advecting];
+        const long sm3_ed = -3*stencil[d_advecting];
+        const long sm2_ed = -2*stencil[d_advecting];
+        const long sm1_ed = -stencil[d_advecting];
+        const long sp1_ed = stencil[d_advecting];
+        const long sp2_ed = 2*stencil[d_advecting];
+        const long sp3_ed = 3*stencil[d_advecting];
+        const long sp4_ed = 4*stencil[d_advecting];
+        const long sp5_ed = 5*stencil[d_advecting];
+        const long sp6_ed = 6*stencil[d_advecting];
+
+        const long sm4_ing = -4*stencil[d_advected];
+        const long sm3_ing = -3*stencil[d_advected];
+        const long sm2_ing = -2*stencil[d_advected];
+        const long sm1_ing = -stencil[d_advected];
+        const long sp1_ing = stencil[d_advected];
+        const long sp2_ing = 2*stencil[d_advected];
+        const long sp3_ing = 3*stencil[d_advected];
+        const long sp4_ing = 4*stencil[d_advected];
+        const long sp5_ing = 5*stencil[d_advected];
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno11(vel_advected[ijk+sm5_ed],vel_advected[ijk+sm4_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp5_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno11(vel_advected[ijk+sp6_ed],vel_advected[ijk+sp5_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm4_ed]);
+                        const double vel_adv = interp_10(vel_advecting[ijk+sm4_ing],vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing],vel_advecting[ijk + sp5_ing]);
+
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno11(vel_advected[ijk+sm5_ed],vel_advected[ijk+sm4_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp5_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno11(vel_advected[ijk+sp6_ed],vel_advected[ijk+sp5_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm4_ed]);
+                        const double vel_adv = interp_10(vel_advecting[ijk+sm4_ing],vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing],vel_advecting[ijk + sp5_ing]);
+
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                    }
+                }
+            }
+        }
+        else{
+            for(long i=imin;i<imax;i++){
+                const long ishift = i*istride;
+                for(long j=jmin;j<jmax;j++){
+                    const long jshift = j*jstride;
+                    for(long k=kmin;k<kmax;k++){
+                        const long ijk = ishift + jshift + k;
+                        //Upwind for positive velocity
+                        const double phip = interp_weno11(vel_advected[ijk+sm5_ed],vel_advected[ijk+sm4_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],
+                                            vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp5_ed]);
+                        // Upwind for negative velocity
+                        const double phim = interp_weno11(vel_advected[ijk+sp6_ed],vel_advected[ijk+sp5_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
+                                            vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm4_ed]);
+                        const double vel_adv = interp_10(vel_advecting[ijk+sm4_ing],vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing],vel_advecting[ijk + sp5_ing]);
+
+                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                    }
+                }
+            }
+        }
+        return;
+    }
