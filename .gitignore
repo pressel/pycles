@@ -1,0 +1,4 @@
+*.c
+parameters.pxi
+parameters.h
+*.in  
