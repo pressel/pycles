@@ -35,6 +35,10 @@ inline double thetas_c(const double s, const double qt){
     return T_tilde*exp((s-(1-qt)*sd_tilde - qt*sv_tilde)/cpm_c(qt));
 }
 
+inline double entropy_from_thetas_c(const double thetas, const double qt){
+    return cpm_c(qt) * log(thetas/T_tilde) + (1.0 - qt)*sd_tilde + qt * sv_tilde;
+}
+
 inline double buoyancy_c(const double alpha0, const double alpha){
     return g * (alpha - alpha0)/alpha0;
 }
