@@ -1,11 +1,11 @@
-import pickle
-from collections import OrderedDict
+import json 
+import pprint 
 from sys import exit
 def main():
 
-    namelist = OrderedDict()
+    namelist = {} 
 
-    namelist["grid"] = OrderedDict()
+    namelist["grid"] = {}
     namelist['grid']['dims'] = 3
     namelist['grid']['nx'] = 256
     namelist['grid']['ny'] = 7
@@ -15,24 +15,24 @@ def main():
     namelist['grid']['dy'] = 200.0
     namelist['grid']['dz'] = 200.0
 
-    namelist["mpi"] = OrderedDict()
+    namelist["mpi"] = {}
     namelist["mpi"]["nprocx"] = 1  
     namelist["mpi"]["nprocy"] = 1
     namelist["mpi"]["nprocz"] = 1
 
-    namelist['time_stepping'] = OrderedDict()
+    namelist['time_stepping'] = {}
     namelist['time_stepping']['ts_type'] = 3  
 
-    namelist['thermodynamics'] = OrderedDict()
+    namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
 
-    namelist['microphysics'] = OrderedDict()
+    namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'None_SA'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
 
-    namelist["sgs"] = OrderedDict()
+    namelist["sgs"] = {}
 
-    namelist['meta'] = OrderedDict()
+    namelist['meta'] = {}
     namelist['meta']['casename'] = 'StableBubble'
 
     write_file(namelist)
@@ -49,17 +49,10 @@ def write_file(namelist):
         exit()
 
 
-    fh = open(namelist['meta']['casename']+".in","wb")
+    fh = open(namelist['meta']['casename']+".in","w")
 
-    #Loop over keys in name list nested dictionary and print output
-    print("PyCLES Namelist Parameters")
-    for key in namelist:
-        print(key+":")
-        for key1 in namelist[key]:
-            print('\t'+key1 + ' = ' +  str(namelist[key][key1]))
-
-
-    pickle.dump(namelist,fh)
+    pprint.pprint(namelist) 
+    json.dump(namelist,fh,sort_keys = True, indent = 4)
     fh.close()
 
     return

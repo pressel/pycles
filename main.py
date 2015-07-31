@@ -1,5 +1,5 @@
 import argparse
-import pickle
+import json
 def main():
 
     #Parse information from the command line
@@ -8,9 +8,8 @@ def main():
     parser.parse_args()
     args = parser.parse_args()
 
-    file_namelist = open(args.namelist,'rb')
-    namelist = pickle.load(file_namelist)
-    file_namelist.close()
+    file_namelist = open(args.namelist).read()
+    namelist = json.loads(file_namelist)
     del file_namelist
 
 
