@@ -3,14 +3,14 @@ from Cython.Build import cythonize
 from distutils.extension import Extension
 import numpy as np
 import mpi4py as mpi4py
-import petsc4py
+#import petsc4py
 
 #Now get include paths from relevant python modules
 include_path = [mpi4py.get_include()]
 include_path += [np.get_include()]
-include_path += [petsc4py.get_include()]
+#include_path += [petsc4py.get_include()]
 include_path += ['./Csrc']
-include_path += ['/opt/local/lib/petsc/include']
+#include_path += ['/opt/local/lib/petsc/include']
 
 
 #library_dirs =['/opt/local/lib/petsc/lib/']

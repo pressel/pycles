@@ -71,9 +71,9 @@ cdef class ThermodynamicsDry:
         buoyancy_update(&Gr.dims,&RS.alpha0[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
 
 
-
-
         return
 
+    cpdef get_pv_star(self,t):
+        return self.CC.LT.fast_lookup(t)
 
 

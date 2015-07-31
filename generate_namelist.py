@@ -1,7 +1,26 @@
-import json 
+import argparse
+import json
 import pprint 
 from sys import exit
+
 def main():
+    parser = argparse.ArgumentParser(prog='Namelist Generator')
+    parser.add_argument('case_name')
+    args = parser.parse_args()
+
+    case_name = args.case_name
+
+    if case_name == 'StableBubble':
+        namelist = StableBubble()
+    else:
+        print 'Not a vaild case name'
+        sys.exit()
+
+
+    write_file(namelist)
+
+
+def StableBubble():
 
     namelist = {} 
 
@@ -27,7 +46,7 @@ def main():
     namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'None_SA'
+    namelist['microphysics']['scheme'] = 'None_Dry'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
 
     namelist["sgs"] = {}
@@ -35,9 +54,9 @@ def main():
     namelist['meta'] = {}
     namelist['meta']['casename'] = 'StableBubble'
 
-    write_file(namelist)
 
-    return
+
+    return namelist
 
 def write_file(namelist):
 

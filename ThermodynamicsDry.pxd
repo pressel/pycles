@@ -26,5 +26,4 @@ cdef class ThermodynamicsDry:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
 
-
-
+    cpdef get_pv_star(self,t)
