@@ -12,7 +12,7 @@ cdef class ThermodynamicsSA:
         double (*Lambda_fp)(double T) nogil
         ClausiusClapeyron CC
 
-    cpdef initialize(self,Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Par)
+    cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,  DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Par)
 
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi)
 

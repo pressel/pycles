@@ -32,7 +32,10 @@ cdef class ThermodynamicsSA:
         return
 
 
-    cpdef initialize(self,Grid.Grid Gr,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Par):
+    cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Par):
+
+        PV.add_variable('s','m/s',"sym","scalar",self.Parallel)
+        PV.add_variable('qt','kg/kg',"sym","scalar",self.Parallel)
 
         #Initialize class member arrays
         DV.add_variables('buoyancy','--','sym',Par)

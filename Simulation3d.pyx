@@ -60,9 +60,8 @@ class Simulation3d:
         self.PV.add_variable('w','m/s',"asym","velocity",self.Parallel)
         self.PV.set_velocity_direction('w',2,self.Parallel)
 
-        self.PV.add_variable('s','m/s',"sym","scalar",self.Parallel)
-        self.PV.add_variable('qt','kg/kg',"sym","scalar",self.Parallel)
-        self.Thermo.initialize(self.Grid,self.DV,self.Parallel)
+
+        self.Thermo.initialize(self.Grid,self.PV,self.DV,self.Parallel)
 
 
         self.PV.initialize(self.Grid)
