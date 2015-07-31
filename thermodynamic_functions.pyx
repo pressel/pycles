@@ -22,6 +22,9 @@ cpdef inline double cpm(const double qt) nogil:
 cpdef inline double thetas(const double s, const double qt) nogil:
     return thetas_c(s,qt)
 
+cpdef inline double entropy_from_thetas_(const double thetas, const double qt) nogil:
+    return entropy_from_thetas_c(thetas,qt)
+
 cpdef inline double buoyancy(const double alpha0, const double alpha) nogil:
     return buoyancy_c(alpha0, alpha)
 
