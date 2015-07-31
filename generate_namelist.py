@@ -12,12 +12,57 @@ def main():
 
     if case_name == 'StableBubble':
         namelist = StableBubble()
+    elif case_name == 'SaturatedBubble':
+        namelist = SaturatedBubble()
     else:
         print 'Not a vaild case name'
         sys.exit()
 
 
     write_file(namelist)
+
+def SaturatedBubble():
+
+    namelist = {}
+
+    namelist["grid"] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 100
+    namelist['grid']['ny'] = 7
+    namelist['grid']['nz'] = 200
+    namelist['grid']['gw'] = 4
+    namelist['grid']['dx'] = 100.0
+    namelist['grid']['dy'] = 100.0
+    namelist['grid']['dz'] = 100.0
+
+    namelist["mpi"] = {}
+    namelist["mpi"]["nprocx"] = 1
+    namelist["mpi"]["nprocy"] = 1
+    namelist["mpi"]["nprocz"] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_SA'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+
+    namelist["sgs"] = {}
+
+    namelist["diffusion"] = {}
+
+    namelist['momentum_transport'] = {}
+
+    namelist['scalar_transport'] = {}
+
+    namelist['meta'] = {}
+    namelist['meta']['casename'] = 'SaturatedBubble'
+    namelist['meta']['simname'] = 'SaturatedBubble'
+
+    return namelist
 
 
 def StableBubble():
@@ -51,9 +96,15 @@ def StableBubble():
 
     namelist["sgs"] = {}
 
-    namelist['meta'] = {}
-    namelist['meta']['casename'] = 'StableBubble'
+    namelist["diffusion"] = {}
 
+    namelist['momentum_transport'] = {}
+
+    namelist['scalar_transport'] = {}
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'StableBubble'
+    namelist['meta']['casename'] = 'StableBubble'
 
 
     return namelist
@@ -61,7 +112,7 @@ def StableBubble():
 def write_file(namelist):
 
     try:
-        type(namelist['meta']['casename'])
+        type(namelist['meta']['simname'])
     except:
         print("Casename not specified in namelist dictionary!")
         print("FatalError")
