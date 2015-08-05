@@ -36,8 +36,8 @@ class Simulation3d:
         self.DV = DiagnosticVariables.DiagnosticVariables()
         self.Pr = PressureSolver.PressureSolver()
 
-        self.SA = ScalarAdvection.ScalarAdvection()
-        self.MA = MomentumAdvection.MomentumAdvection()
+        self.SA = ScalarAdvection.ScalarAdvection(namelist, self.Parallel)
+        self.MA = MomentumAdvection.MomentumAdvection(namelist, self.Parallel)
         self.SGS = SGS.SGS()
         self.SD = ScalarDiffusion.ScalarDiffusion(self.DV,self.Parallel)
         self.MD = MomentumDiffusion.MomentumDiffusion(self.DV,self.Parallel)
@@ -46,7 +46,6 @@ class Simulation3d:
         self.Micro = MicrophysicsFactory(namelist,self.LH,self.Parallel)
         self.Thermo = ThermodynamicsFactory(namelist,self.Micro,self.LH,self.Parallel)
 
-        print 'Here'
         self.Reference = ReferenceState.ReferenceState(self.Grid)
         self.NetCDFIO  = NetCDFIO.NetCDFIO()
 
