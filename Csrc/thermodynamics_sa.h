@@ -8,7 +8,10 @@
 #include <stdio.h>
 
 inline double temperature_no_ql(double pd, double pv, double s, double qt){
-    return T_tilde * exp((s - (1.0-qt)*(sd_tilde - Rd * log(pd/p_tilde)) - qt * (sv_tilde - Rv * log(pv/p_tilde)))/((1.0-qt)*cpd + qt * cpv));
+    return T_tilde * exp((s -
+                            (1.0-qt)*(sd_tilde - Rd * log(pd/p_tilde))
+                            - qt * (sv_tilde - Rv * log(pv/p_tilde)))
+                            /((1.0-qt)*cpd + qt * cpv));
 }
 
 
@@ -19,12 +22,13 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
                     const double p0, const double s, const double qt, double* T, double* qv, double* qc){
     *qc = 0.0;
     *qv = qt;
-    double pd_1 = pd_c(p0,qt,*qv);
-    double pv_1 = pv_c(p0,qt,*qv);
+    double pd_1 = pd_c(p0,qt,qt);
+    double pv_1 = pv_c(p0,qt,qt );
     double T_1 = temperature_no_ql(pd_1,pv_1,s,qt);
     double pv_star_1 = lookup(LT, T_1);
     double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
 
+    ///printf("%f\t%f\t%f\t%f\t%f\n",p0,s,qv_star_1,qt-qv_star_1,T_1);
     /// If not saturated
     if(qt <= qv_star_1){
         *T = T_1;
@@ -51,9 +55,9 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             double s_2 = sd_c(pd_2,T_2) * (1.0 - qt) + sv_c(pv_2,T_2) * qt + sc_c(L_2,T_2)*sigma_2;
             double f_2 = s - s_2;
             double T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1);
-            double T_1 = T_2;
+            T_1 = T_2;
             T_2 = T_n;
-            double f_1 = f_2;
+            f_1 = f_2;
             delta_T  = fabs(T_2 - T_1);
         } while(delta_T >= 1.0e-3);
         *T  = T_2;

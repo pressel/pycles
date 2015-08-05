@@ -11,7 +11,7 @@ cimport ReferenceState
 cimport PressureSolver
 cimport TimeStepping
 cimport Kinematics
-cimport Lookup
+cimport NetCDFIO
 
 print 'Here'
 from Initialization import InitializationFactory
@@ -48,7 +48,7 @@ class Simulation3d:
 
         print 'Here'
         self.Reference = ReferenceState.ReferenceState(self.Grid)
-
+        self.NetCDFIO  = NetCDFIO.NetCDFIO()
 
         self.TS = TimeStepping.TimeStepping()
 
@@ -60,7 +60,7 @@ class Simulation3d:
         self.PV.add_variable('w','m/s',"asym","velocity",self.Parallel)
         self.PV.set_velocity_direction('w',2,self.Parallel)
 
-
+        self.NetCDFIO.initialize(namelist, self.Parallel)
         self.Thermo.initialize(self.Grid,self.PV,self.DV,self.Parallel)
 
 
@@ -86,6 +86,8 @@ class Simulation3d:
         cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
         cdef DiagnosticVariables.DiagnosticVariables DV_ = self.DV
         PV_.Update_all_bcs(self.Grid,self.Parallel)
+
+
 
 
 
@@ -117,7 +119,7 @@ class Simulation3d:
 
         times = []
         cdef int rk_step
-        for i in range(901):
+        for i in range(1001):
             time1 = time.time()
             print i
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
@@ -141,19 +143,19 @@ class Simulation3d:
 
                 #print(np.array(self.Reference.alpha0[:]),np.array(self.Reference.alpha0_half[:]))
             #self.Parallel.kill()
-            import pylab as plt
-            var = PV_.get_variable_array('s',self.Grid)
+            #import pylab as plt
+            #var = PV_.get_variable_array('s',self.Grid)
             #w = PV_.get_variable_array('w',self.Grid)
             #p = DV_.get_variable_array('dynamic_pressure',self.Grid)
             #print(np.max(w))
-            try:
-                plt.figure(1)
-                plt.contour(var[GR_.dims.gw:-GR_.dims.gw,7,GR_.dims.gw:-GR_.dims.gw].T,128)
-                plt.colorbar()
-                plt.savefig('./figs/'+str(10000 + i) + '.png')
-                plt.close()
-            except:
-                pass
+            #try:
+            #    plt.figure(1)
+            #    plt.contour(var[GR_.dims.gw:-GR_.dims.gw,7,GR_.dims.gw:-GR_.dims.gw].T,128)
+            #    plt.colorbar()
+            #    plt.savefig('./figs/'+str(10000 + i) + '.png')
+            #    plt.close()
+            #except:
+            #    pass
 
 
             time2 = time.time()

@@ -48,21 +48,21 @@ cdef class ClausiusClapeyron:
         except:
             Par.root_print('Clasius-Clayperon lookup table temperature_min not '
                            'given in name list taking default of 180 K')
-            Tmin = 180.0
+            Tmin = 100.15
 
         try:
             Tmax = namelist['ClausiusClapeyron']['temperature_max']
         except:
             Par.root_print('Clasius-Clayperon lookup table temperature_max not '
                            'given in name list taking default of 340 K')
-            Tmax = 330.0
+            Tmax = 340.0
 
         try:
             n_lookup = namelist['ClausiusClapeyron']['n_lookup']
         except:
             Par.root_print('Clasius-Clayperon lookup table n_lookup not '
                            'given in name list taking default of 128')
-            n_lookup = 128
+            n_lookup = 512
 
 
         #Generate array of equally space temperatures
@@ -91,11 +91,16 @@ cdef class ClausiusClapeyron:
         #set the initial condition
         pv0 = np.log(pv_star_t)
 
+
+
+
+
         #Integrate
-        pv_above_Tt = np.exp(odeint(rhs,pv0,T_above_Tt)[1:])
-        pv_below_Tt = np.exp(odeint(rhs,pv0,T_below_Tt)[1:])[::-1]
+        pv_above_Tt = np.exp(odeint(rhs,pv0,T_above_Tt,hmax=0.1)[1:])
+        pv_below_Tt = np.exp(odeint(rhs,pv0,T_below_Tt,hmax=0.1)[1:])[::-1]
         pv = np.append(pv_below_Tt,pv_above_Tt )
         self.LT.initialize(T,pv)
+
 
         return
 

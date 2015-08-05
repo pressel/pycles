@@ -35,6 +35,14 @@ inline double thetas_c(const double s, const double qt){
     return T_tilde*exp((s-(1-qt)*sd_tilde - qt*sv_tilde)/cpm_c(qt));
 }
 
+inline double thetas_t_c(const double p0, const double T, const double qt, const double qv, const double qc, const double L){
+    const double qd = 1.0 - qt;
+    const double pd = pd_c(p0,qt,qt-qc);
+    const double pv = pv_c(p0,qt,qt-qc);
+    const double cpm = cpm_c(qt);
+    return T * pow(p_tilde/pd,qd * Rd/cpm)*pow(p_tilde/pv,qt*Rv/cpm)*exp(-L * qc/(cpm*T));
+}
+
 inline double entropy_from_thetas_c(const double thetas, const double qt){
     return cpm_c(qt) * log(thetas/T_tilde) + (1.0 - qt)*sd_tilde + qt * sv_tilde;
 }
@@ -43,14 +51,10 @@ inline double buoyancy_c(const double alpha0, const double alpha){
     return g * (alpha - alpha0)/alpha0;
 }
 
-inline double qv_star_c(double p0, double qt, double pv){
+inline double qv_star_c(const double p0, const double qt, const double pv){
     return eps_v * (1.0 - qt) * pv / (p0 - pv) ;
 }
 
-inline double qt_from_pv(double p0, double pv){
-    double a = eps_v * pv/(p0 - pv);
-    return a / (1.0 + a);
-}
 
 inline double alpha_c(double p0, double T, double  qt, double qv){
     return (Rd * T)/p0 * (1.0 - qt + eps_vi * qv);

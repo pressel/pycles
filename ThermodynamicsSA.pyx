@@ -34,8 +34,8 @@ cdef class ThermodynamicsSA:
 
     cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Par):
 
-        PV.add_variable('s','m/s',"sym","scalar",self.Parallel)
-        PV.add_variable('qt','kg/kg',"sym","scalar",self.Parallel)
+        PV.add_variable('s','m/s',"sym","scalar",Par)
+        PV.add_variable('qt','kg/kg',"sym","scalar",Par)
 
         #Initialize class member arrays
         DV.add_variables('buoyancy','--','sym',Par)
@@ -100,3 +100,7 @@ cdef class ThermodynamicsSA:
 
     cpdef get_pv_star(self,t):
         return self.CC.LT.fast_lookup(t)
+
+    cpdef get_lh(self,t):
+        cdef double lam = self.Lambda_fp(t)
+        return self.L_fp(lam,t)

@@ -27,8 +27,6 @@ cdef class Kinematics:
             int shift_v1
             int shift_v_grad, shift_strain
 
-        import time
-        t1 = time.time()
         for vi1 in xrange(Gr.dims.dims):
             shift_v1 = PV.velocity_directions[vi1] * Gr.dims.npg
             for d in xrange(Gr.dims.dims):
@@ -40,8 +38,7 @@ cdef class Kinematics:
 
         compute_strain_rate(&Gr.dims, &self.vgrad[0],&self.strain_rate[0])
         compute_strain_rate_mag(&Gr.dims, &self.strain_rate[0],&self.strain_rate_mag[0])
-        t2 = time.time()
-        print t2  - t1
+
 
         return
 

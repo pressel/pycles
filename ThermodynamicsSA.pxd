@@ -24,3 +24,5 @@ cdef class ThermodynamicsSA:
               PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
 
     cpdef get_pv_star(self, t)
+
+    cpdef get_lh(self,t)

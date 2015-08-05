@@ -21,8 +21,8 @@ cdef class ReferenceState:
     def initialize(self,Grid.Grid Gr, Thermodynamics):
 
         #Compute the entropy at the surface
-        pv_star = Thermodynamics.get_pv_star(self.Tg)
-        self.qtg = qt_from_pv(self.Pg,pv_star)
+        #pv_star = Thermodynamics.get_pv_star(self.Tg)
+        #self.qtg = qt_from_pv(self.Pg,pv_st)
 
         self.sg = Thermodynamics.entropy(self.Pg,self.Tg,self.qtg,0.0,0.0)
 
@@ -30,8 +30,9 @@ cdef class ReferenceState:
         #Form a right hand side for integrating the hydrostatic equation to determine the reference pressure
         def rhs(p,z):
             T,ql,qi = Thermodynamics.eos(np.exp(p),self.sg,self.qtg)
-            print T, ql
-            return -g/(Rd*T)
+            return -g/(Rd*T*(1.0 + self.qtg + eps_vi * (self.qtg - ql - qi)))
+
+
 
         #Construct arrays for integration points
         z = np.array(Gr.z[Gr.dims.gw-1:-Gr.dims.gw+1])
@@ -45,12 +46,10 @@ cdef class ReferenceState:
         p = np.zeros(Gr.dims.ng[2],dtype=np.double,order='c')
         p_half = np.zeros(Gr.dims.ng[2],dtype=np.double,order='c')
 
-        print 'Here Before'
         #Perform the integration
-        p[Gr.dims.gw-1:-Gr.dims.gw+1] = odeint(rhs,p0,z)[:,0]
-        p_half[Gr.dims.gw:-Gr.dims.gw] = odeint(rhs,p0,z_half)[1:,0]
+        p[Gr.dims.gw-1:-Gr.dims.gw+1] = odeint(rhs,p0,z,hmax=100.0)[:,0]
+        p_half[Gr.dims.gw:-Gr.dims.gw] = odeint(rhs,p0,z_half,hmax=100.0)[1:,0]
 
-        print 'Here After'
 
 
         #Set boundary conditions
@@ -83,7 +82,6 @@ cdef class ReferenceState:
             temperature_half[k], ql, qi  = Thermodynamics.eos(p_half_[k],self.sg,self.qtg)
             qt = self.qtg - (ql + qi)
             alpha_half[k] = Thermodynamics.alpha(p_half_[k],temperature_half[k],self.qtg,qv)
-
 
 
         #print(np.array(Gr.extract_local_ghosted(alpha_half,2)))
