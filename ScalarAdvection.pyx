@@ -16,8 +16,16 @@ cdef extern from "advection_interpolation.h":
 cdef extern from "scalar_advection.h":
     void compute_advective_fluxes(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme) nogil
 cdef class ScalarAdvection:
-    def __init__(self):
-        pass
+    def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
+        try:
+            self.order = namelist['scalar_transport']['order']
+        except:
+            Pa.root_print('scalar_transport order not given in namelist')
+            Pa.root_print('Killing simulation now!')
+            Pa.kill()
+            Pa.kill()
+
+        return
 
     cpdef initialize(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
         self.flux = np.zeros((PV.nv_scalars*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')

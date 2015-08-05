@@ -33,8 +33,16 @@ cdef extern from "momentum_advection.h":
         double* flux, long d_advected, long d_advecting) nogil
 
 cdef class MomentumAdvection:
-    def __init__(self):
-        pass
+    def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
+        try:
+            self.order = namelist['scalar_transport']['order']
+        except:
+            Pa.root_print('scalar_transport order not given in namelist')
+            Pa.root_print('Killing simulation now!')
+            Pa.kill()
+            Pa.kill()
+
+        return
 
     cpdef initialize(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
         self.flux = np.zeros((PV.nv_velocities*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')

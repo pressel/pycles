@@ -2,6 +2,7 @@ import argparse
 import json
 import pprint 
 from sys import exit
+import uuid
 
 def main():
     parser = argparse.ArgumentParser(prog='Namelist Generator')
@@ -16,7 +17,7 @@ def main():
         namelist = SaturatedBubble()
     else:
         print 'Not a vaild case name'
-        sys.exit()
+        exit()
 
 
     write_file(namelist)
@@ -29,11 +30,11 @@ def SaturatedBubble():
     namelist['grid']['dims'] = 3
     namelist['grid']['nx'] = 100
     namelist['grid']['ny'] = 7
-    namelist['grid']['nz'] = 200
+    namelist['grid']['nz'] = 50
     namelist['grid']['gw'] = 4
-    namelist['grid']['dx'] = 100.0
-    namelist['grid']['dy'] = 100.0
-    namelist['grid']['dz'] = 100.0
+    namelist['grid']['dx'] = 200.0
+    namelist['grid']['dy'] = 200.0
+    namelist['grid']['dz'] = 200.0
 
     namelist["mpi"] = {}
     namelist["mpi"]["nprocx"] = 1
@@ -55,8 +56,13 @@ def SaturatedBubble():
     namelist["diffusion"] = {}
 
     namelist['momentum_transport'] = {}
+    namelist['scalar_transport'] = 5
 
     namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5
+
+    namelist['io'] = {}
+    namelist['io']['stats_path'] = "./output"
 
     namelist['meta'] = {}
     namelist['meta']['casename'] = 'SaturatedBubble'
@@ -99,8 +105,13 @@ def StableBubble():
     namelist["diffusion"] = {}
 
     namelist['momentum_transport'] = {}
+    namelist['scalar_transport'] = 5
 
     namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5
+
+    namelist['io'] = {}
+    namelist['io']['stats_path'] = "./output/"
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'StableBubble'
@@ -119,8 +130,9 @@ def write_file(namelist):
         exit()
 
 
-    fh = open(namelist['meta']['casename']+".in","w")
+    namelist['meta']['uuid'] = str(uuid.uuid4())
 
+    fh = open(namelist['meta']['casename']+".in","w")
     pprint.pprint(namelist) 
     json.dump(namelist,fh,sort_keys = True, indent = 4)
     fh.close()
