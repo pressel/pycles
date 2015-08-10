@@ -25,9 +25,10 @@ cdef inline double L_const(double T) nogil:
 
 class Simulation3d:
     def __init__(self,namelist):
+        return
 
 
-
+    def initialize(self,namelist):
         self.Parallel = ParallelMPI.ParallelMPI(namelist)
         self.Grid = Grid.Grid(namelist,self.Parallel)
         self.PV = PrognosticVariables.PrognosticVariables(self.Grid)
@@ -86,6 +87,11 @@ class Simulation3d:
         self.Pr.initialize(namelist,self.Grid,self.Reference,self.DV,self.Parallel)
         self.DV.initialize(self.Grid)
 
+        return
+
+
+
+    def run(self):
         cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
         cdef DiagnosticVariables.DiagnosticVariables DV_ = self.DV
         PV_.Update_all_bcs(self.Grid,self.Parallel)

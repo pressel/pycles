@@ -1,3 +1,4 @@
+*.nc
 *.so
 *.c
 parameters.pxi
