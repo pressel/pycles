@@ -23,7 +23,7 @@ def main():
         ranks = os.listdir(d_path)
         print('\t\t Combining files')
 
-        print ranks
+        print(ranks)
         file_path = os.path.join(args.fields_dir,d,ranks[0])
         rootgrp = nc.Dataset(file_path,'r')
         field_keys = rootgrp.groups['fields'].variables.keys()

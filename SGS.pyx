@@ -4,8 +4,13 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport Kinematics
 from libc.math cimport  fmax
-
 import cython
+
+cdef extern from "sgs.h":
+    void smagorinsky_update(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
+                            double* strain_rate_mag, double cs, double prt)
+
+
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
@@ -87,17 +92,19 @@ cdef class Smagorinsky:
             double prt = self.prt
             double fb
 
+        smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],&Ke.strain_rate_mag[0],cs,prt)
 
-        with nogil:
-            for i in xrange(Gr.dims.npg):
-                DV.values[visc_shift + i] = cs*cs*delta*delta*Ke.strain_rate_mag[i]
-                DV.values[diff_shift + i] = DV.values[visc_shift + i]/prt
-                if DV.values[bf_shift+i] > 0.0:
-                    fb = fmax(1.0 - DV.values[bf_shift + i]/(prt*Ke.strain_rate_mag[i]*Ke.strain_rate_mag[i]),0.0)
-                    DV.values[diff_shift + i] = DV.values[diff_shift + i] * fb
-                    DV.values[visc_shift + i] = DV.values[visc_shift + i] * fb
 
-        print('performed Smagorinsky update')
+        # with nogil:
+        #     for i in xrange(Gr.dims.npg):
+        #         DV.values[visc_shift + i] = cs*cs*delta*delta*Ke.strain_rate_mag[i]
+        #         DV.values[diff_shift + i] = DV.values[visc_shift + i]/prt
+        #         if DV.values[bf_shift+i] > 0.0:
+        #             fb = fmax(1.0 - DV.values[bf_shift + i]/(prt*Ke.strain_rate_mag[i]*Ke.strain_rate_mag[i]),0.0)
+        #             DV.values[diff_shift + i] = DV.values[diff_shift + i] * fb
+        #             DV.values[visc_shift + i] = DV.values[visc_shift + i] * fb
+        #
+        # print('performed Smagorinsky update')
 
 
         return

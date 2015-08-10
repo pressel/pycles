@@ -16,7 +16,7 @@ def main():
     elif case_name == 'SaturatedBubble':
         namelist = SaturatedBubble()
     else:
-        print 'Not a vaild case name'
+        print('Not a vaild case name')
         exit()
 
 
