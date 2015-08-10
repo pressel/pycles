@@ -90,42 +90,14 @@ class Simulation3d:
         cdef DiagnosticVariables.DiagnosticVariables DV_ = self.DV
         PV_.Update_all_bcs(self.Grid,self.Parallel)
 
-
-
-
-
         cdef LatentHeat LH_ = self.LH
-
-        times  = 0.0
-
-        import numpy as np
-        cdef double [:] Trand = np.linspace(-40.0,20.0,100)
-
-        cdef double T = 10.0
-        cdef double Lv
-        cdef int i
-        #time1 = time.time()
-        #Lf= []
-        #for t in Trand:
-        #    Lf.append(LH_.L_fp(t,0.0))
-        #time2 = time.time()
-        #print((time2 - time1)/(100*100*100))
-
-        #import pylab as plt
-        #plt.plot(Trand,Lf)
-        #plt.show()
-
-
         cdef Grid.Grid GR_ = self.Grid
         cdef ParallelMPI.ParallelMPI PA_ = self.Parallel
 
-
-        times = []
         cdef int rk_step
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
-                #print self.PV.val_bounds('u',self.Grid)
                 self.Ke.update(self.Grid,PV_)
                 self.Thermo.update(self.Grid,self.Reference,PV_,DV_)
                 self.SA.update_cython(self.Grid,self.Reference,PV_,self.Parallel)
@@ -165,9 +137,6 @@ class Simulation3d:
             #    pass
 
 
-
-            times.append(time2 - time1)
-        print('Scalar Advection', np.min(times))
         var = PV_.get_variable_array('s',self.Grid)
         import pylab as plt
         plt.contour(var[GR_.dims.gw:-GR_.dims.gw,7,GR_.dims.gw:-GR_.dims.gw].T,128)

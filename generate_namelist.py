@@ -100,7 +100,7 @@ def StableBubble():
     namelist['grid']['dz'] = 100.0
 
     namelist["mpi"] = {}
-    namelist["mpi"]["nprocx"] = 2
+    namelist["mpi"]["nprocx"] = 1 
     namelist["mpi"]["nprocy"] = 1
     namelist["mpi"]["nprocz"] = 1
 
