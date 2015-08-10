@@ -6,6 +6,7 @@ import sys
 import numpy as np
 cimport numpy as np
 import cython
+from libc.math cimport fmin, fmax
 cdef class ParallelMPI:
     def __init__(self,namelist):
 
@@ -22,6 +23,7 @@ cdef class ParallelMPI:
 
         ierr = mpi.MPI_Comm_rank(mpi.MPI_COMM_WORLD, &self.rank)
         ierr = mpi.MPI_Comm_size(mpi.MPI_COMM_WORLD, &self.size)
+
 
 
         cdef:
@@ -41,6 +43,8 @@ cdef class ParallelMPI:
         #Create the cartesian world commmunicator
         ierr = mpi.MPI_Cart_create(self.comm_world,ndims, cart_dims, cyclic, reorder,&self.cart_comm_world)
         self.barrier()
+
+
 
         #Create the cartesian sub-communicators
         self.create_sub_communicators()
@@ -152,6 +156,186 @@ cdef class ParallelMPI:
 
         return mean
 
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cdef double [:] HorizontalMeanofSquares(self,Grid.Grid Gr,const double *values1,const double *values2):
+
+        cdef:
+            double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+            int i,j,k,ijk
+
+            int imin = Gr.dims.gw
+            int jmin = Gr.dims.gw
+            int kmin = 0
+
+            int imax = Gr.dims.nlg[0] - Gr.dims.gw
+            int jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            int kmax = Gr.dims.nlg[2]
+
+            int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            int jstride = Gr.dims.nlg[2]
+
+            int ishift, jshift
+
+            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+
+        with nogil:
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        mean_local[k] += values1[ijk]*values2[ijk]
+
+
+        #Here we call MPI_Allreduce on the sub_xy communicator as we only need communication among
+        #processes with the the same vertical rank
+
+        mpi.MPI_Allreduce(&mean_local[0],&mean[0],Gr.dims.nlg[2],
+                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+
+        for i in xrange(Gr.dims.nlg[2]):
+            mean[i] = mean[i]*n_horizontal_i
+
+
+        return mean
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cdef double [:] HorizontalMeanofCubes(self,Grid.Grid Gr,const double *values1,const double *values2, const double *values3):
+
+        cdef:
+            double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+            int i,j,k,ijk
+
+            int imin = Gr.dims.gw
+            int jmin = Gr.dims.gw
+            int kmin = 0
+
+            int imax = Gr.dims.nlg[0] - Gr.dims.gw
+            int jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            int kmax = Gr.dims.nlg[2]
+
+            int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            int jstride = Gr.dims.nlg[2]
+
+            int ishift, jshift
+
+            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+
+        with nogil:
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        mean_local[k] += values1[ijk]*values2[ijk]*values3[ijk]
+
+
+        #Here we call MPI_Allreduce on the sub_xy communicator as we only need communication among
+        #processes with the the same vertical rank
+
+        mpi.MPI_Allreduce(&mean_local[0],&mean[0],Gr.dims.nlg[2],
+                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+
+        for i in xrange(Gr.dims.nlg[2]):
+            mean[i] = mean[i]*n_horizontal_i
+
+
+        return mean
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cdef double [:] HorizontalMaximum(self, Grid.Grid Gr, double *values):
+        cdef:
+            double [:] max_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] max = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+            int i,j,k,ijk
+
+            int imin = Gr.dims.gw
+            int jmin = Gr.dims.gw
+            int kmin = 0
+
+            int imax = Gr.dims.nlg[0] - Gr.dims.gw
+            int jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            int kmax = Gr.dims.nlg[2]
+
+            int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            int jstride = Gr.dims.nlg[2]
+
+            int ishift, jshift
+
+            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+
+        with nogil:
+            for k in xrange(kmin,kmax):
+                max_local[k] = -9e12
+
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        max_local[k] = fmax(max_local[k],values[ijk])
+
+        mpi.MPI_Allreduce(&max_local[0],&max[0],Gr.dims.nlg[2],
+                          mpi.MPI_DOUBLE,mpi.MPI_MAX,self.cart_comm_sub_xy)
+
+        return max
+
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cdef double [:] HorizontalMinimum(self, Grid.Grid Gr, double *values):
+        cdef:
+            double [:] min_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] min = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+            int i,j,k,ijk
+
+            int imin = Gr.dims.gw
+            int jmin = Gr.dims.gw
+            int kmin = 0
+
+            int imax = Gr.dims.nlg[0] - Gr.dims.gw
+            int jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            int kmax = Gr.dims.nlg[2]
+
+            int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            int jstride = Gr.dims.nlg[2]
+
+            int ishift, jshift
+
+            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+
+        with nogil:
+            for k in xrange(kmin,kmax):
+                min_local[k] = 9e12
+
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        min_local[k] = fmin(min_local[k],values[ijk])
+
+        mpi.MPI_Allreduce(&min_local[0],&min[0],Gr.dims.nlg[2],
+                          mpi.MPI_DOUBLE,mpi.MPI_MIN,self.cart_comm_sub_xy)
+
+        return min
 
 cdef class Pencil:
 
@@ -197,7 +381,7 @@ cdef class Pencil:
             if i < remainder:
                 self.n_pencil_map[i] += 1
 
-        self.n_local_pencils = self.n_pencil_map[self.rank-1]
+        self.n_local_pencils = self.n_pencil_map[self.rank]
 
 
         self.nl_map = np.empty((self.size),dtype=np.int,order='c')
@@ -231,9 +415,8 @@ cdef class Pencil:
 
         #Compute the send and receive displacments
         for i in xrange(self.size-1):
-            self.sdispls[i+1] += self.send_counts[i]
-            self.rdispls[i+1] += self.recv_counts[i]
-
+            self.sdispls[i+1] = self.sdispls[i] + self.send_counts[i]
+            self.rdispls[i+1] = self.rdispls[i] + self.recv_counts[i]
 
         return
 
