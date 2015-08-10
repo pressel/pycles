@@ -5,7 +5,6 @@ def main():
     #Parse information from the command line
     parser = argparse.ArgumentParser(prog='PyCLES')
     parser.add_argument("namelist")
-    parser.parse_args()
     args = parser.parse_args()
 
     file_namelist = open(args.namelist).read()
