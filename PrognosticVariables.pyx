@@ -65,6 +65,7 @@ cdef class PrognosticVariables:
         self.tendencies = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
 
         #Add prognostic variables to Statistics IO
+        Pa.root_print('Setting up statistical output files for Prognostic Variables')
         for var_name in self.name_index.keys():
             #Add mean profile
             NS.add_profile(var_name+'_mean',Gr,Pa)
