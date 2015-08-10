@@ -4,7 +4,7 @@
 
 
 void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* flux, long d_advected, long d_advecting){
+    double* restrict flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
@@ -64,7 +64,7 @@ void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
     }
 
 void fourth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* flux, long d_advected, long d_advecting){
+    double* restrict flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
@@ -129,7 +129,7 @@ void fourth_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
     }
 
 void sixth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* flux, long d_advected, long d_advecting){
+    double* restrict flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
@@ -198,7 +198,7 @@ void sixth_order_m(struct DimStruct *dims, double* restrict rho0, double* restri
     }
 
 void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* flux, long d_advected, long d_advecting){
+    double* restrict flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
@@ -271,7 +271,7 @@ void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
     }
 
 void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* flux, long d_advected, long d_advecting){
+    double* restrict flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
@@ -355,7 +355,7 @@ void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* r
     }
 
 void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* flux, long d_advected, long d_advecting){
+    double* restrict flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
@@ -443,7 +443,7 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
     }
 
 void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* flux, long d_advected, long d_advecting){
+    double* restrict flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
@@ -535,7 +535,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
 
 
 void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* flux, long d_advected, long d_advecting){
+    double* restrict flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
@@ -634,7 +634,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
     }
 
 void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* flux, long d_advected, long d_advecting){
+    double* restrict flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];

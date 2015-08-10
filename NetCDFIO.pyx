@@ -96,7 +96,7 @@ cdef class NetCDFIO_Fields:
 
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         #Only do this at the last RK time step
-        if TS.rk_step == 0:
+        if TS.rk_step == TS.n_rk_steps - 1:
             if self.last_output_time + self.frequency <=  TS.t + TS.dt:
                 TS.dt = self.last_output_time + self.frequency - TS.t
                 self.last_output_time += self.frequency
@@ -113,6 +113,9 @@ cdef class NetCDFIO_Fields:
                 self.create_fields_file(Gr,Pa)
                 Pa.root_print('Now doing 3D IO')
                 self.dump_prognostic_variables(Gr, PV)
+
+
+
         return
 
 
