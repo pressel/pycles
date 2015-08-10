@@ -44,12 +44,12 @@ void buoyancy_update(struct DimStruct *dims, double* restrict alpha0, double* re
     long i,j,k;
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
-    const long imax = dims->nlg[0];
-    const long jmax = dims->nlg[1];
-    const long kmax = dims->nlg[2];
+    const long imin = 1;
+    const long jmin = 1;
+    const long kmin = 1;
+    const long imax = dims->nlg[0]-2;
+    const long jmax = dims->nlg[1]-2;
+    const long kmax = dims->nlg[2]-2;
 
     for (i=imin; i<imax; i++){
        const long ishift = i * istride;

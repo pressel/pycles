@@ -28,7 +28,6 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     double pv_star_1 = lookup(LT, T_1);
     double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
 
-    ///printf("%f\t%f\t%f\t%f\t%f\n",p0,s,qv_star_1,qt-qv_star_1,T_1);
     /// If not saturated
     if(qt <= qv_star_1){
         *T = T_1;
