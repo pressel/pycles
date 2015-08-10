@@ -39,7 +39,7 @@ class Simulation3d:
 
         self.SA = ScalarAdvection.ScalarAdvection(namelist, self.Parallel)
         self.MA = MomentumAdvection.MomentumAdvection(namelist, self.Parallel)
-        self.SGS = SGS.SGS()
+        self.SGS = SGS.SGS(namelist)
         self.SD = ScalarDiffusion.ScalarDiffusion(self.DV,self.Parallel)
         self.MD = MomentumDiffusion.MomentumDiffusion(self.DV,self.Parallel)
 
@@ -108,7 +108,7 @@ class Simulation3d:
                 self.Thermo.update(self.Grid,self.Reference,PV_,DV_)
                 self.SA.update_cython(self.Grid,self.Reference,PV_,self.Parallel)
                 self.MA.update(self.Grid,self.Reference,PV_,self.Parallel)
-                self.SGS.update(self.Grid,self.Reference,self.DV,self.PV)
+                self.SGS.update(self.Grid,self.Reference,self.DV,self.PV, self.Ke)
                 #self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
                 #self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
 

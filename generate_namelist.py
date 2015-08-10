@@ -16,7 +16,7 @@ def main():
     elif case_name == 'SaturatedBubble':
         namelist = SaturatedBubble()
     else:
-        print 'Not a vaild case name'
+        print('Not a valid case name')
         exit()
 
 
@@ -89,41 +89,44 @@ def StableBubble():
 
     namelist = {} 
 
+
     namelist["grid"] = {}
     namelist['grid']['dims'] = 3
-    namelist['grid']['nx'] = 512
-    namelist['grid']['ny'] = 7
-    namelist['grid']['nz'] = 64
-    namelist['grid']['gw'] = 7
-    namelist['grid']['dx'] = 100.0
-    namelist['grid']['dy'] = 100.0
-    namelist['grid']['dz'] = 100.0
+    namelist['grid']['nx'] = 100
+    namelist['grid']['ny'] = 4
+    namelist['grid']['nz'] = 50
+    namelist['grid']['gw'] = 4
+    namelist['grid']['dx'] = 200.0
+    namelist['grid']['dy'] = 200.0
+    namelist['grid']['dz'] = 200.0
 
     namelist["mpi"] = {}
-    namelist["mpi"]["nprocx"] = 1 
+    namelist["mpi"]["nprocx"] = 1
     namelist["mpi"]["nprocy"] = 1
     namelist["mpi"]["nprocz"] = 1
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['ts_type'] = 3
-    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['cfl_limit'] = 0.3
     namelist['time_stepping']['dt_initial'] = 10.0
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 1000.0
+
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'None_Dry'
+    namelist['microphysics']['scheme'] = 'None_SA'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
 
     namelist["sgs"] = {}
 
+
     namelist["diffusion"] = {}
 
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 7
+    namelist['momentum_transport'] = 7
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
@@ -139,12 +142,18 @@ def StableBubble():
     namelist['fields_io']['fields_dir'] = "fields"
     namelist['fields_io']['frequency'] = 100.0
 
+
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'StableBubble'
-    namelist['meta']['casename'] = 'StableBubble'
+    namelist['meta']['casename'] = 'SaturatedBubble'
+    namelist['meta']['simname'] = 'SaturatedBubble'
 
 
     return namelist
+
+
+
+
+
 
 def write_file(namelist):
 
