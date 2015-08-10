@@ -3,4 +3,5 @@
 parameters.pxi
 parameters.h
 *.idea
-*.in  
+*.in
+/build 
