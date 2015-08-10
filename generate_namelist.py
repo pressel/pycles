@@ -1,6 +1,6 @@
 import argparse
 import json
-import pprint 
+import pprint
 from sys import exit
 import uuid
 
@@ -16,8 +16,7 @@ def main():
     elif case_name == 'SaturatedBubble':
         namelist = SaturatedBubble()
     else:
-        print('Not a valid case name')
-
+        print 'Not a vaild case name'
         exit()
 
 
@@ -89,18 +88,17 @@ def SaturatedBubble():
 
 def StableBubble():
 
-    namelist = {} 
-
+    namelist = {}
 
     namelist["grid"] = {}
     namelist['grid']['dims'] = 3
-    namelist['grid']['nx'] = 100
-    namelist['grid']['ny'] = 4
-    namelist['grid']['nz'] = 50
-    namelist['grid']['gw'] = 4
-    namelist['grid']['dx'] = 200.0
-    namelist['grid']['dy'] = 200.0
-    namelist['grid']['dz'] = 200.0
+    namelist['grid']['nx'] = 512
+    namelist['grid']['ny'] = 7
+    namelist['grid']['nz'] = 64
+    namelist['grid']['gw'] = 7
+    namelist['grid']['dx'] = 100.0
+    namelist['grid']['dy'] = 100.0
+    namelist['grid']['dz'] = 100.0
 
     namelist["mpi"] = {}
     namelist["mpi"]["nprocx"] = 1
@@ -109,27 +107,25 @@ def StableBubble():
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['ts_type'] = 3
-    namelist['time_stepping']['cfl_limit'] = 0.3
+    namelist['time_stepping']['cfl_limit'] = 0.7
     namelist['time_stepping']['dt_initial'] = 10.0
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 1000.0
-
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'None_SA'
+    namelist['microphysics']['scheme'] = 'None_Dry'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
 
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'UniformViscosity'
 
-
     namelist["diffusion"] = {}
 
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport'] = 7
+    namelist['momentum_transport']['order'] = 7
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
@@ -145,18 +141,12 @@ def StableBubble():
     namelist['fields_io']['fields_dir'] = "fields"
     namelist['fields_io']['frequency'] = 100.0
 
-
     namelist['meta'] = {}
-    namelist['meta']['casename'] = 'SaturatedBubble'
-    namelist['meta']['simname'] = 'SaturatedBubble'
+    namelist['meta']['simname'] = 'StableBubble'
+    namelist['meta']['casename'] = 'StableBubble'
 
 
     return namelist
-
-
-
-
-
 
 def write_file(namelist):
 
@@ -171,7 +161,7 @@ def write_file(namelist):
     namelist['meta']['uuid'] = str(uuid.uuid4())
 
     fh = open(namelist['meta']['simname']+".in","w")
-    pprint.pprint(namelist) 
+    pprint.pprint(namelist)
     json.dump(namelist,fh,sort_keys = True, indent = 4)
     fh.close()
 

@@ -64,15 +64,9 @@ cdef class NetCDFIO_Stats:
         ts_grp.createDimension('t',None)
         ts_grp.createVariable('t','f8',('t'))
 
-
-
         root_grp.close()
 
-
-
         return
-
-
 
 
     cpdef add_profile(self,var_name,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):

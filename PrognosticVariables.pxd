@@ -1,6 +1,6 @@
 import numpy as np
 cimport numpy as np
-
+from NetCDFIO cimport NetCDFIO_Stats
 cimport Grid
 cimport ParallelMPI
 
@@ -39,7 +39,7 @@ cdef class PrognosticVariables:
 
     cpdef add_variable(self,name,units,bc_type,var_type,ParallelMPI.ParallelMPI Pa)
 
-    cpdef initialize(self,Grid.Grid Gr )
+    cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
     cdef:
         void update_all_bcs(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
