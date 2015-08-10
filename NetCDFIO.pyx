@@ -110,6 +110,7 @@ cdef class NetCDFIO_Fields:
 
                 self.path_plus_file = str(os.path.join(self.output_path,str(Pa.rank)+'.nc'))
                 self.create_fields_file(Gr,Pa)
+                print 'Calling Here '
 
             if self.last_output_time == TS.t:
                 Pa.root_print('Now doing 3D IO')
@@ -192,6 +193,7 @@ cdef class NetCDFIO_Fields:
 
 
     cpdef add_field(self,name):
+        print self.path_plus_file
         rootgrp = nc.Dataset(self.path_plus_file,'r+',format='NETCDF4')
         fieldgrp = rootgrp.groups['fields']
         fieldgrp.createVariable(name,'f8',('nl'))
