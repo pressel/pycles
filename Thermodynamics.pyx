@@ -8,7 +8,7 @@ cimport Lookup
 
 from scipy.integrate import odeint
 
-include 'Parameters.pxi'
+include 'parameters.pxi'
 
 cdef class LatentHeat:
     def __init__(self,namelist,ParallelMPI.ParallelMPI Par):
