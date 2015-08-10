@@ -25,6 +25,7 @@ cdef class Grid:
         self.dims.n[2] = namelist['grid']['nz']
 
 
+
         #Compute the global and local dims
         self.compute_global_dims()
         self.compute_local_dims(Parallel)
@@ -76,6 +77,7 @@ cdef class Grid:
             npts = 0
             nptsg = 0
             proc = 0
+
             while proc <= mpi_coords[i]:
                 self.dims.indx_lo[i] = npts
                 self.dims.indx_lo_g[i] = nptsg
@@ -86,7 +88,6 @@ cdef class Grid:
                     npts += 1
                     nptsg +=  1
                 proc += 1
-        print(np.array(self.dims.indx_lo[0]))
 
 
         self.dims.npd = np.max([self.dims.n[0],1])*np.max([self.dims.n[1],1])*np.max([self.dims.n[2],1])
@@ -106,6 +107,7 @@ cdef class Grid:
         self.dims.ghosted_stride[0] = np.max([self.dims.nlg[1] * self.dims.nlg[2],self.dims.nlg[1],self.dims.nlg[2]])
         self.dims.ghosted_stride[1] = np.max([1,self.dims.nlg[0]])
         self.dims.ghosted_stride[2] = 1
+
         return
 
     cdef void compute_coordinates(self):
