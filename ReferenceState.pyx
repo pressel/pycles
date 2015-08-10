@@ -20,9 +20,6 @@ cdef class ReferenceState:
 
     def initialize(self,Grid.Grid Gr, Thermodynamics):
 
-        #Compute the entropy at the surface
-        #pv_star = Thermodynamics.get_pv_star(self.Tg)
-        #self.qtg = qt_from_pv(self.Pg,pv_st)
 
         self.sg = Thermodynamics.entropy(self.Pg,self.Tg,self.qtg,0.0,0.0)
 
