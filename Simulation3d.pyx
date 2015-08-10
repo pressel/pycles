@@ -105,7 +105,6 @@ class Simulation3d:
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
-                self.io()
                 self.Ke.update(self.Grid,PV_)
                 self.Thermo.update(self.Grid,self.Reference,PV_,DV_)
                 self.SA.update_cython(self.Grid,self.Reference,PV_,self.Parallel)
@@ -115,8 +114,8 @@ class Simulation3d:
                 self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
                 self.TS.update(self.Grid, self.PV, self.Parallel)
                 PV_.Update_all_bcs(self.Grid,self.Parallel)
-
                 self.Pr.update(self.Grid,self.Reference,self.DV,self.PV,self.Parallel)
+                self.io()
             time2 = time.time()
 
 

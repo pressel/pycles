@@ -114,6 +114,18 @@ cdef class NetCDFIO_Fields:
                 Pa.root_print('Now doing 3D IO')
                 self.dump_prognostic_variables(Gr, PV)
 
+        elif TS.t == 0.0 and TS.rk_step == 0:
+            try:
+                new_dir = os.path.join(self.fields_path,str(int(self.last_output_time)))
+                if not os.path.exists(new_dir):
+                    os.mkdir(new_dir)
+            except:
+                print('Problem creating fields output dir')
+            self.output_path = str(new_dir)
+            self.path_plus_file = str(os.path.join(self.output_path,str(Pa.rank)+'.nc'))
+            self.create_fields_file(Gr,Pa)
+            Pa.root_print('Now doing 3D IO')
+            self.dump_prognostic_variables(Gr, PV)
 
 
         return
