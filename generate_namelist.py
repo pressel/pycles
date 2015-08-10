@@ -29,7 +29,7 @@ def SaturatedBubble():
     namelist["grid"] = {}
     namelist['grid']['dims'] = 3
     namelist['grid']['nx'] = 100
-    namelist['grid']['ny'] = 7
+    namelist['grid']['ny'] = 4
     namelist['grid']['nz'] = 50
     namelist['grid']['gw'] = 4
     namelist['grid']['dx'] = 200.0
@@ -43,6 +43,11 @@ def SaturatedBubble():
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.3
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 1000.0
+
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
@@ -56,13 +61,22 @@ def SaturatedBubble():
     namelist["diffusion"] = {}
 
     namelist['momentum_transport'] = {}
-    namelist['scalar_transport'] = 5
+    namelist['momentum_transport'] = 7
 
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 5
+    namelist['scalar_transport']['order'] = 7
 
-    namelist['io'] = {}
-    namelist['io']['stats_path'] = "./output"
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['frequency'] = 100.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = "fields"
+    namelist['fields_io']['frequency'] = 100.0
+
 
     namelist['meta'] = {}
     namelist['meta']['casename'] = 'SaturatedBubble'
@@ -77,21 +91,25 @@ def StableBubble():
 
     namelist["grid"] = {}
     namelist['grid']['dims'] = 3
-    namelist['grid']['nx'] = 256
+    namelist['grid']['nx'] = 512
     namelist['grid']['ny'] = 7
-    namelist['grid']['nz'] = 32
+    namelist['grid']['nz'] = 64
     namelist['grid']['gw'] = 7
-    namelist['grid']['dx'] = 200.0
-    namelist['grid']['dy'] = 200.0
-    namelist['grid']['dz'] = 200.0
+    namelist['grid']['dx'] = 100.0
+    namelist['grid']['dy'] = 100.0
+    namelist['grid']['dz'] = 100.0
 
     namelist["mpi"] = {}
-    namelist["mpi"]["nprocx"] = 1  
+    namelist["mpi"]["nprocx"] = 2
     namelist["mpi"]["nprocy"] = 1
     namelist["mpi"]["nprocz"] = 1
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['ts_type'] = 3  
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 1000.0
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
@@ -105,13 +123,21 @@ def StableBubble():
     namelist["diffusion"] = {}
 
     namelist['momentum_transport'] = {}
-    namelist['scalar_transport'] = 5
+    namelist['momentum_transport']['order'] = 7
 
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 5
+    namelist['scalar_transport']['order'] = 7
 
-    namelist['io'] = {}
-    namelist['io']['stats_path'] = "./output/"
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['frequency'] = 100.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = "fields"
+    namelist['fields_io']['frequency'] = 100.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'StableBubble'
@@ -132,7 +158,7 @@ def write_file(namelist):
 
     namelist['meta']['uuid'] = str(uuid.uuid4())
 
-    fh = open(namelist['meta']['casename']+".in","w")
+    fh = open(namelist['meta']['simname']+".in","w")
     pprint.pprint(namelist) 
     json.dump(namelist,fh,sort_keys = True, indent = 4)
     fh.close()
