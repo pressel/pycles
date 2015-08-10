@@ -101,6 +101,7 @@ class Simulation3d:
         cdef ParallelMPI.ParallelMPI PA_ = self.Parallel
 
         cdef int rk_step
+
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
@@ -108,16 +109,19 @@ class Simulation3d:
                 self.Thermo.update(self.Grid,self.Reference,PV_,DV_)
                 self.SA.update_cython(self.Grid,self.Reference,PV_,self.Parallel)
                 self.MA.update(self.Grid,self.Reference,PV_,self.Parallel)
+
                 self.SGS.update(self.Grid,self.Reference,self.DV,self.PV, self.Ke)
-                #self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
-                #self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
+
+                self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
+                self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
 
                 self.TS.update(self.Grid, self.PV, self.Parallel)
-                self.FieldsIO.update(self.Grid, self.PV, self.TS,self.Parallel)
                 PV_.Update_all_bcs(self.Grid,self.Parallel)
                 self.Pr.update(self.Grid,self.Reference,self.DV,self.PV,self.Parallel)
-
+                self.io()
             time2 = time.time()
+
+
             self.Parallel.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) + ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1) )
 
                 #var_u = PV_.get_tendency_array('s',self.Grid)
@@ -142,15 +146,11 @@ class Simulation3d:
             #except:
             #    pass
 
-
-        var = PV_.get_variable_array('s',self.Grid)
-        import pylab as plt
-        plt.contour(var[GR_.dims.gw:-GR_.dims.gw,7,GR_.dims.gw:-GR_.dims.gw].T,128)
-        plt.colorbar()
-        plt.show()
+        return
 
 
-
+    def io(self):
+        self.FieldsIO.update(self.Grid, self.PV, self.TS,self.Parallel)
         return
 
 
