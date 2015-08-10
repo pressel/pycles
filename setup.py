@@ -19,6 +19,12 @@ libraries = []
 #libraries.append('petsc')
 
 
+### Library dirs for euler
+#library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
+#libraries = []
+#libraries.append('mpi'
+
+
 extensions = []
 extra_compile_args=[]
 extra_compile_args+=['-O3','-march=native','-Wno-unused','-Wno-#warnings']#,'-Rpass=loop-vectorize']
@@ -149,6 +155,10 @@ _ext = Extension("Lookup",["Lookup.pyx"],include_dirs = include_path,
                  runtime_library_dirs=library_dirs  )
 extensions.append(_ext)
 
+_ext = Extension("NetCDFIO",["NetCDFIO.pyx"],include_dirs = include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs  )
+extensions.append(_ext)
 
 
 setup(
