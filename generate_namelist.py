@@ -59,10 +59,11 @@ def SaturatedBubble():
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'UniformViscosity'
 
+
     namelist["diffusion"] = {}
 
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport'] = 7
+    namelist['momentum_transport']['order'] = 7
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
@@ -121,6 +122,7 @@ def StableBubble():
 
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'UniformViscosity'
+
 
     namelist["diffusion"] = {}
 
