@@ -144,7 +144,6 @@ _ext = Extension("TimeStepping",["TimeStepping.pyx"],include_dirs = include_path
                  runtime_library_dirs=library_dirs  )
 extensions.append(_ext)
 
-
 _ext = Extension("Kinematics",["Kinematics.pyx"],include_dirs = include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs  )
