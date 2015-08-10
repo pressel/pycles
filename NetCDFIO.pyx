@@ -48,8 +48,10 @@ cdef class NetCDFIO_Stats:
         #Set profile dimensions
         profile_grp = root_grp.createGroup('profiles')
         profile_grp.createDimension('z',Gr.dims.n[2])
+        profile_grp.createDimension('t',None)
         z = profile_grp.createVariable('z','f8',('z'))
         z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
+        profile_grp.createVariable('t','f8',('t'))
         del z
 
         reference_grp = root_grp.createGroup('reference')
@@ -59,11 +61,71 @@ cdef class NetCDFIO_Stats:
         del z
 
         ts_grp = root_grp.createGroup('timeseries')
-
+        ts_grp.createDimension('t',None)
+        ts_grp.createVariable('t','f8',('t'))
 
         root_grp.close()
 
         return
+
+
+    cpdef add_profile(self,var_name,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file,'r+',format='NETCDF4')
+            profile_grp = root_grp.groups['profiles']
+            new_var = profile_grp.createVariable(var_name,'f8',('t','z'))
+
+            root_grp.close()
+
+        return
+
+    cpdef add_ts(self,var_name,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file,'r+',format='NETCDF4')
+            ts_grp = root_grp.groups['timeseries']
+            new_var = ts_grp.createVariable(var_name,'f8',('t',))
+
+            root_grp.close()
+
+
+    cpdef write_profile(self,var_name, double [:] data, ParallelMPI.ParallelMPI Pa):
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file,'r+',format='NETCDF4')
+            profile_grp = root_grp.groups['profiles']
+            var = profile_grp.variables[var_name]
+            var[var.shape[0]+1,:] = data
+
+            root_grp.close()
+        return
+
+    cpdef write_ts(self,var_name, double data, ParallelMPI.ParallelMPI Pa):
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file,'r+',format='NETCDF4')
+            ts_grp = root_grp.groups['timeseries']
+            var = ts_grp.variables[var_name]
+            var[var.shape[0]+1] = data
+
+            root_grp.close()
+        return
+
+
+    cpdef write_simulation_time(self, double t, ParallelMPI.ParallelMPI Pa):
+         if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file,'r+',format='NETCDF4')
+            profile_grp = root_grp.groups['profiles']
+            ts_grp = root_grp.groups['timeseries']
+
+            #Write to profiles group
+            profile_t = profile_grp.variables['t']
+            profile_t[profile_t.shape[0]+1] = t
+
+            #Write to timeseries group
+            ts_t = ts_grp.variables['t']
+            ts_t[ts_t.shape[0]+1] = t
+
+            root_grp.close()
+         return
 
 
 cdef class NetCDFIO_Fields:

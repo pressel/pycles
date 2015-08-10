@@ -2,7 +2,7 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 import numpy as np
 cimport numpy as np
 cimport mpi4py.mpi_c as mpi
-
+from NetCDFIO cimport NetCDFIO_Stats
 
 cimport Grid
 cimport ParallelMPI
@@ -60,9 +60,58 @@ cdef class PrognosticVariables:
             Pa.kill()
         return
 
-    cpdef initialize(self,Grid.Grid Gr ):
+    cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.values = np.empty((self.nv*Gr.dims.npg),dtype=np.double,order='c')
         self.tendencies = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
+
+        #Add prognostic variables to Statistics IO
+        Pa.root_print('Setting up statistical output files for Prognostic Variables')
+        for var_name in self.name_index.keys():
+            #Add mean profile
+            NS.add_profile(var_name+'_mean',Gr,Pa)
+            #Add mean of squares profile
+            NS.add_profile(var_name+'_mean2',Gr,Pa)
+            #Add mean of cubes profile
+            NS.add_profile(var_name+'_mean3',Gr,Pa)
+            #Add max profile
+            NS.add_profile(var_name+'_max',Gr,Pa)
+            #Add min profile
+            NS.add_profile(var_name+'_min',Gr,Pa)
+            #Add max ts
+            NS.add_ts(var_name+'_max',Gr,Pa)
+            #Add min ts
+            NS.add_ts(var_name+'_min',Gr,Pa)
+
+
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            int var_shift
+            double [:] tmp
+
+        for var_name in self.name_index.keys():
+            var_shift = self.get_varshift(Gr,var_name)
+
+            #Compute and write mean
+            tmp = Pa.HorizontalMean(Gr,&self.values[var_shift])
+
+            #Compute and write mean of squres
+            tmp = Pa.HorizontalMeanofSquares(Gr,&self.values[var_shift],&self.values[var_shift])
+
+            #Compute and write mean of cubes
+            tmp = Pa.HorizontalMeanofCubes(Gr,&self.values[var_shift],&self.values[var_shift],&self.values[var_shift])
+
+            #Compute and write maxes
+            tmp = Pa.HorizontalMaximum(Gr,&self.values[var_shift])
+
+            #Compute and write mins
+            tmp = Pa.HorizontalMinimum(Gr,&self.values[var_shift])
+
+
+
+
+
         return
 
     cdef void update_all_bcs(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
@@ -149,7 +198,6 @@ cdef class PrognosticVariables:
             #Important: Free memory associated with memory buffer to prevent memory leak
             PyMem_Free(send_buffer)
             PyMem_Free(recv_buffer)
-
 
         return
 

@@ -68,7 +68,7 @@ class Simulation3d:
         self.Thermo.initialize(self.Grid,self.PV,self.DV,self.Parallel)
 
 
-        self.PV.initialize(self.Grid)
+        self.PV.initialize(self.Grid,self.StatsIO,self.Parallel)
 
         self.Ke.initialize(self.Grid)
         self.SA.initialize(self.Grid,self.PV)
