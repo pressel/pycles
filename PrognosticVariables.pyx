@@ -85,6 +85,34 @@ cdef class PrognosticVariables:
 
         return
 
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            int var_shift
+            double [:] tmp
+
+        for var_name in self.name_index.keys():
+            var_shift = self.get_varshift(Gr,var_name)
+
+            #Compute and write mean
+            tmp = Pa.HorizontalMean(Gr,&self.values[var_shift])
+
+            #Compute and write mean of squres
+            tmp = Pa.HorizontalMeanofSquares(Gr,&self.values[var_shift],&self.values[var_shift])
+
+            #Compute and write mean of cubes
+            tmp = Pa.HorizontalMeanofCubes(Gr,&self.values[var_shift],&self.values[var_shift],&self.values[var_shift])
+
+            #Compute and write maxes
+            tmp = Pa.HorizontalMaximum(Gr,&self.values[var_shift])
+
+            #Compute and write mins
+            tmp = Pa.HorizontalMinimum(Gr,&self.values[var_shift])
+
+
+
+
+
+        return
 
     cdef void update_all_bcs(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
 

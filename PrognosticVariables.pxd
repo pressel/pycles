@@ -59,3 +59,4 @@ cdef class PrognosticVariables:
     cpdef tend_nan(self,PA,message)
     cpdef val_nan(self,PA,message)
     cpdef val_bounds(self,var_name,Grid.Grid Gr)
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
