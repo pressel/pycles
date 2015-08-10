@@ -101,22 +101,23 @@ class Simulation3d:
         cdef ParallelMPI.ParallelMPI PA_ = self.Parallel
 
         cdef int rk_step
-        while (self.TS.t < self.TS.t_max):
 
+        while (self.TS.t < self.TS.t_max):
+            time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
+                self.io()
                 self.Ke.update(self.Grid,PV_)
                 self.Thermo.update(self.Grid,self.Reference,PV_,DV_)
                 self.SA.update_cython(self.Grid,self.Reference,PV_,self.Parallel)
                 self.MA.update(self.Grid,self.Reference,PV_,self.Parallel)
                 self.SGS.update(self.Grid,self.Reference,self.DV,self.PV)
-                #self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
-                #self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
-                time1 = time.time()
-                self.FieldsIO.update(self.Grid, self.PV, self.TS,self.Parallel)
+                self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
+                self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
                 self.TS.update(self.Grid, self.PV, self.Parallel)
-                time2 = time.time()
                 PV_.Update_all_bcs(self.Grid,self.Parallel)
+
                 self.Pr.update(self.Grid,self.Reference,self.DV,self.PV,self.Parallel)
+            time2 = time.time()
 
 
             self.Parallel.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) + ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1) )
@@ -147,7 +148,7 @@ class Simulation3d:
 
 
     def io(self):
-
+        self.FieldsIO.update(self.Grid, self.PV, self.TS,self.Parallel)
         return
 
 
