@@ -9,9 +9,6 @@ cimport numpy as np
 
 import cython
 
-cdef extern from "advection_interpolation.h":
-    inline double interp_2(double phi, double phip1) nogil
-    inline double interp_4(double phim1, double phi, double phip1, double phip2) nogil
 cdef extern from "momentum_advection.h":
     void compute_advective_fluxes_m(Grid.DimStruct *dims, double *rho0, double *rho0_half, double  *vel_advected, double  *vel_advecting,
                                 double *flux, long d_advected, long d_advecting, int scheme) nogil

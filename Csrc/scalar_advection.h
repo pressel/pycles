@@ -2,7 +2,7 @@
 #include "grid.h"
 #include "advection_interpolation.h"
 
-void second_order(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void second_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
@@ -50,7 +50,7 @@ void second_order(const struct DimStruct *dims, double* restrict rho0, double* r
     return;
 }
 
-void fourth_order(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void fourth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
@@ -97,7 +97,7 @@ void fourth_order(const struct DimStruct *dims, double* restrict rho0, double* r
     return;
 }
 
-void sixth_order(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void sixth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
 
     const long istride = dims->nlg[1] * dims->nlg[2];
@@ -151,7 +151,7 @@ void sixth_order(const struct DimStruct *dims, double* restrict rho0, double* re
     return;
 }
 
-void eighth_order(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void eighth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
 
     const long istride = dims->nlg[1] * dims->nlg[2];
@@ -207,7 +207,7 @@ void eighth_order(const struct DimStruct *dims, double* restrict rho0, double* r
     return;
 }
 
-void upwind_first(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
 
     const long istride = dims->nlg[1] * dims->nlg[2];
@@ -265,7 +265,7 @@ void upwind_first(const struct DimStruct *dims, double* restrict rho0, double* r
     return;
 }
 
-void weno_third_order(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
 
     const long istride = dims->nlg[1] * dims->nlg[2];
@@ -330,7 +330,7 @@ void weno_third_order(const struct DimStruct *dims, double* restrict rho0, doubl
 }
 
 
-void weno_fifth_order(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
 
     const long istride = dims->nlg[1] * dims->nlg[2];
@@ -394,7 +394,7 @@ void weno_fifth_order(const struct DimStruct *dims, double* restrict rho0, doubl
     return;
 }
 
-void weno_seventh_order(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
 
     const long istride = dims->nlg[1] * dims->nlg[2];
@@ -460,7 +460,7 @@ void weno_seventh_order(const struct DimStruct *dims, double* restrict rho0, dou
     return;
 }
 
-void weno_ninth_order(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
 
     const long istride = dims->nlg[1] * dims->nlg[2];
@@ -528,7 +528,7 @@ void weno_ninth_order(const struct DimStruct *dims, double* restrict rho0, doubl
     return;
 }
 
-void weno_eleventh_order(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
 
     const long istride = dims->nlg[1] * dims->nlg[2];
@@ -598,39 +598,39 @@ void weno_eleventh_order(const struct DimStruct *dims, double* restrict rho0, do
     return;
 }
 
-void compute_advective_fluxes(struct DimStruct *dims, double* restrict rho0, double* rho0_half ,double* restrict velocity, double* restrict scalar,
+void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, double* rho0_half ,double* restrict velocity, double* restrict scalar,
                                 double* restrict flux, int d, int scheme){
 
     switch(scheme){
         case 1:
-            upwind_first(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            upwind_first_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
         case 2:
-            second_order(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            second_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
         case 3:
-            weno_third_order(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            weno_third_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
         case 4:
-            fourth_order(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            fourth_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
         case 5:
-            weno_fifth_order(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            weno_fifth_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
         case 6:
-            sixth_order(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            sixth_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
         case 7:
-            weno_seventh_order(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            weno_seventh_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
         case 8:
-            eighth_order(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            eighth_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
         case 9:
-            weno_ninth_order(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            weno_ninth_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
         case 11:
-            weno_eleventh_order(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            weno_eleventh_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
     };
 

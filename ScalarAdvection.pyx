@@ -10,11 +10,8 @@ cimport numpy as np
 
 import cython
 
-cdef extern from "advection_interpolation.h":
-    inline double interp_2(double phi, double phip1) nogil
-    inline double interp_4(double phim1, double phi, double phip1, double phip2) nogil
 cdef extern from "scalar_advection.h":
-    void compute_advective_fluxes(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme) nogil
+    void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme) nogil
 cdef class ScalarAdvection:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         try:
@@ -46,7 +43,7 @@ cdef class ScalarAdvection:
                     #Make sure that we get the velocity components in the correct order
                     vel_shift = PV.velocity_directions[d]*Gr.dims.npg
 
-                    compute_advective_fluxes(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&PV.values[vel_shift],
+                    compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&PV.values[vel_shift],
                                              &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order)
 
                     scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
