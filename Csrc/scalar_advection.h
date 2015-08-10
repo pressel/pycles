@@ -631,6 +631,7 @@ void compute_advective_fluxes(struct DimStruct *dims, double* restrict rho0, dou
             break;
         case 11:
             weno_eleventh_order(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            break;
     };
 
 

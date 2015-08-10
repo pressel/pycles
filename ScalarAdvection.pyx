@@ -47,7 +47,7 @@ cdef class ScalarAdvection:
                     vel_shift = PV.velocity_directions[d]*Gr.dims.npg
 
                     compute_advective_fluxes(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&PV.values[vel_shift],
-                                             &PV.values[scalar_shift],&self.flux[flux_shift],d,4)
+                                             &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order)
 
                     scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
                                             &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)

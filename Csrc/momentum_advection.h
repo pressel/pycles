@@ -3,7 +3,7 @@
 #include "advection_interpolation.h"
 
 
-void second_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
@@ -63,19 +63,19 @@ void second_order_c(struct DimStruct *dims, double* restrict rho0, double* restr
         return;
     }
 
-void fourth_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+void fourth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
 
-        const long imin = 0;
-        const long jmin = 0;
-        const long kmin = 0;
+        const long imin = 1;
+        const long jmin = 1;
+        const long kmin = 1;
 
-        const long imax = dims->nlg[0]-1;
-        const long jmax = dims->nlg[1]-1;
-        const long kmax = dims->nlg[2]-1;
+        const long imax = dims->nlg[0]-2;
+        const long jmax = dims->nlg[1]-2;
+        const long kmax = dims->nlg[2]-2;
 
         const long stencil[3] = {istride,jstride,1};
         const long sp1_ed = stencil[d_advecting];
@@ -128,19 +128,19 @@ void fourth_order_c(struct DimStruct *dims, double* restrict rho0, double* restr
         return;
     }
 
-void sixth_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+void sixth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
 
-        const long imin = 0;
-        const long jmin = 0;
-        const long kmin = 0;
+        const long imin = 2;
+        const long jmin = 2;
+        const long kmin = 2;
 
-        const long imax = dims->nlg[0]-1;
-        const long jmax = dims->nlg[1]-1;
-        const long kmax = dims->nlg[2]-1;
+        const long imax = dims->nlg[0]-3;
+        const long jmax = dims->nlg[1]-3;
+        const long kmax = dims->nlg[2]-3;
 
         const long stencil[3] = {istride,jstride,1};
         const long sp1_ed = stencil[d_advecting];
@@ -197,19 +197,19 @@ void sixth_order_c(struct DimStruct *dims, double* restrict rho0, double* restri
         return;
     }
 
-void eighth_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
 
-        const long imin = 0;
-        const long jmin = 0;
-        const long kmin = 0;
+        const long imin = 3;
+        const long jmin = 3;
+        const long kmin = 3;
 
-        const long imax = dims->nlg[0]-1;
-        const long jmax = dims->nlg[1]-1;
-        const long kmax = dims->nlg[2]-1;
+        const long imax = dims->nlg[0]-4;
+        const long jmax = dims->nlg[1]-4;
+        const long kmax = dims->nlg[2]-4;
 
         const long stencil[3] = {istride,jstride,1};
         const long sp1_ed = stencil[d_advecting];
@@ -270,19 +270,19 @@ void eighth_order_c(struct DimStruct *dims, double* restrict rho0, double* restr
         return;
     }
 
-void weno_third_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
 
-        const long imin = 0;
-        const long jmin = 0;
-        const long kmin = 0;
+        const long imin = 1;
+        const long jmin = 1;
+        const long kmin = 1;
 
-        const long imax = dims->nlg[0]-1;
-        const long jmax = dims->nlg[1]-1;
-        const long kmax = dims->nlg[2]-1;
+        const long imax = dims->nlg[0]-2;
+        const long jmax = dims->nlg[1]-2;
+        const long kmax = dims->nlg[2]-2;
 
         const long stencil[3] = {istride,jstride,1};
         const long sm1_ed = -stencil[d_advecting];
@@ -354,19 +354,19 @@ void weno_third_order_c(struct DimStruct *dims, double* restrict rho0, double* r
         return;
     }
 
-void weno_fifth_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
 
-        const long imin = 0;
-        const long jmin = 0;
-        const long kmin = 0;
+        const long imin = 2;
+        const long jmin = 2;
+        const long kmin = 2;
 
-        const long imax = dims->nlg[0]-1;
-        const long jmax = dims->nlg[1]-1;
-        const long kmax = dims->nlg[2]-1;
+        const long imax = dims->nlg[0]-3;
+        const long jmax = dims->nlg[1]-3;
+        const long kmax = dims->nlg[2]-3;
 
         const long stencil[3] = {istride,jstride,1};
 
@@ -442,19 +442,19 @@ void weno_fifth_order_c(struct DimStruct *dims, double* restrict rho0, double* r
         return;
     }
 
-void weno_seventh_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
 
-        const long imin = 0;
-        const long jmin = 0;
-        const long kmin = 0;
+        const long imin = 3;
+        const long jmin = 3;
+        const long kmin = 3;
 
-        const long imax = dims->nlg[0]-1;
-        const long jmax = dims->nlg[1]-1;
-        const long kmax = dims->nlg[2]-1;
+        const long imax = dims->nlg[0]-4;
+        const long jmax = dims->nlg[1]-4;
+        const long kmax = dims->nlg[2]-4;
 
         const long stencil[3] = {istride,jstride,1};
 
@@ -534,19 +534,19 @@ void weno_seventh_order_c(struct DimStruct *dims, double* restrict rho0, double*
     }
 
 
-void weno_ninth_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
 
-        const long imin = 0;
-        const long jmin = 0;
-        const long kmin = 0;
+        const long imin = 4;
+        const long jmin = 4;
+        const long kmin = 4;
 
-        const long imax = dims->nlg[0]-1;
-        const long jmax = dims->nlg[1]-1;
-        const long kmax = dims->nlg[2]-1;
+        const long imax = dims->nlg[0]-5;
+        const long jmax = dims->nlg[1]-5;
+        const long kmax = dims->nlg[2]-5;
 
         const long stencil[3] = {istride,jstride,1};
 
@@ -584,6 +584,8 @@ void weno_ninth_order_c(struct DimStruct *dims, double* restrict rho0, double* r
                         const double vel_adv = interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing]);
 
                         flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+
+
                     }
                 }
             }
@@ -603,6 +605,7 @@ void weno_ninth_order_c(struct DimStruct *dims, double* restrict rho0, double* r
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed]);
                         const double vel_adv = interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing]);
                         flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+
                     }
                 }
             }
@@ -622,6 +625,7 @@ void weno_ninth_order_c(struct DimStruct *dims, double* restrict rho0, double* r
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed]);
                         const double vel_adv = interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing]);
                         flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+
                     }
                 }
             }
@@ -629,19 +633,19 @@ void weno_ninth_order_c(struct DimStruct *dims, double* restrict rho0, double* r
         return;
     }
 
-void weno_eleventh_order_c(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* flux, long d_advected, long d_advecting){
 
         const long istride = dims->nlg[1] * dims->nlg[2];
         const long jstride = dims->nlg[2];
 
-        const long imin = 0;
-        const long jmin = 0;
-        const long kmin = 0;
+        const long imin = 5;
+        const long jmin = 5;
+        const long kmin = 5;
 
-        const long imax = dims->nlg[0]-1;
-        const long jmax = dims->nlg[1]-1;
-        const long kmax = dims->nlg[2]-1;
+        const long imax = dims->nlg[0]-6;
+        const long jmax = dims->nlg[1]-6;
+        const long kmax = dims->nlg[2]-6;
 
         const long stencil[3] = {istride,jstride,1};
 
@@ -729,3 +733,49 @@ void weno_eleventh_order_c(struct DimStruct *dims, double* restrict rho0, double
         }
         return;
     }
+
+
+void compute_advective_fluxes_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
+                                double* restrict flux, long d_advected, long d_advecting, int scheme){
+
+    switch(scheme){
+        case 2:
+            second_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
+                flux, d_advected, d_advecting);
+            break;
+        case 3:
+            weno_third_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
+                flux, d_advected, d_advecting);
+            break;
+        case 4:
+            fourth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
+                flux, d_advected, d_advecting);
+            break;
+        case 5:
+            weno_fifth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
+                flux, d_advected, d_advecting);
+            break;
+        case 6:
+            sixth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
+                flux, d_advected, d_advecting);
+            break;
+        case 7:
+            weno_seventh_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
+                flux, d_advected, d_advecting);
+            break;
+        case 8:
+            eighth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
+                flux, d_advected, d_advecting);
+            break;
+        case 9:
+            weno_ninth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
+                flux, d_advected, d_advecting);
+            break;
+        case 11:
+            weno_eleventh_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
+                flux, d_advected, d_advecting);
+            break;
+    };
+
+
+};
