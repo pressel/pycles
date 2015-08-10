@@ -2,4 +2,5 @@
 *.c
 parameters.pxi
 parameters.h
+*.idea
 *.in  
