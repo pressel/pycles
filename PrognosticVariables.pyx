@@ -66,10 +66,24 @@ cdef class PrognosticVariables:
 
         #Add prognostic variables to Statistics IO
         for var_name in self.name_index.keys():
-            print var_name
+            #Add mean profile
+            NS.add_profile(var_name+'_mean',Gr,Pa)
+            #Add mean of squares profile
+            NS.add_profile(var_name+'_mean2',Gr,Pa)
+            #Add mean of cubes profile
+            NS.add_profile(var_name+'_mean3',Gr,Pa)
+            #Add max profile
+            NS.add_profile(var_name+'_max',Gr,Pa)
+            #Add min profile
+            NS.add_profile(var_name+'_min',Gr,Pa)
+            #Add max ts
+            NS.add_ts(var_name+'_max',Gr,Pa)
+            #Add min ts
+            NS.add_ts(var_name+'_min',Gr,Pa)
 
 
         return
+
 
     cdef void update_all_bcs(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
 
