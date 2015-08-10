@@ -108,3 +108,10 @@ cdef class DiagnosticVariables:
         print self.nv*Gr.dims.nlg[0]*Gr.dims.nlg[1]*Gr.dims.nlg[2], np.shape(self.values)
         view.shape = (self.nv,Gr.dims.nlg[0],Gr.dims.nlg[1],Gr.dims.nlg[2])
         return view[index,:,:,:]
+
+    cpdef val_nan(self,PA,message):
+        if np.isnan(self.values).any():
+            print('Nans found in Diagnostic Variables values')
+            print(message)
+            PA.kill()
+        return

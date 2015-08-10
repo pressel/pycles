@@ -21,3 +21,5 @@ cdef class DiagnosticVariables:
 
     cdef inline int get_varshift(self, Grid.Grid Gr, str variable_name):
         return self.name_index[variable_name] * Gr.dims.npg
+
+    cpdef val_nan(self,PA,message)

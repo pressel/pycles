@@ -170,6 +170,25 @@ cdef class PrognosticVariables:
         view.shape = (self.nv,Gr.dims.nlg[0],Gr.dims.nlg[1],Gr.dims.nlg[2])
         return view[index,:,:,:]
 
+    cpdef tend_nan(self,PA,message):
+        if np.isnan(self.tendencies).any():
+            print('Nans found in tendencies')
+            print(message)
+            PA.kill()
+        return
+
+    cpdef val_nan(self,PA,message):
+        if np.isnan(self.values).any():
+            print('Nans found in Prognostic Variables values')
+            print(message)
+            PA.kill()
+        return
+
+    cpdef val_bounds(self,var_name,Grid.Grid Gr):
+        var_array = self.get_variable_array(var_name, Gr)
+        return np.amin(var_array), np.amax(var_array)
+
+
 cdef void build_buffer_symmetric_dim0(Grid.DimStruct* dims, double* values, double* buffer, long mpi_shift):
     #Optimize this in C
     cdef:
@@ -294,3 +313,4 @@ cdef void build_buffer_antisymmetric_dim2(Grid.DimStruct* dims, double* values, 
                 buffer[buffer_i_shift + buffer_j_shift + k] = -values[i_shift + j_shift + k + shift_offset]
 
     return
+

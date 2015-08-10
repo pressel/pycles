@@ -47,7 +47,10 @@ class Simulation3d:
         self.Thermo = ThermodynamicsFactory(namelist,self.Micro,self.LH,self.Parallel)
 
         self.Reference = ReferenceState.ReferenceState(self.Grid)
-        self.NetCDFIO  = NetCDFIO.NetCDFIO()
+        self.StatsIO  = NetCDFIO.NetCDFIO_Stats()
+        self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
+
+
 
         self.TS = TimeStepping.TimeStepping()
 
@@ -59,7 +62,8 @@ class Simulation3d:
         self.PV.add_variable('w','m/s',"asym","velocity",self.Parallel)
         self.PV.set_velocity_direction('w',2,self.Parallel)
 
-        self.NetCDFIO.initialize(namelist, self.Parallel)
+        self.StatsIO.initialize(namelist, self.Grid, self.Parallel)
+        self.FieldsIO.initialize(namelist,self.Parallel)
         self.Thermo.initialize(self.Grid,self.PV,self.DV,self.Parallel)
 
 
@@ -118,21 +122,25 @@ class Simulation3d:
 
         times = []
         cdef int rk_step
-        for i in range(1001):
+        while (self.TS.t < self.TS.t_max):
             time1 = time.time()
-            print i
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
+                #print self.PV.val_bounds('u',self.Grid)
                 self.Ke.update(self.Grid,PV_)
                 self.Thermo.update(self.Grid,self.Reference,PV_,DV_)
                 self.SA.update_cython(self.Grid,self.Reference,PV_,self.Parallel)
                 self.MA.update(self.Grid,self.Reference,PV_,self.Parallel)
                 self.SGS.update(self.Grid,self.Reference,self.DV,self.PV)
-                self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
-                self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
+                #self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
+                #self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
 
-                self.TS.update(self.Grid, self.PV)
+                self.TS.update(self.Grid, self.PV, self.Parallel)
+                self.FieldsIO.update(self.Grid, self.PV, self.TS,self.Parallel)
                 PV_.Update_all_bcs(self.Grid,self.Parallel)
                 self.Pr.update(self.Grid,self.Reference,self.DV,self.PV,self.Parallel)
+
+            time2 = time.time()
+            self.Parallel.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) + ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1) )
 
                 #var_u = PV_.get_tendency_array('s',self.Grid)
                 #var = DV_.get_variable_array('dynamic_pressure',self.Grid)
@@ -157,7 +165,7 @@ class Simulation3d:
             #    pass
 
 
-            time2 = time.time()
+
             times.append(time2 - time1)
         print('Scalar Advection', np.min(times))
         var = PV_.get_variable_array('s',self.Grid)

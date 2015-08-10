@@ -56,3 +56,6 @@ cdef class PrognosticVariables:
 
     cpdef get_variable_array(self,name,Grid.Grid Gr)
     cpdef get_tendency_array(self,name,Grid.Grid Gr)
+    cpdef tend_nan(self,PA,message)
+    cpdef val_nan(self,PA,message)
+    cpdef val_bounds(self,var_name,Grid.Grid Gr)
