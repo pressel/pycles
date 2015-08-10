@@ -58,6 +58,7 @@ def SaturatedBubble():
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
 
     namelist["sgs"] = {}
+    namelist["sgs"]['scheme'] = 'UniformViscosity'
 
     namelist["diffusion"] = {}
 
@@ -122,6 +123,7 @@ def StableBubble():
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
 
     namelist["sgs"] = {}
+    namelist["sgs"]['scheme'] = 'UniformViscosity'
 
 
     namelist["diffusion"] = {}
