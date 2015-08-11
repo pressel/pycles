@@ -4,7 +4,7 @@
 
 
 inline double exner_c(const double p0){
-    return pow((p_tilde/p0),kappa);
+    return pow((p0/p_tilde),kappa);
 };
 
 inline double theta_c(const double p0, const double T){
@@ -32,7 +32,7 @@ inline double cpm_c(const double qt){
 }
 
 inline double thetas_c(const double s, const double qt){
-    return T_tilde*exp((s-(1-qt)*sd_tilde - qt*sv_tilde)/cpm_c(qt));
+    return T_tilde*exp((s-(1.0-qt)*sd_tilde - qt*sv_tilde)/cpm_c(qt));
 }
 
 inline double thetas_t_c(const double p0, const double T, const double qt, const double qv, const double qc, const double L){

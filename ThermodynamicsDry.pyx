@@ -118,4 +118,5 @@ cdef class ThermodynamicsDry:
                         count += 1
         NF.add_field('thetas')
         NF.write_field('thetas',data)
+        print(np.amax(data),np.amin(data))
         return
