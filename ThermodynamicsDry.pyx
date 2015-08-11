@@ -5,7 +5,9 @@ cimport ParallelMPI
 cimport Grid
 cimport ReferenceState
 cimport DiagnosticVariables
-
+from NetCDFIO cimport NetCDFIO_Fields
+from thermodynamic_functions cimport thetas_c
+import cython
 
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 cdef extern from "entropies.h":
@@ -21,23 +23,23 @@ cdef extern from "thermodynamics_dry.h":
                          double *wt)
 
 cdef class ThermodynamicsDry:
-    def __init__(self,namelist,LatentHeat LH, ParallelMPI.ParallelMPI Par):
+    def __init__(self,namelist,LatentHeat LH, ParallelMPI.ParallelMPI Pa):
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
-        self.CC.initialize(namelist,LH,Par)
+        self.CC.initialize(namelist,LH,Pa)
 
         return
 
-    cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Par):
+    cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
-        PV.add_variable('s','m/s',"sym","scalar",Par)
+        PV.add_variable('s','m/s',"sym","scalar",Pa)
 
         #Initialize class member arrays
-        DV.add_variables('buoyancy','--','sym',Par)
-        DV.add_variables('alpha','--','sym',Par)
-        DV.add_variables('temperature','K','sym',Par)
-        DV.add_variables('buoyancy_frequency','1/s','sym',Par)
+        DV.add_variables('buoyancy','--','sym',Pa)
+        DV.add_variables('alpha','--','sym',Pa)
+        DV.add_variables('temperature','K','sym',Pa)
+        DV.add_variables('buoyancy_frequency','1/s','sym',Pa)
 
         return
 
@@ -82,3 +84,38 @@ cdef class ThermodynamicsDry:
     cpdef get_lh(self,t):
         cdef double lam = self.Lambda_fp(t)
         return self.L_fp(lam,t)
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cpdef write_fields(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Fields NF, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            long i,j,k, ijk, ishift, jshift
+            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            long jstride = Gr.dims.nlg[2]
+            long imin = Gr.dims.gw
+            long jmin = Gr.dims.gw
+            long kmin = Gr.dims.gw
+            long imax = Gr.dims.nlg[0] - Gr.dims.gw
+            long jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            long kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            long count
+            long s_shift = PV.get_varshift(Gr,'s')
+            double [:] data = np.empty((Gr.dims.npl,),dtype=np.double,order='c')
+
+        #Add entropy potential temperature to 3d fields
+        with nogil:
+            count = 0
+            for i in range(imin,imax):
+                ishift = i * istride
+                for j in range(jmin,jmax):
+                    jshift = j * jstride
+                    for k in range(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        data[count] = thetas_c(PV.values[s_shift+ijk],0.0)
+                        count += 1
+        NF.add_field('thetas')
+        NF.write_field('thetas',data)
+        return

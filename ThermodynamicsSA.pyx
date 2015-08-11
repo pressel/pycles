@@ -104,3 +104,8 @@ cdef class ThermodynamicsSA:
     cpdef get_lh(self,t):
         cdef double lam = self.Lambda_fp(t)
         return self.L_fp(lam,t)
+
+    cpdef write_fields(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Fields NF, ParallelMPI.ParallelMPI Pa):
+
+        return

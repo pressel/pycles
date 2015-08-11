@@ -5,6 +5,7 @@ cimport DiagnosticVariables
 cimport ParallelMPI
 
 from Thermodynamics cimport ClausiusClapeyron
+from NetCDFIO cimport NetCDFIO_Fields
 
 cdef class ThermodynamicsSA:
     cdef:
@@ -26,3 +27,6 @@ cdef class ThermodynamicsSA:
     cpdef get_pv_star(self, t)
 
     cpdef get_lh(self,t)
+
+    cpdef write_fields(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Fields NF, ParallelMPI.ParallelMPI Pa)
