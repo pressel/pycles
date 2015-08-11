@@ -176,7 +176,7 @@ cdef class NetCDFIO_Fields:
                 self.create_fields_file(Gr,Pa)
                 Pa.root_print('Now doing 3D IO')
                 self.dump_prognostic_variables(Gr, PV)
-                self.do_ouput = True
+                self.do_output = True
 
         elif TS.t == 0.0 and TS.rk_step == 0:
             try:
