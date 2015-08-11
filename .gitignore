@@ -1,5 +1,6 @@
 *.nc
 *.so
+*.o:wq
 *.c
 parameters.pxi
 parameters.h
