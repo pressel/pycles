@@ -7,7 +7,7 @@ cimport ParallelMPI
 import numpy as np
 cimport numpy as np
 
-from FluxDivergence cimport scalar_flux_divergence
+from FluxDivergence cimport scalar_flux_divergence_diff
 
 import cython
 
@@ -44,7 +44,7 @@ cdef class ScalarDiffusion:
                                            &DV.values[diff_shift],&PV.values[scalar_shift],
                                            &self.flux[flux_shift],Gr.dims.dx[d],d,2)
 
-                    scalar_flux_divergence(&Gr.dims,&RS.alpha0[0],&RS.alpha0_half[0],
+                    scalar_flux_divergence_diff(&Gr.dims,&RS.alpha0[0],&RS.alpha0_half[0],
                                            &self.flux[flux_shift],&PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
 
                 scalar_count += 1

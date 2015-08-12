@@ -10,7 +10,7 @@ cimport numpy as np
 
 import cython
 
-from FluxDivergence cimport momentum_flux_divergence
+from FluxDivergence cimport momentum_flux_divergence_diff
 
 cdef extern from 'momentum_diffusion.h':
     cdef void compute_diffusive_flux(Grid.DimStruct *dims, double* vgrad1, double* vgrad2, double* viscosity, double* flux)
@@ -53,7 +53,7 @@ cdef class MomentumDiffusion:
 
                 #First we compute the flux
                 compute_diffusive_flux(&Gr.dims,&Ke.vgrad[shift_vgrad1],&Ke.vgrad[shift_vgrad2],&DV.values[visc_shift],&self.flux[shift_flux])
-                momentum_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[shift_flux],&PV.values[shift_v1],Gr.dims.dx[i1],i1,i2)
+                momentum_flux_divergence_diff(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[shift_flux],&PV.values[shift_v1],Gr.dims.dx[i1],i1,i2)
 
 
                 count += 1

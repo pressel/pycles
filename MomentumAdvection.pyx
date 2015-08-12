@@ -2,7 +2,7 @@ cimport Grid
 cimport PrognosticVariables
 cimport ParallelMPI
 cimport ReferenceState
-from FluxDivergence cimport momentum_flux_divergence
+from FluxDivergence cimport momentum_flux_divergence_adv
 
 import numpy as np
 cimport numpy as np
@@ -56,7 +56,7 @@ cdef class MomentumAdvection:
                                          &PV.values[shift_advected],&PV.values[shift_advecting],&self.flux[shift_flux],
                                          i_advected,i_advecting,self.order)
                 #Compute flux divergence
-                momentum_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[shift_flux],
+                momentum_flux_divergence_adv(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[shift_flux],
                                             &PV.tendencies[shift_advected],Gr.dims.dx[i_advecting],i_advected,i_advecting)
 
 
