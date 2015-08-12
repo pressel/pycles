@@ -120,6 +120,8 @@ class Simulation3d:
                 self.Pr.update(self.Grid,self.Reference,self.DV,self.PV,self.Parallel)
                 self.TS.adjust_timestep(self.Grid, self.PV, self.Parallel)
                 self.io()
+
+
             time2 = time.time()
 
 

@@ -48,7 +48,7 @@ inline double entropy_from_thetas_c(const double thetas, const double qt){
 }
 
 inline double buoyancy_c(const double alpha0, const double alpha){
-    return g * (alpha - alpha0)/alpha0;
+    returlsn g * (alpha - alpha0)/alpha0;
 }
 
 inline double qv_star_c(const double p0, const double qt, const double pv){

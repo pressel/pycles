@@ -49,9 +49,7 @@ void compute_entropy_source(const struct DimStruct *dims, double* restrict visco
             const long jshift = j*jstride;
             for(long k=kmin;k<kmax;k++){
                 const long ijk = ishift + jshift + k ;
-
                 entropy_tendency[ijk] += 2.0 * strain_rate_mag[ijk] * strain_rate_mag[ijk] * viscosity[ijk] / temperature[ijk];
-
             }
         }
     }
