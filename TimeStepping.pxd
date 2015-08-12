@@ -31,7 +31,7 @@ cdef class TimeStepping:
 
     cpdef update_second(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
     cpdef update_third(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
-
+    cpdef adjust_timestep(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
     cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
 
     cdef inline double cfl_time_step(self)

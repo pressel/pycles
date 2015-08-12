@@ -81,6 +81,12 @@ cdef class TimeStepping:
         elif self.ts_type == 3:
             self.update_third(Gr,PV)
 
+
+
+
+        return
+
+    cpdef adjust_timestep(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
         #Compute the CFL number and diffusive stability criterion
         if self.rk_step == self.n_rk_steps - 1:
             self.compute_cfl_max(Gr, PV, Pa)
@@ -89,7 +95,6 @@ cdef class TimeStepping:
             #Diffusive limiting not yet implemented
             if self.t + self.dt > self.t_max:
                 self.dt = self.t_max - self.t
-
 
         return
 
