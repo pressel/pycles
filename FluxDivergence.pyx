@@ -46,7 +46,7 @@ cdef scalar_flux_divergence(Grid.DimStruct *dims, double *alpha0, double *alpha0
 @cython.wraparound(False)   #Turn off numpy array wrap around indexing
 @cython.cdivision(True)
 cdef momentum_flux_divergence(Grid.DimStruct *dims, double *alpha0, double *alpha0_half
-                              ,double *flux, double *tendency, double dx, long d_advected, long d_advecting):
+                              ,double *flux, double *tendency, long d_advected, long d_advecting):
 
     cdef:
         int imin = dims.gw
@@ -62,7 +62,7 @@ cdef momentum_flux_divergence(Grid.DimStruct *dims, double *alpha0, double *alph
 
         int ishift, jshift, ijk, i,j,k
 
-        double dxi = 1.0/dx
+        double dxi = 1.0/dims.dx[d_advecting]
 
 
     #Compute the strides given the dimensionality

@@ -57,7 +57,7 @@ cdef class MomentumAdvection:
                                          i_advected,i_advecting,self.order)
                 #Compute flux divergence
                 momentum_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[shift_flux],
-                                            &PV.tendencies[shift_advected],Gr.dims.dx[i_advecting],i_advected,i_advecting)
+                                            &PV.tendencies[shift_advected],i_advected,i_advecting)
 
 
         return
