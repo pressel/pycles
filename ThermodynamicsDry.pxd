@@ -4,7 +4,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ParallelMPI
 cimport Thermodynamics
-
+from NetCDFIO cimport NetCDFIO_Fields
 
 
 cdef class ThermodynamicsDry:
@@ -15,7 +15,7 @@ cdef class ThermodynamicsDry:
         Thermodynamics.ClausiusClapeyron CC
 
 
-    cpdef initialize(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Par)
+    cpdef initialize(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa)
 
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
 
@@ -29,3 +29,6 @@ cdef class ThermodynamicsDry:
     cpdef get_pv_star(self,t)
 
     cpdef get_lh(self,t)
+
+    cpdef write_fields(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Fields NF, ParallelMPI.ParallelMPI Pa)

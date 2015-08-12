@@ -16,6 +16,10 @@ include_path += ['./Csrc']
 #library_dirs =['/opt/local/lib/petsc/lib/']
 library_dirs = []
 libraries = []
+extensions = []
+extra_compile_args=[]
+extra_compile_args+=['-O3','-march=native','-Wno-unused','-Wno-#warnings']#,'-Rpass=loop-vectorize']
+
 #libraries.append('petsc')
 
 
@@ -23,11 +27,12 @@ libraries = []
 #library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
 #libraries = []
 #libraries.append('mpi')
+#extensions = []
+#extra_compile_args=[]
+#extra_compile_args+=['-std=c99','-O3','-march=native','-Wno-unused','-Wno-#warnings']#,'-Rpass=loop-vectorize']
 
 
-extensions = []
-extra_compile_args=[]
-extra_compile_args+=['-O3','-march=native','-Wno-unused','-Wno-#warnings']#,'-Rpass=loop-vectorize']
+
 
 _ext = Extension("Grid",["Grid.pyx"],include_dirs = include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,

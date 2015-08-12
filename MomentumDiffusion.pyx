@@ -48,7 +48,7 @@ cdef class MomentumDiffusion:
             shift_v1 = PV.velocity_directions[i1] * Gr.dims.npg
             for i2 in xrange(Gr.dims.dims):
                 shift_vgrad1 = Ke.get_grad_shift(Gr,i1,i2)
-                shift_vgrad2 = Ke.get_grad_shift(Gr,i1,i2)
+                shift_vgrad2 = Ke.get_grad_shift(Gr,i2,i1)
                 shift_flux = count * Gr.dims.npg
 
                 #First we compute the flux

@@ -150,7 +150,11 @@ class Simulation3d:
 
 
     def io(self):
+
         self.FieldsIO.update(self.Grid, self.PV, self.TS,self.Parallel)
+        if self.FieldsIO.do_output == True:
+            self.Thermo.write_fields(self.Grid, self.Reference,
+                    self.PV, self.DV, self.FieldsIO, self.Parallel)
         return
 
 
