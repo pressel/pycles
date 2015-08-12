@@ -71,7 +71,7 @@ cdef momentum_flux_divergence(Grid.DimStruct *dims, double *alpha0, double *alph
 
     #apply some logic to make sure the correct specific volume is used
     with nogil:
-        if d_advected != 2:
+        if d_advecting != 2:
             for i in xrange(imin,imax):
                 ishift = i * istride
                 for j in xrange(jmin,jmax):
