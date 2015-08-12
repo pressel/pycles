@@ -3,7 +3,7 @@ cimport PrognosticVariables
 cimport ParallelMPI
 cimport ReferenceState
 
-from FluxDivergence cimport scalar_flux_divergence_adv
+from FluxDivergence cimport scalar_flux_divergence
 
 import numpy as np
 cimport numpy as np
@@ -46,7 +46,7 @@ cdef class ScalarAdvection:
                     compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&PV.values[vel_shift],
                                              &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order)
 
-                    scalar_flux_divergence_adv(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
+                    scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
                                             &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
                 scalar_count += 1
 
