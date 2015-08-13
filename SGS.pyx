@@ -52,8 +52,8 @@ cdef class UniformViscosity:
 
         with nogil:
             for i in xrange(Gr.dims.npg):
-                DV.values[diff_shift + i] = 75.0*0.5
-                DV.values[visc_shift + i] = 75.0*0.5
+                DV.values[diff_shift + i] = 75.0
+                DV.values[visc_shift + i] = 75.0
 
         return
 
