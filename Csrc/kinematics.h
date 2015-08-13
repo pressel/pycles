@@ -84,8 +84,7 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
     const long kmax = dims->nlg[2]-1;
     long count = 0;
 
-    double shift[3]   = {0.0,0.0,0.0};
-    double shift_m[3] = {0.0,0.0,0.0};
+    const long stencil[3] = {istride,jstride,1};
 
     //Set all values of strain rate magnitude to zero
     for(long i=0; i<dims->npg; i++){
@@ -96,16 +95,12 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
     for(long d=0;d<dims->dims;d++){
         const long shift_s = 4*d*dims->npg;
         for(long i=imin+1;i<imax;i++){
-            shift[0]=i*istride;
-            shift_m[0] = (i-1)*istride;
+            const long ishift=i*istride;
             for(long j=jmin+1;j<jmax;j++){
-                shift[1] = j*jstride;
-                shift_m[1] = (j-1)*jstride;
+                const long jshift = j*jstride;
                 for(long k=kmin+1;k<kmax;k++){
-                    shift[2] = k;
-                    shift_m[2] = k-1;
-                    const long ijk = shift[0]+shift[1]+shift[2];
-                    const long total_shift = shift_s + ijk - shift[d] + shift_m[d];
+                    const long ijk = ishift + jshift + k;
+                    const long total_shift = shift_s + ijk - stencil[d];
                     strain_rate_mag[ijk] = strain_rate_mag[ijk] + strain_rate[total_shift]*strain_rate[total_shift];
                 }
             }
@@ -118,19 +113,15 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
         for (long d=vi1;d<dims->dims;d++){
             const long shift_s = 3 * dims->npg * vi1 + dims->npg * d ;
             for(long i=imin+1;i<imax;i++){
-                shift[0] = i*istride;
-                shift_m[0] = (i-1)*istride;
+                const long ishift = i*istride;
                 for(long j=jmin+1;j<jmax;j++){
-                    shift[1] = j*jstride;
-                    shift_m[1] = (j-1)*jstride;
+                    const long jshift = j*jstride;
                     for(long k=kmin+1;k<kmax;k++){
-                        shift[2] = k;
-                        shift_m[2] = k-1;
-                        const long ijk = shift[0]+shift[1]+shift[2];
+                        const long ijk = ishift + jshift + k;
                         const long sp1 = shift_s + ijk;
-                        const long sp2 = shift_s + ijk - shift[vi1] + shift_m[vi1];
-                        const long sp3 = shift_s + ijk - shift[d] + shift_m[d];
-                        const long sp4 = shift_s + ijk - shift[d] + shift_m[d] - shift[vi1] + shift_m[vi1];
+                        const long sp2 = shift_s + ijk - stencil[vi1];
+                        const long sp3 = shift_s + ijk - stencil[d] ;
+                        const long sp4 = shift_s + ijk - stencil[d] - stencil[vi1] ;
                         const double s_interp = 0.25*(strain_rate[sp1]+strain_rate[sp2]+strain_rate[sp3]+strain_rate[sp4]);
                         strain_rate_mag[ijk] = strain_rate_mag[ijk] + 2.0*s_interp*s_interp;
                     }
