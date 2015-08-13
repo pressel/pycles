@@ -8,7 +8,7 @@ inline double exner_c(const double p0){
 };
 
 inline double theta_c(const double p0, const double T){
-    return T * pow((p_tilde/p0),kappa) ;
+    return T / exner_c(p0);
 };
 
 inline double pd_c(const double p0,const double qt, const double qv){
