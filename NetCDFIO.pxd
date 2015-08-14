@@ -1,6 +1,7 @@
 cimport ParallelMPI
 cimport TimeStepping
 cimport PrognosticVariables
+cimport DiagnosticVariables
 cimport Grid
 cdef class NetCDFIO_Stats:
     cdef:
@@ -35,11 +36,12 @@ cdef class NetCDFIO_Fields:
 
     cpdef initialize(self, dict namelist, ParallelMPI.ParallelMPI Pa)
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
 
     cpdef create_fields_file(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
 
     cpdef dump_prognostic_variables(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
+    cpdef dump_diagnostic_variables(self,Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV)
 
     cpdef add_field(self, name)
     cpdef write_field(self,name,double [:] data)
