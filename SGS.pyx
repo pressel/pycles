@@ -71,11 +71,11 @@ cdef class UniformViscosity:
 cdef class Smagorinsky:
     def __init__(self,namelist):
         try:
-            self.cs = namelist['sgs']['cs']
+            self.cs = namelist['sgs']['Smagorinsky']['cs']
         except:
             self.cs = 0.17
         try:
-            self.prt = namelist['sgs']['prt']
+            self.prt = namelist['sgs']['Smagorinsky']['prt']
         except:
             self.prt = 1.0/3.0
 
