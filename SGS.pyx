@@ -14,7 +14,7 @@ cdef extern from "sgs.h":
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
-            self.scheme = UniformViscosity()
+            self.scheme = UniformViscosity(namelist)
         elif(namelist['sgs']['scheme'] == 'Smagorinsky'):
             self.scheme = Smagorinsky(namelist)
 
@@ -31,7 +31,18 @@ cdef class SGS:
 
 
 cdef class UniformViscosity:
-    def __init__(self):
+    def __init__(self,namelist):
+        try:
+            self.const_diffusivity = namelist['sgs']['UniformViscosity']['diffusivity']
+        except:
+            self.const_diffusivity = 0.0
+
+
+        try:
+            self.const_viscosity = namelist['sgs']['UniformViscosity']['viscosity']
+        except:
+            self.const_viscosity = 0.0
+
         return
 
     cpdef initialize(self, Grid.Grid Gr):
@@ -52,8 +63,8 @@ cdef class UniformViscosity:
 
         with nogil:
             for i in xrange(Gr.dims.npg):
-                DV.values[diff_shift + i] = 75.0
-                DV.values[visc_shift + i] = 75.0
+                DV.values[diff_shift + i] = self.const_diffusivity
+                DV.values[visc_shift + i] = self.const_viscosity
 
         return
 

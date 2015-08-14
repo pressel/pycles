@@ -18,6 +18,10 @@ cdef class SGS:
 
 cdef class UniformViscosity:
 
+    cdef:
+        double const_viscosity
+        double const_diffusivity
+
     cpdef initialize(self, Grid.Grid Gr)
 
 
