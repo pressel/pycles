@@ -74,19 +74,24 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
 
+
+
     #First generate reference profiles
     RS.Pg = 1.0e5
     RS.qtg = 0.02
     #RS.Tg = 300.0
 
-    thetas_sfc = 300.0
-    qt_sfc = RS.qtg
+    thetas_sfc = 320.0
+    qt_sfc = 0.0196 #RS.qtg
+    RS.qtg = qt_sfc
+
+    print 'Here'
 
     def theta_to_T(p0_,thetas_,qt_):
 
 
          T1 = Tt
-         T2 = Tt + 20.
+         T2 = Tt + 1.
 
          pv1 = Th.get_pv_star(T1)
          pv2 = Th.get_pv_star(T2)

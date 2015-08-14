@@ -55,7 +55,7 @@ cdef class ClausiusClapeyron:
         except:
             Par.root_print('Clasius-Clayperon lookup table temperature_max not '
                            'given in name list taking default of 340 K')
-            Tmax = 340.0
+            Tmax = 380.0
 
         try:
             n_lookup = namelist['ClausiusClapeyron']['n_lookup']

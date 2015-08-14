@@ -29,9 +29,9 @@ def SaturatedBubble():
     namelist["grid"] = {}
     namelist['grid']['dims'] = 3
     namelist['grid']['nx'] = 100
-    namelist['grid']['ny'] = 4
+    namelist['grid']['ny'] = 5 
     namelist['grid']['nz'] = 50
-    namelist['grid']['gw'] = 4
+    namelist['grid']['gw'] = 5
     namelist['grid']['dx'] = 200.0
     namelist['grid']['dy'] = 200.0
     namelist['grid']['dz'] = 200.0

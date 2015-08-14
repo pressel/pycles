@@ -101,7 +101,7 @@ class Simulation3d:
         cdef ParallelMPI.ParallelMPI PA_ = self.Parallel
 
         cdef int rk_step
-
+        i = 0
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
@@ -127,27 +127,6 @@ class Simulation3d:
 
             self.Parallel.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) + ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1) )
 
-                #var_u = PV_.get_tendency_array('s',self.Grid)
-                #var = DV_.get_variable_array('dynamic_pressure',self.Grid)
-                #var_u = PV_.get_variable_array('u',self.Grid)
-                #print 'symmetry', var[128+1,6,24],var[128+2,6,24],var[128+3,6,24],var[128+4,6,24]
-                #print 'symmetry u end',var_u[128+1:128+4,6,24]
-
-                #print(np.array(self.Reference.alpha0[:]),np.array(self.Reference.alpha0_half[:]))
-            #self.Parallel.kill()
-            #import pylab as plt
-            #var = PV_.get_variable_array('s',self.Grid)
-            #w = PV_.get_variable_array('w',self.Grid)
-            #p = DV_.get_variable_array('dynamic_pressure',self.Grid)
-            #print(np.max(w))
-            #try:
-            #    plt.figure(1)
-            #    plt.contour(var[GR_.dims.gw:-GR_.dims.gw,7,GR_.dims.gw:-GR_.dims.gw].T,128)
-            #    plt.colorbar()
-            #    plt.savefig('./figs/'+str(10000 + i) + '.png')
-            #    plt.close()
-            #except:
-            #    pass
 
         return
 
