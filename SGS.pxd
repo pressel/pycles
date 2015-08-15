@@ -21,6 +21,7 @@ cdef class UniformViscosity:
     cdef:
         double const_viscosity
         double const_diffusivity
+        bint is_init 
 
     cpdef initialize(self, Grid.Grid Gr)
 

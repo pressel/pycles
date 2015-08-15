@@ -43,6 +43,8 @@ cdef class UniformViscosity:
         except:
             self.const_viscosity = 0.0
 
+        self.is_init = False 
+
         return
 
     cpdef initialize(self, Grid.Grid Gr):
@@ -62,9 +64,11 @@ cdef class UniformViscosity:
 
 
         with nogil:
-            for i in xrange(Gr.dims.npg):
-                DV.values[diff_shift + i] = self.const_diffusivity
-                DV.values[visc_shift + i] = self.const_viscosity
+            if self.is_init == False: 
+                for i in xrange(Gr.dims.npg):
+                    DV.values[diff_shift + i] = self.const_diffusivity
+                    DV.values[visc_shift + i] = self.const_viscosity
+                    self.is_init = True 
 
         return
 
