@@ -1,29 +1,29 @@
 #pragma once
 #include <stdio.h>
 
-inline double interp_2(double phi, double phip1){
+double interp_2(double phi, double phip1){
     return 0.5*(phi + phip1);
 };
 
-inline double interp_4(double phim1, double phi, double phip1, double phip2){
+double interp_4(double phim1, double phi, double phip1, double phip2){
     return (7.0/12.0)*(phi + phip1 ) -(1.0/12.0)*(phim1 + phip2);
 };
 
-inline double interp_6(double phim2, double phim1, double phi, double phip1, double phip2, double phip3){
+double interp_6(double phim2, double phim1, double phi, double phip1, double phip2, double phip3){
     return (37.0/60.0) *(phi + phip1) - (2.0/15.0)*(phim1 + phip2) + (1.0/60.0)*(phim2 + phip3);
 };
 
-inline double interp_8(double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3, double phip4){
+double interp_8(double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3, double phip4){
    return  (533./840. * (phi + phip1) - 139.0/840.0 * (phim1 + phip2 ) + 29.0/840.0 * (phim2 + phip3) -1.0/280.0*(phim3 + phip4));
 };
 
-inline double interp_10(double phim4, double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3, double phip4, double phip5){
+double interp_10(double phim4, double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3, double phip4, double phip5){
     return (1627.0/2520.0* (phi + phip1) - 473.0/2520.0 * (phim1 + phip2 )
                        + 127.0/2520.0* (phim2 + phip3) -23.0/2520.0 *(phim3 + phip4)
                         + 1.0/1260.0*(phim4 + phip5));
 };
 
-inline double interp_weno3(double phim1, double phi, double phip1){
+double interp_weno3(double phim1, double phi, double phip1){
     const double a1 = (2.0/3.0) /(1e-10 + (phim1 - phi) * (phim1 - phi))/(1e-10 + (phim1 - phi) * (phim1 - phi));
     const double a2 = (1.0/3.0) /(1e-10 + (phi - phip1) * (phi - phip1))/(1e-10 + (phi - phip1) * (phi - phip1));
 
@@ -37,7 +37,7 @@ inline double interp_weno3(double phim1, double phi, double phip1){
     return alpha0 * phim1 + alpha1 * phi + alpha2 * phip1;
 };
 
-inline double interp_weno5(double phim2, double phim1, double phi, double phip1, double phip2){
+double interp_weno5(double phim2, double phim1, double phi, double phip1, double phip2){
 
    const double p0 = (1.0/3.0)*phim2 - (7.0/6.0)*phim1 + (11.0/6.0)*phi;
    const double p1 = (-1.0/6.0) * phim1 + (5.0/6.0)*phi + (1.0/3.0)*phip1;
@@ -64,7 +64,7 @@ inline double interp_weno5(double phim2, double phim1, double phi, double phip1,
    return w0 * p0 + w1 * p1 + w2 * p2;
 };
 
-inline double interp_weno7(double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3){
+double interp_weno7(double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3){
 
     const double p0 = (-1.0/4.0)*phim3 + (13.0/12.0) * phim2 + (-23.0/12.0) * phim1 + (25.0/12.0)*phi;
     const double p1 = (1.0/12.0)*phim2 + (-5.0/12.0)*phim1 + (13.0/12.0)*phi + (1.0/4.0)*phip1;
