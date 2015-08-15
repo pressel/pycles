@@ -55,13 +55,13 @@ void fourth_order_a(const struct DimStruct *dims, double* restrict rho0, double*
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const long imin = 1;
+    const long jmin = 1;
+    const long kmin = 1;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const long imax = dims->nlg[0]-2;
+    const long jmax = dims->nlg[1]-2;
+    const long kmax = dims->nlg[2]-2;
 
 
     const long stencil[3] = {istride,jstride,1};
@@ -103,13 +103,13 @@ void sixth_order_a(const struct DimStruct *dims, double* restrict rho0, double* 
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const long imin = 2;
+    const long jmin = 2;
+    const long kmin = 2;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const long imax = dims->nlg[0]-3;
+    const long jmax = dims->nlg[1]-3;
+    const long kmax = dims->nlg[2]-3;
 
 
     const long stencil[3] = {istride,jstride,1};
@@ -157,13 +157,13 @@ void eighth_order_a(const struct DimStruct *dims, double* restrict rho0, double*
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const long imin = 3;
+    const long jmin = 3;
+    const long kmin = 3;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const long imax = dims->nlg[0]-4;
+    const long jmax = dims->nlg[1]-4;
+    const long kmax = dims->nlg[2]-4;
 
 
     const long stencil[3] = {istride,jstride,1};
@@ -213,9 +213,9 @@ void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double*
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const long imin = 1;
+    const long jmin = 1;
+    const long kmin = 1;
 
     const long imax = dims->nlg[0]-1;
     const long jmax = dims->nlg[1]-1;
@@ -271,22 +271,19 @@ void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, dou
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const long imin = 1;
+    const long jmin = 1;
+    const long kmin = 1;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const long imax = dims->nlg[0]-2;
+    const long jmax = dims->nlg[1]-2;
+    const long kmax = dims->nlg[2]-2;
 
 
     const long stencil[3] = {istride,jstride,1};
     const long sp1 = stencil[d];
     const long sp2 = 2 * sp1;
-    const long sp3 = 3 * sp1;
     const long sm1 = -sp1 ;
-    const long sm2 = -2*sp1;
-
 
 
     if(d==2){
@@ -336,13 +333,13 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const long imin = 2;
+    const long jmin = 2;
+    const long kmin = 2;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const long imax = dims->nlg[0]-3;
+    const long jmax = dims->nlg[1]-3;
+    const long kmax = dims->nlg[2]-3;
 
 
     const long stencil[3] = {istride,jstride,1};
@@ -400,13 +397,13 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const long imin = 3;
+    const long jmin = 3;
+    const long kmin = 3;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const long imax = dims->nlg[0]-4;
+    const long jmax = dims->nlg[1]-4;
+    const long kmax = dims->nlg[2]-4;
 
 
     const long stencil[3] = {istride,jstride,1};
@@ -466,13 +463,13 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const long imin = 4;
+    const long jmin = 4;
+    const long kmin = 4;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const long imax = dims->nlg[0]-5;
+    const long jmax = dims->nlg[1]-5;
+    const long kmax = dims->nlg[2]-5;
 
 
     const long stencil[3] = {istride,jstride,1};
@@ -534,13 +531,13 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
     const long istride = dims->nlg[1] * dims->nlg[2];
     const long jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const long imin = 5;
+    const long jmin = 5;
+    const long kmin = 5;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const long imax = dims->nlg[0]-6;
+    const long jmax = dims->nlg[1]-6;
+    const long kmax = dims->nlg[2]-6;
 
 
     const long stencil[3] = {istride,jstride,1};
