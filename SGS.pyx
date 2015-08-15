@@ -64,7 +64,7 @@ cdef class UniformViscosity:
 
 
         with nogil:
-            if self.is_init == False: 
+            if not self.is_init: 
                 for i in xrange(Gr.dims.npg):
                     DV.values[diff_shift + i] = self.const_diffusivity
                     DV.values[visc_shift + i] = self.const_viscosity
