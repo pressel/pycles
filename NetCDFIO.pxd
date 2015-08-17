@@ -40,8 +40,7 @@ cdef class NetCDFIO_Fields:
 
     cpdef create_fields_file(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
 
-    cpdef dump_prognostic_variables(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
-    cpdef dump_diagnostic_variables(self,Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV)
+    cpdef dump_variables(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
 
     cpdef add_field(self, name)
     cpdef write_field(self,name,double [:] data)

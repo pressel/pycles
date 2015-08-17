@@ -4,7 +4,6 @@ import shutil
 cimport ParallelMPI
 cimport TimeStepping
 cimport PrognosticVariables
-cimport DiagnosticVariables
 cimport Grid
 import numpy as np
 cimport numpy as np
@@ -157,8 +156,7 @@ cdef class NetCDFIO_Fields:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         #Only do this at the last RK time step
         self.do_output = False
         if TS.rk_step == TS.n_rk_steps - 1:
@@ -192,7 +190,6 @@ cdef class NetCDFIO_Fields:
             self.create_fields_file(Gr,Pa)
             Pa.root_print('Now doing 3D IO')
             self.dump_prognostic_variables(Gr, PV)
-            self.dump_diagnostic_variables(Gr, DV)
             self.do_output = True
 
 
@@ -277,7 +274,7 @@ cdef class NetCDFIO_Fields:
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
-    cpdef dump_diagnostic_variables(self,Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV):
+    cpdef dump_diagnostic_variables(self,Grid.Grid Gr,  PV):
 
         cdef:
             long i,j,k, ijk, ishift, jshift
@@ -292,9 +289,9 @@ cdef class NetCDFIO_Fields:
             long var_shift
             double [:] data = np.empty((Gr.dims.npl,),dtype=np.double,order='c')
             long count
-        for name in DV.name_index.keys():
+        for name in PV.name_index.keys():
             self.add_field(name)
-            var_shift = DV.get_varshift(Gr,name)
+            var_shift = PV.get_varshift(Gr,name)
             count = 0
             with nogil:
                 for i in range(imin,imax):
@@ -303,7 +300,7 @@ cdef class NetCDFIO_Fields:
                         jshift = j * jstride
                         for k in range(kmin,kmax):
                             ijk = ishift + jshift + k
-                            data[count] = DV.values[var_shift+ijk]
+                            data[count] = PV.values[var_shift+ijk]
                             count += 1
             self.write_field(name,data)
 
