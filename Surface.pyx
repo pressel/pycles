@@ -21,16 +21,16 @@ cdef class Surface:
     def __init__(self,namelist, LatentHeat LH):
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
-            self.scheme = SurfaceSullivanPatton(LH)
+            self.scheme = SurfaceSullivanPatton()
         else:
             self.scheme= SurfaceNone()
 
-    cpdef initialize(self, Grid.Grid Gr):
-        self.scheme.initialize(Gr)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
+        self.scheme.initialize(Gr, RS)
         return
 
-    cpdef update(self):
-        self.scheme.update()
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+        self.scheme.update(Gr, RS, PV, DV)
         return
 
 
@@ -38,10 +38,10 @@ cdef class SurfaceNone:
     def __init__(self):
         pass
 
-    cpdef initialize(self, Grid.Grid Gr):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
         pass
 
-    cpdef update():
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
         pass
 
 
@@ -53,7 +53,6 @@ cdef class SurfaceSullivanPatton():
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
         # should theta_flux be adjusted to sensible heat flux using half or whole RS values?
         self.shf = self.theta_flux * exner(RS.p0[Gr.dims.gw-1]) * cpd / RS.alpha0[Gr.dims.gw-1]
-        self.lhf = 0.0
         return
 
     # @cython.boundscheck(False)
@@ -85,18 +84,5 @@ cdef class SurfaceSullivanPatton():
                     ijk = i * istride + j * jstride + gw
                     entropy_flux = alpha0_b*shf/DV.values[temp_shift+ijk]
                     PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*alpha0_b/RS.alpha0[gw-1]*dzi
-        return
-
-
-
-
-
-
-
-
-
-
-
-
 
         return
