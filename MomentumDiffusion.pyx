@@ -13,7 +13,7 @@ import cython
 from FluxDivergence cimport momentum_flux_divergence
 
 cdef extern from 'momentum_diffusion.h':
-    cdef void compute_diffusive_flux(Grid.DimStruct *dims, double* vgrad1, double* vgrad2, double* viscosity, double* flux)
+    cdef void compute_diffusive_flux(Grid.DimStruct *dims, double* strain_rate, double* viscosity, double* flux, long i1, long i2)
     cdef void compute_entropy_source(Grid.DimStruct *dims, double* viscosity, double* strain_rate_mag, double* temperature, double* entropy_tendency)
 
 cdef class MomentumDiffusion:
@@ -47,12 +47,10 @@ cdef class MomentumDiffusion:
         for i1 in xrange(Gr.dims.dims):
             shift_v1 = PV.velocity_directions[i1] * Gr.dims.npg
             for i2 in xrange(Gr.dims.dims):
-                shift_vgrad1 = Ke.get_grad_shift(Gr,i1,i2)
-                shift_vgrad2 = Ke.get_grad_shift(Gr,i2,i1)
                 shift_flux = count * Gr.dims.npg
 
                 #First we compute the flux
-                compute_diffusive_flux(&Gr.dims,&Ke.vgrad[shift_vgrad1],&Ke.vgrad[shift_vgrad2],&DV.values[visc_shift],&self.flux[shift_flux])
+                compute_diffusive_flux(&Gr.dims,&Ke.strain_rate[shift_flux],&DV.values[visc_shift],&self.flux[shift_flux], i1, i2)
                 momentum_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[shift_flux],&PV.tendencies[shift_v1],i1,i2)
 
 
