@@ -12,6 +12,7 @@ cimport PressureSolver
 cimport TimeStepping
 cimport Kinematics
 cimport NetCDFIO
+cimport Surface
 
 print 'Here'
 from Initialization import InitializationFactory
@@ -46,6 +47,7 @@ class Simulation3d:
         self.LH = LatentHeat(namelist, self.Parallel)
         self.Micro = MicrophysicsFactory(namelist,self.LH,self.Parallel)
         self.Thermo = ThermodynamicsFactory(namelist,self.Micro,self.LH,self.Parallel)
+        self.Surface = Surface.Surface(namelist, self.LH)
 
         self.Reference = ReferenceState.ReferenceState(self.Grid)
         self.StatsIO  = NetCDFIO.NetCDFIO_Stats()
@@ -76,6 +78,8 @@ class Simulation3d:
         self.SGS.initialize(self.Grid)
         self.SD.initialize(self.Grid,self.PV,self.DV,self.Parallel)
         self.MD.initialize(self.Grid,self.PV,self.DV,self.Parallel)
+        self.Surface.initialize(self.Grid,self.Reference)
+
 
         self.TS.initialize(namelist,self.PV,self.Parallel)
 
@@ -114,6 +118,8 @@ class Simulation3d:
 
                 self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
                 self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
+
+                self.Surface.update(self.Grid,self.Reference,self.PV, self.DV)
 
                 self.TS.update(self.Grid, self.PV, self.Parallel)
                 PV_.Update_all_bcs(self.Grid,self.Parallel)
