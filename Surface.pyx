@@ -2,7 +2,11 @@ cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
+from Thermodynamics cimport LatentHeat
+import cython
+from thermodynamic_functions import exner
 include "parameters.pxi"
+
 
 
 
@@ -39,13 +43,13 @@ cdef class SurfaceNone:
         pass
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
-        pass
+        return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
-        pass
+        return
 
 
-cdef class SurfaceSullivanPatton():
+cdef class SurfaceSullivanPatton:
     def __init__(self):
         self.theta_flux = 0.24 # K m/s
         return
@@ -55,7 +59,7 @@ cdef class SurfaceSullivanPatton():
         self.shf = self.theta_flux * exner(RS.p0[Gr.dims.gw-1]) * cpd / RS.alpha0[Gr.dims.gw-1]
         return
 
-    # @cython.boundscheck(False)
+    @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
