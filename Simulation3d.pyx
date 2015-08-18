@@ -67,7 +67,7 @@ class Simulation3d:
 
         self.StatsIO.initialize(namelist, self.Grid, self.Parallel)
         self.FieldsIO.initialize(namelist,self.Parallel)
-        self.Thermo.initialize(self.Grid,self.PV,self.DV,self.Parallel)
+        self.Thermo.initialize(self.Grid,self.PV,self.DV,self.StatsIO,self.Parallel)
 
 
         self.PV.initialize(self.Grid,self.StatsIO,self.Parallel)
@@ -175,6 +175,7 @@ class Simulation3d:
                 self.StatsIO.write_simulation_time(self.TS.t, self.Parallel)
                 self.PV.stats_io(self.Grid,self.StatsIO,self.Parallel)
                 self.DV.stats_io(self.Grid,self.StatsIO,self.Parallel)
+                self.Thermo.stats_io(self.Grid,self.PV,self.StatsIO,self.Parallel)
 
         return
     def force_io(self):
@@ -183,6 +184,7 @@ class Simulation3d:
         self.StatsIO.write_simulation_time(self.TS.t, self.Parallel)
         self.PV.stats_io(self.Grid,self.StatsIO,self.Parallel)
         self.DV.stats_io(self.Grid,self.StatsIO,self.Parallel)
+        self.Thermo.stats_io(self.Grid,self.PV,self.StatsIO,self.Parallel)
 
         return
 

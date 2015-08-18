@@ -6,9 +6,11 @@ cimport ParallelMPI
 cimport Grid
 cimport ReferenceState
 cimport DiagnosticVariables
+cimport PrognosticVariables
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 from thermodynamic_functions cimport thetas_c
 import cython
+from NetCDFIO cimport NetCDFIO_Stats, NetCDFIO_Fields
 
 cdef extern from "thermodynamics_sa.h":
     inline double alpha_c(double p0, double T, double qt, double qv) nogil
@@ -34,20 +36,29 @@ cdef class ThermodynamicsSA:
         return
 
 
-    cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Par):
+    cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        PV.add_variable('s','m/s',"sym","scalar",Par)
-        PV.add_variable('qt','kg/kg',"sym","scalar",Par)
+        PV.add_variable('s','m/s',"sym","scalar",Pa)
+        PV.add_variable('qt','kg/kg',"sym","scalar",Pa)
 
         #Initialize class member arrays
-        DV.add_variables('buoyancy','--','sym',Par)
-        DV.add_variables('alpha','--','sym',Par)
-        DV.add_variables('temperature','K','sym',Par)
-        DV.add_variables('buoyancy_frequency','1/s','sym',Par)
-        DV.add_variables('qv','kg/kg','sym',Par)
-        DV.add_variables('ql','kg/kg','sym',Par)
-        DV.add_variables('qi','kg/kg','sym',Par)
+        DV.add_variables('buoyancy','--','sym',Pa)
+        DV.add_variables('alpha','--','sym',Pa)
+        DV.add_variables('temperature','K','sym',Pa)
+        DV.add_variables('buoyancy_frequency','1/s','sym',Pa)
+        DV.add_variables('qv','kg/kg','sym',Pa)
+        DV.add_variables('ql','kg/kg','sym',Pa)
+        DV.add_variables('qi','kg/kg','sym',Pa)
 
+
+        #Add statistical output
+        NS.add_profile('thetas_mean',Gr,Pa)
+        NS.add_profile('thetas_mean2',Gr,Pa)
+        NS.add_profile('thetas_mean3',Gr,Pa)
+        NS.add_profile('thetas_max',Gr,Pa)
+        NS.add_profile('thetas_min',Gr,Pa)
+        NS.add_ts('thetas_max',Gr,Pa)
+        NS.add_ts('thetas_min',Gr,Pa)
 
         return
 
@@ -141,4 +152,61 @@ cdef class ThermodynamicsSA:
                         count += 1
         NF.add_field('thetas')
         NF.write_field('thetas',data)
+        return
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            long i,j,k, ijk, ishift, jshift
+            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            long jstride = Gr.dims.nlg[2]
+            long imin = 0
+            long jmin = 0
+            long kmin = 0
+            long imax = Gr.dims.nlg[0]
+            long jmax = Gr.dims.nlg[1]
+            long kmax = Gr.dims.nlg[2]
+            long count
+            long s_shift = PV.get_varshift(Gr,'s')
+            long qt_shift = PV.get_varshift(Gr,'qt')
+            double [:] data = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
+            double [:] tmp
+
+        #Add entropy potential temperature to 3d fields
+        with nogil:
+            count = 0
+            for i in range(imin,imax):
+                ishift = i * istride
+                for j in range(jmin,jmax):
+                    jshift = j * jstride
+                    for k in range(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        data[count] = thetas_c(PV.values[s_shift+ijk],PV.values[qt_shift +ijk])
+                        count += 1
+
+        #Compute and write mean
+        tmp = Pa.HorizontalMean(Gr,&data[0])
+        NS.write_profile('thetas_mean',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+
+        #Compute and write mean of squres
+        tmp = Pa.HorizontalMeanofSquares(Gr,&data[0],&data[0])
+        NS.write_profile('thetas_mean2',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+        #Compute and write mean of cubes
+        tmp = Pa.HorizontalMeanofCubes(Gr,&data[0],&data[0],&data[0])
+        NS.write_profile('thetas_mean3',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        #Compute and write maxes
+        tmp = Pa.HorizontalMaximum(Gr,&data[0])
+        NS.write_profile('thetas_max',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_ts('thetas_max',np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
+
+
+        #Compute and write mins
+        tmp = Pa.HorizontalMinimum(Gr,&data[0])
+        NS.write_profile('thetas_min',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_ts('thetas_min',np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
+
         return
