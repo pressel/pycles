@@ -13,6 +13,8 @@ cimport TimeStepping
 cimport Kinematics
 cimport NetCDFIO
 
+from libc.math cimport fmin
+
 print 'Here'
 from Initialization import InitializationFactory
 from Microphysics import MicrophysicsFactory
@@ -102,6 +104,10 @@ class Simulation3d:
 
         cdef int rk_step
         i = 0
+
+        #DO First Output
+        self.force_io()
+
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
@@ -133,10 +139,48 @@ class Simulation3d:
 
     def io(self):
 
-        self.FieldsIO.update(self.Grid, self.PV, self.DV, self.TS,self.Parallel)
-        if self.FieldsIO.do_output == True:
-            self.Thermo.write_fields(self.Grid, self.Reference,
-                    self.PV, self.DV, self.FieldsIO, self.Parallel)
-        return
+        cdef:
+            fields_dt = 0.0
+            stats_dt = 0.0
+            min_dt = 0.0
 
+        if self.TS.t > 0 and self.TS.rk_step == self.TS.n_rk_steps - 1:
+
+            #Adjust time step for output if necessary
+            fields_dt = self.FieldsIO.last_output_time + self.FieldsIO.frequency  - self.TS.t
+            stats_dt = self.StatsIO.last_output_time + self.StatsIO.frequency - self.TS.t
+            if not fields_dt == 0.0 and not stats_dt == 0.0:
+                min_dt = fmin(self.TS.dt,fmin(fields_dt,stats_dt))
+            elif fields_dt == 0.0 and stats_dt == 0.0:
+                min_dt = self.TS.dt
+            elif fields_dt == 0.0:
+                min_dt = fmin(self.TS.dt,stats_dt)
+            else:
+                min_dt = fmin(self.TS.dt,fields_dt)
+
+
+            self.TS.dt = min_dt
+
+            #If time to ouptut fields do output
+            if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
+                print 'Doing Ouput'
+                self.FieldsIO.last_output_time = self.TS.t
+                self.FieldsIO.update(self.Grid, self.PV, self.DV, self.TS, self.Parallel)
+                self.FieldsIO.dump_prognostic_variables(self.Grid,self.PV)
+                self.FieldsIO.dump_diagnostic_variables(self.Grid,self.DV)
+
+            #If time to ouput stats do output
+            if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t:
+                self.StatsIO.last_output_time = self.TS.t
+                self.StatsIO.write_simulation_time(self.TS.t, self.Parallel)
+                self.PV.stats_io(self.Grid,self.StatsIO,self.Parallel)
+
+        return
+    def force_io(self):
+
+        #output stats here
+        self.StatsIO.write_simulation_time(self.TS.t, self.Parallel)
+        self.PV.stats_io(self.Grid,self.StatsIO,self.Parallel)
+
+        return
 
