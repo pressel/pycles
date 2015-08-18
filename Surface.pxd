@@ -23,6 +23,7 @@ cdef class SurfaceSullivanPatton:
     cdef:
         double theta_flux
         double shf
+        double z0
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS)
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,

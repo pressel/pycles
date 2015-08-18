@@ -52,6 +52,7 @@ cdef class SurfaceNone:
 cdef class SurfaceSullivanPatton:
     def __init__(self):
         self.theta_flux = 0.24 # K m/s
+        self.z0 = 0.1 #m (Roughness length)
         return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
@@ -76,8 +77,6 @@ cdef class SurfaceSullivanPatton:
             long temp_shift = DV.get_varshift(Gr, 'temperature')
             long s_shift = PV.get_varshift(Gr, 's')
             double entropy_flux
-            double shf = self.shf
-            double lhf = self.lhf
             double alpha0_b = RS.alpha0_half[gw]
             double dzi = 1.0/Gr.dims.dx[2]
 
@@ -86,7 +85,7 @@ cdef class SurfaceSullivanPatton:
             for i in xrange(imax):
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
-                    entropy_flux = alpha0_b*shf/DV.values[temp_shift+ijk]
+                    entropy_flux = alpha0_b*self.shf/DV.values[temp_shift+ijk]
                     PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*alpha0_b/RS.alpha0[gw-1]*dzi
 
         return
