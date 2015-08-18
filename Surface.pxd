@@ -11,14 +11,12 @@ cdef class Surface:
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS)
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 
 cdef class SurfaceNone:
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS)
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 
 cdef class SurfaceSullivanPatton:
     cdef:
@@ -34,8 +32,7 @@ cdef class SurfaceSullivanPatton:
         double [:] v_flux
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS)
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 
 
 

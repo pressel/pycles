@@ -221,7 +221,7 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     theta_pert_ = theta_pert[ijk]
                 else:
                     theta_pert_ = 0.0
-                t = (theta[k] + theta_pert_)/exner_c(RS.p0_half[k])
+                t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
 
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
 

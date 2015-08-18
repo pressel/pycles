@@ -8,6 +8,7 @@ import cython
 from thermodynamic_functions import exner
 from libc.math cimport sqrt, log, fabs,atan, exp, fmax
 cimport numpy as np
+import numpy as np
 include "parameters.pxi"
 
 
@@ -38,8 +39,7 @@ cdef class Surface:
         self.scheme.initialize(Gr, RS)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         self.scheme.update(Gr, RS, PV, DV, Pa)
         return
 
@@ -51,8 +51,7 @@ cdef class SurfaceNone:
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         return
 
 
@@ -79,8 +78,7 @@ cdef class SurfaceSullivanPatton:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         # Since this case is completely dry, the computation of entropy flux from sensible heat flux is very simple
 
         if Pa.sub_z_rank != 0:
