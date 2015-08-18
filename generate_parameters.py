@@ -26,6 +26,9 @@ def main():
     parameters['sd_tilde'] = 6695.4 
     parameters['sv_tilde'] = 10450.8
 
+    ########################################
+    #Parameters of the Byun surface scheme
+    #######################################
 
 
     #############################
