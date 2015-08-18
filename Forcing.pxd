@@ -8,12 +8,12 @@ cdef class Forcing:
         object scheme
     cpdef initialize(self)
 
-    cpdef update(self)
+    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
 
 cdef class ForcingNone:
     cpdef initialize(self)
 
-    cpdef update(self)
+    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
 
 cdef class ForcingSullivanPatton:
     cdef:
@@ -23,4 +23,4 @@ cdef class ForcingSullivanPatton:
 
     cpdef initialize(self)
 
-    cpdef update(self)
+    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)

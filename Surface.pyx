@@ -26,6 +26,9 @@ cdef extern from "entropies.h":
     inline double sc_c(double L, double T) nogil
 
 
+cdef extern from "surface.h":
+    inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0, double z1) nogil
+
 
 cdef class Surface:
     def __init__(self,namelist, LatentHeat LH):
@@ -120,7 +123,8 @@ cdef class SurfaceSullivanPatton:
                     ij = i * istride_2d + j
                     self.windspeed[ij] = fmax(sqrt(interp_2(PV.values[u_shift+ijk-istride],PV.values[v_shift+ijk])**2
                                           + interp_2(PV.values[v_shift+ijk-jstride],PV.values[u_shift+ijk])**2), self.gustiness)
-                    self.ustar[ij] = compute_ustar(self.windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    # self.ustar[ij] = compute_ustar(self.windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    self.ustar[ij] = compute_ustar_c(self.windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
             for i in xrange(imax):
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw

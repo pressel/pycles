@@ -14,8 +14,8 @@ cdef class Forcing:
     cpdef initialize(self):
         self.scheme.initialize()
 
-    cpdef update(self):
-        self.scheme.update()
+    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
+        self.scheme.update(Gr, PV)
 
 
 cdef class ForcingNone:
@@ -24,7 +24,7 @@ cdef class ForcingNone:
     cpdef initialize(self):
         return
 
-    cpdef update(self):
+    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
         return
 
 
@@ -50,7 +50,7 @@ cdef class ForcingSullivanPatton:
 
 
 
-cdef coriolis_force(Grid.Dimstruct *dims, double *u, double *v, double *ut, double *vt, double coriolis_param, double ug, double vg ):
+cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double coriolis_param, double ug, double vg ):
     cdef:
         int imin = dims.gw
         int jmin = dims.gw
@@ -78,7 +78,7 @@ cdef coriolis_force(Grid.Dimstruct *dims, double *u, double *v, double *ut, doub
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
                     u_at_v = 0.25*(u[ijk] + u[ijk-istride] + u[ijk-istride+jstride] + u[ijk +jstride])
-                    v_at_u = 0.25(v[ijk] + v[ijk+istride] + v[ijk+istride-jstride] + v[ijk-jstride])
+                    v_at_u = 0.25*(v[ijk] + v[ijk+istride] + v[ijk+istride-jstride] + v[ijk-jstride])
                     ut[ijk] = ut[ijk] - coriolis_param * (vg - v_at_u)
                     vt[ijk] = vt[ijk] + coriolis_param * (ug - u_at_v)
 

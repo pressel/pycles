@@ -13,6 +13,7 @@ cimport TimeStepping
 cimport Kinematics
 cimport NetCDFIO
 cimport Surface
+cimport Forcing
 
 from libc.math cimport fmin
 
@@ -53,6 +54,7 @@ class Simulation3d:
 
         self.Reference = ReferenceState.ReferenceState(self.Grid)
         self.Surface = Surface.Surface(namelist, self.LH)
+        self.Forcing = Forcing.Forcing(namelist)
 
         self.StatsIO  = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
@@ -91,6 +93,7 @@ class Simulation3d:
         SetInitialConditions(self.Grid,self.PV,self.Reference,self.Thermo)
 
         self.Surface.initialize(self.Grid,self.Reference)
+        self.Forcing.initialize()
 
 
 
@@ -131,6 +134,7 @@ class Simulation3d:
                 self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
 
                 self.Surface.update(self.Grid,self.Reference,self.PV, self.DV,self.Parallel)
+                self.Forcing(self.Grid, self.PV)
 
                 self.TS.update(self.Grid, self.PV, self.Parallel)
                 PV_.Update_all_bcs(self.Grid,self.Parallel)
