@@ -100,7 +100,7 @@ cdef class SurfaceSullivanPatton:
             long s_shift = PV.get_varshift(Gr, 's')
             double dzi = 1.0/Gr.dims.dx[2]
 
-        # Get the scalar flux (entropy only)
+        # Get the scalar flux (dry entropy only)
         with nogil:
             for i in xrange(imax):
                 for j in xrange(jmax):
