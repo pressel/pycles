@@ -24,7 +24,7 @@ def main():
     parameters['p_tilde'] = 10.0**5
     parameters['pv_star_t'] = 611.7
     parameters['sd_tilde'] = 6695.4 
-    parameters['sv_tilde'] = 10450.8
+    parameters['sv_tilde'] = 10513.6
 
     ########################################
     #Parameters of the Byun surface scheme

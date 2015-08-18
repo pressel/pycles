@@ -13,6 +13,7 @@ cdef class NetCDFIO_Stats:
 
         public double last_output_time
         public double frequency
+        public bint do_output
 
     cpdef initialize(self,dict namelist, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef setup_stats_file(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
@@ -40,7 +41,7 @@ cdef class NetCDFIO_Fields:
 
     cpdef create_fields_file(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
 
-    cpdef dump_prognostic_variables(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
+    cpdef dump_prognostic_variables(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
     cpdef dump_diagnostic_variables(self,Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV)
 
     cpdef add_field(self, name)

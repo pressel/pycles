@@ -93,21 +93,28 @@ cdef class PrognosticVariables:
         for var_name in self.name_index.keys():
             var_shift = self.get_varshift(Gr,var_name)
 
+
             #Compute and write mean
             tmp = Pa.HorizontalMean(Gr,&self.values[var_shift])
+            NS.write_profile(var_name + '_mean',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
             #Compute and write mean of squres
             tmp = Pa.HorizontalMeanofSquares(Gr,&self.values[var_shift],&self.values[var_shift])
-
+            NS.write_profile(var_name + '_mean2',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
             #Compute and write mean of cubes
             tmp = Pa.HorizontalMeanofCubes(Gr,&self.values[var_shift],&self.values[var_shift],&self.values[var_shift])
+            NS.write_profile(var_name + '_mean3',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
             #Compute and write maxes
             tmp = Pa.HorizontalMaximum(Gr,&self.values[var_shift])
+            NS.write_profile(var_name + '_max',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+            NS.write_ts(var_name+'_max',np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
+
 
             #Compute and write mins
             tmp = Pa.HorizontalMinimum(Gr,&self.values[var_shift])
-
+            NS.write_profile(var_name + '_min',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+            NS.write_ts(var_name+'_min',np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
 
 
 

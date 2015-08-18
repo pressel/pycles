@@ -92,6 +92,7 @@ cdef class TimeStepping:
             self.compute_cfl_max(Gr, PV, Pa)
             self.dt = self.cfl_time_step()
 
+
             #Diffusive limiting not yet implemented
             if self.t + self.dt > self.t_max:
                 self.dt = self.t_max - self.t
@@ -216,7 +217,6 @@ cdef class TimeStepping:
 
 
     cdef inline double cfl_time_step(self):
-        cdef double exact = fmin(self.dt_max,self.cfl_limit/(self.cfl_max/self.dt))
-        return fmin(exact, self.dt_max)
+        return fmin(self.dt_max,self.cfl_limit/(self.cfl_max/self.dt))
 
 

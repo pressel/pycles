@@ -95,7 +95,7 @@ cdef class NetCDFIO_Stats:
             root_grp = nc.Dataset(self.path_plus_file,'r+',format='NETCDF4')
             profile_grp = root_grp.groups['profiles']
             var = profile_grp.variables[var_name]
-            var[var.shape[0]+1,:] = data
+            var[-1,:] = np.array(data)
 
             root_grp.close()
         return
@@ -105,7 +105,7 @@ cdef class NetCDFIO_Stats:
             root_grp = nc.Dataset(self.path_plus_file,'r+',format='NETCDF4')
             ts_grp = root_grp.groups['timeseries']
             var = ts_grp.variables[var_name]
-            var[var.shape[0]+1] = data
+            var[-1] = data
 
             root_grp.close()
         return
@@ -119,11 +119,11 @@ cdef class NetCDFIO_Stats:
 
             #Write to profiles group
             profile_t = profile_grp.variables['t']
-            profile_t[profile_t.shape[0]+1] = t
+            profile_t[profile_t.shape[0]] = t
 
             #Write to timeseries group
             ts_t = ts_grp.variables['t']
-            ts_t[ts_t.shape[0]+1] = t
+            ts_t[ts_t.shape[0]] = t
 
             root_grp.close()
          return
@@ -157,44 +157,22 @@ cdef class NetCDFIO_Fields:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
-        #Only do this at the last RK time step
-        self.do_output = False
-        if TS.rk_step == TS.n_rk_steps - 1:
-            if self.last_output_time + self.frequency <=  TS.t + TS.dt:
-                TS.dt = self.last_output_time + self.frequency - TS.t
-                self.last_output_time += self.frequency
+    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
-            if self.last_output_time == TS.t:
-                try:
-                    new_dir = os.path.join(self.fields_path,str(int(self.last_output_time)))
-                    if not os.path.exists(new_dir):
-                        os.mkdir(new_dir)
-                except:
-                    print('Problem creating fields output dir')
-                self.output_path = str(new_dir)
-                self.path_plus_file = str(os.path.join(self.output_path,str(Pa.rank)+'.nc'))
-                self.create_fields_file(Gr,Pa)
-                Pa.root_print('Now doing 3D IO')
-                self.dump_prognostic_variables(Gr, PV)
-                self.do_output = True
+        new_dir = os.path.join(self.fields_path,str(int(self.last_output_time)))
 
-        elif TS.t == 0.0 and TS.rk_step == 0:
+        if Pa.rank == 0 and not os.path.exists(new_dir):
             try:
-                new_dir = os.path.join(self.fields_path,str(int(self.last_output_time)))
-                if not os.path.exists(new_dir):
-                    os.mkdir(new_dir)
+                os.mkdir(new_dir)
             except:
                 print('Problem creating fields output dir')
-            self.output_path = str(new_dir)
-            self.path_plus_file = str(os.path.join(self.output_path,str(Pa.rank)+'.nc'))
-            self.create_fields_file(Gr,Pa)
-            Pa.root_print('Now doing 3D IO')
-            self.dump_prognostic_variables(Gr, PV)
-            self.dump_diagnostic_variables(Gr, DV)
-            self.do_output = True
 
+        Pa.barrier()
+        self.output_path = str(new_dir)
+        self.path_plus_file = str(os.path.join(self.output_path,str(Pa.rank)+'.nc'))
+        self.create_fields_file(Gr,Pa)
+        Pa.root_print('Now doing 3D IO')
+        self.do_output = True
 
         return
 
