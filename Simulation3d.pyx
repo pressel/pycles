@@ -87,7 +87,7 @@ class Simulation3d:
 
 
         self.Pr.initialize(namelist,self.Grid,self.Reference,self.DV,self.Parallel)
-        self.DV.initialize(self.Grid)
+        self.DV.initialize(self.Grid,self.StatsIO,self.Parallel)
 
         return
 
@@ -103,9 +103,9 @@ class Simulation3d:
         cdef ParallelMPI.ParallelMPI PA_ = self.Parallel
 
         cdef int rk_step
-        i = 0
 
         #DO First Output
+        self.Thermo.update(self.Grid,self.Reference,PV_,DV_)
         self.force_io()
 
         while (self.TS.t < self.TS.t_max):
@@ -174,6 +174,7 @@ class Simulation3d:
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.write_simulation_time(self.TS.t, self.Parallel)
                 self.PV.stats_io(self.Grid,self.StatsIO,self.Parallel)
+                self.DV.stats_io(self.Grid,self.StatsIO,self.Parallel)
 
         return
     def force_io(self):
@@ -181,6 +182,7 @@ class Simulation3d:
         #output stats here
         self.StatsIO.write_simulation_time(self.TS.t, self.Parallel)
         self.PV.stats_io(self.Grid,self.StatsIO,self.Parallel)
+        self.DV.stats_io(self.Grid,self.StatsIO,self.Parallel)
 
         return
 

@@ -1,10 +1,12 @@
 cimport ParallelMPI
 cimport Grid
+from NetCDFIO cimport NetCDFIO_Stats
 import numpy as np
 cimport numpy as np
 cimport ParallelMPI
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 cimport mpi4py.mpi_c as mpi
+
 
 cdef extern from "prognostic_variables.C":
         void build_buffer(int nv, int dim, int s ,Grid.DimStruct *dims, double* values, double* buffer)
@@ -44,11 +46,6 @@ cdef class DiagnosticVariables:
 
         return
 
-    cpdef initialize(self,Grid.Grid Gr):
-
-        self.values = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
-
-        return
 
     cdef void communicate_variable(self, Grid.Grid Gr, ParallelMPI.ParallelMPI PM, long nv):
 
@@ -114,4 +111,63 @@ cdef class DiagnosticVariables:
             print('Nans found in Diagnostic Variables values')
             print(message)
             PA.kill()
+        return
+
+    cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.values = np.empty((self.nv*Gr.dims.npg),dtype=np.double,order='c')
+
+        #Add prognostic variables to Statistics IO
+        Pa.root_print('Setting up statistical output files for Prognostic Variables')
+        for var_name in self.name_index.keys():
+            #Add mean profile
+            NS.add_profile(var_name+'_mean',Gr,Pa)
+            #Add mean of squares profile
+            NS.add_profile(var_name+'_mean2',Gr,Pa)
+            #Add mean of cubes profile
+            NS.add_profile(var_name+'_mean3',Gr,Pa)
+            #Add max profile
+            NS.add_profile(var_name+'_max',Gr,Pa)
+            #Add min profile
+            NS.add_profile(var_name+'_min',Gr,Pa)
+            #Add max ts
+            NS.add_ts(var_name+'_max',Gr,Pa)
+            #Add min ts
+            NS.add_ts(var_name+'_min',Gr,Pa)
+
+
+        return
+
+
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            int var_shift
+            double [:] tmp
+
+        for var_name in self.name_index.keys():
+            var_shift = self.get_varshift(Gr,var_name)
+
+
+            #Compute and write mean
+            tmp = Pa.HorizontalMean(Gr,&self.values[var_shift])
+            NS.write_profile(var_name + '_mean',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+            #Compute and write mean of squres
+            tmp = Pa.HorizontalMeanofSquares(Gr,&self.values[var_shift],&self.values[var_shift])
+            NS.write_profile(var_name + '_mean2',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+            #Compute and write mean of cubes
+            tmp = Pa.HorizontalMeanofCubes(Gr,&self.values[var_shift],&self.values[var_shift],&self.values[var_shift])
+            NS.write_profile(var_name + '_mean3',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+            #Compute and write maxes
+            tmp = Pa.HorizontalMaximum(Gr,&self.values[var_shift])
+            NS.write_profile(var_name + '_max',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+            NS.write_ts(var_name+'_max',np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
+
+
+            #Compute and write mins
+            tmp = Pa.HorizontalMinimum(Gr,&self.values[var_shift])
+            NS.write_profile(var_name + '_min',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+            NS.write_ts(var_name+'_min',np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
+
+
         return
