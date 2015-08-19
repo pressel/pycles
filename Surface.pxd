@@ -24,7 +24,6 @@ cdef class SurfaceSullivanPatton:
         double z0
         double gustiness
         double buoyancy_flux
-        double [:] entropy_flux
         double [:] ustar
         double [:] windspeed
         double [:] u_flux
@@ -41,10 +40,7 @@ cdef class SurfaceBomex:
     cdef:
         double theta_flux
         double qt_flux
-
-
-        double [:] entropy_flux
-        double [:] ustar
+        double ustar
         double [:] windspeed
         double [:] u_flux
         double [:] v_flux
