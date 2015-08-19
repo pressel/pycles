@@ -47,7 +47,7 @@ class Simulation3d:
 
         self.LH = LatentHeat(namelist, self.Pa)
         self.Micro = MicrophysicsFactory(namelist,self.LH,self.Pa)
-        self.Thermo = ThermodynamicsFactory(namelist,self.Micro,self.LH,self.Pa)
+        self.Th = ThermodynamicsFactory(namelist,self.Micro,self.LH,self.Pa)
 
 
         self.Ref = ReferenceState.ReferenceState(self.Gr)
@@ -71,7 +71,7 @@ class Simulation3d:
 
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist,self.Pa)
-        self.Thermo.initialize(self.Gr,self.PV,self.DV,self.StatsIO,self.Pa)
+        self.Th.initialize(self.Gr,self.PV,self.DV,self.StatsIO,self.Pa)
 
 
         self.PV.initialize(self.Gr,self.StatsIO,self.Pa)
@@ -86,7 +86,7 @@ class Simulation3d:
 
         self.TS.initialize(namelist,self.PV,self.Pa)
         SetInitialConditions = InitializationFactory(namelist)
-        SetInitialConditions(self.Gr,self.PV,self.Ref,self.Thermo)
+        SetInitialConditions(self.Gr,self.PV,self.Ref,self.Th)
         self.Sur.initialize(self.Gr,self.Ref)
         self.Fo.initialize(self.Gr)
         self.Pr.initialize(namelist,self.Gr,self.Ref,self.DV,self.Pa)
@@ -107,13 +107,13 @@ class Simulation3d:
         cdef int rk_step
 
         #DO First Output
-        self.Thermo.update(self.Gr,self.Ref,PV_,DV_)
+        self.Th.update(self.Gr,self.Ref,PV_,DV_)
         self.force_io()
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
-                self.Thermo.update(self.Gr,self.Ref,PV_,DV_)
+                self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 self.SA.update_cython(self.Gr,self.Ref,PV_,self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
 
@@ -169,7 +169,7 @@ class Simulation3d:
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
                 self.PV.stats_io(self.Gr,self.StatsIO,self.Pa)
                 self.DV.stats_io(self.Gr,self.StatsIO,self.Pa)
-                self.Thermo.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
+                self.Th.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
 
         return
     def force_io(self):
@@ -177,7 +177,7 @@ class Simulation3d:
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
         self.PV.stats_io(self.Gr,self.StatsIO,self.Pa)
         self.DV.stats_io(self.Gr,self.StatsIO,self.Pa)
-        self.Thermo.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
+        self.Th.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
 
         return
 
