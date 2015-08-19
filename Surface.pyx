@@ -29,6 +29,7 @@ cdef extern from "entropies.h":
 
 cdef extern from "surface.h":
     inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0, double z1) nogil
+    inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0_b, double T_b, double qt_b, double qv_b) nogil
 
 
 cdef class Surface:
@@ -68,7 +69,6 @@ cdef class SurfaceSullivanPatton:
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
         # should theta_flux be adjusted to sensible heat flux using half or whole RS values?
-        self.shf = self.theta_flux * exner(RS.p0[Gr.dims.gw-1]) * cpd / RS.alpha0[Gr.dims.gw-1]
         T0 = RS.p0_half[Gr.dims.gw] * RS.alpha0_half[Gr.dims.gw]/Rd
         self.buoyancy_flux = self.theta_flux * exner(RS.p0[Gr.dims.gw-1]) * g /T0
 
@@ -108,7 +108,7 @@ cdef class SurfaceSullivanPatton:
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.entropy_flux[ij] = RS.alpha0_half[gw]*self.shf/DV.values[temp_shift+ijk]
+                    self.entropy_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, 0.0, RS.p0_half[gw], DV.values[temp_shift+ijk],0.0, 0.0)
                     PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + self.entropy_flux[ij]*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
 
         cdef:
@@ -170,6 +170,7 @@ cdef class SurfaceBomex:
             long temp_shift = DV.get_varshift(Gr, 'temperature')
             long s_shift = PV.get_varshift(Gr, 's')
             long qt_shift = PV.get_varshift(Gr, 'qt')
+            long qv_shift = DV.get_varshift(Gr,'qv')
             double dzi = 1.0/Gr.dims.dx[2]
 
         # Get the scalar flux
@@ -178,7 +179,7 @@ cdef class SurfaceBomex:
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.entropy_flux[ij] =  cpm_c(PV.values[qt_shift + ijk])*self.theta_flux*exner(RS.p0[Gr.dims.gw-1])/DV.values[temp_shift+ijk] + self.qt_flux
+                    self.entropy_flux[ij] =  entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, RS.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
                     PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + self.entropy_flux[ij]*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
 
 

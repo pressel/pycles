@@ -21,7 +21,6 @@ cdef class SurfaceNone:
 cdef class SurfaceSullivanPatton:
     cdef:
         double theta_flux
-        double shf
         double z0
         double gustiness
         double buoyancy_flux
