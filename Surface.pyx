@@ -19,11 +19,12 @@ cdef extern from "advection_interpolation.h":
 cdef extern from "thermodynamic_functions.h":
     inline double pd_c(double p0, double qt, double qv) nogil
     inline double pv_c(double p0, double qt, double qv) nogil
+    inline double cpm_c(const double qt)
 
 cdef extern from "entropies.h":
     inline double sd_c(double pd, double T) nogil
     inline double sv_c(double pv, double T) nogil
-    inline double sc_c(double L, double T) nogil
+
 
 
 cdef extern from "surface.h":
@@ -138,7 +139,50 @@ cdef class SurfaceSullivanPatton:
 
         return
 
+cdef class SurfaceBomex:
+    def __init__(self):
+        self.theta_flux = 8.0e-3 # K m/s
+        self.qt_flux = 5.2e-5 # m/s
 
+
+        pass
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
+
+
+        return
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+
+        if Pa.sub_z_rank != 0:
+            return
+
+        cdef:
+            long i
+            long j
+            long gw = Gr.dims.gw
+            long ijk, ij
+            long imax = Gr.dims.nlg[0]
+            long jmax = Gr.dims.nlg[1]
+            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            long jstride = Gr.dims.nlg[2]
+            long istride_2d = Gr.dims.nlg[1]
+            long temp_shift = DV.get_varshift(Gr, 'temperature')
+            long s_shift = PV.get_varshift(Gr, 's')
+            long qt_shift = PV.get_varshift(Gr, 'qt')
+            double dzi = 1.0/Gr.dims.dx[2]
+
+        # Get the scalar flux
+        with nogil:
+            for i in xrange(imax):
+                for j in xrange(jmax):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    self.entropy_flux[ij] =  cpm_c(PV.values[qt_shift + ijk])*self.theta_flux*exner(RS.p0[Gr.dims.gw-1])/DV.values[temp_shift+ijk] + self.qt_flux
+                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + self.entropy_flux[ij]*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
+
+
+        return
 
 
 

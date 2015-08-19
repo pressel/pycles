@@ -1,5 +1,7 @@
 #pragma once
 #include "parameters.h"
+#include "thermodynamic_functions.h"
+#include "entropies.h"
 
 inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0, double z1){
 
@@ -25,4 +27,10 @@ inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0,
     }
 
     return ustar;
+}
+
+inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0b, double Tb, double qtb, double qvb){
+
+
+    return;
 }
