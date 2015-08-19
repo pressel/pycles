@@ -80,7 +80,7 @@ def SullivanPatton():
 
 
     namelist['output'] = {}
-    namelist['output']['output_root'] = '/Users/ckaul/'
+    namelist['output']['output_root'] = './'
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = "stats"
