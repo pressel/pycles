@@ -2,21 +2,29 @@ cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
+from thermodynamic_functions cimport cpm_c
 import numpy as np
+import cython
+
+cdef extern from "entropies.h":
+
 
 cdef class Forcing:
     def __init__(self, namelist):
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
             self.scheme = ForcingSullivanPatton()
+        if casename == 'Bomex':
+            self.scheme = ForcingBomex()
         else:
             self.scheme= ForcingNone()
 
     cpdef initialize(self, Grid.Grid Gr):
         self.scheme.initialize(Gr)
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
-        self.scheme.update(Gr, PV)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+        self.scheme.update(Gr, Ref, PV, DV)
 
 
 cdef class ForcingNone:
@@ -25,7 +33,99 @@ cdef class ForcingNone:
     cpdef initialize(self, Grid.Grid Gr):
         return
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+        return
+
+
+cdef class ForcingBomex:
+    def __init__(self):
+        return
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cpdef initialize(self,Grid.Grid Gr):
+        self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.coriolis_param = 0.376e-4 #s^{-1}
+
+        cdef:
+            int k
+
+        with nogil:
+            for k in xrange(Gr.dims.nlg[2]):
+                self.vg[k] = -10.0 + (1.8e-3)*Gr.zl_half[k]
+
+                #Set large scale cooling
+                if Gr.zl_half[k] <= 1500.0:
+                    self.dtdt[k] = -2.0/(3600 * 24.0)      #K/s
+                if Gr.zl_half[k] > 1500.0:
+                    self.dtdt[k] = -2.0/(3600 * 24.0) + (Gr.zl_half[k] - 1500.0) * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)
+
+                #Set large scale drying
+                if Gr.zl_half[k] <= 300.0:
+                    self.dqtdt[k] = -1.2e-8   #kg/(kg * s)
+                if Gr.zl_half[k] > 300.0 and Gr.zl_half[k] <= 500.0:
+                    self.dqtdt[k] = -1.2e-8 + (Gr.zl_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
+
+                #Set large scale subsidence
+                if Gr.zl_half[k] <= 1500.0:
+                    self.subsidence[k] = 0.0 + Gr.zl_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
+                if Gr.zl_half[k] > 1500.0 and Gr.zl_half[k] <= 2100.0:
+                    self.subsidence[k] = -0.65/100 + (Gr.zl_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
+
+
+        return
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+
+        cdef:
+            long imin = Gr.dims.gw
+            long jmin = Gr.dims.gw
+            long kmin = Gr.dims.gw
+
+            long imax = Gr.dims.nlg[0] - Gr.dims.gw
+            long jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            long kmax = Gr.dims.nlg[2] - Gr.dims.gw
+
+            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            long jstride = Gr.dims.nlg[2]
+            long i,j,k,ishift,jshift,ijk
+
+            long u_shift = PV.get_varshift(Gr, 'u')
+            long v_shift = PV.get_varshift(Gr, 'v')
+            long s_shift = PV.get_varshift(Gr, 's')
+            long qt_shift = PV.get_varshift(Gr, 'qt')
+            long t_shift = DV.get_varshift(Gr, 'temperature')
+
+        #Apply Coriolis Forcing
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param  )
+
+        #Apply large scale source terms
+        with nogil:
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        PV.tendencies[s_shift + ijk] += (cpm_c(PV.values[qt_shift + ijk])
+                                                         * self.dtdt[k] * Ref.rho0_half[k])/DV.values[t_shift + ijk]
+                        PV.tendencies[s_shift + ijk]
+                        PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
+
+
+
+
         return
 
 
@@ -38,14 +138,15 @@ cdef class ForcingSullivanPatton:
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
         self.coriolis_param = 1.0e-4 #s^{-1}
         return
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
         cdef:
             long u_shift = PV.get_varshift(Gr, 'u')
             long v_shift = PV.get_varshift(Gr, 'v')
 
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param,  )
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param  )
 
 
         return

@@ -9,12 +9,26 @@ cdef class Forcing:
         object scheme
     cpdef initialize(self, Grid.Grid Gr)
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
 
 cdef class ForcingNone:
     cpdef initialize(self, Grid.Grid Gr)
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
+
+cdef class ForcingBomex:
+    cdef:
+        double [:] ug
+        double [:] vg
+        double [:] dtdt
+        double [:] dqtdt
+        double [:] subsidence
+        double coriolis_param
+    cpdef initialize(self, Grid.Grid Gr)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
 
 cdef class ForcingSullivanPatton:
     cdef:
@@ -24,4 +38,5 @@ cdef class ForcingSullivanPatton:
 
     cpdef initialize(self, Grid.Grid Gr)
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
