@@ -224,7 +224,7 @@ void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double*
 
     const long stencil[3] = {istride,jstride,1};
     const long sp1 = stencil[d];
-    const long sm1 = -sp1 ;
+
 
 
 

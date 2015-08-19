@@ -6,6 +6,7 @@ from thermodynamic_functions cimport cpm_c, pv_c, pd_c
 from entropies cimport sv_c, sd_c
 import numpy as np
 import cython
+from libc.math cimport fabs
 
 
 cdef class Forcing:
@@ -90,22 +91,18 @@ cdef class ForcingBomex:
             long imin = Gr.dims.gw
             long jmin = Gr.dims.gw
             long kmin = Gr.dims.gw
-
             long imax = Gr.dims.nlg[0] - Gr.dims.gw
             long jmax = Gr.dims.nlg[1] - Gr.dims.gw
             long kmax = Gr.dims.nlg[2] - Gr.dims.gw
-
             long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             long jstride = Gr.dims.nlg[2]
             long i,j,k,ishift,jshift,ijk
-
             long u_shift = PV.get_varshift(Gr, 'u')
             long v_shift = PV.get_varshift(Gr, 'v')
             long s_shift = PV.get_varshift(Gr, 's')
             long qt_shift = PV.get_varshift(Gr, 'qt')
             long t_shift = DV.get_varshift(Gr, 'temperature')
             long ql_shift = DV.get_varshift(Gr,'ql')
-
             double pd
             double pv
             double qt
@@ -113,8 +110,6 @@ cdef class ForcingBomex:
             double p0
             double rho0
             double t
-
-
 
         #Apply Coriolis Forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
@@ -140,7 +135,10 @@ cdef class ForcingBomex:
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
-
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
         return
 
 
@@ -173,20 +171,13 @@ cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, doub
         int imin = dims.gw
         int jmin = dims.gw
         int kmin = dims.gw
-
         int imax = dims.nlg[0] -dims.gw
         int jmax = dims.nlg[1] -dims.gw
         int kmax = dims.nlg[2] -dims.gw
-
-        int istride = dims.nlg[1] * dims.nlg[2];
-        int jstride = dims.nlg[2];
-
+        int istride = dims.nlg[1] * dims.nlg[2]
+        int jstride = dims.nlg[2]
         int ishift, jshift, ijk, i,j,k
-
         double u_at_v, v_at_u
-
-
-
 
     with nogil:
         for i in xrange(imin,imax):
@@ -202,4 +193,35 @@ cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, doub
 
     return
 
+cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double* values,  double *tendencies):
 
+    cdef:
+        int imin = dims.gw
+        int jmin = dims.gw
+        int kmin = dims.gw
+        int imax = dims.nlg[0] -dims.gw
+        int jmax = dims.nlg[1] -dims.gw
+        int kmax = dims.nlg[2] -dims.gw
+        int istride = dims.nlg[1] * dims.nlg[2]
+        int jstride = dims.nlg[2]
+        int ishift, jshift, ijk, i,j,k
+        double phim, fluxm
+        double phip, fluxp
+
+    with nogil:
+        for i in xrange(imin,imax):
+            ishift = i*istride
+            for j in xrange(jmin,jmax):
+                jshift = j*jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    phip = values[ijk]
+                    phim = values[ijk+1]
+                    fluxp = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
+                    phip = values[ijk-1]
+                    phim = values[ijk]
+                    fluxm = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
+
+                    tendencies[ijk] = tendencies[ijk] + rho0_half[k] * (fluxp - fluxm)/dims.dx[2]
+
+    return
