@@ -112,6 +112,8 @@ class Simulation3d:
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
+
+
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 self.SA.update_cython(self.Gr,self.Ref,PV_,self.Pa)
@@ -127,6 +129,7 @@ class Simulation3d:
                 PV_.Update_all_bcs(self.Gr,self.Pa)
                 self.Pr.update(self.Gr,self.Ref,self.DV,self.PV,self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.Pa)
+
                 self.io()
 
             time2 = time.time()
