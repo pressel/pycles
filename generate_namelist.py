@@ -72,7 +72,7 @@ def SullivanPatton():
     namelist['scalar_transport']['order'] = 7
 
     namelist['output'] = {}
-    namelist['output']['output_root'] = './'
+    namelist['output']['output_root'] = '/Users/ckaul/'
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = "stats"
