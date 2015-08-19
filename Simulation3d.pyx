@@ -92,33 +92,26 @@ class Simulation3d:
         self.Pr.initialize(namelist,self.Gr,self.Ref,self.DV,self.Pa)
         self.DV.initialize(self.Gr,self.StatsIO,self.Pa)
         self.Damping.initialize(self.Gr)
-
-
         return
+
     def run(self):
         cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
         cdef DiagnosticVariables.DiagnosticVariables DV_ = self.DV
         PV_.Update_all_bcs(self.Gr,self.Pa)
-
         cdef LatentHeat LH_ = self.LH
         cdef Grid.Grid GR_ = self.Gr
         cdef ParallelMPI.ParallelMPI PA_ = self.Pa
-
         cdef int rk_step
-
         #DO First Output
         self.Th.update(self.Gr,self.Ref,PV_,DV_)
         self.force_io()
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
-
-
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 self.SA.update_cython(self.Gr,self.Ref,PV_,self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
-
                 self.SGS.update(self.Gr,self.Ref,self.DV,self.PV, self.Ke)
                 self.Damping.update(self.Gr,self.PV,self.Pa)
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
@@ -129,13 +122,9 @@ class Simulation3d:
                 PV_.Update_all_bcs(self.Gr,self.Pa)
                 self.Pr.update(self.Gr,self.Ref,self.DV,self.PV,self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.Pa)
-
                 self.io()
-
             time2 = time.time()
-
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) + ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1) )
-
         return
 
     def io(self):
