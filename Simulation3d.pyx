@@ -13,6 +13,8 @@ cimport TimeStepping
 cimport Kinematics
 cimport Damping
 cimport NetCDFIO
+cimport Surface
+cimport Forcing
 
 from libc.math cimport fmin
 
@@ -47,7 +49,11 @@ class Simulation3d:
         self.Micro = MicrophysicsFactory(namelist,self.LH,self.Parallel)
         self.Thermo = ThermodynamicsFactory(namelist,self.Micro,self.LH,self.Parallel)
 
+
         self.Reference = ReferenceState.ReferenceState(self.Grid)
+        self.Surface = Surface.Surface(namelist, self.LH)
+        self.Forcing = Forcing.Forcing(namelist)
+
         self.StatsIO  = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
         self.Damping = Damping.Damping(namelist,self.Parallel)
@@ -77,16 +83,22 @@ class Simulation3d:
         self.SD.initialize(self.Grid,self.PV,self.DV,self.Parallel)
         self.MD.initialize(self.Grid,self.PV,self.DV,self.Parallel)
 
+
         self.TS.initialize(namelist,self.PV,self.Parallel)
 
 
         SetInitialConditions = InitializationFactory(namelist)
         SetInitialConditions(self.Grid,self.PV,self.Reference,self.Thermo)
 
+        self.Surface.initialize(self.Grid,self.Reference)
+        self.Forcing.initialize(self.Grid)
+
+
 
         self.Pr.initialize(namelist,self.Grid,self.Reference,self.DV,self.Parallel)
         self.DV.initialize(self.Grid,self.StatsIO,self.Parallel)
         self.Damping.initialize(self.Grid)
+
 
         return
 
@@ -118,8 +130,8 @@ class Simulation3d:
                 self.Damping.update(self.Grid,self.PV,self.Parallel)
                 self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
                 self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
-
-
+                self.Surface.update(self.Grid,self.Reference,self.PV, self.DV,self.Parallel)
+                self.Forcing(self.Grid, self.PV)
                 self.TS.update(self.Grid, self.PV, self.Parallel)
                 PV_.Update_all_bcs(self.Grid,self.Parallel)
                 self.Pr.update(self.Grid,self.Reference,self.DV,self.PV,self.Parallel)
