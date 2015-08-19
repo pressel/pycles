@@ -164,13 +164,20 @@ _ext = Extension("NetCDFIO",["NetCDFIO.pyx"],include_dirs = include_path,
                  runtime_library_dirs=library_dirs  )
 extensions.append(_ext)
 
-_ext = Extension("Forcing",["Forcing.pyx"],include_dirs = include_path,
+
+_ext = Extension("Surface",["Surface.pyx"],include_dirs = include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs  )
 extensions.append(_ext)
 
 
 _ext = Extension("Damping",["Damping.pyx"],include_dirs = include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs  )
+extensions.append(_ext)
+
+
+_ext = Extension("Forcing",["Forcing.pyx"],include_dirs = include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs  )
 extensions.append(_ext)
