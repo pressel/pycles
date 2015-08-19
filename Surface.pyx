@@ -179,8 +179,10 @@ cdef class SurfaceBomex:
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
+
                     self.entropy_flux[ij] =  entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, RS.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
                     PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + self.entropy_flux[ij]*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
+
 
 
         return
