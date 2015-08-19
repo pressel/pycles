@@ -193,7 +193,7 @@ cdef class TimeStepping:
             long kmax = Gr.dims.nlg[2] - Gr.dims.gw
 
             long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[1]
+            long jstride = Gr.dims.nlg[2]
             long i,j,k, ijk, ishift, jshift
 
         with nogil:

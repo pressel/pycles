@@ -11,6 +11,7 @@ cimport ReferenceState
 cimport PressureSolver
 cimport TimeStepping
 cimport Kinematics
+cimport Damping
 cimport NetCDFIO
 
 from libc.math cimport fmin
@@ -49,7 +50,7 @@ class Simulation3d:
         self.Reference = ReferenceState.ReferenceState(self.Grid)
         self.StatsIO  = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
-
+        self.Damping = Damping.Damping(namelist,self.Parallel)
 
 
         self.TS = TimeStepping.TimeStepping()
@@ -85,6 +86,7 @@ class Simulation3d:
 
         self.Pr.initialize(namelist,self.Grid,self.Reference,self.DV,self.Parallel)
         self.DV.initialize(self.Grid,self.StatsIO,self.Parallel)
+        self.Damping.initialize(self.Grid)
 
         return
 
@@ -113,9 +115,10 @@ class Simulation3d:
                 self.MA.update(self.Grid,self.Reference,PV_,self.Parallel)
 
                 self.SGS.update(self.Grid,self.Reference,self.DV,self.PV, self.Ke)
-
+                self.Damping.update(self.Grid,self.PV,self.Parallel)
                 self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
                 self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
+
 
                 self.TS.update(self.Grid, self.PV, self.Parallel)
                 PV_.Update_all_bcs(self.Grid,self.Parallel)

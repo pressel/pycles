@@ -156,6 +156,7 @@ cdef class ParallelMPI:
 
         return mean
 
+
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
