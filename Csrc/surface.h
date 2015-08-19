@@ -32,5 +32,5 @@ inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0,
 inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0b, double Tb, double qtb, double qvb){
 
 
-    return;
+    return 0.0;
 }
