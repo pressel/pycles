@@ -63,8 +63,6 @@ def SullivanPatton():
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'Smagorinsky'
 
-
-
     namelist["diffusion"] = {}
 
     namelist['momentum_transport'] = {}
@@ -72,6 +70,14 @@ def SullivanPatton():
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
+
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
+    namelist['damping']['Rayleigh']['z_d'] = 500.0
+
 
     namelist['output'] = {}
     namelist['output']['output_root'] = '/Users/ckaul/'
@@ -131,7 +137,6 @@ def SaturatedBubble():
     namelist['sgs']['UniformViscosity'] = {}
     namelist['sgs']['UniformViscosity']['viscosity'] = 0.0
     namelist['sgs']['UniformViscosity']['diffusivity'] = 0.0
-
 
     namelist["diffusion"] = {}
 
