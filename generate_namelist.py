@@ -141,6 +141,9 @@ def SaturatedBubble():
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
 
+    namelist['damping'] = {}
+    namelist['damping'] = 'None'
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -208,6 +211,9 @@ def StableBubble():
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
 
+    namelist['damping'] = {}
+    namelist['damping'] = 'None'
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -270,6 +276,12 @@ def Bomex():
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 600
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'

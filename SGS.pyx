@@ -17,6 +17,7 @@ cdef class SGS:
             self.scheme = UniformViscosity(namelist)
         elif(namelist['sgs']['scheme'] == 'Smagorinsky'):
             self.scheme = Smagorinsky(namelist)
+        return
 
     cpdef initialize(self, Grid.Grid Gr):
         self.scheme.initialize(Gr)
