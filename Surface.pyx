@@ -11,6 +11,7 @@ cimport numpy as np
 import numpy as np
 include "parameters.pxi"
 
+import cython
 
 cdef extern from "advection_interpolation.h":
     double interp_2(double phi, double phip1) nogil
@@ -153,6 +154,9 @@ cdef class SurfaceBomex:
 
         return
 
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         if Pa.sub_z_rank != 0:
@@ -223,7 +227,9 @@ cdef inline double compute_z0(double z1, double windspeed) nogil:
     cdef double z0 =z1*exp(-kappa/sqrt((0.4 + 0.079*windspeed)*1e-3))
     return z0
 
-
+@cython.boundscheck(False)  #Turn off numpy array index bounds checking
+@cython.wraparound(False)   #Turn off numpy array wrap around indexing
+@cython.cdivision(True)
 cdef inline double compute_ustar(double windspeed, double buoyancy_flux, double z0, double z1) nogil:
     cdef:
         double lnz = log(z1/fabs(z0))

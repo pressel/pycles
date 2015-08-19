@@ -2,11 +2,10 @@ cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
-from thermodynamic_functions cimport cpm_c
+from thermodynamic_functions cimport cpm_c, pv_c, pd_c
+from entropies cimport sv_c, sd_c
 import numpy as np
 import cython
-
-cdef extern from "entropies.h":
 
 
 cdef class Forcing:
@@ -105,6 +104,17 @@ cdef class ForcingBomex:
             long s_shift = PV.get_varshift(Gr, 's')
             long qt_shift = PV.get_varshift(Gr, 'qt')
             long t_shift = DV.get_varshift(Gr, 'temperature')
+            long ql_shift = DV.get_varshift(Gr,'ql')
+
+            double pd
+            double pv
+            double qt
+            double qv
+            double p0
+            double rho0
+            double t
+
+
 
         #Apply Coriolis Forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
@@ -118,12 +128,17 @@ cdef class ForcingBomex:
                     jshift = j * jstride
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
-                        PV.tendencies[s_shift + ijk] += (cpm_c(PV.values[qt_shift + ijk])
-                                                         * self.dtdt[k] * Ref.rho0_half[k])/DV.values[t_shift + ijk]
-                        PV.tendencies[s_shift + ijk]
+                        p0 = Ref.p0_half[k]
+                        rho0 = Ref.rho0_half[k]
+                        qt = PV.values[qt_shift + ijk]
+                        qv = qt - DV.values[ql_shift + ijk]
+                        pd = pd_c(p0,qt,qv)
+                        pv = pv_c(p0,qt,qv)
+                        t  = DV.values[t_shift + ijk]
+                        PV.tendencies[s_shift + ijk] += (cpm_c(qt)
+                                                         * self.dtdt[k] * rho0)/t
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
-
-
 
 
         return
