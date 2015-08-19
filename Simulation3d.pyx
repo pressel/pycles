@@ -32,8 +32,8 @@ class Simulation3d:
 
     def initialize(self,namelist):
         self.Pa = ParallelMPI.ParallelMPI(namelist)
-        self.Grid = Grid.Grid(namelist,self.Pa)
-        self.PV = PrognosticVariables.PrognosticVariables(self.Grid)
+        self.Gr = Grid.Grid(namelist,self.Pa)
+        self.PV = PrognosticVariables.PrognosticVariables(self.Gr)
         self.Ke = Kinematics.Kinematics()
 
         self.DV = DiagnosticVariables.DiagnosticVariables()
@@ -50,9 +50,9 @@ class Simulation3d:
         self.Thermo = ThermodynamicsFactory(namelist,self.Micro,self.LH,self.Pa)
 
 
-        self.Reference = ReferenceState.ReferenceState(self.Grid)
-        self.Surface = Surface.Surface(namelist, self.LH)
-        self.Forcing = Forcing.Forcing(namelist)
+        self.Ref = ReferenceState.ReferenceState(self.Gr)
+        self.Sur = Surface.Surface(namelist, self.LH)
+        self.Fo = Forcing.Forcing(namelist)
 
         self.StatsIO  = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
@@ -69,64 +69,64 @@ class Simulation3d:
         self.PV.add_variable('w','m/s',"asym","velocity",self.Pa)
         self.PV.set_velocity_direction('w',2,self.Pa)
 
-        self.StatsIO.initialize(namelist, self.Grid, self.Pa)
+        self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist,self.Pa)
-        self.Thermo.initialize(self.Grid,self.PV,self.DV,self.StatsIO,self.Pa)
+        self.Thermo.initialize(self.Gr,self.PV,self.DV,self.StatsIO,self.Pa)
 
 
-        self.PV.initialize(self.Grid,self.StatsIO,self.Pa)
+        self.PV.initialize(self.Gr,self.StatsIO,self.Pa)
 
-        self.Ke.initialize(self.Grid)
-        self.SA.initialize(self.Grid,self.PV)
-        self.MA.initialize(self.Grid,self.PV)
-        self.SGS.initialize(self.Grid)
-        self.SD.initialize(self.Grid,self.PV,self.DV,self.Pa)
-        self.MD.initialize(self.Grid,self.PV,self.DV,self.Pa)
+        self.Ke.initialize(self.Gr)
+        self.SA.initialize(self.Gr,self.PV)
+        self.MA.initialize(self.Gr,self.PV)
+        self.SGS.initialize(self.Gr)
+        self.SD.initialize(self.Gr,self.PV,self.DV,self.Pa)
+        self.MD.initialize(self.Gr,self.PV,self.DV,self.Pa)
 
 
         self.TS.initialize(namelist,self.PV,self.Pa)
         SetInitialConditions = InitializationFactory(namelist)
-        SetInitialConditions(self.Grid,self.PV,self.Reference,self.Thermo)
-        self.Surface.initialize(self.Grid,self.Reference)
-        self.Forcing.initialize(self.Grid)
-        self.Pr.initialize(namelist,self.Grid,self.Reference,self.DV,self.Pa)
-        self.DV.initialize(self.Grid,self.StatsIO,self.Pa)
-        self.Damping.initialize(self.Grid)
+        SetInitialConditions(self.Gr,self.PV,self.Ref,self.Thermo)
+        self.Sur.initialize(self.Gr,self.Ref)
+        self.Fo.initialize(self.Gr)
+        self.Pr.initialize(namelist,self.Gr,self.Ref,self.DV,self.Pa)
+        self.DV.initialize(self.Gr,self.StatsIO,self.Pa)
+        self.Damping.initialize(self.Gr)
 
 
         return
     def run(self):
         cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
         cdef DiagnosticVariables.DiagnosticVariables DV_ = self.DV
-        PV_.Update_all_bcs(self.Grid,self.Pa)
+        PV_.Update_all_bcs(self.Gr,self.Pa)
 
         cdef LatentHeat LH_ = self.LH
-        cdef Grid.Grid GR_ = self.Grid
+        cdef Grid.Grid GR_ = self.Gr
         cdef ParallelMPI.ParallelMPI PA_ = self.Pa
 
         cdef int rk_step
 
         #DO First Output
-        self.Thermo.update(self.Grid,self.Reference,PV_,DV_)
+        self.Thermo.update(self.Gr,self.Ref,PV_,DV_)
         self.force_io()
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
-                self.Ke.update(self.Grid,PV_)
-                self.Thermo.update(self.Grid,self.Reference,PV_,DV_)
-                self.SA.update_cython(self.Grid,self.Reference,PV_,self.Pa)
-                self.MA.update(self.Grid,self.Reference,PV_,self.Pa)
+                self.Ke.update(self.Gr,PV_)
+                self.Thermo.update(self.Gr,self.Ref,PV_,DV_)
+                self.SA.update_cython(self.Gr,self.Ref,PV_,self.Pa)
+                self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
 
-                self.SGS.update(self.Grid,self.Reference,self.DV,self.PV, self.Ke)
-                self.Damping.update(self.Grid,self.PV,self.Pa)
-                self.SD.update(self.Grid,self.Reference,self.PV,self.DV)
-                self.MD.update(self.Grid,self.Reference,self.PV,self.DV,self.Ke)
-                self.Surface.update(self.Grid,self.Reference,self.PV, self.DV,self.Pa)
-                self.Forcing(self.Grid, self.PV)
-                self.TS.update(self.Grid, self.PV, self.Pa)
-                PV_.Update_all_bcs(self.Grid,self.Pa)
-                self.Pr.update(self.Grid,self.Reference,self.DV,self.PV,self.Pa)
-                self.TS.adjust_timestep(self.Grid, self.PV, self.Pa)
+                self.SGS.update(self.Gr,self.Ref,self.DV,self.PV, self.Ke)
+                self.Damping.update(self.Gr,self.PV,self.Pa)
+                self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
+                self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
+                self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa)
+                self.Fo(self.Gr, self.PV)
+                self.TS.update(self.Gr, self.PV, self.Pa)
+                PV_.Update_all_bcs(self.Gr,self.Pa)
+                self.Pr.update(self.Gr,self.Ref,self.DV,self.PV,self.Pa)
+                self.TS.adjust_timestep(self.Gr, self.PV, self.Pa)
                 self.io()
 
             time2 = time.time()
@@ -159,25 +159,25 @@ class Simulation3d:
             if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
                 print 'Doing Ouput'
                 self.FieldsIO.last_output_time = self.TS.t
-                self.FieldsIO.update(self.Grid, self.PV, self.DV, self.TS, self.Pa)
-                self.FieldsIO.dump_prognostic_variables(self.Grid,self.PV)
-                self.FieldsIO.dump_diagnostic_variables(self.Grid,self.DV)
+                self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
+                self.FieldsIO.dump_prognostic_variables(self.Gr,self.PV)
+                self.FieldsIO.dump_diagnostic_variables(self.Gr,self.DV)
 
             #If time to ouput stats do output
             if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t:
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
-                self.PV.stats_io(self.Grid,self.StatsIO,self.Pa)
-                self.DV.stats_io(self.Grid,self.StatsIO,self.Pa)
-                self.Thermo.stats_io(self.Grid,self.PV,self.StatsIO,self.Pa)
+                self.PV.stats_io(self.Gr,self.StatsIO,self.Pa)
+                self.DV.stats_io(self.Gr,self.StatsIO,self.Pa)
+                self.Thermo.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
 
         return
     def force_io(self):
         #output stats here
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
-        self.PV.stats_io(self.Grid,self.StatsIO,self.Pa)
-        self.DV.stats_io(self.Grid,self.StatsIO,self.Pa)
-        self.Thermo.stats_io(self.Grid,self.PV,self.StatsIO,self.Pa)
+        self.PV.stats_io(self.Gr,self.StatsIO,self.Pa)
+        self.DV.stats_io(self.Gr,self.StatsIO,self.Pa)
+        self.Thermo.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
 
         return
 
