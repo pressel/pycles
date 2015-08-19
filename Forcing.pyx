@@ -2,6 +2,7 @@ cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
+import numpy as np
 
 cdef class Forcing:
     def __init__(self, namelist):
@@ -11,8 +12,8 @@ cdef class Forcing:
         else:
             self.scheme= ForcingNone()
 
-    cpdef initialize(self):
-        self.scheme.initialize()
+    cpdef initialize(self, Grid.Grid Gr):
+        self.scheme.initialize(Gr)
 
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
         self.scheme.update(Gr, PV)
@@ -21,7 +22,7 @@ cdef class Forcing:
 cdef class ForcingNone:
     def __init__(self):
         pass
-    cpdef initialize(self):
+    cpdef initialize(self, Grid.Grid Gr):
         return
 
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
@@ -30,11 +31,12 @@ cdef class ForcingNone:
 
 cdef class ForcingSullivanPatton:
     def __init__(self):
-        self.ug = 1.0 #m/s
-        self.vg = 0.0 #m/s
-        self.coriolis_param = 1.0e-4 #s^{-1}
+
         return
-    cpdef initialize(self):
+    cpdef initialize(self,Grid.Grid Gr):
+        self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
+        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
+        self.coriolis_param = 1.0e-4 #s^{-1}
         return
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
         cdef:
@@ -43,14 +45,14 @@ cdef class ForcingSullivanPatton:
 
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],self.coriolis_param, self.ug, self.vg )
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param,  )
 
 
         return
 
 
 
-cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double coriolis_param, double ug, double vg ):
+cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param ):
     cdef:
         int imin = dims.gw
         int jmin = dims.gw
@@ -79,8 +81,8 @@ cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, doub
                     ijk = ishift + jshift + k
                     u_at_v = 0.25*(u[ijk] + u[ijk-istride] + u[ijk-istride+jstride] + u[ijk +jstride])
                     v_at_u = 0.25*(v[ijk] + v[ijk+istride] + v[ijk+istride-jstride] + v[ijk-jstride])
-                    ut[ijk] = ut[ijk] - coriolis_param * (vg - v_at_u)
-                    vt[ijk] = vt[ijk] + coriolis_param * (ug - u_at_v)
+                    ut[ijk] = ut[ijk] - coriolis_param * (vg[k] - v_at_u)
+                    vt[ijk] = vt[ijk] + coriolis_param * (ug[k] - u_at_v)
 
     return
 

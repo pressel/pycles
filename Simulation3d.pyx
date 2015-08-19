@@ -90,7 +90,7 @@ class Simulation3d:
         SetInitialConditions(self.Grid,self.PV,self.Reference,self.Thermo)
 
         self.Surface.initialize(self.Grid,self.Reference)
-        self.Forcing.initialize()
+        self.Forcing.initialize(self.Grid)
 
 
 
