@@ -72,10 +72,10 @@ cdef class ForcingBomex:
                     self.dqtdt[k] = -1.2e-8 + (Gr.zl_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
 
                 #Set large scale subsidence
-                if Gr.zl_half[k] <= 1500.0:
-                    self.subsidence[k] = 0.0 + Gr.zl_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
-                if Gr.zl_half[k] > 1500.0 and Gr.zl_half[k] <= 2100.0:
-                    self.subsidence[k] = -0.65/100 + (Gr.zl_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
+                if Gr.zl[k] <= 1500.0:
+                    self.subsidence[k] = 0.0 + Gr.zl[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
+                if Gr.zl[k] > 1500.0 and Gr.zl[k] <= 2100.0:
+                    self.subsidence[k] = -0.65/100 + (Gr.zl[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
 
 
         return
