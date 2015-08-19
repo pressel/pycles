@@ -20,6 +20,8 @@ def InitializationFactory(namelist):
             return InitStableBubble
         elif casename == 'SaturatedBubble':
             return InitSaturatedBubble
+        elif casename == 'Bomex':
+            return InitBomex
         else:
             pass
 
@@ -221,12 +223,99 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     theta_pert_ = theta_pert[ijk]
                 else:
                     theta_pert_ = 0.0
-                t = (theta[k] + theta_pert_)/exner_c(RS.p0_half[k])
+                t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
 
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
 
 
 
+
+
     return
+
+
+@cython.boundscheck(False)  #Turn off numpy array index bounds checking
+@cython.wraparound(False)   #Turn off numpy array wrap around indexing
+@cython.cdivision(True)
+def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th):
+
+    #First generate the reference profiles
+    RS.Pg = 1.015e5  #Pressure at ground
+    RS.Tg = 300.4  #Temperature at ground
+    RS.qtg = 0.002245   #Total water mixing ratio at surface
+
+    RS.initialize(Gr, Th)
+
+    #Get the variable number for each of the velocity components
+    cdef:
+        int u_varshift = PV.get_varshift(Gr,'u')
+        int v_varshift = PV.get_varshift(Gr,'v')
+        int w_varshift = PV.get_varshift(Gr,'w')
+        int s_varshift = PV.get_varshift(Gr,'s')
+        int qt_varshift = PV.get_varshift(Gr,'qt')
+        int i,j,k
+        int ishift, jshift
+        int ijk
+        double temp
+        double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        int count
+
+        theta_pert = np.random.random_sample(Gr.dims.npg)*0.1
+
+    for k in xrange(Gr.dims.nlg[2]):
+
+        #Set Thetal profile
+        if Gr.zl_half[k] <= 520.:
+            thetal[k] = 298.0
+        if Gr.zl_half[k] > 520.0 and Gr.zl_half[k] <= 1480.0:
+            thetal[k] = 298.7 + (Gr.zl_half[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
+        if Gr.zl_half[k] > 1480.0 and Gr.zl_half[k] <= 2000:
+            thetal[k] = 302.4 + (Gr.zl_half[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
+        if Gr.zl_half[k] > 2000.0:
+            thetal[k] = 308.2 + (Gr.zl_half[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
+
+        #Set qt profile
+        if Gr.zl_half[k] <= 520:
+            qt[k] = 17.0 + (Gr.zl_half[k]) * (16.3-17.0)/520.0
+        if Gr.zl_half[k] > 520.0 and Gr.zl_half[k] <= 1480.0:
+            qt[k] = 16.3 + (Gr.zl_half[k] - 520.0)*(10.7 - 16.3)/(1480.0 - 520.0)
+        if Gr.zl_half[k] > 1480.0 and Gr.zl_half[k] <= 2000.0:
+            qt[k] = 10.7 + (Gr.zl_half[k] - 1480.0) * (4.2 - 10.7)/(2000.0 - 1480.0)
+        if Gr.zl_half[k] > 2000.0:
+            qt[k] = 4.2 + (Gr.zl_half[k] - 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0)
+
+        #Change units to kg/kg
+        qt[k]/= 1000.0
+
+        #Set u profile
+        if Gr.zl_half[k] <= 700.0:
+            u[k] = -8.75
+        if Gr.zl_half[k] > 700.0:
+            u[k] = -8.75 + (Gr.zl_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
+
+
+
+    #Now loop and set the initial condition
+    #First set the velocities
+    count = 0
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = u[k]
+                PV.values[v_varshift + ijk] = 0.0
+                PV.values[w_varshift + ijk] = 0.0
+                if Gr.z_half[k] <= 800.0:
+                    temp = (thetal[k] + theta_pert[count]) * exner_c(RS.p0_half[k])
+                else:
+                    temp = (thetal[k]) * exner_c(RS.p0_half[k])
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt[k],0.0,0.0)
+                PV.values[qt_varshift + ijk] = qt[k]
+                count += 1
 
 

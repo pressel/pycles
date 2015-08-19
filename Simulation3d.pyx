@@ -22,9 +22,6 @@ from Thermodynamics cimport LatentHeat
 from Thermodynamics import ThermodynamicsFactory
 import time
 
-cdef inline double L_const(double T) nogil:
-    return T + T*2.0 / T
-
 class Simulation3d:
     def __init__(self,namelist):
         return
@@ -107,7 +104,6 @@ class Simulation3d:
         #DO First Output
         self.Thermo.update(self.Grid,self.Reference,PV_,DV_)
         self.force_io()
-
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
@@ -127,9 +123,7 @@ class Simulation3d:
                 self.TS.adjust_timestep(self.Grid, self.PV, self.Parallel)
                 self.io()
 
-
             time2 = time.time()
-
 
             self.Parallel.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) + ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1) )
 
