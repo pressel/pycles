@@ -19,11 +19,9 @@ cdef extern from "advection_interpolation.h":
 cdef extern from "thermodynamic_functions.h":
     inline double pd_c(double p0, double qt, double qv) nogil
     inline double pv_c(double p0, double qt, double qv) nogil
-    inline double cpm_c(const double qt)
+    inline double exner_c(const double p0) nogil
 
-cdef extern from "entropies.h":
-    inline double sd_c(double pd, double T) nogil
-    inline double sv_c(double pv, double T) nogil
+
 
 
 
@@ -100,12 +98,12 @@ cdef class SurfaceSullivanPatton:
             double dzi = 1.0/Gr.dims.dx[2]
             double entropy_flux
 
-        # Get the scalar flux (dry entropy only)
+        #Get the scalar flux (dry entropy only)
         with nogil:
             for i in xrange(imax):
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
-                    entropy_flux = entropyflux_from_thetaflux_qtflux(self.theta_flux, 0.0, RS.p0_half[gw], DV.values[temp_shift+ijk],0.0, 0.0)
+                    entropy_flux = cpd * self.theta_flux*exner_c(RS.p0_half[gw])/DV.values[temp_shift+ijk]
                     PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
 
         cdef:
