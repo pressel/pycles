@@ -36,6 +36,8 @@ cdef class Surface:
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
             self.scheme = SurfaceSullivanPatton()
+        elif casename == 'Bomex':
+            self.scheme = Bomex()
         else:
             self.scheme= SurfaceNone()
 
