@@ -91,8 +91,8 @@ cdef class SurfaceSullivanPatton:
             long j
             long gw = Gr.dims.gw
             long ijk, ij
-            long imax = Gr.dims.nlg[0]-1
-            long jmax = Gr.dims.nlg[1] - 1
+            long imax = Gr.dims.nlg[0]
+            long jmax = Gr.dims.nlg[1]
             long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             long jstride = Gr.dims.nlg[2]
             long istride_2d = Gr.dims.nlg[1]
@@ -116,16 +116,16 @@ cdef class SurfaceSullivanPatton:
 
         # Get the shear stresses
         with nogil:
-            for i in xrange(imax):
-                for j in xrange(jmax):
+            for i in xrange(1,imax):
+                for j in xrange(1,jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
                     self.windspeed[ij] = fmax(sqrt(interp_2(PV.values[u_shift+ijk-istride],PV.values[v_shift+ijk])**2
                                           + interp_2(PV.values[v_shift+ijk-jstride],PV.values[u_shift+ijk])**2), self.gustiness)
                     # self.ustar[ij] = compute_ustar(self.windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
                     self.ustar[ij] = compute_ustar_c(self.windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
-            for i in xrange(imax):
-                for j in xrange(jmax):
+            for i in xrange(1,imax-1):
+                for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
                     self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * PV.values[u_shift + ijk]
@@ -188,9 +188,9 @@ cdef class SurfaceBomex:
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
 
-                    entropy_flux =  entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, RS.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
+                    entropy_flux = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, RS.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
                     PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
-                    PV.tendencies[qt_shift + ijk] = PV.tendencies[s_shift + ijk] + self.qt_flux*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
+                    PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
 
         cdef:
             long u_shift = PV.get_varshift(Gr,'u')
@@ -199,15 +199,15 @@ cdef class SurfaceBomex:
 
         # Get the shear stresses
         with nogil:
-            for i in xrange(imax):
-                for j in xrange(jmax):
+            for i in xrange(1,imax):
+                for j in xrange(1,jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.windspeed[ij] = sqrt(interp_2(PV.values[u_shift+ijk-istride],PV.values[v_shift+ijk])**2
-                                          + interp_2(PV.values[v_shift+ijk-jstride],PV.values[u_shift+ijk])**2)
+                    self.windspeed[ij] = sqrt(interp_2(PV.values[u_shift+ijk-istride],PV.values[u_shift+ijk])**2
+                                          + interp_2(PV.values[v_shift+ijk-jstride],PV.values[v_shift+ijk])**2)
 
-            for i in xrange(imax):
-                for j in xrange(jmax):
+            for i in xrange(1,imax-1):
+                for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
                     self.u_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * PV.values[u_shift + ijk]
@@ -215,7 +215,7 @@ cdef class SurfaceBomex:
                     PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/RS.alpha0[gw-1]*RS.alpha0_half[gw]*dzi
                     PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/RS.alpha0[gw-1]*RS.alpha0_half[gw]*dzi
 
-
+        #
 
         return
 
