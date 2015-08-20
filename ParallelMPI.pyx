@@ -402,7 +402,6 @@ cdef class Pencil:
                 mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,
                             &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_z)
 
-
             self.unpack_buffer_double(dims,&recv_buffer[0],pencils)
 
         else:
@@ -507,8 +506,6 @@ cdef class Pencil:
         #and vice versa
 
         self.reverse_build_buffer_double(dims,pencils,&send_buffer[0])
-
-
 
         if(self.size > 1):
             #Do all to all communication
