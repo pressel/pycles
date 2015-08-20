@@ -336,21 +336,26 @@ cdef class Pencil:
             if i < remainder:
                 self.n_pencil_map[i] += 1
 
-        self.n_local_pencils = self.n_pencil_map[self.rank]
-        self.nl_map = np.empty((self.size),dtype=np.int,order='c')
-        self.send_counts = np.empty((self.size),dtype=np.intc,order='c')
-        self.recv_counts = np.empty((self.size),dtype=np.intc,order='c')
-        self.rdispls = np.zeros((self.size),dtype=np.intc,order='c')
-        self.sdispls = np.zeros((self.size),dtype=np.intc,order='c')
+
+
+
+        self.n_local_pencils = self.n_pencil_map[self.rank]               #Number of pencils locally
+        self.nl_map = np.empty((self.size),dtype=np.int,order='c')        #Number of local grid points in pencild dir
+        self.send_counts = np.empty((self.size),dtype=np.intc,order='c')  #Total number of points to send to each rank
+        self.recv_counts = np.empty((self.size),dtype=np.intc,order='c')  #Total numer of points to recv from each rank
+        self.rdispls = np.zeros((self.size),dtype=np.intc,order='c')      #Where to put received points
+        self.sdispls = np.zeros((self.size),dtype=np.intc,order='c')      #Where to get sent points
 
         #Now need to communicate number of local points on each process
         if self.dim==0:
+            #Gather the number of points on in direction dim for each rank
             mpi.MPI_Allgather(&Gr.dims.nl[0],1,mpi.MPI_LONG,&self.nl_map[0],1,mpi.MPI_LONG,Pa.cart_comm_sub_x)
 
             #Now compute the send counts
             for i in xrange(self.size):
                 self.send_counts[i] = Gr.dims.nl[0] * self.n_pencil_map[i]
                 self.recv_counts[i] = self.n_local_pencils * self.nl_map[i]
+
         elif self.dim==1:
             mpi.MPI_Allgather(&Gr.dims.nl[1],1,mpi.MPI_LONG,&self.nl_map[0],1,mpi.MPI_LONG,Pa.cart_comm_sub_y)
             #Now compute the send counts
@@ -368,6 +373,11 @@ cdef class Pencil:
         for i in xrange(self.size-1):
             self.sdispls[i+1] = self.sdispls[i] + self.send_counts[i]
             self.rdispls[i+1] = self.rdispls[i] + self.recv_counts[i]
+
+
+        Pa.barrier()
+
+
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -379,7 +389,6 @@ cdef class Pencil:
             double [:] local_transpose = np.empty((dims.npl,),dtype=np.double,order='c')
             double [:] recv_buffer = np.empty((self.n_local_pencils * self.pencil_length),dtype=np.double,order='c')
             double [:,:] pencils = np.empty((self.n_local_pencils,self.pencil_length),dtype=np.double,order='c')
-
 
         #Build send buffer
         self.build_buffer_double(dims, data, &local_transpose[0])
@@ -412,7 +421,6 @@ cdef class Pencil:
             long imin = dims.gw
             long jmin = dims.gw
             long kmin = dims.gw
-
             long imax = dims.nlg[0] - dims.gw
             long jmax = dims.nlg[1] - dims.gw
             long kmax = dims.nlg[2] - dims.gw
@@ -420,7 +428,6 @@ cdef class Pencil:
             long istride_nogw, jstride_nogw, kstride_nogw
             long ishift, jshift, kshift
             long ishift_nogw, jshift_nogw, kshift_nogw
-
             long i,j,k,ijk,ijk_no_gw
 
         if self.dim == 0:
@@ -532,8 +539,6 @@ cdef class Pencil:
         cdef:
             long m, p, i
             long nl_shift, count
-
-
         #Loop over the number of processors in the rank
         count = 0
         for m in xrange(self.size):
@@ -561,7 +566,6 @@ cdef class Pencil:
             long imin = dims.gw
             long jmin = dims.gw
             long kmin = dims.gw
-
             long imax = dims.nlg[0] - dims.gw
             long jmax = dims.nlg[1] - dims.gw
             long kmax = dims.nlg[2] - dims.gw
@@ -569,7 +573,6 @@ cdef class Pencil:
             long istride_nogw, jstride_nogw, kstride_nogw
             long ishift, jshift, kshift
             long ishift_nogw, jshift_nogw, kshift_nogw
-
             long i,j,k,ijk,ijk_no_gw
 
         if self.dim == 0:
@@ -622,7 +625,6 @@ cdef class Pencil:
             long imin = dims.gw
             long jmin = dims.gw
             long kmin = dims.gw
-
             long imax = dims.nlg[0] - dims.gw
             long jmax = dims.nlg[1] - dims.gw
             long kmax = dims.nlg[2] - dims.gw
@@ -630,7 +632,6 @@ cdef class Pencil:
             long istride_nogw, jstride_nogw, kstride_nogw
             long ishift, jshift, kshift
             long ishift_nogw, jshift_nogw, kshift_nogw
-
             long i,j,k,ijk,ijk_no_gw
 
         if self.dim == 0:
@@ -682,7 +683,6 @@ cdef class Pencil:
             long m, p, i
             long nl_shift, count
 
-
         #Loop over the number of processors in the rank
         count = 0
         for m in xrange(self.size):
@@ -710,7 +710,6 @@ cdef class Pencil:
             complex [:] local_transpose = np.empty((dims.npl,),dtype=np.complex,order='c')
             complex [:] recv_buffer = np.empty((self.n_local_pencils * self.pencil_length),dtype=np.complex,order='c')
             complex [:,:] pencils = np.empty((self.n_local_pencils,self.pencil_length),dtype=np.complex,order='c')
-
 
         #Build send buffer
         self.build_buffer_complex(dims, data, &local_transpose[0])
@@ -759,7 +758,6 @@ cdef class Pencil:
 
                 mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE_COMPLEX,
                             &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE_COMPLEX,Pa.cart_comm_sub_z)
-
             self.reverse_unpack_buffer_complex(dims,&recv_buffer[0],data)
         else:
             self.reverse_unpack_buffer_complex(dims,&send_buffer[0],data)
@@ -774,7 +772,6 @@ cdef class Pencil:
         cdef:
             long m, p, i
             long nl_shift, count
-
 
         #Loop over the number of processors in the rank
         count = 0
@@ -803,7 +800,6 @@ cdef class Pencil:
             long imin = dims.gw
             long jmin = dims.gw
             long kmin = dims.gw
-
             long imax = dims.nlg[0] - dims.gw
             long jmax = dims.nlg[1] - dims.gw
             long kmax = dims.nlg[2] - dims.gw

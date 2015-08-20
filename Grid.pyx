@@ -31,8 +31,6 @@ cdef class Grid:
         self.compute_local_dims(Parallel)
         self.compute_coordinates()
 
-
-
         return
 
 
@@ -67,10 +65,9 @@ cdef class Grid:
         for i in xrange(3):  #Here we loop over all three dimensions even if they are empty
             self.dims.nl[i] = self.dims.n[i]//mpi_dims[i]
             remainder = self.dims.n[i]%mpi_dims[i]
-            if remainder > 0 and remainder -1 < mpi_coords[i]:
+            if remainder > 0 and mpi_coords[i] < remainder:
                 self.dims.nl[i] += 1
             self.dims.nlg[i] = self.dims.nl[i] + 2 * self.dims.gw
-
 
         #Now compute the high and lo indicies for this processor
         for i in xrange(3):
@@ -88,6 +85,7 @@ cdef class Grid:
                     npts += 1
                     nptsg +=  1
                 proc += 1
+
 
 
         self.dims.npd = np.max([self.dims.n[0],1])*np.max([self.dims.n[1],1])*np.max([self.dims.n[2],1])
