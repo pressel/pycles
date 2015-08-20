@@ -37,7 +37,7 @@ cdef class Surface:
         if casename == 'SullivanPatton':
             self.scheme = SurfaceSullivanPatton()
         elif casename == 'Bomex':
-            self.scheme = Bomex()
+            self.scheme = SurfaceBomex()
         else:
             self.scheme= SurfaceNone()
 
