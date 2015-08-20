@@ -164,24 +164,6 @@ cdef class PressureFFTParallel:
         y_pencil_fft = fft(y_pencil,axis=1)
         self.Y_Pencil.reverse_complex(&Gr.dims, Pa, y_pencil_fft, &div_fft[0])
 
-
-        # for i in xrange(Gr.dims.nl[0]):
-        #     for j in xrange(Gr.dims.nl[1]):
-        #         for k in xrange(Gr.dims.nl[2]):
-        #             dkr[k] =  div_fft[istride *i + jstride * j + k].real
-        #             dki[k] =  div_fft[istride *i + jstride * j + k].imag
-        #
-        #         self.compute_diagonal(Gr,RS,i,j)
-        #         self.TDMA_Solver.solve(&dkr[0],&self.a[0],&self.b[0],&self.c[0])
-        #         self.TDMA_Solver.solve(&dki[0],&self.a[0],&self.b[0],&self.c[0])
-        #
-        #         if  Gr.dims.indx_lo[0] + i !=0 or  Gr.dims.indx_lo[1] + j != 0:
-        #             for k in xrange(Gr.dims.nl[2]):
-        #                 div_fft[istride *i + jstride * j + k] = dkr[k] + dki[k] * 1j
-        #         else:
-        #             for k in xrange(Gr.dims.nl[2]):
-        #                 div_fft[istride *i + jstride * j + k] = 0.0
-
         #Transpose in z
         z_pencil = self.Z_Pencil.forward_complex(&Gr.dims, Pa, &div_fft[0])
 
@@ -220,7 +202,6 @@ cdef class PressureFFTParallel:
         x_pencil_complex = self.X_Pencil.forward_complex(&Gr.dims, Pa, &div_fft[0])
         x_pencil_ifft =ifft(x_pencil_complex,axis=1)
         self.X_Pencil.reverse_complex(&Gr.dims, Pa, x_pencil_ifft, &pres[0] )
-
 
 
 

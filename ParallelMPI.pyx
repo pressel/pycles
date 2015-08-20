@@ -18,14 +18,9 @@ cdef class ParallelMPI:
         ierr = mpi.MPI_Initialized(&is_initialized)
         if not is_initialized:
             from mpi4py import MPI
-
         self.comm_world =  mpi.MPI_COMM_WORLD
-
         ierr = mpi.MPI_Comm_rank(mpi.MPI_COMM_WORLD, &self.rank)
         ierr = mpi.MPI_Comm_size(mpi.MPI_COMM_WORLD, &self.size)
-
-
-
         cdef:
             int [3] cart_dims
             int [3] cyclic
@@ -44,12 +39,9 @@ cdef class ParallelMPI:
         ierr = mpi.MPI_Cart_create(self.comm_world,ndims, cart_dims, cyclic, reorder,&self.cart_comm_world)
         self.barrier()
 
-
-
         #Create the cartesian sub-communicators
         self.create_sub_communicators()
         self.barrier()
-
 
         return
 
@@ -116,22 +108,16 @@ cdef class ParallelMPI:
         cdef:
             double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
             double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-
             int i,j,k,ijk
-
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
             int kmin = 0
-
             int imax = Gr.dims.nlg[0] - Gr.dims.gw
             int jmax = Gr.dims.nlg[1] - Gr.dims.gw
             int kmax = Gr.dims.nlg[2]
-
             int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             int jstride = Gr.dims.nlg[2]
-
             int ishift, jshift
-
             double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
@@ -165,22 +151,16 @@ cdef class ParallelMPI:
         cdef:
             double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
             double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-
             int i,j,k,ijk
-
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
             int kmin = 0
-
             int imax = Gr.dims.nlg[0] - Gr.dims.gw
             int jmax = Gr.dims.nlg[1] - Gr.dims.gw
             int kmax = Gr.dims.nlg[2]
-
             int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             int jstride = Gr.dims.nlg[2]
-
             int ishift, jshift
-
             double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
@@ -201,8 +181,6 @@ cdef class ParallelMPI:
 
         for i in xrange(Gr.dims.nlg[2]):
             mean[i] = mean[i]*n_horizontal_i
-
-
         return mean
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -213,22 +191,16 @@ cdef class ParallelMPI:
         cdef:
             double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
             double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-
             int i,j,k,ijk
-
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
             int kmin = 0
-
             int imax = Gr.dims.nlg[0] - Gr.dims.gw
             int jmax = Gr.dims.nlg[1] - Gr.dims.gw
             int kmax = Gr.dims.nlg[2]
-
             int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             int jstride = Gr.dims.nlg[2]
-
             int ishift, jshift
-
             double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
@@ -239,8 +211,6 @@ cdef class ParallelMPI:
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
                         mean_local[k] += values1[ijk]*values2[ijk]*values3[ijk]
-
-
         #Here we call MPI_Allreduce on the sub_xy communicator as we only need communication among
         #processes with the the same vertical rank
 
@@ -249,7 +219,6 @@ cdef class ParallelMPI:
 
         for i in xrange(Gr.dims.nlg[2]):
             mean[i] = mean[i]*n_horizontal_i
-
 
         return mean
 
@@ -260,22 +229,16 @@ cdef class ParallelMPI:
         cdef:
             double [:] max_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
             double [:] max = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-
             int i,j,k,ijk
-
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
             int kmin = 0
-
             int imax = Gr.dims.nlg[0] - Gr.dims.gw
             int jmax = Gr.dims.nlg[1] - Gr.dims.gw
             int kmax = Gr.dims.nlg[2]
-
             int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             int jstride = Gr.dims.nlg[2]
-
             int ishift, jshift
-
             double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
@@ -303,22 +266,16 @@ cdef class ParallelMPI:
         cdef:
             double [:] min_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
             double [:] min = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-
             int i,j,k,ijk
-
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
             int kmin = 0
-
             int imax = Gr.dims.nlg[0] - Gr.dims.gw
             int jmax = Gr.dims.nlg[1] - Gr.dims.gw
             int kmax = Gr.dims.nlg[2]
-
             int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             int jstride = Gr.dims.nlg[2]
-
             int ishift, jshift
-
             double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
@@ -335,9 +292,7 @@ cdef class ParallelMPI:
 
         mpi.MPI_Allreduce(&min_local[0],&min[0],Gr.dims.nlg[2],
                           mpi.MPI_DOUBLE,mpi.MPI_MIN,self.cart_comm_sub_xy)
-
         return min
-
 
 cdef class Pencil:
 
@@ -376,16 +331,12 @@ cdef class Pencil:
 
         remainder =  self.n_total_pencils%self.size
         self.n_pencil_map = np.empty((self.size,),dtype=np.int,order='c')
-
-
         self.n_pencil_map[:] = self.n_total_pencils//self.size
         for i in xrange(self.size):
             if i < remainder:
                 self.n_pencil_map[i] += 1
 
         self.n_local_pencils = self.n_pencil_map[self.rank]
-
-
         self.nl_map = np.empty((self.size),dtype=np.int,order='c')
         self.send_counts = np.empty((self.size),dtype=np.intc,order='c')
         self.recv_counts = np.empty((self.size),dtype=np.intc,order='c')
@@ -413,13 +364,10 @@ cdef class Pencil:
                 self.send_counts[i] = Gr.dims.nl[2] * self.n_pencil_map[i]
                 self.recv_counts[i] = self.n_local_pencils * self.nl_map[i]
 
-
-
         #Compute the send and receive displacments
         for i in xrange(self.size-1):
             self.sdispls[i+1] = self.sdispls[i] + self.send_counts[i]
             self.rdispls[i+1] = self.rdispls[i] + self.recv_counts[i]
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -453,7 +401,6 @@ cdef class Pencil:
 
         else:
             self.unpack_buffer_double(dims,&local_transpose[0],pencils)
-
         return pencils
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -513,9 +460,6 @@ cdef class Pencil:
                         ijk = ishift + jshift + k
                         ijk_no_gw = ishift_nogw + jshift_nogw+ (k-dims.gw)*kstride_nogw
                         local_transpose[ijk_no_gw] = data[ijk]
-
-
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -544,8 +488,6 @@ cdef class Pencil:
                     for i in xrange(self.nl_map[m]):
                         pencils[p,nl_shift + i] = recv_buffer[count]
                         count += 1
-
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -581,8 +523,6 @@ cdef class Pencil:
 
         else:
             self.reverse_unpack_buffer_double(dims,&send_buffer[0],&data[0])
-
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -610,8 +550,6 @@ cdef class Pencil:
                     for i in xrange(self.nl_map[m]):
                         send_buffer[count] = pencils[p,nl_shift + i]
                         count += 1
-
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -672,7 +610,6 @@ cdef class Pencil:
                         ijk = ishift + jshift + k
                         ijk_no_gw = ishift_nogw + jshift_nogw+ (k-dims.gw)*kstride_nogw
                         data[ijk] = recv_buffer[ijk_no_gw]
-
         return
 
 
@@ -733,9 +670,6 @@ cdef class Pencil:
                         ijk = ishift + jshift + k
                         ijk_no_gw = ishift_nogw + jshift_nogw+ (k-dims.gw)*kstride_nogw
                         local_transpose[ijk_no_gw] = data[ijk]
-
-
-
         return
 
 
@@ -765,8 +699,6 @@ cdef class Pencil:
                     for i in xrange(self.nl_map[m]):
                         pencils[p,nl_shift + i] = recv_buffer[count]
                         count += 1
-
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -860,8 +792,6 @@ cdef class Pencil:
                     for i in xrange(self.nl_map[m]):
                         send_buffer[count] = pencils[p,nl_shift + i]
                         count += 1
-
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -908,7 +838,6 @@ cdef class Pencil:
             istride_nogw = dims.nl[1] * dims.nl[2]
             jstride_nogw = dims.nl[2]
             kstride_nogw = 1
-
 
         #Build the local buffer
         with nogil:
