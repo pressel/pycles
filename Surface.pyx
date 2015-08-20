@@ -91,8 +91,8 @@ cdef class SurfaceSullivanPatton:
             long j
             long gw = Gr.dims.gw
             long ijk, ij
-            long imax = Gr.dims.nlg[0]
-            long jmax = Gr.dims.nlg[1]
+            long imax = Gr.dims.nlg[0]-1
+            long jmax = Gr.dims.nlg[1] - 1
             long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             long jstride = Gr.dims.nlg[2]
             long istride_2d = Gr.dims.nlg[1]
