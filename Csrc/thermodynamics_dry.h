@@ -80,6 +80,46 @@ void buoyancy_update(struct DimStruct *dims, double* restrict alpha0, double* re
 }
 
 
+void bvf_dry(struct DimStruct* dims,  double* restrict p0, double* restrict T,double* restrict theta, double* restrict bvf){
 
+    long i,j,k;
+    const long istride = dims->nlg[1] * dims->nlg[2];
+    const long jstride = dims->nlg[2];
+    const long imin = 1;
+    const long jmin = 1;
+    const long kmin = 1;
+    const long imax = dims->nlg[0]-2;
+    const long jmax = dims->nlg[1]-2;
+    const long kmax = dims->nlg[2]-2;
+    const double dzi = 1.0/dims->dx[2];
+
+
+    for (i=imin; i<imax; i++){
+       const long ishift = i * istride;
+        for (j=jmin;j<jmax;j++){
+            const long jshift = j * jstride;
+                for (k=kmin;k<kmax;k++){
+                    const long ijk = ishift + jshift + k;
+                    theta[ijk] = theta_c(p0[k],T[ijk]);
+                };
+        };
+    };
+
+    for (i=imin; i<imax; i++){
+       const long ishift = i * istride;
+        for (j=jmin;j<jmax;j++){
+            const long jshift = j * jstride;
+                for (k=kmin+1;k<kmax-1;k++){
+                    const long ijk = ishift + jshift + k;
+                    bvf[ijk] = g/theta[ijk]*(interp_2(theta[ijk],theta[ijk+1])-interp_2(theta[ijk-1],theta[ijk]))*dzi;
+                };
+        };
+    };
+
+
+
+
+    return;
+}
 
 

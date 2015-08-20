@@ -19,12 +19,12 @@ inline double pv_c(const double p0, const double qt, const double qv){
     return p0 * eps_vi * qv /(1.0 - qt + eps_vi * qv);
 };
 
-inline double virtual_temperature_c(const double T, const double qt, const double qv){
+inline double density_temperature_c(const double T, const double qt, const double qv){
     return T * (1.0 - qt + eps_vi * qv);
 }
 
-inline double thetav_c(const double p0, const double T, const double qt, const double qv){
-    return virtual_temperature_c(T,qt,qv)*exner_c(p0);
+inline double theta_rho_c(const double p0, const double T, const double qt, const double qv){
+    return density_temperature_c(T,qt,qv)*exner_c(p0);
 }
 
 inline double cpm_c(const double qt){

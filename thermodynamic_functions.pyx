@@ -10,11 +10,11 @@ cpdef inline double pd(const double p0, const double qt, const double qv) nogil:
 cpdef inline double pv(const double p0, const double qt, const double qv) nogil:
     return pv_c(p0,qt,qv)
 
-cpdef inline double virtual_temperature(const double T, const double qt, const double qv) nogil:
-    return virtual_temperature_c(T,qt,qv)
+cpdef inline double density_temperature(const double T, const double qt, const double qv) nogil:
+    return density_temperature_c(T,qt,qv)
 
-cpdef inline double thetav(const double p0, const double T, const double qt, const double qv) nogil:
-    return thetav_c(p0,T,qt,qv)
+cpdef inline double theta_rho(const double p0, const double T, const double qt, const double qv) nogil:
+    return theta_rho_c(p0,T,qt,qv)
 
 cpdef inline double cpm(const double qt) nogil:
     return cpm_c(qt)
