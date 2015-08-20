@@ -147,7 +147,7 @@ def SaturatedBubble():
     namelist['scalar_transport']['order'] = 7
 
     namelist['damping'] = {}
-    namelist['damping'] = 'None'
+    namelist['damping']['scheme'] = 'None'
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -217,7 +217,7 @@ def StableBubble():
     namelist['scalar_transport']['order'] = 7
 
     namelist['damping'] = {}
-    namelist['damping'] = 'None'
+    namelist['damping']['scheme'] = 'None'
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
