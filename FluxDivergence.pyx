@@ -11,23 +11,16 @@ cdef scalar_flux_divergence(Grid.DimStruct *dims, double *alpha0, double *alpha0
         int imin = 0
         int jmin = 0
         int kmin = 0
-
         int imax = dims.nlg[0] -1
         int jmax = dims.nlg[1] -1
         int kmax = dims.nlg[2] -1
-
         int istride = dims.nlg[1] * dims.nlg[2];
         int jstride = dims.nlg[2];
-
         int ishift, jshift, ijk, i,j,k
-
         double dxi = 1.0/dx
-
-
         #Compute the strides given the dimensionality
         int [3] p1 = [istride, jstride, 1]
         int sm1 =  -p1[d]
-
 
     with nogil:
         for i in xrange(imin,imax):
@@ -37,7 +30,6 @@ cdef scalar_flux_divergence(Grid.DimStruct *dims, double *alpha0, double *alpha0
                 for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
                         tendency[ijk] = tendency[ijk] - alpha0_half[k]*(flux[ijk] - flux[ijk+sm1])*dxi
-
 
     return
 
@@ -52,18 +44,13 @@ cdef momentum_flux_divergence(Grid.DimStruct *dims, double *alpha0, double *alph
         int imin = dims.gw
         int jmin = dims.gw
         int kmin = dims.gw
-
         int imax = dims.nlg[0] - dims.gw
         int jmax = dims.nlg[1] - dims.gw
         int kmax = dims.nlg[2] - dims.gw
-
         int istride = dims.nlg[1] * dims.nlg[2]
         int jstride = dims.nlg[2]
-
         int ishift, jshift, ijk, i,j,k
-
         double dxi = 1.0/dims.dx[d_advecting]
-
 
     #Compute the strides given the dimensionality
         int [3] p1 = [istride, jstride, 1]

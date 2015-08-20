@@ -374,10 +374,7 @@ cdef class Pencil:
             self.sdispls[i+1] = self.sdispls[i] + self.send_counts[i]
             self.rdispls[i+1] = self.rdispls[i] + self.recv_counts[i]
 
-
         Pa.barrier()
-
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
