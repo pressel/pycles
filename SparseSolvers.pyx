@@ -8,12 +8,10 @@ cdef class TDMA:
     def  __init__(self):
         pass
 
-
     cdef void initialize(self, long n):
 
         self.n = n
         self.scratch = <double*> PyMem_Malloc(self.n * sizeof(double))
-
 
         return
 
@@ -53,11 +51,8 @@ cdef class TDMA:
         cdef double [:] d = np.array([5,5,10,23],dtype=np.double)
 
         self.initialize(4)
-        import time
-        time1 = time.time()
         self.solve(&d[0],&a[0],&b[0],&c[0])
-        time2 = time.time()
-        print time2 - time1
 
         print(np.array(d))
 
+        return

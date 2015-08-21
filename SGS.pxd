@@ -10,8 +10,6 @@ cdef class SGS:
         object scheme
 
     cpdef initialize(self, Grid.Grid Gr)
-
-
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke)
 
@@ -24,8 +22,6 @@ cdef class UniformViscosity:
         bint is_init 
 
     cpdef initialize(self, Grid.Grid Gr)
-
-
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke)
 
@@ -35,8 +31,6 @@ cdef class Smagorinsky:
         double prt
 
     cpdef initialize(self, Grid.Grid Gr)
-
-
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke)
 

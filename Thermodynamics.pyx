@@ -35,7 +35,6 @@ cdef class ClausiusClapeyron:
     def initialize(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         self.LT = Lookup.Lookup()
 
-
         #Now integrate the ClausiusClapeyron equation
         cdef:
             double Tmin
@@ -64,7 +63,6 @@ cdef class ClausiusClapeyron:
                            'given in name list taking default of 128')
             n_lookup = 512
 
-
         #Generate array of equally space temperatures
         T = np.linspace(Tmin, Tmax, n_lookup)
 
@@ -91,16 +89,11 @@ cdef class ClausiusClapeyron:
         #set the initial condition
         pv0 = np.log(pv_star_t)
 
-
-
-
-
         #Integrate
         pv_above_Tt = np.exp(odeint(rhs,pv0,T_above_Tt,hmax=0.1)[1:])
         pv_below_Tt = np.exp(odeint(rhs,pv0,T_below_Tt,hmax=0.1)[1:])[::-1]
         pv = np.append(pv_below_Tt,pv_above_Tt )
         self.LT.initialize(T,pv)
-
 
         return
 

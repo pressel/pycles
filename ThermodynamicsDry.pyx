@@ -86,11 +86,9 @@ cdef class ThermodynamicsDry:
         cdef int theta_shift = DV.get_varshift(Gr,'theta')
         cdef int bvf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
 
-
         eos_update(&Gr.dims,&RS.p0_half[0],&PV.values[s_shift],&DV.values[t_shift],&DV.values[alpha_shift])
         buoyancy_update(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
         bvf_dry(&Gr.dims,&RS.p0_half[0],&DV.values[t_shift],&DV.values[theta_shift],&DV.values[bvf_shift])
-
 
         return
 
@@ -174,7 +172,6 @@ cdef class ThermodynamicsDry:
         tmp = Pa.HorizontalMean(Gr,&data[0])
         NS.write_profile('thetas_mean',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-
         #Compute and write mean of squres
         tmp = Pa.HorizontalMeanofSquares(Gr,&data[0],&data[0])
         NS.write_profile('thetas_mean2',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -186,7 +183,6 @@ cdef class ThermodynamicsDry:
         tmp = Pa.HorizontalMaximum(Gr,&data[0])
         NS.write_profile('thetas_max',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_ts('thetas_max',np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
-
 
         #Compute and write mins
         tmp = Pa.HorizontalMinimum(Gr,&data[0])

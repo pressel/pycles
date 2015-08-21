@@ -113,7 +113,6 @@ cdef class SurfaceSullivanPatton:
             long u_shift = PV.get_varshift(Gr,'u')
             long v_shift = PV.get_varshift(Gr, 'v')
 
-
         # Get the shear stresses
         with nogil:
             for i in xrange(1,imax):
@@ -133,8 +132,6 @@ cdef class SurfaceSullivanPatton:
                     PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/RS.alpha0[gw-1]*RS.alpha0_half[gw]*dzi
                     PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/RS.alpha0[gw-1]*RS.alpha0_half[gw]*dzi
 
-
-
         return
 
 cdef class SurfaceBomex:
@@ -143,7 +140,6 @@ cdef class SurfaceBomex:
         self.qt_flux = 5.2e-5 # m/s
         self.ustar = 0.28 #m/s
 
-
         pass
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
@@ -151,8 +147,6 @@ cdef class SurfaceBomex:
         self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
-
-
 
         return
 
@@ -214,8 +208,6 @@ cdef class SurfaceBomex:
                     self.v_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * PV.values[v_shift + ijk]
                     PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/RS.alpha0[gw-1]*RS.alpha0_half[gw]*dzi
                     PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/RS.alpha0[gw-1]*RS.alpha0_half[gw]*dzi
-
-        #
 
         return
 

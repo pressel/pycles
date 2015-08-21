@@ -7,9 +7,7 @@ cdef class ReferenceState:
         public double [:] alpha0_half
         public double [:] rho0
         public double [:] rho0_half
-
         double sg
-
 
     cdef public:
         #These public values should be set in the case initialization routine

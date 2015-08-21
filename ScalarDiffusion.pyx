@@ -67,20 +67,14 @@ cdef second_order(Grid.DimStruct *dims, double *alpha0, double *alpha0_half,
         int imin = 0
         int jmin = 0
         int kmin = 0
-
         int imax = dims.nlg[0] -1
         int jmax = dims.nlg[1] -1
         int kmax = dims.nlg[2] -1
-
         int istride = dims.nlg[1] * dims.nlg[2];
         int jstride = dims.nlg[2];
-
         int ishift, jshift, ijk, i,j,k
-
         int sp1
-
         double dxi = 1.0/dx
-
 
     if d==0:
         sp1 = istride
@@ -106,6 +100,5 @@ cdef second_order(Grid.DimStruct *dims, double *alpha0, double *alpha0_half,
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
                     flux[ijk] = -interp_2(diffusivity[ijk],diffusivity[ijk+sp1])*(scalar[ijk+sp1]-scalar[ijk])/alpha0_half[k]*dxi
-
 
     return

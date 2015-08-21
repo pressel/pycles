@@ -81,9 +81,6 @@ cdef class TimeStepping:
         elif self.ts_type == 3:
             self.update_third(Gr,PV)
 
-
-
-
         return
 
     cpdef adjust_timestep(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
@@ -91,7 +88,6 @@ cdef class TimeStepping:
         if self.rk_step == self.n_rk_steps - 1:
             self.compute_cfl_max(Gr, PV, Pa)
             self.dt = self.cfl_time_step()
-
 
             #Diffusive limiting not yet implemented
             if self.t + self.dt > self.t_max:
@@ -128,7 +124,6 @@ cdef class TimeStepping:
 
         cdef:
             int i
-
 
         if self.rk_step == 0:
             for i in xrange(Gr.dims.npg*PV.nv):
@@ -183,15 +178,12 @@ cdef class TimeStepping:
             long u_shift = PV.get_varshift(Gr,'u')
             long v_shift = PV.get_varshift(Gr,'v')
             long w_shift = PV.get_varshift(Gr,'w')
-
             long imin = Gr.dims.gw
             long jmin = Gr.dims.gw
             long kmin = Gr.dims.gw
-
             long imax = Gr.dims.nlg[0] - Gr.dims.gw
             long jmax = Gr.dims.nlg[1] - Gr.dims.gw
             long kmax = Gr.dims.nlg[2] - Gr.dims.gw
-
             long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             long jstride = Gr.dims.nlg[2]
             long i,j,k, ijk, ishift, jshift
@@ -205,14 +197,10 @@ cdef class TimeStepping:
                         ijk = ishift + jshift + k
                         cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + fabs(PV.values[w_shift+ijk])*dxi[2]))
 
-
-
         mpi.MPI_Allreduce(&cfl_max_local,&self.cfl_max,1,
                           mpi.MPI_DOUBLE,mpi.MPI_MAX,Pa.comm_world)
 
         self.cfl_max += 1e-11
-
-
         return
 
 

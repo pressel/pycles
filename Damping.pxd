@@ -6,7 +6,6 @@ cdef class Damping:
 
     cdef:
         object scheme
-
     cpdef initialize(self, Grid.Grid Gr)
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
 
@@ -20,6 +19,5 @@ cdef class Rayleigh:
         double gamma_r  #Inverse damping timescale
         double [:] gamma_zhalf
         double [:] gamma_z
-
     cpdef initialize(self, Grid.Grid Gr)
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)

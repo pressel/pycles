@@ -29,13 +29,9 @@ cdef class ReferenceState:
             T,ql,qi = Thermodynamics.eos(np.exp(p),self.sg,self.qtg)
             return -g/(Rd*T*(1.0 + self.qtg + eps_vi * (self.qtg - ql - qi)))
 
-
-
         #Construct arrays for integration points
         z = np.array(Gr.z[Gr.dims.gw-1:-Gr.dims.gw+1])
         z_half = np.append([0.0],np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw]))
-
-
 
         #We are integrating the log pressure so need to take the log of the surface pressure
         p0 = np.log(self.Pg)
@@ -47,17 +43,12 @@ cdef class ReferenceState:
         p[Gr.dims.gw-1:-Gr.dims.gw+1] = odeint(rhs,p0,z,hmax=100.0)[:,0]
         p_half[Gr.dims.gw:-Gr.dims.gw] = odeint(rhs,p0,z_half,hmax=100.0)[1:,0]
 
-
-
         #Set boundary conditions
         p[:Gr.dims.gw-1] = p[2*Gr.dims.gw-2:Gr.dims.gw-1:-1]
         p[-Gr.dims.gw+1:]  = p[-Gr.dims.gw-1:-2*Gr.dims.gw:-1]
 
-
-
         p_half[:Gr.dims.gw] = p_half[2*Gr.dims.gw-1:Gr.dims.gw-1:-1]
         p_half[-Gr.dims.gw:] = p_half[-Gr.dims.gw-1:-2*Gr.dims.gw-1:-1]
-
 
         p = np.exp(p)
         p_half = np.exp(p_half)
@@ -80,14 +71,11 @@ cdef class ReferenceState:
             qt = self.qtg - (ql + qi)
             alpha_half[k] = Thermodynamics.alpha(p_half_[k],temperature_half[k],self.qtg,qv)
 
-
         #print(np.array(Gr.extract_local_ghosted(alpha_half,2)))
         self.alpha0_half = Gr.extract_local_ghosted(alpha_half,2)
         self.alpha0 = Gr.extract_local_ghosted(alpha,2)
         self.p0 = Gr.extract_local_ghosted(p_,2)
         self.p0_half = Gr.extract_local_ghosted(p_half,2)
-
-
         self.rho0 = 1.0/np.array(self.alpha0)
         self.rho0_half = 1.0/np.array(self.alpha0_half)
 

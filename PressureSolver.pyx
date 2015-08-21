@@ -147,7 +147,6 @@ cdef void second_order_divergence(Grid.DimStruct *dims, double *alpha0, double *
                                   double *divergence, long d):
 
     cdef:
-
         int imin = dims.gw
         int jmin = dims.gw
         int kmin = dims.gw
@@ -159,7 +158,7 @@ cdef void second_order_divergence(Grid.DimStruct *dims, double *alpha0, double *
         int ishift, jshift
         int i,j,k,ijk
 
-        #Compute the strides given the dimensionality
+        #Compute the s+trides given the dimensionality
         int [3] p1 = [istride, jstride, 1]
         int sm1 =  -p1[d]
         double dxi = 1.0/dims.dx[d]

@@ -66,9 +66,7 @@ cdef class Rayleigh:
 
         self.gamma_zhalf = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
         self.gamma_z = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
-
         z_top = Gr.dims.dx[2] * Gr.dims.n[2]
-
         with nogil:
             for k in range(Gr.dims.nlg[2]):
                 if Gr.zl_half[k] >= z_top - self.z_d:
@@ -98,11 +96,9 @@ cdef class Rayleigh:
             long i,j,k,ishift,jshift,ijk
             double [:] domain_mean
 
-
         for var_name in PV.name_index:
             var_shift = PV.get_varshift(Gr,var_name)
             domain_mean = Pa.HorizontalMean(Gr,&PV.values[var_shift])
-
             if var_name == 'w':
                 with nogil:
                     for i in xrange(imin,imax):
@@ -114,7 +110,6 @@ cdef class Rayleigh:
                                 max_diff = fmax(PV.values[var_shift+ijk]-domain_mean[k],max_diff)
                                 min_diff = fmin(PV.values[var_shift+ijk]-domain_mean[k],min_diff)
                                 PV.tendencies[var_shift+ijk] = PV.tendencies[var_shift+ijk] - (PV.values[var_shift+ijk]-domain_mean[k])*self.gamma_zhalf[k]
-
             else:
                 with nogil:
                     for i in xrange(imin,imax):

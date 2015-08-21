@@ -32,10 +32,6 @@ cdef class SurfaceSullivanPatton:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 
-
-
-
-
 cdef class SurfaceBomex:
     cdef:
         double theta_flux
@@ -47,10 +43,6 @@ cdef class SurfaceBomex:
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS)
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-
-
-
-
 
 cdef inline double compute_z0(double z1, double windspeed) nogil
 

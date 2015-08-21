@@ -11,6 +11,5 @@ cdef class ScalarDiffusion:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV)
