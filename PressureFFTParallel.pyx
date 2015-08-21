@@ -14,15 +14,12 @@ import cython
 include 'parameters.pxi'
 
 cdef class PressureFFTParallel:
-
     def __init__(self):
         pass
-
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, ParallelMPI.ParallelMPI Pa):
 
         self.b = np.zeros(Gr.dims.nl[2],dtype=np.double,order='c')
-
         self.compute_modified_wave_numbers(Gr)
         self.compute_off_diagonals(Gr,RS)
 
@@ -130,7 +127,6 @@ cdef class PressureFFTParallel:
     cpdef solve(self,Grid.Grid Gr, ReferenceState.ReferenceState RS,DiagnosticVariables.DiagnosticVariables DV
                 , ParallelMPI.ParallelMPI Pa):
 
-
         cdef:
             long i,j,k,ijk
             long istride = Gr.dims.nl[1] * Gr.dims.nl[2]
@@ -138,26 +134,21 @@ cdef class PressureFFTParallel:
             long ishift, jshift
             double [:] dkr = np.empty((Gr.dims.nl[2]),dtype=np.double,order='c')
             double [:] dki = np.empty((Gr.dims.nl[2]),dtype=np.double,order='c')
-
             long div_shift = DV.get_varshift(Gr,'divergence')
             long pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
             long p, pencil_i, pencil_j
             long count = 0
             long pencil_shift = 0 #self.Z_Pencil.n_pencil_map[self.Z_Pencil.rank - 1]
-
-        cdef double [:,:] x_pencil,
-        cdef complex [:,:] x_pencil_fft, x_pencil_ifft, x_pencil_complex
-        cdef complex [:,:] y_pencil, z_pencil
-
-        cdef complex [:] div_fft= np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
-        cdef complex [:] pres = np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
-
+            double [:,:] x_pencil,
+            complex [:,:] x_pencil_fft, x_pencil_ifft, x_pencil_complex
+            complex [:,:] y_pencil, z_pencil
+            complex [:] div_fft= np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
+            complex [:] pres = np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
 
         #Do fft in x direction
         x_pencil = self.X_Pencil.forward_double(&Gr.dims, Pa, &DV.values[div_shift])
         x_pencil_fft = fft(x_pencil,axis=1)
         self.X_Pencil.reverse_complex(&Gr.dims, Pa, x_pencil_fft, &div_fft[0] )
-
 
         #Do fft in y direction
         y_pencil = self.Y_Pencil.forward_complex(&Gr.dims, Pa, &div_fft[0])
@@ -167,9 +158,7 @@ cdef class PressureFFTParallel:
         #Transpose in z
         z_pencil = self.Z_Pencil.forward_complex(&Gr.dims, Pa, &div_fft[0])
 
-
         #At this point the data is in the correct pencils so we may do the TDMA solve
-
         for p in xrange(self.Z_Pencil.n_local_pencils):
             pencil_i = (pencil_shift + p) // Gr.dims.nl[1]
             pencil_j = (pencil_shift + p) % Gr.dims.nl[1]
@@ -180,8 +169,6 @@ cdef class PressureFFTParallel:
             self.compute_diagonal(Gr,RS,pencil_i,pencil_j)
             self.TDMA_Solver.solve(&dkr[0],&self.a[0],&self.b[0],&self.c[0])
             self.TDMA_Solver.solve(&dki[0],&self.a[0],&self.b[0],&self.c[0])
-
-
 
             for k in xrange(Gr.dims.nl[2]):
                if pencil_i + Gr.dims.indx_lo[0] !=0 or pencil_j + Gr.dims.indx_lo[1] !=0:
@@ -197,12 +184,10 @@ cdef class PressureFFTParallel:
         y_pencil_fft = ifft(y_pencil,axis=1)
         self.Y_Pencil.reverse_complex(&Gr.dims, Pa, y_pencil_fft, &div_fft[0])
 
-
         #Do ifft in x direction
         x_pencil_complex = self.X_Pencil.forward_complex(&Gr.dims, Pa, &div_fft[0])
         x_pencil_ifft =ifft(x_pencil_complex,axis=1)
         self.X_Pencil.reverse_complex(&Gr.dims, Pa, x_pencil_ifft, &pres[0] )
-
 
         count = 0
         with nogil:

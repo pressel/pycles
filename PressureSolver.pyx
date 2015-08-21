@@ -22,7 +22,6 @@ cdef class PressureSolver:
         DV.add_variables('dynamic_pressure','Pa','sym',PM)
         DV.add_variables('divergence','1/s','sym',PM)
 
-
         self.divergence = np.zeros(Gr.dims.npl,dtype=np.double, order='c')
         #self.poisson_solver = PressureFFTSerial.PressureFFTSerial()
         self.poisson_solver = PressureFFTParallel.PressureFFTParallel()
@@ -40,10 +39,6 @@ cdef class PressureSolver:
             long i
             long d
             long vel_shift
-
-
-        #Compute the mean vertical velocity
-        cdef:
             long u_shift = PV.get_varshift(Gr,'u')
             long v_shift = PV.get_varshift(Gr,'v')
             long w_shift = PV.get_varshift(Gr,'w')
@@ -53,9 +48,7 @@ cdef class PressureSolver:
         cdef double [:] u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
         #Remove mean u3
         remove_mean_u3(&Gr.dims,&u3_mean[0],&PV.values[w_shift])
-
         u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
-
 
         #Zero the divergence array [Perhaps we can replace this with a C-Call to Memset]
         with nogil:
@@ -68,11 +61,8 @@ cdef class PressureSolver:
             second_order_divergence(&Gr.dims, &RS.alpha0[0], &RS.alpha0_half[0],&PV.values[vel_shift],
                  &DV.values[div_shift] ,d)
 
-
-
         #Now call the pressure solver
         self.poisson_solver.solve(Gr, RS, DV, PM)
-
 
         #Update pressure boundary condition
         p_nv = DV.name_index['dynamic_pressure']
@@ -93,22 +83,17 @@ cdef class PressureSolver:
 @cython.cdivision(True)
 cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, double *u, double *v, double *w ):
 
-
     cdef:
         int imin = 0
         int jmin = 0
         int kmin = 0
-
         int imax = dims.nlg[0] - 1
         int jmax = dims.nlg[1] - 1
         int kmax = dims.nlg[2] - 1
-
         int istride = dims.nlg[1] * dims.nlg[2]
         int jstride = dims.nlg[2]
-
         int ishift, jshift
         int i,j,k, ijk
-
         int ip1 = istride
         int jp1 = jstride
         int kp1 = 1
@@ -123,10 +108,6 @@ cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, doub
                 v[ijk] -=  (p[ijk + jp1] - p[ijk])*dims.dxi[1]
                 w[ijk] -=  (p[ijk + kp1] - p[ijk])*dims.dxi[2]  #(p[ijk + kp1] - p[ijk])*dims.dxi[2]
 
-
-
-
-
     return
 
 
@@ -139,16 +120,12 @@ cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity
         int imin = 0
         int jmin = 0
         int kmin = 0
-
         int imax = dims.nlg[0]
         int jmax = dims.nlg[1]
         int kmax = dims.nlg[2]
-
         int istride = dims.nlg[1] * dims.nlg[2]
         int jstride = dims.nlg[2]
-
         int ishift, jshift
-
         int ijk, i, j, k
 
     with nogil:
@@ -174,19 +151,13 @@ cdef void second_order_divergence(Grid.DimStruct *dims, double *alpha0, double *
         int imin = dims.gw
         int jmin = dims.gw
         int kmin = dims.gw
-
         int imax = dims.nlg[0] - dims.gw
         int jmax = dims.nlg[1] - dims.gw
         int kmax = dims.nlg[2] - dims.gw
-
         int istride = dims.nlg[1] * dims.nlg[2]
         int jstride = dims.nlg[2]
-
-
         int ishift, jshift
-
         int i,j,k,ijk
-
 
         #Compute the strides given the dimensionality
         int [3] p1 = [istride, jstride, 1]
