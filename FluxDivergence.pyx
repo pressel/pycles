@@ -33,7 +33,6 @@ cdef scalar_flux_divergence(Grid.DimStruct *dims, double *alpha0, double *alpha0
 
     return
 
-
 @cython.boundscheck(False)  #Turn off numpy array index bounds checking
 @cython.wraparound(False)   #Turn off numpy array wrap around indexing
 @cython.cdivision(True)
@@ -74,5 +73,4 @@ cdef momentum_flux_divergence(Grid.DimStruct *dims, double *alpha0, double *alph
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
                         tendency[ijk] = tendency[ijk] - (flux[ijk] - flux[ijk + m1])*alpha0[k]*dxi
-
     return

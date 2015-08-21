@@ -29,8 +29,6 @@ cdef class DiagnosticVariables:
     cpdef add_variables(self, name, units,bc_type,  ParallelMPI.ParallelMPI Pa):
         self.name_index[name] = self.nv
         self.units[name] = units
-
-
         #Add bc type to array
         if bc_type == "sym":
             self.bc_type = np.append(self.bc_type,[1.0])
@@ -39,9 +37,6 @@ cdef class DiagnosticVariables:
         else:
             Pa.root_print("Not a valid bc_type. Killing simulation now!")
             Pa.kill()
-
-
-
         self.nv = len(self.name_index.keys())
 
         return
@@ -59,9 +54,6 @@ cdef class DiagnosticVariables:
             mpi.MPI_Status status
 
         ierr = mpi.MPI_Comm_rank(PM.cart_comm_world,&source_rank)
-
-
-        #print(self.name_index)
 
         var_shift = (nv) * Gr.dims.npg
         for d in xrange(Gr.dims.dims):
@@ -132,10 +124,7 @@ cdef class DiagnosticVariables:
             NS.add_ts(var_name+'_max',Gr,Pa)
             #Add min ts
             NS.add_ts(var_name+'_min',Gr,Pa)
-
-
         return
-
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
@@ -144,7 +133,6 @@ cdef class DiagnosticVariables:
 
         for var_name in self.name_index.keys():
             var_shift = self.get_varshift(Gr,var_name)
-
 
             #Compute and write mean
             tmp = Pa.HorizontalMean(Gr,&self.values[var_shift])
@@ -161,7 +149,6 @@ cdef class DiagnosticVariables:
             tmp = Pa.HorizontalMaximum(Gr,&self.values[var_shift])
             NS.write_profile(var_name + '_max',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
             NS.write_ts(var_name+'_max',np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
-
 
             #Compute and write mins
             tmp = Pa.HorizontalMinimum(Gr,&self.values[var_shift])

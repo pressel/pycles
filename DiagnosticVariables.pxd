@@ -10,7 +10,6 @@ cdef class DiagnosticVariables:
         double [:] bc_type
 
         void communicate_variable(self,Grid.Grid Gr,ParallelMPI.ParallelMPI PM, long nv)
-
     cpdef add_variables(self, name, units, bc_type, ParallelMPI.ParallelMPI Pa)
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef get_variable_array(self,name,Grid.Grid Gr)

@@ -73,7 +73,6 @@ cdef class Rayleigh:
                     self.gamma_zhalf[k] = self.gamma_r *sin((pi/2.0)*(1.0 - (z_top - Gr.zl_half[k])/self.z_d))**2.0
                 if Gr.zl[k] >= z_top - self.z_d:
                     self.gamma_z[k] = self.gamma_r *sin((pi/2.0)*(1.0 - (z_top - Gr.zl[k])/self.z_d))**2.0
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -86,11 +85,9 @@ cdef class Rayleigh:
             long imin = Gr.dims.gw
             long jmin = Gr.dims.gw
             long kmin = Gr.dims.gw
-
             long imax = Gr.dims.nlg[0] - Gr.dims.gw
             long jmax = Gr.dims.nlg[1] - Gr.dims.gw
             long kmax = Gr.dims.nlg[2] - Gr.dims.gw
-
             long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             long jstride = Gr.dims.nlg[2]
             long i,j,k,ishift,jshift,ijk
@@ -119,6 +116,4 @@ cdef class Rayleigh:
                             for k in xrange(kmin,kmax):
                                 ijk = ishift + jshift + k
                                 PV.tendencies[var_shift+ijk] = PV.tendencies[var_shift+ijk] - (PV.values[var_shift + ijk]-domain_mean[k]) * self.gamma_z[k]
-
-
         return

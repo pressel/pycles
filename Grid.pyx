@@ -24,15 +24,12 @@ cdef class Grid:
         self.dims.n[1]= namelist['grid']['ny']
         self.dims.n[2] = namelist['grid']['nz']
 
-
-
         #Compute the global and local dims
         self.compute_global_dims()
         self.compute_local_dims(Parallel)
         self.compute_coordinates()
 
         return
-
 
     cdef inline void compute_global_dims(self):
         #Compute the global grid dimensons
@@ -160,4 +157,3 @@ cdef class Grid:
         cdef int end = self.dims.indx_lo_g[dim] + self.dims.nlg[dim]
         #Force a copy with the return statement
         return np.array(global_array[start:end],dtype=np.double)
-
