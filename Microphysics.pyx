@@ -15,17 +15,8 @@ cdef class No_Microphysics_SA:
         self.thermodynamics_type = 'SA'
         return
 
-
-
-
 def MicrophysicsFactory(namelist,LatentHeat LH, ParallelMPI.ParallelMPI Par):
     if(namelist['microphysics']['scheme'] == 'None_Dry'):
         return No_Microphysics_Dry(Par,LH,namelist)
     elif(namelist['microphysics']['scheme']=='None_SA'):
         return No_Microphysics_SA(Par,LH,namelist)
-
-
-
-
-
-

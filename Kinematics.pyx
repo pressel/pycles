@@ -4,7 +4,6 @@ cimport PrognosticVariables
 import numpy as np
 cimport numpy as np
 
-
 cdef extern from "kinematics.h":
     void compute_velocity_gradient(Grid.DimStruct *dims, double *v, double *vgrad, long d)
     void compute_strain_rate(Grid.DimStruct *dims, double *vgrad, double *strain_rate)
@@ -34,11 +33,8 @@ cdef class Kinematics:
                 compute_velocity_gradient(&Gr.dims,&PV.values[shift_v1],&self.vgrad[shift_v_grad],d)
                 count += 1
 
-
-
         compute_strain_rate(&Gr.dims, &self.vgrad[0],&self.strain_rate[0])
         compute_strain_rate_mag(&Gr.dims, &self.strain_rate[0],&self.strain_rate_mag[0])
-
 
         return
 

@@ -26,7 +26,6 @@ cdef class MomentumDiffusion:
                      DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         self.flux = np.zeros((Gr.dims.dims*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')
-
         return
 
     cpdef update(self, Grid.Grid Gr,ReferenceState.ReferenceState Rs, PrognosticVariables.PrognosticVariables PV,
@@ -57,10 +56,4 @@ cdef class MomentumDiffusion:
                 count += 1
 
         compute_entropy_source(&Gr.dims, &DV.values[visc_shift], &Ke.strain_rate_mag[0], &DV.values[temp_shift],&PV.tendencies[s_shift])
-
-
-
-
-
-
         return

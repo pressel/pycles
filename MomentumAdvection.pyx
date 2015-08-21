@@ -28,8 +28,6 @@ cdef class MomentumAdvection:
         self.flux = np.zeros((PV.nv_velocities*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')
         return
 
-
-
     cpdef update(self, Grid.Grid Gr,ReferenceState.ReferenceState Rs, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -58,8 +56,6 @@ cdef class MomentumAdvection:
                 #Compute flux divergence
                 momentum_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[shift_flux],
                                             &PV.tendencies[shift_advected],i_advected,i_advecting)
-
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -90,6 +86,4 @@ cdef class MomentumAdvection:
                     jshift = j * jstride
                     for k in xrange(kmin,kmax):
                         return_flux[i,j,k] = flux[shift_flux + ishift + jshift + k ]
-
         return return_flux
-

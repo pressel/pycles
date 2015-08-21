@@ -255,7 +255,6 @@ cdef class ParallelMPI:
 
         mpi.MPI_Allreduce(&max_local[0],&max[0],Gr.dims.nlg[2],
                           mpi.MPI_DOUBLE,mpi.MPI_MAX,self.cart_comm_sub_xy)
-
         return max
 
 
@@ -861,5 +860,4 @@ cdef class Pencil:
                         ijk = ishift + jshift + k
                         ijk_no_gw = ishift_nogw + jshift_nogw+ (k-dims.gw)*kstride_nogw
                         data[ijk] = recv_buffer[ijk_no_gw]
-
         return

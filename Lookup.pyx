@@ -24,7 +24,3 @@ cdef class Lookup:
 
     cdef inline double fast_lookup(self, double x) nogil:
         return lookup(&self.LookupStructC,x)
-
-
-
-

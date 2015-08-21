@@ -35,11 +35,7 @@ cdef class NetCDFIO_Stats:
                 pass
 
             shutil.copyfile(os.path.join('./',namelist['meta']['simname']+'.in'),os.path.join(outpath,namelist['meta']['simname']+'.in'))
-
-
-
             self.setup_stats_file(Gr, Pa)
-
         return
 
     cpdef setup_stats_file(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
@@ -66,7 +62,6 @@ cdef class NetCDFIO_Stats:
         ts_grp.createVariable('t','f8',('t'))
 
         root_grp.close()
-
         return
 
 
@@ -88,6 +83,7 @@ cdef class NetCDFIO_Stats:
             new_var = ts_grp.createVariable(var_name,'f8',('t',))
 
             root_grp.close()
+        return
 
 
     cpdef write_profile(self,var_name, double [:] data, ParallelMPI.ParallelMPI Pa):
@@ -110,7 +106,6 @@ cdef class NetCDFIO_Stats:
             root_grp.close()
         return
 
-
     cpdef write_simulation_time(self, double t, ParallelMPI.ParallelMPI Pa):
          if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file,'r+',format='NETCDF4')
@@ -128,7 +123,6 @@ cdef class NetCDFIO_Stats:
             root_grp.close()
          return
 
-
 cdef class NetCDFIO_Fields:
     def __init__(self):
         return
@@ -136,7 +130,6 @@ cdef class NetCDFIO_Fields:
 
         self.last_output_time = 0.0
         self.uuid = str(namelist['meta']['uuid'])
-
         self.frequency=namelist['fields_io']['frequency']
 
         #Setup the statistics output path
@@ -153,9 +146,7 @@ cdef class NetCDFIO_Fields:
                 pass
 
             shutil.copyfile(os.path.join('./',namelist['meta']['simname']+'.in'),os.path.join(outpath,namelist['meta']['simname']+'.in'))
-
         return
-
 
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
@@ -173,9 +164,7 @@ cdef class NetCDFIO_Fields:
         self.create_fields_file(Gr,Pa)
         Pa.root_print('Now doing 3D IO')
         self.do_output = True
-
         return
-
 
     cpdef create_fields_file(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
 
@@ -214,7 +203,6 @@ cdef class NetCDFIO_Fields:
         ng[:] = Gr.dims.npd
 
         rootgrp.close()
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -249,7 +237,6 @@ cdef class NetCDFIO_Fields:
                             data[count] = PV.values[var_shift+ijk]
                             count += 1
             self.write_field(name,data)
-
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -284,9 +271,7 @@ cdef class NetCDFIO_Fields:
                             data[count] = DV.values[var_shift+ijk]
                             count += 1
             self.write_field(name,data)
-
         return
-
 
     cpdef add_field(self,name):
         rootgrp = nc.Dataset(self.path_plus_file,'r+',format='NETCDF4')

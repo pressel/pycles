@@ -17,11 +17,9 @@ cdef extern from "lookup.h":
 cdef class Lookup:
     cdef:
         LookupStruct LookupStructC
-
     cpdef initialize(self, double [:] x, double [:] y)
     cpdef finalize(self)
     cpdef table_bounds(self)
     cpdef lookup(self,double x)
-
     cdef:
         inline double fast_lookup(self, double x) nogil
