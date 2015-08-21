@@ -204,7 +204,6 @@ cdef class PressureFFTParallel:
         self.X_Pencil.reverse_complex(&Gr.dims, Pa, x_pencil_ifft, &pres[0] )
 
 
-
         count = 0
         with nogil:
             for i in xrange(Gr.dims.npg):

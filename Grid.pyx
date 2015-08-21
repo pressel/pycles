@@ -75,18 +75,17 @@ cdef class Grid:
             nptsg = 0
             proc = 0
 
+
             while proc <= mpi_coords[i]:
                 self.dims.indx_lo[i] = npts
                 self.dims.indx_lo_g[i] = nptsg
                 npts += self.dims.n[i]//mpi_dims[i]
                 nptsg +=  self.dims.n[i]//mpi_dims[i] + 2 * self.dims.gw
                 remainder = self.dims.n[i]%mpi_dims[i]
-                if remainder >0 and remainder -1 <= mpi_coords[i]:
+                if remainder >0 and proc  < remainder:
                     npts += 1
                     nptsg +=  1
                 proc += 1
-
-
 
         self.dims.npd = np.max([self.dims.n[0],1])*np.max([self.dims.n[1],1])*np.max([self.dims.n[2],1])
         self.dims.npl = self.dims.nl[0] * self.dims.nl[1] * self.dims.nl[2]

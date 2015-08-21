@@ -374,6 +374,23 @@ cdef class Pencil:
             self.sdispls[i+1] = self.sdispls[i] + self.send_counts[i]
             self.rdispls[i+1] = self.rdispls[i] + self.recv_counts[i]
 
+
+        # import time; time.sleep(self.rank)
+        # print "\n\n\n"
+        # print "rank", self.rank
+        # print "dims.nl[0]", Gr.dims.nl[0], "dims.npl", Gr.dims.npl
+        # print "n_pencil_map",np.array(self.n_pencil_map)
+        # print "sdispls", np.array(self.sdispls)
+        # print "rdispls", np.array(self.rdispls)
+        # print "send_counts", np.array(self.send_counts), np.sum(self.send_counts)
+        # print "recv_counts", np.array(self.recv_counts), np.sum(self.recv_counts)
+        # print "reverse recv_buffer", self.n_local_pencils * self.pencil_length
+        # print "index_lo", Gr.dims.indx_lo[0], Gr.dims.indx_lo[1]
+
+        #import sys; sys.exit()
+
+
+
         Pa.barrier()
         return
 
@@ -406,6 +423,8 @@ cdef class Pencil:
 
         else:
             self.unpack_buffer_double(dims,&local_transpose[0],pencils)
+
+
         return pencils
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -524,6 +543,7 @@ cdef class Pencil:
 
         else:
             self.reverse_unpack_buffer_double(dims,&send_buffer[0],&data[0])
+
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking

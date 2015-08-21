@@ -84,7 +84,6 @@ cdef class PressureSolver:
 
         #Switch this call at for a single variable boundary condition update
         PV.update_all_bcs(Gr,PM)
-        ######################
 
         return
 
@@ -201,7 +200,6 @@ cdef void second_order_divergence(Grid.DimStruct *dims, double *alpha0, double *
                 jshift = j * jstride
                 for k in xrange(kmin,kmax):
                      ijk = ishift + jshift + k
-
                      divergence[ijk] += (velocity[ijk]/alpha0_half[k]  - velocity[ijk+sm1]/alpha0_half[k])*dxi
     else:
         for i in xrange(imin,imax):

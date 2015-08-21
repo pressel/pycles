@@ -102,7 +102,6 @@ cdef class DiagnosticVariables:
     cpdef get_variable_array(self,name,Grid.Grid Gr):
         index = self.name_index[name]
         view = np.array(self.values).view()
-        print self.nv*Gr.dims.nlg[0]*Gr.dims.nlg[1]*Gr.dims.nlg[2], np.shape(self.values)
         view.shape = (self.nv,Gr.dims.nlg[0],Gr.dims.nlg[1],Gr.dims.nlg[2])
         return view[index,:,:,:]
 
