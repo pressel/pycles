@@ -10,7 +10,6 @@ import cython
 from libc.math cimport sqrt, fmin, cos
 include 'parameters.pxi'
 
-
 def InitializationFactory(namelist):
 
         casename = namelist['meta']['casename']
@@ -24,7 +23,6 @@ def InitializationFactory(namelist):
             return InitBomex
         else:
             pass
-
 
 @cython.boundscheck(False)  #Turn off numpy array index bounds checking
 @cython.wraparound(False)   #Turn off numpy array wrap around indexing
@@ -50,7 +48,6 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double t
         double dist
 
-
     t_min = 9999.9
     for i in xrange(Gr.dims.nlg[0]):
         ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -74,10 +71,6 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
-
-
-
-
     #First generate reference profiles
     RS.Pg = 1.0e5
     RS.qtg = 0.02
@@ -86,8 +79,6 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     thetas_sfc = 320.0
     qt_sfc = 0.0196 #RS.qtg
     RS.qtg = qt_sfc
-
-    print 'Here'
 
     def theta_to_T(p0_,thetas_,qt_):
 
@@ -122,14 +113,8 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             delta = np.abs(T1 - T2)
          return T2, ql2
 
-
-
-
     RS.Tg, ql = theta_to_T(RS.Pg,thetas_sfc,qt_sfc)
     RS.initialize(Gr,Th)
-
-
-
 
     #Get the variable number for each of the velocity components
     cdef:
@@ -161,11 +146,7 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[w_varshift + ijk] = 0.0
                 PV.values[qt_varshift + ijk] = RS.qtg
 
-
-
     return
-
-
 
 @cython.boundscheck(False)  #Turn off numpy array index bounds checking
 @cython.wraparound(False)   #Turn off numpy array wrap around indexing
@@ -226,10 +207,7 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
 
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
-
-
     return
-
 
 @cython.boundscheck(False)  #Turn off numpy array index bounds checking
 @cython.wraparound(False)   #Turn off numpy array wrap around indexing
@@ -314,5 +292,3 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt[k],0.0,0.0)
                 PV.values[qt_varshift + ijk] = qt[k]
                 count += 1
-
-
