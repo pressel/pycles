@@ -20,8 +20,10 @@ cdef extern from "thermodynamics_dry.h":
     inline double alpha_c(double p0, double T, double qt, double qv) nogil
     void eos_update(Grid.DimStruct *dims, double *pd, double *s, double *T,
                     double *alpha)
-    void buoyancy_update(Grid.DimStruct * dims, double *alpha0, double *alpha,double *buoyancy,
+    void buoyancy_update(Grid.DimStruct *dims, double *alpha0, double *alpha,double *buoyancy,
                          double *wt)
+    void bvf_dry(Grid.DimStruct* dims,  double* p0, double* T, double* theta, double* bvf)
+
 
 cdef class ThermodynamicsDry:
     def __init__(self,namelist,LatentHeat LH, ParallelMPI.ParallelMPI Pa):
@@ -41,6 +43,8 @@ cdef class ThermodynamicsDry:
         DV.add_variables('alpha','--','sym',Pa)
         DV.add_variables('temperature','K','sym',Pa)
         DV.add_variables('buoyancy_frequency','1/s','sym',Pa)
+        DV.add_variables('theta','K','sym',Pa)
+
 
         #Add statistical output
         NS.add_profile('thetas_mean',Gr,Pa)
@@ -79,10 +83,13 @@ cdef class ThermodynamicsDry:
         cdef int t_shift = DV.get_varshift(Gr,'temperature')
         cdef int s_shift = PV.get_varshift(Gr,'s')
         cdef int w_shift  = PV.get_varshift(Gr,'w')
+        cdef int theta_shift = DV.get_varshift(Gr,'theta')
+        cdef int bvf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
 
 
         eos_update(&Gr.dims,&RS.p0_half[0],&PV.values[s_shift],&DV.values[t_shift],&DV.values[alpha_shift])
         buoyancy_update(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
+        bvf_dry(&Gr.dims,&RS.p0_half[0],&DV.values[t_shift],&DV.values[theta_shift],&DV.values[bvf_shift])
 
 
         return

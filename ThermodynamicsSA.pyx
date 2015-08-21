@@ -18,6 +18,8 @@ cdef extern from "thermodynamics_sa.h":
     void eos_update(Grid.DimStruct* dims, Lookup.LookupStruct* LT, double (*lam_fp)(double), double (*L_fp)(double, double), double* p0, double* s, double* qt, double* T,
     double* qv, double* ql, double* qi, double* alpha )
     void buoyancy_update_sa(Grid.DimStruct* dims, double* alpha0, double* alpha, double* buoyancy, double* wt)
+    void bvf_sa(Grid.DimStruct* dims, Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double), double* p0, double* T, double* qt, double* qv, double* theta_rho, double* bvf)
+
 
 cdef extern from "thermodynamic_functions.h":
     inline double pd_c(double p0, double qt, double qv) nogil
@@ -49,6 +51,7 @@ cdef class ThermodynamicsSA:
         DV.add_variables('qv','kg/kg','sym',Pa)
         DV.add_variables('ql','kg/kg','sym',Pa)
         DV.add_variables('qi','kg/kg','sym',Pa)
+        DV.add_variables('theta_rho','K','sym',Pa)
 
 
         #Add statistical output
@@ -100,14 +103,18 @@ cdef class ThermodynamicsSA:
             int s_shift = PV.get_varshift(Gr,'s')
             int qt_shift = PV.get_varshift(Gr,'qt')
             int w_shift  = PV.get_varshift(Gr,'w')
+            int bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
+            int thr_shift = DV.get_varshift(Gr,'theta_rho')
 
 
-        eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0[0],
+        eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                    &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
                    &DV.values[qi_shift],&DV.values[alpha_shift])
 
 
         buoyancy_update_sa(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
+
+        bvf_sa(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift],&DV.values[qv_shift],&DV.values[thr_shift], &DV.values[bvf_shift])
 
         return
 
