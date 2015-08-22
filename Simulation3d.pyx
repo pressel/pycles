@@ -18,7 +18,6 @@ cimport Forcing
 
 from libc.math cimport fmin
 
-print 'Here'
 from Initialization import InitializationFactory
 from Microphysics import MicrophysicsFactory
 from Thermodynamics cimport LatentHeat
@@ -29,36 +28,27 @@ class Simulation3d:
     def __init__(self,namelist):
         return
 
-
     def initialize(self,namelist):
         self.Pa = ParallelMPI.ParallelMPI(namelist)
         self.Gr = Grid.Grid(namelist,self.Pa)
         self.PV = PrognosticVariables.PrognosticVariables(self.Gr)
         self.Ke = Kinematics.Kinematics()
-
         self.DV = DiagnosticVariables.DiagnosticVariables()
         self.Pr = PressureSolver.PressureSolver()
-
         self.SA = ScalarAdvection.ScalarAdvection(namelist, self.Pa)
         self.MA = MomentumAdvection.MomentumAdvection(namelist, self.Pa)
         self.SGS = SGS.SGS(namelist)
         self.SD = ScalarDiffusion.ScalarDiffusion(self.DV,self.Pa)
         self.MD = MomentumDiffusion.MomentumDiffusion(self.DV,self.Pa)
-
         self.LH = LatentHeat(namelist, self.Pa)
         self.Micro = MicrophysicsFactory(namelist,self.LH,self.Pa)
         self.Th = ThermodynamicsFactory(namelist,self.Micro,self.LH,self.Pa)
-
-
         self.Ref = ReferenceState.ReferenceState(self.Gr)
         self.Sur = Surface.Surface(namelist, self.LH)
         self.Fo = Forcing.Forcing(namelist)
-
         self.StatsIO  = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
         self.Damping = Damping.Damping(namelist,self.Pa)
-
-
         self.TS = TimeStepping.TimeStepping()
 
         #Add new prognostic variables
@@ -72,18 +62,13 @@ class Simulation3d:
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist,self.Pa)
         self.Th.initialize(self.Gr,self.PV,self.DV,self.StatsIO,self.Pa)
-
-
         self.PV.initialize(self.Gr,self.StatsIO,self.Pa)
-
         self.Ke.initialize(self.Gr)
         self.SA.initialize(self.Gr,self.PV)
         self.MA.initialize(self.Gr,self.PV)
         self.SGS.initialize(self.Gr)
         self.SD.initialize(self.Gr,self.PV,self.DV,self.Pa)
         self.MD.initialize(self.Gr,self.PV,self.DV,self.Pa)
-
-
         self.TS.initialize(namelist,self.PV,self.Pa)
         SetInitialConditions = InitializationFactory(namelist)
         SetInitialConditions(self.Gr,self.PV,self.Ref,self.Th)
@@ -162,14 +147,12 @@ class Simulation3d:
                 self.PV.stats_io(self.Gr,self.StatsIO,self.Pa)
                 self.DV.stats_io(self.Gr,self.StatsIO,self.Pa)
                 self.Th.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
-
         return
+
     def force_io(self):
         #output stats here
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
         self.PV.stats_io(self.Gr,self.StatsIO,self.Pa)
         self.DV.stats_io(self.Gr,self.StatsIO,self.Pa)
         self.Th.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
-
         return
-

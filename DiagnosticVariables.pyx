@@ -7,16 +7,10 @@ cimport ParallelMPI
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 cimport mpi4py.mpi_c as mpi
 
-
-cdef extern from "prognostic_variables.C":
+cdef extern from "prognostic_variables.h":
         void build_buffer(int nv, int dim, int s ,Grid.DimStruct *dims, double* values, double* buffer)
-
-cdef extern from "prognostic_variables.C":
         void buffer_to_values(int dim, int s, Grid.DimStruct *dims, double* values, double* buffer)
-
-cdef extern from "prognostic_variables.C":
         void set_bcs( int dim, int s, double bc_factor,  Grid.DimStruct *dims, double* values)
-
 
 cdef class DiagnosticVariables:
     def __init__(self):
@@ -24,7 +18,6 @@ cdef class DiagnosticVariables:
         self.units = {}
         self.nv = 0
         self.bc_type = np.array([],dtype=np.double,order='c')
-
 
     cpdef add_variables(self, name, units,bc_type,  ParallelMPI.ParallelMPI Pa):
         self.name_index[name] = self.nv
@@ -40,7 +33,6 @@ cdef class DiagnosticVariables:
         self.nv = len(self.name_index.keys())
 
         return
-
 
     cdef void communicate_variable(self, Grid.Grid Gr, ParallelMPI.ParallelMPI PM, long nv):
 
@@ -154,6 +146,5 @@ cdef class DiagnosticVariables:
             tmp = Pa.HorizontalMinimum(Gr,&self.values[var_shift])
             NS.write_profile(var_name + '_min',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
             NS.write_ts(var_name+'_min',np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
-
 
         return

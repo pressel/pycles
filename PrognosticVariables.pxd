@@ -1,5 +1,3 @@
-import numpy as np
-cimport numpy as np
 from NetCDFIO cimport NetCDFIO_Stats
 cimport Grid
 cimport ParallelMPI
@@ -10,8 +8,7 @@ cdef extern from "prognostic_variables.h":
         int v
         int w
 
-
-cdef extern from "prognostic_variables.C":
+cdef extern from "prognostic_variables.h":
         void build_buffer(int nv, int dim, int s ,Grid.DimStruct *dims, double* values, double* buffer)
         void buffer_to_values(int dim, int s, Grid.DimStruct *dims, double* values, double* buffer)
         void set_bcs(int dim, int s, double bc_factor,  Grid.DimStruct *dims, double* values)
