@@ -30,7 +30,6 @@ void eos_update(struct DimStruct *dims, double* restrict pd, double* restrict s,
                     const long ijk = ishift + jshift + k;
                     T[ijk] = eos_c(pd[k],s[ijk]);
                     alpha[ijk] = alpha_c(pd[k],T[ijk],0.0,0.0);
-
                 } // End k loop
         } // End j loop
     } // End i loop
