@@ -25,7 +25,6 @@ inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0,
             }
         }
     }
-
     return ustar;
 }
 
@@ -37,9 +36,7 @@ inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux,
     const double sv_b = sv_c(pv_b, T_b);
     const double cp_b = cpm_c(qt_b);
 
-
     double entropyflux = cp_b*thetaflux*exner_b/T_b + qtflux*(sv_b-sd_b);
-
 
     return entropyflux;
 }

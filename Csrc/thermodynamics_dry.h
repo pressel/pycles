@@ -9,7 +9,7 @@ inline double eos_c(double pd, double s){
     return T_tilde*(exp( (s - sd_tilde + Rd *log(pd/p_tilde))/cpd));
 };
 
-pdate(struct DimStruct *dims, double* restrict pd, double* restrict s, double* restrict T,
+void eos_update(struct DimStruct *dims, double* restrict pd, double* restrict s, double* restrict T,
     double* restrict alpha ){
 
     long i,j,k;
