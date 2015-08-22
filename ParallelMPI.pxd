@@ -1,6 +1,5 @@
 cimport mpi4py.mpi_c as mpi
 cimport Grid
-cimport numpy as np
 
 cdef class ParallelMPI:
     cdef:
@@ -24,7 +23,6 @@ cdef class ParallelMPI:
         void barrier(self)
         void kill(self)
         void create_sub_communicators(self)
-
 
         double [:] HorizontalMean(self,Grid.Grid Gr, double* values)
         double [:] HorizontalMeanofSquares(self,Grid.Grid Gr, double* values1, double* values2)
@@ -52,20 +50,15 @@ cdef class Pencil:
         int rank
 
     cpdef initialize(self, Grid.Grid Gr, ParallelMPI Pa, int dim)
-
     cdef double [:,:] forward_double(self, Grid.DimStruct *dims, ParallelMPI Pa, double *data)
     cdef void build_buffer_double(self, Grid.DimStruct *dims, double *data, double *local_transpose)
     cdef void unpack_buffer_double(self,Grid.DimStruct *dims, double *recv_buffer, double [:,:] pencils)
-
     cdef void reverse_double(self, Grid.DimStruct *dims, ParallelMPI Pa, double [:,:] pencils, double *data)
     cdef void reverse_build_buffer_double(self, Grid.DimStruct *dims, double [:,:] pencils, double *send_buffer)
     cdef void reverse_unpack_buffer_double(self, Grid.DimStruct *dims, double *recv_buffer, double *data )
-
-
     cdef complex [:,:] forward_complex(self, Grid.DimStruct *dims, ParallelMPI Pa, complex *data)
     cdef void build_buffer_complex(self, Grid.DimStruct *dims, complex *data, complex *local_transpose)
     cdef void unpack_buffer_complex(self,Grid.DimStruct *dims, complex *recv_buffer, complex [:,:] pencils)
-
     cdef void reverse_complex(self, Grid.DimStruct *dims, ParallelMPI Pa, complex [:,:] pencils, complex *data)
     cdef void reverse_build_buffer_complex(self, Grid.DimStruct *dims, complex [:,:] pencils, complex *send_buffer)
     cdef void reverse_unpack_buffer_complex(self, Grid.DimStruct *dims, complex *recv_buffer, complex *data )

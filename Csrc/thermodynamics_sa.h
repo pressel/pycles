@@ -14,10 +14,6 @@ inline double temperature_no_ql(double pd, double pv, double s, double qt){
                             /((1.0-qt)*cpd + qt * cpv));
 }
 
-
-
-
-
 void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                     const double p0, const double s, const double qt, double* T, double* qv, double* qc){
     *qc = 0.0;
@@ -66,7 +62,6 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     }
 }
 
-
 void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
     double* restrict p0, double* restrict s, double* restrict qt, double* restrict T,
     double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){
@@ -81,7 +76,6 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
     const long jmax = dims->nlg[1];
     const long kmax = dims->nlg[2];
 
-
     for (i=imin; i<imax; i++){
        const long ishift = i * istride;
         for (j=jmin;j<jmax;j++){
@@ -95,13 +89,11 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
                     ql[ijk] = lam * qc;
                     qi[ijk] = (1.0 - lam) * qc;
                     alpha[ijk] = alpha_c(p0[k], T[ijk],qt[ijk],qv[ijk]);
-                }
-            }
-        }
-
-
+                } // End k loop
+            } // End j loop
+        } // End i loop
+    return;
     }
-
 
 void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double* restrict alpha, double* restrict buoyancy, double* restrict wt){
 
@@ -119,29 +111,25 @@ void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double*
        const long ishift = i * istride;
         for (j=jmin;j<jmax;j++){
             const long jshift = j * jstride;
-                for (k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k;
-                    buoyancy[ijk] = buoyancy_c(alpha0[k],alpha[ijk]);
-
-                };
-        };
-    };
-
+            for (k=kmin;k<kmax;k++){
+                const long ijk = ishift + jshift + k;
+                buoyancy[ijk] = buoyancy_c(alpha0[k],alpha[ijk]);
+            } // End k loop
+        } // End j loop
+    } // End i loop
 
     for (i=imin; i<imax; i++){
        const long ishift = i * istride;
         for (j=jmin;j<jmax;j++){
             const long jshift = j * jstride;
-                for (k=kmin+1;k<kmax-2;k++){
-                    const long ijk = ishift + jshift + k;
-                    wt[ijk] = wt[ijk] + interp_4(buoyancy[ijk-1],buoyancy[ijk],buoyancy[ijk+1],buoyancy[ijk+2]);
-                };
-        };
-    };
-
+            for (k=kmin+1;k<kmax-2;k++){
+                const long ijk = ishift + jshift + k;
+                wt[ijk] = wt[ijk] + interp_4(buoyancy[ijk-1],buoyancy[ijk],buoyancy[ijk+1],buoyancy[ijk+2]);
+            } // End k loop
+        } // End j loop
+    } // End i loop
     return;
 }
-
 
 void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double), double* restrict p0, double* restrict T, double* restrict qt, double* restrict qv, double* restrict theta_rho,double* restrict bvf){
 
@@ -156,7 +144,6 @@ void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(do
     const long kmax = dims->nlg[2];
     const double dzi = 1.0/dims->dx[2];
 
-
     for (i=imin; i<imax; i++){
        const long ishift = i * istride;
         for (j=jmin;j<jmax;j++){
@@ -164,11 +151,9 @@ void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(do
             for (k=kmin;k<kmax;k++){
                 const long ijk = ishift + jshift + k;
                 theta_rho[ijk] = theta_rho_c(p0[k],T[ijk],qt[ijk],qv[ijk]);
-            };
-        };
-    };
-
-
+            } // End k loop
+        } // End j loop
+    } // End i loop
 
     for(i=imin; i<imax; i++){
         const long ishift = i * istride;
@@ -185,22 +170,13 @@ void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(do
                     double dTdz=(interp_2(T[ijk],T[ijk+1])-interp_2(T[ijk-1],T[ijk]))*dzi;
                     double dqtdz = (interp_2(qt[ijk],qt[ijk+1])-interp_2(qt[ijk-1],qt[ijk]))*dzi;
                     bvf[ijk] = g/T[ijk]*(dTdz+gamma_w)*(1.0 + Lv*rsl/(Rd*T[ijk]))-dqtdz/(1.0-qt[ijk]);
-
-
-
-                }
+                }  // End if
                 else{
                     //moist subsaturated
                     bvf[ijk] = g/theta_rho[ijk]*(interp_2(theta_rho[ijk],theta_rho[ijk+1])-interp_2(theta_rho[ijk-1],theta_rho[ijk]))*dzi;
-
-                }
-
-            }
-
-        }
-    }
-
-
-
+                } // End else
+            } // End k loop
+        } // End j loop
+    } // End i loop
     return;
 }

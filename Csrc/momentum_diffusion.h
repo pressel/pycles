@@ -24,7 +24,6 @@ void compute_diffusive_flux(const struct DimStruct *dims, double* restrict strai
                 for(long k=kmin; k<kmax; k++){
                     const long ijk = ishift + jshift + k;
                     flux[ijk] = -2.0 * strain_rate[ijk] * viscosity[ijk + stencil[i1]];
-
                 }
             }
         }
@@ -39,17 +38,13 @@ void compute_diffusive_flux(const struct DimStruct *dims, double* restrict strai
                     const double visc_interp = 0.25 * (viscosity[ijk] + viscosity[ijk + stencil[i1]]
                     + viscosity[ijk + stencil[i2]] +  viscosity[ijk + stencil[i1] + stencil[i2]] );
                     flux[ijk] = -2.0 * strain_rate[ijk] * visc_interp;
-
                 }
             }
         }
 
     }
-
-
     return;
 }
-
 
 void compute_entropy_source(const struct DimStruct *dims, double* restrict viscosity, double* restrict strain_rate_mag, double* restrict temperature, double* restrict entropy_tendency){
     const long istride = dims->nlg[1] * dims->nlg[2];
@@ -73,6 +68,4 @@ void compute_entropy_source(const struct DimStruct *dims, double* restrict visco
             }
         }
     }
-
-
 }
