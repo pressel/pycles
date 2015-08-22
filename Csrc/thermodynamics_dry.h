@@ -73,7 +73,6 @@ void buoyancy_update(struct DimStruct *dims, double* restrict alpha0, double* re
     return;
 }
 
-
 void bvf_dry(struct DimStruct* dims,  double* restrict p0, double* restrict T,double* restrict theta, double* restrict bvf){
 
     long i,j,k;
@@ -107,7 +106,7 @@ void bvf_dry(struct DimStruct* dims,  double* restrict p0, double* restrict T,do
                 bvf[ijk] = g/theta[ijk]*(interp_2(theta[ijk],theta[ijk+1])-interp_2(theta[ijk-1],theta[ijk]))*dzi;
             } // End k loop
         } // End j loop
-    } // End k loop
+    } // End i loop
     return;
 }
 
