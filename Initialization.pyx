@@ -211,7 +211,7 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
                 #Now set the entropy prognostic variable including a potential temperature perturbation
                 if Gr.zl_half[k] < 200.0:
-                    theta_pert_ = theta_pert[ijk] - 0.5
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
                 else:
                     theta_pert_ = 0.0
                 t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
