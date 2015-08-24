@@ -119,8 +119,8 @@ cdef class SurfaceSullivanPatton:
                 for j in xrange(1,jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.windspeed[ij] = fmax(sqrt(interp_2(PV.values[u_shift+ijk-istride],PV.values[v_shift+ijk])**2
-                                          + interp_2(PV.values[v_shift+ijk-jstride],PV.values[u_shift+ijk])**2), self.gustiness)
+                    self.windspeed[ij] = fmax(sqrt(interp_2(PV.values[u_shift+ijk-istride],PV.values[u_shift+ijk])**2
+                                          + interp_2(PV.values[v_shift+ijk-jstride],PV.values[v_shift+ijk])**2), self.gustiness)
                     # self.ustar[ij] = compute_ustar(self.windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
                     self.ustar[ij] = compute_ustar_c(self.windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
             for i in xrange(1,imax-1):
