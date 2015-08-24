@@ -78,13 +78,13 @@ cdef class ThermodynamicsDry:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
 
-        cdef int buoyancy_shift = DV.get_varshift(Gr,'buoyancy')
-        cdef int alpha_shift = DV.get_varshift(Gr,'alpha')
-        cdef int t_shift = DV.get_varshift(Gr,'temperature')
-        cdef int s_shift = PV.get_varshift(Gr,'s')
-        cdef int w_shift  = PV.get_varshift(Gr,'w')
-        cdef int theta_shift = DV.get_varshift(Gr,'theta')
-        cdef int bvf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
+        cdef Py_ssize_t buoyancy_shift = DV.get_varshift(Gr,'buoyancy')
+        cdef Py_ssize_t alpha_shift = DV.get_varshift(Gr,'alpha')
+        cdef Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
+        cdef Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+        cdef Py_ssize_t w_shift  = PV.get_varshift(Gr,'w')
+        cdef Py_ssize_t theta_shift = DV.get_varshift(Gr,'theta')
+        cdef Py_ssize_t bvf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
 
         eos_update(&Gr.dims,&RS.p0_half[0],&PV.values[s_shift],&DV.values[t_shift],&DV.values[alpha_shift])
         buoyancy_update(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
@@ -107,17 +107,17 @@ cdef class ThermodynamicsDry:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Fields NF, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            long i,j,k, ijk, ishift, jshift
-            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[2]
-            long imin = Gr.dims.gw
-            long jmin = Gr.dims.gw
-            long kmin = Gr.dims.gw
-            long imax = Gr.dims.nlg[0] - Gr.dims.gw
-            long jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            long kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            long count
-            long s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t i,j,k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t count
+            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
             double [:] data = np.empty((Gr.dims.npl,),dtype=np.double,order='c')
 
         #Add entropy potential temperature to 3d fields
@@ -142,17 +142,17 @@ cdef class ThermodynamicsDry:
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            long i,j,k, ijk, ishift, jshift
-            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[2]
-            long imin = 0
-            long jmin = 0
-            long kmin = 0
-            long imax = Gr.dims.nlg[0]
-            long jmax = Gr.dims.nlg[1]
-            long kmax = Gr.dims.nlg[2]
-            long count
-            long s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t i,j,k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t imin = 0
+            Py_ssize_t jmin = 0
+            Py_ssize_t kmin = 0
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t kmax = Gr.dims.nlg[2]
+            Py_ssize_t count
+            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
             double [:] data = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
             double [:] tmp
 

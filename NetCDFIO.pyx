@@ -211,18 +211,18 @@ cdef class NetCDFIO_Fields:
     cpdef dump_prognostic_variables(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
 
         cdef:
-            long i,j,k, ijk, ishift, jshift
-            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[2]
-            long imin = Gr.dims.gw
-            long jmin = Gr.dims.gw
-            long kmin = Gr.dims.gw
-            long imax = Gr.dims.nlg[0] - Gr.dims.gw
-            long jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            long kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            long var_shift
+            Py_ssize_t i,j,k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t var_shift
             double [:] data = np.empty((Gr.dims.npl,),dtype=np.double,order='c')
-            long count
+            Py_ssize_t count
         for name in PV.name_index.keys():
             self.add_field(name)
             var_shift = PV.get_varshift(Gr,name)
@@ -245,18 +245,18 @@ cdef class NetCDFIO_Fields:
     cpdef dump_diagnostic_variables(self,Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV):
 
         cdef:
-            long i,j,k, ijk, ishift, jshift
-            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[2]
-            long imin = Gr.dims.gw
-            long jmin = Gr.dims.gw
-            long kmin = Gr.dims.gw
-            long imax = Gr.dims.nlg[0] - Gr.dims.gw
-            long jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            long kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            long var_shift
+            Py_ssize_t i,j,k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t var_shift
             double [:] data = np.empty((Gr.dims.npl,),dtype=np.double,order='c')
-            long count
+            Py_ssize_t count
         for name in DV.name_index.keys():
             self.add_field(name)
             var_shift = DV.get_varshift(Gr,name)

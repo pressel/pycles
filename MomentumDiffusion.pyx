@@ -13,7 +13,7 @@ import cython
 from FluxDivergence cimport momentum_flux_divergence
 
 cdef extern from 'momentum_diffusion.h':
-    cdef void compute_diffusive_flux(Grid.DimStruct *dims, double* strain_rate, double* viscosity, double* flux, long i1, long i2)
+    cdef void compute_diffusive_flux(Grid.DimStruct *dims, double* strain_rate, double* viscosity, double* flux, Py_ssize_t i1, Py_ssize_t i2)
     cdef void compute_entropy_source(Grid.DimStruct *dims, double* viscosity, double* strain_rate_mag, double* temperature, double* entropy_tendency)
 
 cdef class MomentumDiffusion:
@@ -32,16 +32,16 @@ cdef class MomentumDiffusion:
                  DiagnosticVariables.DiagnosticVariables DV, Kinematics.Kinematics Ke):
 
         cdef:
-            long i1
-            long i2
-            long shift_v1
-            long shift_vgrad1
-            long shift_vgrad2
-            long shift_flux
-            long count = 0
-            long visc_shift = DV.get_varshift(Gr,'viscosity')
-            long temp_shift = DV.get_varshift(Gr,'temperature')
-            long s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t i1
+            Py_ssize_t i2
+            Py_ssize_t shift_v1
+            Py_ssize_t shift_vgrad1
+            Py_ssize_t shift_vgrad2
+            Py_ssize_t shift_flux
+            Py_ssize_t count = 0
+            Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
+            Py_ssize_t temp_shift = DV.get_varshift(Gr,'temperature')
+            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
 
         for i1 in xrange(Gr.dims.dims):
             shift_v1 = PV.velocity_directions[i1] * Gr.dims.npg
@@ -51,7 +51,6 @@ cdef class MomentumDiffusion:
                 #First we compute the flux
                 compute_diffusive_flux(&Gr.dims,&Ke.strain_rate[shift_flux],&DV.values[visc_shift],&self.flux[shift_flux], i1, i2)
                 momentum_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[shift_flux],&PV.tendencies[shift_v1],i1,i2)
-
 
                 count += 1
 

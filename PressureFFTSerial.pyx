@@ -29,8 +29,6 @@ cdef class PressureFFTSerial:
         print('Initializing variables')
         return
 
-
-
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
@@ -39,7 +37,7 @@ cdef class PressureFFTSerial:
         self.ky2 = np.zeros(Gr.dims.nl[1],dtype=np.double,order='c')
         cdef:
             double xi, yi
-            long i,j
+            Py_ssize_t i,j
         for i in xrange(Gr.dims.nl[0]):
             if i <= Gr.dims.nl[0]/2:
                 xi = np.double(i)
@@ -67,7 +65,7 @@ cdef class PressureFFTSerial:
     cpdef compute_off_diagonals(self,Grid.Grid Gr, ReferenceState.ReferenceState RS):
 
         cdef:
-            long  k
+            Py_ssize_t  k
 
         #self.a is the lower diagonal
         self.a = np.zeros(Gr.dims.nl[2],dtype=np.double,order='c')
@@ -93,10 +91,10 @@ cdef class PressureFFTSerial:
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
-    cdef inline void compute_diagonal(self,Grid.Grid Gr,ReferenceState.ReferenceState RS,long i, long j) nogil:
+    cdef inline void compute_diagonal(self,Grid.Grid Gr,ReferenceState.ReferenceState RS,Py_ssize_t i, Py_ssize_t j) nogil:
 
         cdef:
-            long k
+            Py_ssize_t k
             double kx2 = self.kx2[i]
             double ky2 = self.ky2[j]
 
@@ -128,23 +126,23 @@ cdef class PressureFFTSerial:
             complex [:,:,:] div_fft
             double [:,:,:] div = np.empty((Gr.dims.nl[0],Gr.dims.nl[1],Gr.dims.nl[2]),dtype=np.double,order='c')
 
-            long i, j,k, count
+            Py_ssize_t i, j,k, count
 
         #This is a relatively sloppy way to change the dimension of the array but for now we will use it
-            int imin = Gr.dims.gw
-            int jmin = Gr.dims.gw
-            int kmin = Gr.dims.gw
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
 
-            int imax = Gr.dims.nlg[0] - Gr.dims.gw
-            int jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            int kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
 
-            int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            int jstride = Gr.dims.nlg[2]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
 
-            int ishift, jshift, ijk
+            Py_ssize_t ishift, jshift, ijk
 
-            int div_shift = DV.get_varshift(Gr,'divergence')
+            Py_ssize_t div_shift = DV.get_varshift(Gr,'divergence')
 
 
         with nogil:
@@ -184,7 +182,7 @@ cdef class PressureFFTSerial:
 
         cdef:
             double [:,:,:] p = ifft2(div_fft,axes=(0,1)).real
-            int pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
+            Py_ssize_t pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
 
 
         with nogil:

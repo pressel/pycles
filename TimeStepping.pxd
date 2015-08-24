@@ -13,9 +13,9 @@ cdef class TimeStepping:
         public double t_max
         double [:,:] value_copies
         double [:,:] tendency_copies
-        public int rk_step
-        public int n_rk_steps
-        public int ts_type
+        public Py_ssize_t rk_step
+        public Py_ssize_t n_rk_steps
+        public Py_ssize_t ts_type
         void initialize_second(self,PrognosticVariables.PrognosticVariables PV)
         void initialize_third(self,PrognosticVariables.PrognosticVariables PV)
 

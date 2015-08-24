@@ -61,7 +61,7 @@ cdef class ReferenceState:
         cdef double [:] alpha_half = np.zeros(Gr.dims.ng[2],dtype=np.double,order='c')
 
         cdef double ql, qi, qt
-        cdef int k
+        cdef Py_ssize_t k
         for k in xrange(Gr.dims.ng[2]):
             temperature[k], ql, qi  = Thermodynamics.eos(p_[k],self.sg,self.qtg)
             qv = self.qtg -  (ql + qi)

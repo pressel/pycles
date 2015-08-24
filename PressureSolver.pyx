@@ -36,14 +36,14 @@ cdef class PressureSolver:
                   DiagnosticVariables.DiagnosticVariables DV, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI PM):
 
         cdef:
-            long i
-            long d
-            long vel_shift
-            long u_shift = PV.get_varshift(Gr,'u')
-            long v_shift = PV.get_varshift(Gr,'v')
-            long w_shift = PV.get_varshift(Gr,'w')
-            long pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
-            long div_shift = DV.get_varshift(Gr,'divergence')
+            Py_ssize_t i
+            Py_ssize_t d
+            Py_ssize_t vel_shift
+            Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
+            Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
+            Py_ssize_t pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
+            Py_ssize_t div_shift = DV.get_varshift(Gr,'divergence')
 
         cdef double [:] u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
         #Remove mean u3
@@ -84,19 +84,19 @@ cdef class PressureSolver:
 cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, double *u, double *v, double *w ):
 
     cdef:
-        int imin = 0
-        int jmin = 0
-        int kmin = 0
-        int imax = dims.nlg[0] - 1
-        int jmax = dims.nlg[1] - 1
-        int kmax = dims.nlg[2] - 1
-        int istride = dims.nlg[1] * dims.nlg[2]
-        int jstride = dims.nlg[2]
-        int ishift, jshift
-        int i,j,k, ijk
-        int ip1 = istride
-        int jp1 = jstride
-        int kp1 = 1
+        Py_ssize_t imin = 0
+        Py_ssize_t jmin = 0
+        Py_ssize_t kmin = 0
+        Py_ssize_t imax = dims.nlg[0] - 1
+        Py_ssize_t jmax = dims.nlg[1] - 1
+        Py_ssize_t kmax = dims.nlg[2] - 1
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift
+        Py_ssize_t i,j,k, ijk
+        Py_ssize_t ip1 = istride
+        Py_ssize_t jp1 = jstride
+        Py_ssize_t kp1 = 1
 
     for i in xrange(imin,imax):
         ishift = istride * i
@@ -117,16 +117,16 @@ cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, doub
 cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity):
 
     cdef:
-        int imin = 0
-        int jmin = 0
-        int kmin = 0
-        int imax = dims.nlg[0]
-        int jmax = dims.nlg[1]
-        int kmax = dims.nlg[2]
-        int istride = dims.nlg[1] * dims.nlg[2]
-        int jstride = dims.nlg[2]
-        int ishift, jshift
-        int ijk, i, j, k
+        Py_ssize_t imin = 0
+        Py_ssize_t jmin = 0
+        Py_ssize_t kmin = 0
+        Py_ssize_t imax = dims.nlg[0]
+        Py_ssize_t jmax = dims.nlg[1]
+        Py_ssize_t kmax = dims.nlg[2]
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift
+        Py_ssize_t ijk, i, j, k
 
     with nogil:
         for i in xrange(imin,imax):
@@ -144,23 +144,23 @@ cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity
 @cython.wraparound(False)   #Turn off numpy array wrap around indexing
 @cython.cdivision(True)
 cdef void second_order_divergence(Grid.DimStruct *dims, double *alpha0, double *alpha0_half, double *velocity,
-                                  double *divergence, long d):
+                                  double *divergence, Py_ssize_t d):
 
     cdef:
-        int imin = dims.gw
-        int jmin = dims.gw
-        int kmin = dims.gw
-        int imax = dims.nlg[0] - dims.gw
-        int jmax = dims.nlg[1] - dims.gw
-        int kmax = dims.nlg[2] - dims.gw
-        int istride = dims.nlg[1] * dims.nlg[2]
-        int jstride = dims.nlg[2]
-        int ishift, jshift
-        int i,j,k,ijk
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] - dims.gw
+        Py_ssize_t jmax = dims.nlg[1] - dims.gw
+        Py_ssize_t kmax = dims.nlg[2] - dims.gw
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift
+        Py_ssize_t i,j,k,ijk
 
         #Compute the s+trides given the dimensionality
-        int [3] p1 = [istride, jstride, 1]
-        int sm1 =  -p1[d]
+        Py_ssize_t [3] p1 = [istride, jstride, 1]
+        Py_ssize_t sm1 =  -p1[d]
         double dxi = 1.0/dims.dx[d]
 
     if d != 2:
