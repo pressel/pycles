@@ -34,6 +34,8 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.Pg = 1.0e5
     RS.Tg = 300.0
     RS.qtg = 0.0
+    RS.u0 = 0.0
+    RS.v0 = 0.0
     RS.initialize(Gr,Th)
 
     #Get the variable number for each of the velocity components
@@ -79,6 +81,9 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     thetas_sfc = 320.0
     qt_sfc = 0.0196 #RS.qtg
     RS.qtg = qt_sfc
+
+    RS.u0 = 0.0
+    RS.v0 = 0.0
 
     def theta_to_T(p0_,thetas_,qt_):
 
@@ -158,6 +163,8 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.Pg = 1.0e5  #Pressure at ground
     RS.Tg = 300.0  #Temperature at ground
     RS.qtg = 0.0   #Total water mixing ratio at surface
+    RS.u0 = 1.0  # velocities removed in Galilean transformation
+    RS.v0 = 0.0
 
     RS.initialize(Gr, Th)
 
@@ -270,6 +277,10 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             u[k] = -8.75
         if Gr.zl_half[k] > 700.0:
             u[k] = -8.75 + (Gr.zl_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
+
+    #Set velocities for Galilean transformation
+    RS.v0 = 0.0
+    RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
 
 
 
