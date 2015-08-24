@@ -14,6 +14,8 @@ cdef class ReferenceState:
         double Tg  #Temperature at ground level
         double Pg  #Pressure at ground level
         double qtg #Surface total water mixing ratio
+        double u0 #u velocity removed in Galilean transformation
+        double v0 #v velocity removed in Galilean transformation
 
 
 
