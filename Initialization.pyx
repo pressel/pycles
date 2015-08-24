@@ -34,8 +34,10 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.Pg = 1.0e5
     RS.Tg = 300.0
     RS.qtg = 0.0
+    #Set velocities for Galilean transformation
     RS.u0 = 0.0
     RS.v0 = 0.0
+
     RS.initialize(Gr,Th)
 
     #Get the variable number for each of the velocity components
@@ -82,6 +84,7 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     qt_sfc = 0.0196 #RS.qtg
     RS.qtg = qt_sfc
 
+    #Set velocities for Galilean transformation
     RS.u0 = 0.0
     RS.v0 = 0.0
 
