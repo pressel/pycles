@@ -1,30 +1,30 @@
 #pragma once
 #include "grid.h"
 
-void compute_velocity_gradient(const struct DimStruct *dims, double* restrict v, double* restrict vgrad, const long d){
+void compute_velocity_gradient(const struct DimStruct *dims, double* restrict v, double* restrict vgrad, const size_t d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const size_t imin = 0;
+    const size_t jmin = 0;
+    const size_t kmin = 0;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const size_t imax = dims->nlg[0]-1;
+    const size_t jmax = dims->nlg[1]-1;
+    const size_t kmax = dims->nlg[2]-1;
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
     const double dxi = dims->dxi[d];
 
 
-    for(long i=imin;i<imax;i++){
-        const long ishift = i*istride ;
-        for(long j=jmin;j<jmax;j++){
-            const long jshift = j*jstride;
-            for(long k=kmin;k<kmax;k++){
-                const long ijk = ishift + jshift + k ;
+    for(size_t i=imin;i<imax;i++){
+        const size_t ishift = i*istride ;
+        for(size_t j=jmin;j<jmax;j++){
+            const size_t jshift = j*jstride;
+            for(size_t k=kmin;k<kmax;k++){
+                const size_t ijk = ishift + jshift + k ;
                 vgrad[ijk] = (v[ijk + sp1] - v[ijk])*dxi;
             }
         }
@@ -35,29 +35,29 @@ void compute_velocity_gradient(const struct DimStruct *dims, double* restrict v,
 
 void compute_strain_rate(const struct DimStruct *dims, double* restrict vgrad, double* restrict strain_rate){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const size_t imin = 0;
+    const size_t jmin = 0;
+    const size_t kmin = 0;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
-    long count = 0;
+    const size_t imax = dims->nlg[0]-1;
+    const size_t jmax = dims->nlg[1]-1;
+    const size_t kmax = dims->nlg[2]-1;
+    size_t count = 0;
     //Loop over the dimensions twice to compute the strain rate vector components
-    for(long vi1=0;vi1<dims->dims;vi1++){
-        for(long d=0;d<dims->dims;d++){
-            const long shift_v1 = 3 * dims->npg * vi1 + dims->npg * d ;
-            const long shift_v2 = 3 * dims->npg * d + dims-> npg * vi1;
-            const long shift = count * dims->npg;
-            for(long i=imin;i<imax;i++){
-                const long ishift = i*istride ;
-                for(long j=jmin;j<jmax;j++){
-                    const long jshift = j*jstride;
-                    for(long k=kmin;k<kmax;k++){
-                        const long ijk = ishift + jshift + k ;
+    for(size_t vi1=0;vi1<dims->dims;vi1++){
+        for(size_t d=0;d<dims->dims;d++){
+            const size_t shift_v1 = 3 * dims->npg * vi1 + dims->npg * d ;
+            const size_t shift_v2 = 3 * dims->npg * d + dims-> npg * vi1;
+            const size_t shift = count * dims->npg;
+            for(size_t i=imin;i<imax;i++){
+                const size_t ishift = i*istride ;
+                for(size_t j=jmin;j<jmax;j++){
+                    const size_t jshift = j*jstride;
+                    for(size_t k=kmin;k<kmax;k++){
+                        const size_t ijk = ishift + jshift + k ;
                         strain_rate[shift + ijk] = 0.5 * (vgrad[shift_v1 + ijk] + vgrad[shift_v2 + ijk]) ;
                         }
                     }
@@ -72,35 +72,35 @@ void compute_strain_rate(const struct DimStruct *dims, double* restrict vgrad, d
 
 void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict strain_rate, double* restrict strain_rate_mag){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const size_t imin = 0;
+    const size_t jmin = 0;
+    const size_t kmin = 0;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
-    long count = 0;
+    const size_t imax = dims->nlg[0]-1;
+    const size_t jmax = dims->nlg[1]-1;
+    const size_t kmax = dims->nlg[2]-1;
+    size_t count = 0;
 
-    const long stencil[3] = {istride,jstride,1};
+    const size_t stencil[3] = {istride,jstride,1};
 
     //Set all values of strain rate magnitude to zero
-    for(long i=0; i<dims->npg; i++){
+    for(size_t i=0; i<dims->npg; i++){
         strain_rate_mag[i] = 0.0;
     }
 
     //On-diagonal components
-    for(long d=0;d<dims->dims;d++){
-        const long shift_s = 4*d*dims->npg;
-        for(long i=imin+1;i<imax;i++){
-            const long ishift=i*istride;
-            for(long j=jmin+1;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin+1;k<kmax;k++){
-                    const long ijk = ishift + jshift + k;
-                    const long total_shift = shift_s + ijk - stencil[d];
+    for(size_t d=0;d<dims->dims;d++){
+        const size_t shift_s = 4*d*dims->npg;
+        for(size_t i=imin+1;i<imax;i++){
+            const size_t ishift=i*istride;
+            for(size_t j=jmin+1;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin+1;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k;
+                    const size_t total_shift = shift_s + ijk - stencil[d];
                     strain_rate_mag[ijk] = strain_rate_mag[ijk] + strain_rate[total_shift]*strain_rate[total_shift];
                 }
             }
@@ -109,19 +109,19 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
 
     //Off-diagonal components
     //Here factor of 2 arises because we invoke symmetry of tensor
-    for(long vi1=0;vi1<dims->dims-1;vi1++){
-        for (long d=vi1;d<dims->dims;d++){
-            const long shift_s = 3 * dims->npg * vi1 + dims->npg * d ;
-            for(long i=imin+1;i<imax;i++){
-                const long ishift = i*istride;
-                for(long j=jmin+1;j<jmax;j++){
-                    const long jshift = j*jstride;
-                    for(long k=kmin+1;k<kmax;k++){
-                        const long ijk = ishift + jshift + k;
-                        const long sp1 = shift_s + ijk;
-                        const long sp2 = shift_s + ijk - stencil[vi1];
-                        const long sp3 = shift_s + ijk - stencil[d] ;
-                        const long sp4 = shift_s + ijk - stencil[d] - stencil[vi1] ;
+    for(size_t vi1=0;vi1<dims->dims-1;vi1++){
+        for (size_t d=vi1;d<dims->dims;d++){
+            const size_t shift_s = 3 * dims->npg * vi1 + dims->npg * d ;
+            for(size_t i=imin+1;i<imax;i++){
+                const size_t ishift = i*istride;
+                for(size_t j=jmin+1;j<jmax;j++){
+                    const size_t jshift = j*jstride;
+                    for(size_t k=kmin+1;k<kmax;k++){
+                        const size_t ijk = ishift + jshift + k;
+                        const size_t sp1 = shift_s + ijk;
+                        const size_t sp2 = shift_s + ijk - stencil[vi1];
+                        const size_t sp3 = shift_s + ijk - stencil[d] ;
+                        const size_t sp4 = shift_s + ijk - stencil[d] - stencil[vi1] ;
                         const double s_interp = 0.25*(strain_rate[sp1]+strain_rate[sp2]+strain_rate[sp3]+strain_rate[sp4]);
                         strain_rate_mag[ijk] = strain_rate_mag[ijk] + 2.0*s_interp*s_interp;
                     }
@@ -132,7 +132,7 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
     }
 
     //Complete the calculation
-    for(long i=0; i<dims->npg; i++){
+    for(size_t i=0; i<dims->npg; i++){
         strain_rate_mag[i] = sqrt(2.0*strain_rate_mag[i]);
     }
 
