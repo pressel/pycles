@@ -46,4 +46,3 @@ cdef class SurfaceBomex:
 
 cdef inline double compute_z0(double z1, double windspeed) nogil
 
-cdef inline double compute_ustar(double windspeed, double buoyancy_flux, double z0, double z1) nogil
