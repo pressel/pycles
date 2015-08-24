@@ -22,10 +22,10 @@ cdef class SGS:
         self.scheme.initialize(Gr)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke):
 
-        self.scheme.update(Gr,RS,DV,PV,Ke)
+        self.scheme.update(Gr,Ref,DV,PV,Ke)
 
         return
 
@@ -52,7 +52,7 @@ cdef class UniformViscosity:
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke):
 
         cdef:
@@ -90,20 +90,15 @@ cdef class Smagorinsky:
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
             Py_ssize_t bf_shift =DV.get_varshift(Gr, 'buoyancy_frequency')
-            Py_ssize_t i
 
-            double delta = (Gr.dims.dx[0]*Gr.dims.dx[1]*Gr.dims.dx[2])**(1.0/3.0)
-            double cs = self.cs
-            double prt = self.prt
-            double fb
-
-        smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],&Ke.strain_rate_mag[0],cs,prt)
+        smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],&Ke.strain_rate_mag[0],self.cs,self.prt)
 
         return
+
