@@ -81,16 +81,16 @@ cdef class Rayleigh:
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            long var_shift
-            long imin = Gr.dims.gw
-            long jmin = Gr.dims.gw
-            long kmin = Gr.dims.gw
-            long imax = Gr.dims.nlg[0] - Gr.dims.gw
-            long jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            long kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[2]
-            long i,j,k,ishift,jshift,ijk
+            Py_ssize_t var_shift
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i,j,k,ishift,jshift,ijk
             double [:] domain_mean
 
         for var_name in PV.name_index:
