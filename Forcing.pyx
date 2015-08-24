@@ -18,15 +18,16 @@ cdef class Forcing:
             self.scheme = ForcingBomex()
         else:
             self.scheme= ForcingNone()
+        return
 
     cpdef initialize(self, Grid.Grid Gr):
         self.scheme.initialize(Gr)
+        return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
         self.scheme.update(Gr, Ref, PV, DV)
-
-
+        return
 
 cdef class ForcingNone:
     def __init__(self):
@@ -81,8 +82,6 @@ cdef class ForcingBomex:
                 if Gr.zl[k] > 1500.0 and Gr.zl[k] <= 2100.0:
                     self.subsidence[k] = -0.65/100 + (Gr.zl[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
         return
-
-
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
