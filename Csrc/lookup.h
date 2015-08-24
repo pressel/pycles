@@ -10,11 +10,9 @@ struct LookupStruct{
     double dx;
     double dxi;
     double* y;
-
 };
 
 void init_table(struct LookupStruct *LT, long n, double* x, double* y){
-
 
     /// Allocate memory required for storing the table
     LT->y = calloc(n,sizeof(double));
@@ -37,13 +35,13 @@ void init_table(struct LookupStruct *LT, long n, double* x, double* y){
     LT->dx = x[1] - x[0];
     LT->dxi = 1.0/LT->dx;
 
-};
+}
 
 
 void free_table(struct LookupStruct *LT){
     /// Free memory allocated in init_table
     free(LT->y);
-};
+}
 
 inline double lookup(struct LookupStruct *LT, double x){
     const int indx = floor((x - LT->x_min)*LT->dxi);
@@ -51,4 +49,4 @@ inline double lookup(struct LookupStruct *LT, double x){
     const double y2 = LT->y[indx + 1];
     const double x1 = LT->x_min + LT-> dx * indx ;
     return y1 + (x - x1) * (y2 - y1)*LT->dxi;
-};
+}
