@@ -84,11 +84,11 @@ def SullivanPatton():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = "stats"
-    namelist['stats_io']['frequency'] = 600.0
+    namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = "fields"
-    namelist['fields_io']['frequency'] = 200.0
+    namelist['fields_io']['frequency'] = 1800.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'SullivanPatton'

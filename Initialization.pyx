@@ -211,7 +211,7 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
                 #Now set the entropy prognostic variable including a potential temperature perturbation
                 if Gr.zl_half[k] < 200.0:
-                    theta_pert_ = theta_pert[ijk]
+                    theta_pert_ = theta_pert[ijk] - 0.5
                 else:
                     theta_pert_ = 0.0
                 t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
@@ -300,7 +300,7 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[v_varshift + ijk] = 0.0 - RS.v0
                 PV.values[w_varshift + ijk] = 0.0
                 if Gr.z_half[k] <= 800.0:
-                    temp = (thetal[k] + theta_pert[count]) * exner_c(RS.p0_half[k])
+                    temp = (thetal[k] + (theta_pert[count]-0.05)) * exner_c(RS.p0_half[k])
                 else:
                     temp = (thetal[k]) * exner_c(RS.p0_half[k])
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt[k],0.0,0.0)
