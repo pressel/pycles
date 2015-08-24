@@ -29,6 +29,7 @@ cdef class Forcing:
         self.scheme.update(Gr, Ref, PV, DV)
         return
 
+
 cdef class ForcingNone:
     def __init__(self):
         pass
@@ -37,9 +38,6 @@ cdef class ForcingNone:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
-        return
-
-    cpdef stats_io(self):
         return
 
 cdef class ForcingBomex:
@@ -143,11 +141,9 @@ cdef class ForcingBomex:
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
         return
 
-    cpdef stats_io(self):
-        return
-
 cdef class ForcingSullivanPatton:
     def __init__(self):
+
         return
     cpdef initialize(self,Grid.Grid Gr):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
@@ -160,12 +156,9 @@ cdef class ForcingSullivanPatton:
             long u_shift = PV.get_varshift(Gr, 'u')
             long v_shift = PV.get_varshift(Gr, 'v')
 
+
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param  )
-        return
-
-    cpdef stats_io(self):
-
         return
 
 cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param ):
