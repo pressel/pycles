@@ -87,17 +87,17 @@ cdef class SurfaceSullivanPatton:
             return
 
         cdef:
-            long i
-            long j
-            long gw = Gr.dims.gw
-            long ijk, ij
-            long imax = Gr.dims.nlg[0]
-            long jmax = Gr.dims.nlg[1]
-            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[2]
-            long istride_2d = Gr.dims.nlg[1]
-            long temp_shift = DV.get_varshift(Gr, 'temperature')
-            long s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t i
+            Py_ssize_t j
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t ijk, ij
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t istride_2d = Gr.dims.nlg[1]
+            Py_ssize_t temp_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             double dzi = 1.0/Gr.dims.dx[2]
             double entropy_flux
 
@@ -110,8 +110,8 @@ cdef class SurfaceSullivanPatton:
                     PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         cdef:
-            long u_shift = PV.get_varshift(Gr,'u')
-            long v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
         # Get the shear stresses
         with nogil:
@@ -158,19 +158,19 @@ cdef class SurfaceBomex:
             return
 
         cdef:
-            long i
-            long j
-            long gw = Gr.dims.gw
-            long ijk, ij
-            long imax = Gr.dims.nlg[0]
-            long jmax = Gr.dims.nlg[1]
-            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[2]
-            long istride_2d = Gr.dims.nlg[1]
-            long temp_shift = DV.get_varshift(Gr, 'temperature')
-            long s_shift = PV.get_varshift(Gr, 's')
-            long qt_shift = PV.get_varshift(Gr, 'qt')
-            long qv_shift = DV.get_varshift(Gr,'qv')
+            Py_ssize_t i
+            Py_ssize_t j
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t ijk, ij
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t istride_2d = Gr.dims.nlg[1]
+            Py_ssize_t temp_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
             double dzi = 1.0/Gr.dims.dx[2]
             double entropy_flux
 
@@ -186,8 +186,8 @@ cdef class SurfaceBomex:
                     PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         cdef:
-            long u_shift = PV.get_varshift(Gr,'u')
-            long v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
 
         # Get the shear stresses
