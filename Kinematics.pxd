@@ -5,6 +5,6 @@ cdef class Kinematics:
         double [:] vgrad
         double [:] strain_rate
         double [:] strain_rate_mag
-        int get_grad_shift(self, Grid.Grid Gr, int vel_i, int dx_j)
+        Py_ssize_t get_grad_shift(self, Grid.Grid Gr, Py_ssize_t vel_i, Py_ssize_t dx_j)
     cpdef initialize(self, Grid.Grid Gr)
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)

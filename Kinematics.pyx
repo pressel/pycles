@@ -22,9 +22,9 @@ cdef class Kinematics:
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
 
         cdef:
-            int vi1, d, count=0
-            int shift_v1
-            int shift_v_grad, shift_strain
+            Py_ssize_t vi1, d, count=0
+            Py_ssize_t shift_v1
+            Py_ssize_t shift_v_grad, shift_strain
 
         for vi1 in xrange(Gr.dims.dims):
             shift_v1 = PV.velocity_directions[vi1] * Gr.dims.npg
@@ -38,5 +38,5 @@ cdef class Kinematics:
 
         return
 
-    cdef int get_grad_shift(self, Grid.Grid Gr, int vel_i, int dx_i):
+    cdef Py_ssize_t get_grad_shift(self, Grid.Grid Gr, Py_ssize_t vel_i, Py_ssize_t dx_i):
         return 3 * Gr.dims.npg * vel_i + Gr.dims.npg * dx_i
