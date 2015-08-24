@@ -1,7 +1,6 @@
 cimport numpy as np
 import numpy as np
 cimport Lookup
-
 cimport ParallelMPI
 cimport Grid
 cimport ReferenceState
@@ -19,7 +18,6 @@ cdef extern from "thermodynamics_sa.h":
     double* qv, double* ql, double* qi, double* alpha )
     void buoyancy_update_sa(Grid.DimStruct* dims, double* alpha0, double* alpha, double* buoyancy, double* wt)
     void bvf_sa(Grid.DimStruct* dims, Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double), double* p0, double* T, double* qt, double* qv, double* theta_rho, double* bvf)
-
 
 cdef extern from "thermodynamic_functions.h":
     inline double pd_c(double p0, double qt, double qv) nogil
@@ -52,7 +50,6 @@ cdef class ThermodynamicsSA:
         DV.add_variables('ql','kg/kg','sym',Pa)
         DV.add_variables('qi','kg/kg','sym',Pa)
         DV.add_variables('theta_rho','K','sym',Pa)
-
 
         #Add statistical output
         NS.add_profile('thetas_mean',Gr,Pa)
@@ -91,7 +88,6 @@ cdef class ThermodynamicsSA:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
 
-
         #Get relevant variables shifts
         cdef:
             int buoyancy_shift = DV.get_varshift(Gr,'buoyancy')
@@ -106,11 +102,9 @@ cdef class ThermodynamicsSA:
             int bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
             int thr_shift = DV.get_varshift(Gr,'theta_rho')
 
-
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                    &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
                    &DV.values[qi_shift],&DV.values[alpha_shift])
-
 
         buoyancy_update_sa(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
 
@@ -165,6 +159,7 @@ cdef class ThermodynamicsSA:
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
         cdef:
             long i,j,k, ijk, ishift, jshift
             long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -197,10 +192,10 @@ cdef class ThermodynamicsSA:
         tmp = Pa.HorizontalMean(Gr,&data[0])
         NS.write_profile('thetas_mean',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-
         #Compute and write mean of squres
         tmp = Pa.HorizontalMeanofSquares(Gr,&data[0],&data[0])
         NS.write_profile('thetas_mean2',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
         #Compute and write mean of cubes
         tmp = Pa.HorizontalMeanofCubes(Gr,&data[0],&data[0],&data[0])
         NS.write_profile('thetas_mean3',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -209,7 +204,6 @@ cdef class ThermodynamicsSA:
         tmp = Pa.HorizontalMaximum(Gr,&data[0])
         NS.write_profile('thetas_max',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_ts('thetas_max',np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
-
 
         #Compute and write mins
         tmp = Pa.HorizontalMinimum(Gr,&data[0])
