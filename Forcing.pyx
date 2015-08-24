@@ -207,7 +207,7 @@ cdef class ForcingBomex:
         #Output Coriolis tendencies
         tmp_tendency[:] = 0.0
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
-                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param  )
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -230,7 +230,6 @@ cdef class ForcingSullivanPatton:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
-
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
         return
@@ -239,7 +238,6 @@ cdef class ForcingSullivanPatton:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
-
 
 cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):
 
