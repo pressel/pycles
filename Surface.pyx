@@ -41,12 +41,12 @@ cdef class Surface:
         else:
             self.scheme= SurfaceNone()
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
-        self.scheme.initialize(Gr, RS)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref):
+        self.scheme.initialize(Gr, Ref)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
-        self.scheme.update(Gr, RS, PV, DV, Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+        self.scheme.update(Gr, Ref, PV, DV, Pa)
         return
 
 
@@ -54,10 +54,10 @@ cdef class SurfaceNone:
     def __init__(self):
         pass
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref):
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         return
 
 
@@ -68,9 +68,9 @@ cdef class SurfaceSullivanPatton:
         self.gustiness = 0.001 #m/s, minimum surface windspeed for determination of u*
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
-        T0 = RS.p0_half[Gr.dims.gw] * RS.alpha0_half[Gr.dims.gw]/Rd
-        self.buoyancy_flux = self.theta_flux * exner(RS.p0[Gr.dims.gw-1]) * g /T0
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref):
+        T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
+        self.buoyancy_flux = self.theta_flux * exner(Ref.p0[Gr.dims.gw-1]) * g /T0
         self.ustar = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
@@ -80,7 +80,7 @@ cdef class SurfaceSullivanPatton:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         # Since this case is completely dry, the computation of entropy flux from sensible heat flux is very simple
 
         if Pa.sub_z_rank != 0:
@@ -106,8 +106,8 @@ cdef class SurfaceSullivanPatton:
             for i in xrange(imax):
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
-                    entropy_flux = cpd * self.theta_flux*exner_c(RS.p0_half[gw])/DV.values[temp_shift+ijk]
-                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
+                    entropy_flux = cpd * self.theta_flux*exner_c(Ref.p0_half[gw])/DV.values[temp_shift+ijk]
+                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         cdef:
             long u_shift = PV.get_varshift(Gr,'u')
@@ -119,8 +119,8 @@ cdef class SurfaceSullivanPatton:
                 for j in xrange(1,jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.windspeed[ij] = fmax(sqrt((interp_2(PV.values[u_shift+ijk-istride],PV.values[u_shift+ijk])+RS.u0)**2
-                                                    + (interp_2(PV.values[v_shift+ijk-jstride],PV.values[v_shift+ijk]) + RS.v0)**2), self.gustiness)
+                    self.windspeed[ij] = fmax(sqrt((interp_2(PV.values[u_shift+ijk-istride],PV.values[u_shift+ijk])+Ref.u0)**2
+                                                    + (interp_2(PV.values[v_shift+ijk-jstride],PV.values[v_shift+ijk]) + Ref.v0)**2), self.gustiness)
                     self.ustar[ij] = compute_ustar_c(self.windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
@@ -128,8 +128,8 @@ cdef class SurfaceSullivanPatton:
                     ij = i * istride_2d + j
                     self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * PV.values[u_shift + ijk]
                     self.v_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+1])**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * PV.values[v_shift + ijk]
-                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/RS.alpha0[gw-1]*RS.alpha0_half[gw]*dzi
-                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/RS.alpha0[gw-1]*RS.alpha0_half[gw]*dzi
+                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
+                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
 
         return
 
@@ -141,7 +141,7 @@ cdef class SurfaceBomex:
 
         pass
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref):
 
         self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
@@ -152,7 +152,7 @@ cdef class SurfaceBomex:
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         if Pa.sub_z_rank != 0:
             return
@@ -181,9 +181,9 @@ cdef class SurfaceBomex:
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
 
-                    entropy_flux = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, RS.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
-                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
-                    PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux*RS.alpha0_half[gw]/RS.alpha0[gw-1]*dzi
+                    entropy_flux = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
+                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
+                    PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         cdef:
             long u_shift = PV.get_varshift(Gr,'u')
@@ -196,8 +196,8 @@ cdef class SurfaceBomex:
                 for j in xrange(1,jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.windspeed[ij] = sqrt((interp_2(PV.values[u_shift+ijk-istride],PV.values[u_shift+ijk])+RS.u0)**2
-                                              + (interp_2(PV.values[v_shift+ijk-jstride],PV.values[v_shift+ijk])+RS.v0)**2)
+                    self.windspeed[ij] = sqrt((interp_2(PV.values[u_shift+ijk-istride],PV.values[u_shift+ijk])+Ref.u0)**2
+                                              + (interp_2(PV.values[v_shift+ijk-jstride],PV.values[v_shift+ijk])+Ref.v0)**2)
 
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
@@ -205,8 +205,8 @@ cdef class SurfaceBomex:
                     ij = i * istride_2d + j
                     self.u_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * PV.values[u_shift + ijk]
                     self.v_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * PV.values[v_shift + ijk]
-                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/RS.alpha0[gw-1]*RS.alpha0_half[gw]*dzi
-                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/RS.alpha0[gw-1]*RS.alpha0_half[gw]*dzi
+                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
+                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
 
         return
 
