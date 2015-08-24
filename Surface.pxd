@@ -9,14 +9,14 @@ cdef class Surface:
     cdef:
         object scheme
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref)
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 
 cdef class SurfaceNone:
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref)
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 
 cdef class SurfaceSullivanPatton:
     cdef:
@@ -28,9 +28,9 @@ cdef class SurfaceSullivanPatton:
         double [:] windspeed
         double [:] u_flux
         double [:] v_flux
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref)
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 
 cdef class SurfaceBomex:
     cdef:
@@ -40,10 +40,9 @@ cdef class SurfaceBomex:
         double [:] windspeed
         double [:] u_flux
         double [:] v_flux
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref)
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 
 cdef inline double compute_z0(double z1, double windspeed) nogil
 
-cdef inline double compute_ustar(double windspeed, double buoyancy_flux, double z0, double z1) nogil

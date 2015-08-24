@@ -137,7 +137,7 @@ cdef class ForcingBomex:
 
         #Apply Coriolis Forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param  )
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
 
         #Apply large scale source terms
         with nogil:
@@ -232,7 +232,7 @@ cdef class ForcingSullivanPatton:
 
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param  )
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -240,7 +240,9 @@ cdef class ForcingSullivanPatton:
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
-cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param ):
+
+cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):
+
     cdef:
         Py_ssize_t imin = dims.gw
         Py_ssize_t jmin = dims.gw
@@ -260,8 +262,8 @@ cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, doub
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    u_at_v = 0.25*(u[ijk] + u[ijk-istride] + u[ijk-istride+jstride] + u[ijk +jstride])
-                    v_at_u = 0.25*(v[ijk] + v[ijk+istride] + v[ijk+istride-jstride] + v[ijk-jstride])
+                    u_at_v = 0.25*(u[ijk] + u[ijk-istride] + u[ijk-istride+jstride] + u[ijk +jstride]) + u0
+                    v_at_u = 0.25*(v[ijk] + v[ijk+istride] + v[ijk+istride-jstride] + v[ijk-jstride]) + v0
                     ut[ijk] = ut[ijk] - coriolis_param * (vg[k] - v_at_u)
                     vt[ijk] = vt[ijk] + coriolis_param * (ug[k] - u_at_v)
     return
