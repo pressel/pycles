@@ -23,7 +23,7 @@ inline double density_temperature_c(const double T, const double qt, const doubl
 }
 
 inline double theta_rho_c(const double p0, const double T, const double qt, const double qv){
-    return density_temperature_c(T,qt,qv)*exner_c(p0);
+    return density_temperature_c(T,qt,qv)/exner_c(p0);
 }
 
 inline double cpm_c(const double qt){
