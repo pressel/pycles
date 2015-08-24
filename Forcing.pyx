@@ -7,7 +7,8 @@ from entropies cimport sv_c, sd_c
 import numpy as np
 import cython
 from libc.math cimport fabs
-
+from NetCDFIO cimport NetCDFIO_Stats
+cimport ParallelMPI
 
 cdef class Forcing:
     def __init__(self, namelist):
@@ -20,8 +21,8 @@ cdef class Forcing:
             self.scheme= ForcingNone()
         return
 
-    cpdef initialize(self, Grid.Grid Gr):
-        self.scheme.initialize(Gr)
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.scheme.initialize(Gr, NS, Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -29,15 +30,28 @@ cdef class Forcing:
         self.scheme.update(Gr, Ref, PV, DV)
         return
 
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        self.scheme.stats_io(Gr, Ref, PV, DV, NS, Pa)
+
+        return
+
 
 cdef class ForcingNone:
     def __init__(self):
         pass
-    cpdef initialize(self, Grid.Grid Gr):
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
 cdef class ForcingBomex:
@@ -47,7 +61,7 @@ cdef class ForcingBomex:
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
-    cpdef initialize(self,Grid.Grid Gr):
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -56,7 +70,7 @@ cdef class ForcingBomex:
         self.coriolis_param = 0.376e-4 #s^{-1}
 
         cdef:
-            int k
+            Py_ssize_t k
 
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
@@ -79,6 +93,16 @@ cdef class ForcingBomex:
                     self.subsidence[k] = 0.0 + Gr.zl[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
                 if Gr.zl[k] > 1500.0 and Gr.zl[k] <= 2100.0:
                     self.subsidence[k] = -0.65/100 + (Gr.zl[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
+
+
+        #Initialize Statistical Output
+        NS.add_profile('s_subsidence_tendency', Gr, Pa)
+        NS.add_profile('qt_subsidence_tendency', Gr, Pa)
+        NS.add_profile('u_subsidence_tendency', Gr, Pa)
+        NS.add_profile('v_subsidence_tendency', Gr, Pa)
+        NS.add_profile('u_coriolis_tendency', Gr, Pa)
+        NS.add_profile('v_coriolis_tendency',Gr, Pa)
+
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -88,21 +112,21 @@ cdef class ForcingBomex:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
 
         cdef:
-            long imin = Gr.dims.gw
-            long jmin = Gr.dims.gw
-            long kmin = Gr.dims.gw
-            long imax = Gr.dims.nlg[0] - Gr.dims.gw
-            long jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            long kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[2]
-            long i,j,k,ishift,jshift,ijk
-            long u_shift = PV.get_varshift(Gr, 'u')
-            long v_shift = PV.get_varshift(Gr, 'v')
-            long s_shift = PV.get_varshift(Gr, 's')
-            long qt_shift = PV.get_varshift(Gr, 'qt')
-            long t_shift = DV.get_varshift(Gr, 'temperature')
-            long ql_shift = DV.get_varshift(Gr,'ql')
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i,j,k,ishift,jshift,ijk
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             double pd
             double pv
             double qt
@@ -141,11 +165,61 @@ cdef class ForcingBomex:
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
         return
 
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
+            double [:] mean_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+
+
+        #Output subsidence tendencies
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('u_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('v_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        #Output Coriolis tendencies
+        tmp_tendency[:] = 0.0
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param  )
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
+        NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_profile('v_coriolis_tendency',mean_tendency_2[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        return
+
 cdef class ForcingSullivanPatton:
     def __init__(self):
 
         return
-    cpdef initialize(self,Grid.Grid Gr):
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
         self.coriolis_param = 1.0e-4 #s^{-1}
@@ -153,25 +227,30 @@ cdef class ForcingSullivanPatton:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
         cdef:
-            long u_shift = PV.get_varshift(Gr, 'u')
-            long v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param  )
         return
 
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
 cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param ):
     cdef:
-        int imin = dims.gw
-        int jmin = dims.gw
-        int kmin = dims.gw
-        int imax = dims.nlg[0] -dims.gw
-        int jmax = dims.nlg[1] -dims.gw
-        int kmax = dims.nlg[2] -dims.gw
-        int istride = dims.nlg[1] * dims.nlg[2]
-        int jstride = dims.nlg[2]
-        int ishift, jshift, ijk, i,j,k
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] -dims.gw
+        Py_ssize_t jmax = dims.nlg[1] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k
         double u_at_v, v_at_u
 
     with nogil:
@@ -190,15 +269,15 @@ cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, doub
 cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double* values,  double *tendencies):
 
     cdef:
-        int imin = dims.gw
-        int jmin = dims.gw
-        int kmin = dims.gw
-        int imax = dims.nlg[0] -dims.gw
-        int jmax = dims.nlg[1] -dims.gw
-        int kmax = dims.nlg[2] -dims.gw
-        int istride = dims.nlg[1] * dims.nlg[2]
-        int jstride = dims.nlg[2]
-        int ishift, jshift, ijk, i,j,k
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] -dims.gw
+        Py_ssize_t jmax = dims.nlg[1] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k
         double phim, fluxm
         double phip, fluxp
 

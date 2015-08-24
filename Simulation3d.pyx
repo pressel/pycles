@@ -73,7 +73,7 @@ class Simulation3d:
         SetInitialConditions = InitializationFactory(namelist)
         SetInitialConditions(self.Gr,self.PV,self.Ref,self.Th)
         self.Sur.initialize(self.Gr,self.Ref)
-        self.Fo.initialize(self.Gr)
+        self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Pr.initialize(namelist,self.Gr,self.Ref,self.DV,self.Pa)
         self.DV.initialize(self.Gr,self.StatsIO,self.Pa)
         self.Damping.initialize(self.Gr)
@@ -146,6 +146,7 @@ class Simulation3d:
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
                 self.PV.stats_io(self.Gr,self.StatsIO,self.Pa)
                 self.DV.stats_io(self.Gr,self.StatsIO,self.Pa)
+                self.Fo.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Th.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
         return
 
@@ -154,5 +155,6 @@ class Simulation3d:
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
         self.PV.stats_io(self.Gr,self.StatsIO,self.Pa)
         self.DV.stats_io(self.Gr,self.StatsIO,self.Pa)
+        self.Fo.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Th.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
         return

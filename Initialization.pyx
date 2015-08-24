@@ -38,13 +38,13 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     #Get the variable number for each of the velocity components
     cdef:
-        int u_varshift = PV.get_varshift(Gr,'u')
-        int v_varshift = PV.get_varshift(Gr,'v')
-        int w_varshift = PV.get_varshift(Gr,'w')
-        int s_varshift = PV.get_varshift(Gr,'s')
-        int i,j,k
-        int ishift, jshift
-        int ijk
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift
+        Py_ssize_t ijk
         double t
         double dist
 
@@ -118,14 +118,14 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     #Get the variable number for each of the velocity components
     cdef:
-        int u_varshift = PV.get_varshift(Gr,'u')
-        int v_varshift = PV.get_varshift(Gr,'v')
-        int w_varshift = PV.get_varshift(Gr,'w')
-        int s_varshift = PV.get_varshift(Gr,'s')
-        int qt_varshift = PV.get_varshift(Gr,'qt')
-        int i,j,k
-        int ishift, jshift
-        int ijk
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift
+        Py_ssize_t ijk
         double t
         double dist
         double thetas
@@ -163,13 +163,13 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     #Get the variable number for each of the velocity components
     cdef:
-        int u_varshift = PV.get_varshift(Gr,'u')
-        int v_varshift = PV.get_varshift(Gr,'v')
-        int w_varshift = PV.get_varshift(Gr,'w')
-        int s_varshift = PV.get_varshift(Gr,'s')
-        int i,j,k
-        int ishift, jshift
-        int ijk
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift
+        Py_ssize_t ijk
         double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double t
 
@@ -224,19 +224,19 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     #Get the variable number for each of the velocity components
     cdef:
-        int u_varshift = PV.get_varshift(Gr,'u')
-        int v_varshift = PV.get_varshift(Gr,'v')
-        int w_varshift = PV.get_varshift(Gr,'w')
-        int s_varshift = PV.get_varshift(Gr,'s')
-        int qt_varshift = PV.get_varshift(Gr,'qt')
-        int i,j,k
-        int ishift, jshift
-        int ijk
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift
+        Py_ssize_t ijk
         double temp
         double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        int count
+        Py_ssize_t count
 
         theta_pert = np.random.random_sample(Gr.dims.npg)*0.1
 
