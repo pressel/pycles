@@ -220,32 +220,5 @@ cdef inline double compute_z0(double z1, double windspeed) nogil:
     cdef double z0 =z1*exp(-kappa/sqrt((0.4 + 0.079*windspeed)*1e-3))
     return z0
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
-cdef inline double compute_ustar(double windspeed, double buoyancy_flux, double z0, double z1) nogil:
-    cdef:
-        double lnz = log(z1/fabs(z0))
-        double ustar = windspeed * kappa/lnz
-        int i
-        double lmo
-        double zeta
-        double x
-        double psi1
-        double am = 4.8
-        double bm = 19.3
-        double c1 = -0.50864521488493919 # = pi/2 - 3*log(2)
 
-    if fabs(buoyancy_flux) > 1.0e-10:
-        for i in xrange(6):
-            lmo = -(ustar * ustar * ustar)/(buoyancy_flux * kappa)
-            zeta = z1/lmo
-            if zeta > 0.0:
-                ustar = kappa*windspeed/(lnz + am*zeta)
-            else:
-                x = sqrt(sqrt(1.0 - bm * zeta))
-                psi1 = 2.0 * log(1.0 + x) + log(1.0 + x*x) - 2.0 * atan(x) + c1
-                ustar = windspeed * kappa/(lnz-psi1)
-
-    return  ustar
 
