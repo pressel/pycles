@@ -4,39 +4,39 @@
 
 void second_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 0;
-    const long jmin = 0;
-    const long kmin = 0;
+    const size_t imin = 0;
+    const size_t jmin = 0;
+    const size_t kmin = 0;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const size_t imax = dims->nlg[0]-1;
+    const size_t jmax = dims->nlg[1]-1;
+    const size_t kmax = dims->nlg[2]-1;
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
 
     if(d==2){
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     flux[ijk] = interp_2(scalar[ijk],scalar[ijk+sp1]) * velocity[ijk]*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
     } // end if
     else{
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     flux[ijk] = interp_2(scalar[ijk],scalar[ijk+sp1])*velocity[ijk]*rho0_half[k];
                 } // End k loop
             } // End j loop
@@ -48,43 +48,43 @@ void second_order_a(const struct DimStruct *dims, double* restrict rho0, double*
 
 void fourth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 1;
-    const long jmin = 1;
-    const long kmin = 1;
+    const size_t imin = 1;
+    const size_t jmin = 1;
+    const size_t kmin = 1;
 
-    const long imax = dims->nlg[0]-2;
-    const long jmax = dims->nlg[1]-2;
-    const long kmax = dims->nlg[2]-2;
+    const size_t imax = dims->nlg[0]-2;
+    const size_t jmax = dims->nlg[1]-2;
+    const size_t kmax = dims->nlg[2]-2;
 
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
-    const long sp2 = 2 * sp1;
-    const long sm1 = -sp1 ;
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
+    const size_t sp2 = 2 * sp1;
+    const size_t sm1 = -sp1 ;
 
 
     if(d==2){
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
     } //end if
     else{
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
                 } // End k loop
             } // End j loop
@@ -95,31 +95,31 @@ void fourth_order_a(const struct DimStruct *dims, double* restrict rho0, double*
 
 void sixth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 2;
-    const long jmin = 2;
-    const long kmin = 2;
+    const size_t imin = 2;
+    const size_t jmin = 2;
+    const size_t kmin = 2;
 
-    const long imax = dims->nlg[0]-3;
-    const long jmax = dims->nlg[1]-3;
-    const long kmax = dims->nlg[2]-3;
+    const size_t imax = dims->nlg[0]-3;
+    const size_t jmax = dims->nlg[1]-3;
+    const size_t kmax = dims->nlg[2]-3;
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
-    const long sp2 = 2 * sp1;
-    const long sp3 = 3 * sp1;
-    const long sm1 = -sp1 ;
-    const long sm2 = -2*sp1;
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
+    const size_t sp2 = 2 * sp1;
+    const size_t sp3 = 3 * sp1;
+    const size_t sm1 = -sp1 ;
+    const size_t sm2 = -2*sp1;
 
     if(d==2){
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     flux[ijk] = interp_6(scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3])*velocity[ijk]*rho0[k];
                 } // End k loop
@@ -127,12 +127,12 @@ void sixth_order_a(const struct DimStruct *dims, double* restrict rho0, double* 
         } // End i loop
     } // End if
     else{
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     flux[ijk] = interp_6(scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3])*velocity[ijk]*rho0_half[k];
                 } // End k loop
@@ -144,33 +144,33 @@ void sixth_order_a(const struct DimStruct *dims, double* restrict rho0, double* 
 
 void eighth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 3;
-    const long jmin = 3;
-    const long kmin = 3;
+    const size_t imin = 3;
+    const size_t jmin = 3;
+    const size_t kmin = 3;
 
-    const long imax = dims->nlg[0]-4;
-    const long jmax = dims->nlg[1]-4;
-    const long kmax = dims->nlg[2]-4;
+    const size_t imax = dims->nlg[0]-4;
+    const size_t jmax = dims->nlg[1]-4;
+    const size_t kmax = dims->nlg[2]-4;
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
-    const long sp2 = 2 * sp1;
-    const long sp3 = 3 * sp1;
-    const long sp4 = 4 * sp1;
-    const long sm1 = -sp1 ;
-    const long sm2 = -2*sp1;
-    const long sm3 = -3*sp1;
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
+    const size_t sp2 = 2 * sp1;
+    const size_t sp3 = 3 * sp1;
+    const size_t sp4 = 4 * sp1;
+    const size_t sm1 = -sp1 ;
+    const size_t sm2 = -2*sp1;
+    const size_t sm3 = -3*sp1;
 
     if(d==2){
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     flux[ijk] = interp_8(scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3],scalar[ijk+sp4])*velocity[ijk]*rho0[k];
                 } // End k loop
@@ -178,12 +178,12 @@ void eighth_order_a(const struct DimStruct *dims, double* restrict rho0, double*
         } // End i loop
     } // End if
     else{
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     flux[ijk] = interp_8(scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3],scalar[ijk+sp4])*velocity[ijk]*rho0_half[k];
                 } // End k loop
@@ -195,27 +195,27 @@ void eighth_order_a(const struct DimStruct *dims, double* restrict rho0, double*
 
 void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 1;
-    const long jmin = 1;
-    const long kmin = 1;
+    const size_t imin = 1;
+    const size_t jmin = 1;
+    const size_t kmin = 1;
 
-    const long imax = dims->nlg[0]-1;
-    const long jmax = dims->nlg[1]-1;
-    const long kmax = dims->nlg[2]-1;
+    const size_t imax = dims->nlg[0]-1;
+    const size_t jmax = dims->nlg[1]-1;
+    const size_t kmax = dims->nlg[2]-1;
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
 
     if(d==2){
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = scalar[ijk];
                     // Up wind for negative velocity
@@ -226,12 +226,12 @@ void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double*
         } // End i loop
     } // End if
     else{
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = scalar[ijk];
                     // Up wind for negative velocity
@@ -246,29 +246,29 @@ void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double*
 
 void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 1;
-    const long jmin = 1;
-    const long kmin = 1;
+    const size_t imin = 1;
+    const size_t jmin = 1;
+    const size_t kmin = 1;
 
-    const long imax = dims->nlg[0]-2;
-    const long jmax = dims->nlg[1]-2;
-    const long kmax = dims->nlg[2]-2;
+    const size_t imax = dims->nlg[0]-2;
+    const size_t jmax = dims->nlg[1]-2;
+    const size_t kmax = dims->nlg[2]-2;
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
-    const long sp2 = 2 * sp1;
-    const long sm1 = -sp1 ;
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
+    const size_t sp2 = 2 * sp1;
+    const size_t sm1 = -sp1 ;
 
     if(d==2){
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = interp_weno3(scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1]);
@@ -281,12 +281,12 @@ void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, dou
         } // End i loop
     } // End if
     else{
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = interp_weno3(scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1]);
@@ -304,31 +304,31 @@ void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, dou
 
 void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 2;
-    const long jmin = 2;
-    const long kmin = 2;
+    const size_t imin = 2;
+    const size_t jmin = 2;
+    const size_t kmin = 2;
 
-    const long imax = dims->nlg[0]-3;
-    const long jmax = dims->nlg[1]-3;
-    const long kmax = dims->nlg[2]-3;
+    const size_t imax = dims->nlg[0]-3;
+    const size_t jmax = dims->nlg[1]-3;
+    const size_t kmax = dims->nlg[2]-3;
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
-    const long sp2 = 2 * sp1;
-    const long sp3 = 3 * sp1;
-    const long sm1 = -sp1 ;
-    const long sm2 = -2*sp1;
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
+    const size_t sp2 = 2 * sp1;
+    const size_t sp3 = 3 * sp1;
+    const size_t sm1 = -sp1 ;
+    const size_t sm2 = -2*sp1;
 
     if(d==2){
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = interp_weno5(scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2]);
@@ -341,12 +341,12 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
         } // End i loop
     } // End if
     else{
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = interp_weno5(scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2]);
@@ -363,33 +363,33 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
 
 void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 3;
-    const long jmin = 3;
-    const long kmin = 3;
+    const size_t imin = 3;
+    const size_t jmin = 3;
+    const size_t kmin = 3;
 
-    const long imax = dims->nlg[0]-4;
-    const long jmax = dims->nlg[1]-4;
-    const long kmax = dims->nlg[2]-4;
+    const size_t imax = dims->nlg[0]-4;
+    const size_t jmax = dims->nlg[1]-4;
+    const size_t kmax = dims->nlg[2]-4;
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
-    const long sp2 = 2 * sp1;
-    const long sp3 = 3 * sp1;
-    const long sp4 = 4 * sp1;
-    const long sm1 = -sp1 ;
-    const long sm2 = -2*sp1;
-    const long sm3 = -3*sp1;
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
+    const size_t sp2 = 2 * sp1;
+    const size_t sp3 = 3 * sp1;
+    const size_t sp4 = 4 * sp1;
+    const size_t sm1 = -sp1 ;
+    const size_t sm2 = -2*sp1;
+    const size_t sm3 = -3*sp1;
 
     if(d==2){
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = interp_weno7(scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3]);
@@ -402,12 +402,12 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
         } // End i loop
     } // End if
     else{
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                      //Upwind for positive velocity
                     const double phip = interp_weno7(scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3]);
@@ -424,35 +424,35 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
 
 void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 4;
-    const long jmin = 4;
-    const long kmin = 4;
+    const size_t imin = 4;
+    const size_t jmin = 4;
+    const size_t kmin = 4;
 
-    const long imax = dims->nlg[0]-5;
-    const long jmax = dims->nlg[1]-5;
-    const long kmax = dims->nlg[2]-5;
+    const size_t imax = dims->nlg[0]-5;
+    const size_t jmax = dims->nlg[1]-5;
+    const size_t kmax = dims->nlg[2]-5;
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
-    const long sp2 = 2 * sp1;
-    const long sp3 = 3 * sp1;
-    const long sp4 = 4 * sp1;
-    const long sp5 = 5 * sp1;
-    const long sm1 = -sp1 ;
-    const long sm2 = -2*sp1;
-    const long sm3 = -3*sp1;
-    const long sm4 = -4*sp1;
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
+    const size_t sp2 = 2 * sp1;
+    const size_t sp3 = 3 * sp1;
+    const size_t sp4 = 4 * sp1;
+    const size_t sp5 = 5 * sp1;
+    const size_t sm1 = -sp1 ;
+    const size_t sm2 = -2*sp1;
+    const size_t sm3 = -3*sp1;
+    const size_t sm4 = -4*sp1;
 
     if(d==2){
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = interp_weno9(scalar[ijk+sm4],scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3],scalar[ijk+sp4]);
@@ -465,12 +465,12 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
         } // End i loop
     } // End if
     else{
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = interp_weno9(scalar[ijk+sm4],scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3],scalar[ijk+sp4]);
@@ -487,37 +487,37 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
 
 void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    const long imin = 5;
-    const long jmin = 5;
-    const long kmin = 5;
+    const size_t imin = 5;
+    const size_t jmin = 5;
+    const size_t kmin = 5;
 
-    const long imax = dims->nlg[0]-6;
-    const long jmax = dims->nlg[1]-6;
-    const long kmax = dims->nlg[2]-6;
+    const size_t imax = dims->nlg[0]-6;
+    const size_t jmax = dims->nlg[1]-6;
+    const size_t kmax = dims->nlg[2]-6;
 
-    const long stencil[3] = {istride,jstride,1};
-    const long sp1 = stencil[d];
-    const long sp2 = 2 * sp1;
-    const long sp3 = 3 * sp1;
-    const long sp4 = 4 * sp1;
-    const long sp5 = 5 * sp1;
-    const long sp6 = 6 * sp1;
-    const long sm1 = -sp1 ;
-    const long sm2 = -2*sp1;
-    const long sm3 = -3*sp1;
-    const long sm4 = -4*sp1;
-    const long sm5 = -5*sp1;
+    const size_t stencil[3] = {istride,jstride,1};
+    const size_t sp1 = stencil[d];
+    const size_t sp2 = 2 * sp1;
+    const size_t sp3 = 3 * sp1;
+    const size_t sp4 = 4 * sp1;
+    const size_t sp5 = 5 * sp1;
+    const size_t sp6 = 6 * sp1;
+    const size_t sm1 = -sp1 ;
+    const size_t sm2 = -2*sp1;
+    const size_t sm3 = -3*sp1;
+    const size_t sm4 = -4*sp1;
+    const size_t sm5 = -5*sp1;
 
     if(d==2){
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = interp_weno11(scalar[ijk+sm5],scalar[ijk+sm4],scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3],scalar[ijk+sp4],scalar[ijk+sp5]);
@@ -530,12 +530,12 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
         } // End i loop
     } // End if
     else{
-        for(long i=imin;i<imax;i++){
-            const long ishift = i*istride ;
-            for(long j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
-                for(long k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k ;
+        for(size_t i=imin;i<imax;i++){
+            const size_t ishift = i*istride ;
+            for(size_t j=jmin;j<jmax;j++){
+                const size_t jshift = j*jstride;
+                for(size_t k=kmin;k<kmax;k++){
+                    const size_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
                     const double phip = interp_weno11(scalar[ijk+sm5],scalar[ijk+sm4],scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
                                             scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3],scalar[ijk+sp4],scalar[ijk+sp5]);
@@ -588,19 +588,19 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
 
 void compute_flux_divergence(const struct DimStruct *dims, double* restrict alpha0, double* restrict alpha0_half, const double* restrict flux, double* restrict tendency, const double dx, int d){
 
-    long i,j,k;
-    const long imin = 1;
-    const long jmin = 1;
-    const long kmin = 1;
+    size_t i,j,k;
+    const size_t imin = 1;
+    const size_t jmin = 1;
+    const size_t kmin = 1;
 
-    const long imax = dims->nlg[0]-2;
-    const long jmax = dims->nlg[1]-2;
-    const long kmax = dims->nlg[2]-2;
+    const size_t imax = dims->nlg[0]-2;
+    const size_t jmax = dims->nlg[1]-2;
+    const size_t kmax = dims->nlg[2]-2;
 
-    const long istride = dims->nlg[1] * dims->nlg[2];
-    const long jstride = dims->nlg[2];
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
 
-    long sm1 ;
+    size_t sm1 ;
     switch(d){
         case 0:
             sm1 = -istride;
@@ -614,11 +614,11 @@ void compute_flux_divergence(const struct DimStruct *dims, double* restrict alph
 
     if(d==2){
         for(i=imin;i<imax;i++){
-            const long ishift = i*istride ;
+            const size_t ishift = i*istride ;
             for(j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
+                const size_t jshift = j*jstride;
                 for(k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k;
+                    const size_t ijk = ishift + jshift + k;
                     tendency[ijk] = tendency[ijk] - alpha0[k]*(flux[ijk+sm1] - flux[ijk])*dxi;
                 } // End k loop
             } // End j loop
@@ -626,11 +626,11 @@ void compute_flux_divergence(const struct DimStruct *dims, double* restrict alph
      } // End if
      else{
         for(i=imin;i<imax;i++){
-            const long ishift = i*istride ;
+            const size_t ishift = i*istride ;
             for(j=jmin;j<jmax;j++){
-                const long jshift = j*jstride;
+                const size_t jshift = j*jstride;
                 for(k=kmin;k<kmax;k++){
-                    const long ijk = ishift + jshift + k;
+                    const size_t ijk = ishift + jshift + k;
                     tendency[ijk] = tendency[ijk] - (flux[ijk+sm1] - flux[ijk])*dxi;
                 }// End k loop
              } // End j loop

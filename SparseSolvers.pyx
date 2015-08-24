@@ -8,7 +8,7 @@ cdef class TDMA:
     def  __init__(self):
         pass
 
-    cdef void initialize(self, long n):
+    cdef void initialize(self, Py_ssize_t n):
 
         self.n = n
         self.scratch = <double*> PyMem_Malloc(self.n * sizeof(double))
@@ -21,7 +21,7 @@ cdef class TDMA:
     cdef inline void solve(self, double* x, double* a, double* b, double* c) nogil:
 
         cdef:
-            long i
+            Py_ssize_t i
             double m
 
         self.scratch[0] = c[0]/b[0]

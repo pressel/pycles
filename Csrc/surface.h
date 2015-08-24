@@ -55,10 +55,10 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double cm, doub
     const double gamma_h = 9.0;
     const double Ri_crit = 0.25;
     const double vkb = 0.35; //Von Karman constant from Businger 1971 used by Byun
-    const double C_neu = vkb/logz
     const double logz = log(zb/z0);
     const double zfactor = zb/(zb-z0)*logz;
-    double zeta, lmo, zeta0, psi_m, psi_h
+    const double C_neu = vkb/logz;
+    double zeta, lmo, zeta0, psi_m, psi_h;
 
     double sb = Ri/Pr0;
 
@@ -69,18 +69,18 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double cm, doub
         const double crit = qb * qb *qb - pb * pb;
         if(crit >=0.0){
             const double angle = acos(pb/pow(qb,1.5));
-            zeta = zfactor * (1.0/(3.0*gamma_m)-(tb+qb/tb));
+            zeta = zfactor * (-2.0 * sqrt(qb) * cos(angle/3.0)+1.0/(3.0*gamma_m));
         }
         else{
             const double tb = pow((sqrt(-crit) + fabs(pb)),0.3333);
-            zeta = zfactor * (1.0/(3.0*gamma_m)-(tb+qb/tb));
+            zeta = zfactor * (1.0/(3.0*gamma_m)-(tb + qb/tb));
         }
         lmo = zb/zeta;
         zeta0 = z0/lmo;
         const double x = pow((1.0 - gamma_m * zeta),0.25);
         const double x0 = pow((1.0 - gamma_m * zeta0), 0.25);
         const double y = sqrt(1.0 - gamma_h * zeta );
-        const double y = sqrt(1.0 - gamma_h * zeta0 );
+        const double y0 = sqrt(1.0 - gamma_h * zeta0 );
         psi_m = 2.0 * log((1.0 + x)/(1.0 + x0)) + log((1.0 + x*x)/(1.0 + x0 * x0))-2.0*atan(x)+2.0*atan(x0);
         psi_h = 2.0 * log((1.0 + y)/(1.0+y0));
     }
@@ -105,8 +105,8 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double cm, doub
             psi_h = 1.0 - beta_h - zeta;
         }
     }
-    const double cu = min(vkb/(logz-psi_m),2.0*C_neu);
-    const double cth = min(vkb/(logz-psi_h)/Pr0,4.5*C_neu);
+    const double cu = fmin(vkb/(logz-psi_m),2.0*C_neu);
+    const double cth = fmin(vkb/(logz-psi_h)/Pr0,4.5*C_neu);
     cm = cu * cu;
     ch = cu * cth;
 

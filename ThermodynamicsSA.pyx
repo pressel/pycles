@@ -90,17 +90,17 @@ cdef class ThermodynamicsSA:
 
         #Get relevant variables shifts
         cdef:
-            int buoyancy_shift = DV.get_varshift(Gr,'buoyancy')
-            int alpha_shift = DV.get_varshift(Gr,'alpha')
-            int t_shift = DV.get_varshift(Gr,'temperature')
-            int ql_shift = DV.get_varshift(Gr,'ql')
-            int qi_shift = DV.get_varshift(Gr,'qi')
-            int qv_shift = DV.get_varshift(Gr,'qv')
-            int s_shift = PV.get_varshift(Gr,'s')
-            int qt_shift = PV.get_varshift(Gr,'qt')
-            int w_shift  = PV.get_varshift(Gr,'w')
-            int bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
-            int thr_shift = DV.get_varshift(Gr,'theta_rho')
+            Py_ssize_t buoyancy_shift = DV.get_varshift(Gr,'buoyancy')
+            Py_ssize_t alpha_shift = DV.get_varshift(Gr,'alpha')
+            Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
+            Py_ssize_t qi_shift = DV.get_varshift(Gr,'qi')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
+            Py_ssize_t w_shift  = PV.get_varshift(Gr,'w')
+            Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
+            Py_ssize_t thr_shift = DV.get_varshift(Gr,'theta_rho')
 
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                    &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
@@ -126,18 +126,18 @@ cdef class ThermodynamicsSA:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Fields NF, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            long i,j,k, ijk, ishift, jshift
-            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[2]
-            long imin = Gr.dims.gw
-            long jmin = Gr.dims.gw
-            long kmin = Gr.dims.gw
-            long imax = Gr.dims.nlg[0] - Gr.dims.gw
-            long jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            long kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            long count
-            long s_shift = PV.get_varshift(Gr,'s')
-            long qt_shift = PV.get_varshift(Gr,'qt')
+            Py_ssize_t i,j,k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t count
+            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
             double [:] data = np.empty((Gr.dims.npl,),dtype=np.double,order='c')
 
         #Add entropy potential temperature to 3d fields
@@ -161,18 +161,18 @@ cdef class ThermodynamicsSA:
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            long i,j,k, ijk, ishift, jshift
-            long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            long jstride = Gr.dims.nlg[2]
-            long imin = 0
-            long jmin = 0
-            long kmin = 0
-            long imax = Gr.dims.nlg[0]
-            long jmax = Gr.dims.nlg[1]
-            long kmax = Gr.dims.nlg[2]
-            long count
-            long s_shift = PV.get_varshift(Gr,'s')
-            long qt_shift = PV.get_varshift(Gr,'qt')
+            Py_ssize_t i,j,k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t imin = 0
+            Py_ssize_t jmin = 0
+            Py_ssize_t kmin = 0
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t kmax = Gr.dims.nlg[2]
+            Py_ssize_t count
+            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
             double [:] data = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
             double [:] tmp
 

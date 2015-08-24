@@ -49,7 +49,7 @@ cdef class PrognosticVariables:
 
         return
 
-    cpdef set_velocity_direction(self,name,int direction,ParallelMPI.ParallelMPI Pa):
+    cpdef set_velocity_direction(self,name,Py_ssize_t direction,ParallelMPI.ParallelMPI Pa):
         try:
             self.velocity_directions[direction] = self.get_nv(name)
         except:
@@ -83,7 +83,7 @@ cdef class PrognosticVariables:
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
-            int var_shift
+            Py_ssize_t var_shift
             double [:] tmp
 
         for var_name in self.name_index.keys():
@@ -118,14 +118,15 @@ cdef class PrognosticVariables:
         cdef double* recv_buffer
         cdef double a =0
         cdef double b = 0
-        cdef long [:] shift = np.array([-1,1],dtype=np.int,order='c')
-        cdef long d, i, s
-        cdef int ierr, source_rank, dest_rank,
+        cdef Py_ssize_t [:] shift = np.array([-1,1],dtype=np.int,order='c')
+        cdef Py_ssize_t d, i, s
+        cdef Py_ssize_t ierr
+        cdef int dest_rank, source_rank
         cdef mpi.MPI_Status status
 
         #Get this processors rank in the cart_comm_world communicator
         ierr = mpi.MPI_Comm_rank(Pa.cart_comm_world,&source_rank)
-        cdef int j,k,var_shift,ishift, jshift, buffer_var_shift
+        cdef Py_ssize_t j,k,var_shift,ishift, jshift, buffer_var_shift
 
         #Loop over dimensions sending buffers for each
         for d in xrange(Gr.dims.dims):

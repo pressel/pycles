@@ -14,7 +14,7 @@ cdef class PressureFFTParallel:
         double [:] kx2
         double [:] ky2
 
-        inline void compute_diagonal(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, long i, long j) nogil
+        inline void compute_diagonal(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Py_ssize_t i, Py_ssize_t j) nogil
 
     cdef SparseSolvers.TDMA TDMA_Solver
 

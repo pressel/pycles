@@ -75,7 +75,7 @@ cdef class PressureFFTParallel:
     cpdef compute_off_diagonals(self,Grid.Grid Gr, ReferenceState.ReferenceState RS):
 
         cdef:
-            long  k
+            Py_ssize_t  k
 
         #self.a is the lower diagonal
         self.a = np.zeros(Gr.dims.n[2],dtype=np.double,order='c')
@@ -100,10 +100,10 @@ cdef class PressureFFTParallel:
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
-    cdef inline void compute_diagonal(self,Grid.Grid Gr,ReferenceState.ReferenceState RS,long i, long j) nogil:
+    cdef inline void compute_diagonal(self,Grid.Grid Gr,ReferenceState.ReferenceState RS,Py_ssize_t i, Py_ssize_t j) nogil:
 
         cdef:
-            long k
+            Py_ssize_t k
             double kx2 = self.kx2[i]
             double ky2 = self.ky2[j]
 
@@ -128,17 +128,17 @@ cdef class PressureFFTParallel:
                 , ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            long i,j,k,ijk
-            long istride = Gr.dims.nl[1] * Gr.dims.nl[2]
-            long jstride = Gr.dims.nl[1]
-            long ishift, jshift
+            Py_ssize_t i,j,k,ijk
+            Py_ssize_t istride = Gr.dims.nl[1] * Gr.dims.nl[2]
+            Py_ssize_t jstride = Gr.dims.nl[1]
+            Py_ssize_t ishift, jshift
             double [:] dkr = np.empty((Gr.dims.nl[2]),dtype=np.double,order='c')
             double [:] dki = np.empty((Gr.dims.nl[2]),dtype=np.double,order='c')
-            long div_shift = DV.get_varshift(Gr,'divergence')
-            long pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
-            long p, pencil_i, pencil_j
-            long count = 0
-            long pencil_shift = 0 #self.Z_Pencil.n_pencil_map[self.Z_Pencil.rank - 1]
+            Py_ssize_t div_shift = DV.get_varshift(Gr,'divergence')
+            Py_ssize_t pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
+            Py_ssize_t p, pencil_i, pencil_j
+            Py_ssize_t count = 0
+            Py_ssize_t pencil_shift = 0 #self.Z_Pencil.n_pencil_map[self.Z_Pencil.rank - 1]
             double [:,:] x_pencil,
             complex [:,:] x_pencil_fft, x_pencil_ifft, x_pencil_complex
             complex [:,:] y_pencil, z_pencil

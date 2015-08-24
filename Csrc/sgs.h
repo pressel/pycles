@@ -5,7 +5,7 @@ double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double 
 
     double delta = pow(dims->dx[0]*dims->dx[1]*dims->dx[2],1.0/3.0);
 
-    for (long i=0; i<dims->npg; i++){
+    for (size_t i=0; i<dims->npg; i++){
         double s2 = strain_rate_mag[i]*strain_rate_mag[i];
         visc[i] = cs*cs*delta*delta*s2;
         diff[i] = visc[i]/prt;

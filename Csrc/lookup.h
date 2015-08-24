@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 struct LookupStruct{
-    long n_table;
+    size_t n_table;
     double y_max;
     double y_min;
     double x_max;
@@ -13,7 +13,7 @@ struct LookupStruct{
 
 };
 
-void init_table(struct LookupStruct *LT, long n, double* x, double* y){
+void init_table(struct LookupStruct *LT, size_t n, double* x, double* y){
 
 
     /// Allocate memory required for storing the table
@@ -24,7 +24,7 @@ void init_table(struct LookupStruct *LT, long n, double* x, double* y){
     LT->x_max =  -9e16;
     LT->y_min = 9e16;
     LT->y_max = -9e16;
-    for(long i=0;i<n;i++){
+    for(size_t i=0;i<n;i++){
         LT->x_max = fmax(LT->x_max,x[i]);
         LT->x_min = fmin(LT->x_min,x[i]);
 

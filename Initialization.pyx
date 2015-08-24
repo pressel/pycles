@@ -34,8 +34,10 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.Pg = 1.0e5
     RS.Tg = 300.0
     RS.qtg = 0.0
+    #Set velocities for Galilean transformation
     RS.u0 = 0.0
     RS.v0 = 0.0
+
     RS.initialize(Gr,Th)
 
     #Get the variable number for each of the velocity components
@@ -82,6 +84,7 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     qt_sfc = 0.0196 #RS.qtg
     RS.qtg = qt_sfc
 
+    #Set velocities for Galilean transformation
     RS.u0 = 0.0
     RS.v0 = 0.0
 
@@ -146,8 +149,8 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 thetas = RS.Tg
                 thetas += 2.0 * np.cos(np.pi * dist / 2.0)**2.0
                 PV.values[s_varshift + ijk] = entropy_from_thetas_c(thetas,RS.qtg)
-                PV.values[u_varshift + ijk] = 0.0
-                PV.values[v_varshift + ijk] = 0.0
+                PV.values[u_varshift + ijk] = 0.0 - RS.u0
+                PV.values[v_varshift + ijk] = 0.0 - RS.v0
                 PV.values[w_varshift + ijk] = 0.0
                 PV.values[qt_varshift + ijk] = RS.qtg
 
@@ -202,8 +205,8 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             jshift = j * Gr.dims.nlg[2]
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
-                PV.values[u_varshift + ijk] = 1.0
-                PV.values[v_varshift + ijk] = 0.0
+                PV.values[u_varshift + ijk] = 1.0 - RS.u0
+                PV.values[v_varshift + ijk] = 0.0 - RS.v0
                 PV.values[w_varshift + ijk] = 0.0
 
                 #Now set the entropy prognostic variable including a potential temperature perturbation
@@ -293,8 +296,8 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             jshift = j * Gr.dims.nlg[2]
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
-                PV.values[u_varshift + ijk] = u[k]
-                PV.values[v_varshift + ijk] = 0.0
+                PV.values[u_varshift + ijk] = u[k] - RS.u0
+                PV.values[v_varshift + ijk] = 0.0 - RS.v0
                 PV.values[w_varshift + ijk] = 0.0
                 if Gr.z_half[k] <= 800.0:
                     temp = (thetal[k] + theta_pert[count]) * exner_c(RS.p0_half[k])

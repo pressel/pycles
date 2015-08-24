@@ -22,17 +22,15 @@ cdef class ScalarDiffusion:
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         self.flux = np.zeros((PV.nv_scalars*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')
-
-        pass
-
+        return
 
     cpdef update(self, Grid.Grid Gr,  ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV):
 
-        cdef int diff_shift = DV.get_nv('diffusivity')
 
         cdef:
-            long d, i ,scalar_shift, scalar_count = 0, flux_shift
+            Py_ssize_t diff_shift = DV.get_nv('diffusivity')
+            Py_ssize_t d, i ,scalar_shift, scalar_count = 0, flux_shift
 
         for i in xrange(PV.nv):
             if PV.var_type[i] == 1:
@@ -52,7 +50,7 @@ cdef class ScalarDiffusion:
         return
 
 cdef compute_diffusive_flux(Grid.DimStruct *dims, double *alpha0, double *alpha0_half,
-                            double *diffusivity, double *scalar, double* flux, double dx, int d, int scheme):
+                            double *diffusivity, double *scalar, double* flux, double dx, Py_ssize_t d, Py_ssize_t scheme):
 
     if scheme == 2:
         second_order(dims, alpha0, alpha0_half,
@@ -61,19 +59,19 @@ cdef compute_diffusive_flux(Grid.DimStruct *dims, double *alpha0, double *alpha0
     return
 
 cdef second_order(Grid.DimStruct *dims, double *alpha0, double *alpha0_half,
-                            double *diffusivity, double *scalar, double* flux, double dx, int d):
+                            double *diffusivity, double *scalar, double* flux, double dx, Py_ssize_t d):
 
     cdef:
-        int imin = 0
-        int jmin = 0
-        int kmin = 0
-        int imax = dims.nlg[0] -1
-        int jmax = dims.nlg[1] -1
-        int kmax = dims.nlg[2] -1
-        int istride = dims.nlg[1] * dims.nlg[2];
-        int jstride = dims.nlg[2];
-        int ishift, jshift, ijk, i,j,k
-        int sp1
+        Py_ssize_t imin = 0
+        Py_ssize_t jmin = 0
+        Py_ssize_t kmin = 0
+        Py_ssize_t imax = dims.nlg[0] -1
+        Py_ssize_t jmax = dims.nlg[1] -1
+        Py_ssize_t kmax = dims.nlg[2] -1
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2];
+        Py_ssize_t jstride = dims.nlg[2];
+        Py_ssize_t ishift, jshift, ijk, i,j,k
+        Py_ssize_t sp1
         double dxi = 1.0/dx
 
     if d==0:

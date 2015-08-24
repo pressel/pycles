@@ -101,7 +101,7 @@ cdef class TimeStepping:
     cpdef update_second(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
 
         cdef:
-            int i
+            Py_ssize_t i
 
 
         if self.rk_step == 0:
@@ -123,7 +123,7 @@ cdef class TimeStepping:
     cpdef update_third(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
 
         cdef:
-            int i
+            Py_ssize_t i
 
         if self.rk_step == 0:
             for i in xrange(Gr.dims.npg*PV.nv):

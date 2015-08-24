@@ -31,7 +31,7 @@ cdef class ScalarAdvection:
     cpdef update_cython(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs,PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            long d, i, vel_shift,scalar_shift, scalar_count = 0, flux_shift
+            Py_ssize_t d, i, vel_shift,scalar_shift, scalar_count = 0, flux_shift
 
         for i in xrange(PV.nv): #Loop over the prognostic variables
             if PV.var_type[i] == 1: #Only compute advection if variable i is a scalar

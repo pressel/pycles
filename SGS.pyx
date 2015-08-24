@@ -10,7 +10,6 @@ cdef extern from "sgs.h":
     void smagorinsky_update(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
                             double* strain_rate_mag, double cs, double prt)
 
-
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
@@ -30,14 +29,12 @@ cdef class SGS:
 
         return
 
-
 cdef class UniformViscosity:
     def __init__(self,namelist):
         try:
             self.const_diffusivity = namelist['sgs']['UniformViscosity']['diffusivity']
         except:
             self.const_diffusivity = 0.0
-
 
         try:
             self.const_viscosity = namelist['sgs']['UniformViscosity']['viscosity']
@@ -84,7 +81,6 @@ cdef class Smagorinsky:
         except:
             self.prt = 1.0/3.0
 
-
         return
 
     cpdef initialize(self, Grid.Grid Gr):
@@ -105,3 +101,4 @@ cdef class Smagorinsky:
         smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],&Ke.strain_rate_mag[0],self.cs,self.prt)
 
         return
+
