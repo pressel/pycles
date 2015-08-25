@@ -108,6 +108,7 @@ cdef class SurfaceSullivanPatton:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             double dzi = 1.0/Gr.dims.dx[2]
             double entropy_flux
+            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         #Get the scalar flux (dry entropy only)
         with nogil:
@@ -115,7 +116,7 @@ cdef class SurfaceSullivanPatton:
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
                     entropy_flux = cpd * self.theta_flux*exner_c(Ref.p0_half[gw])/DV.values[temp_shift+ijk]
-                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
+                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux * tendency_factor
 
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
@@ -133,10 +134,10 @@ cdef class SurfaceSullivanPatton:
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * PV.values[u_shift + ijk]
-                    self.v_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+1])**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * PV.values[v_shift + ijk]
-                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
-                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
+                    self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+1])**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij] * tendency_factor
+                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij] * tendency_factor
 
         return
 
@@ -180,6 +181,7 @@ cdef class SurfaceBomex:
             Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
             double dzi = 1.0/Gr.dims.dx[2]
             double entropy_flux
+            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         # Get the scalar flux
         with nogil:
@@ -189,8 +191,8 @@ cdef class SurfaceBomex:
                     ij = i * istride_2d + j
 
                     entropy_flux = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
-                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
-                    PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
+                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux * tendency_factor
+                    PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux * tendency_factor
 
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
@@ -204,10 +206,10 @@ cdef class SurfaceBomex:
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * PV.values[u_shift + ijk]
-                    self.v_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * PV.values[v_shift + ijk]
-                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
-                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
+                    self.u_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij] * tendency_factor
+                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij] * tendency_factor
 
         return
 
