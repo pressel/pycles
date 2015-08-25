@@ -18,6 +18,7 @@ cdef class PrognosticVariables:
     cdef:
         dict name_index
         dict units
+        list index_name
         Py_ssize_t nv
         Py_ssize_t nv_scalars
         Py_ssize_t nv_velocities

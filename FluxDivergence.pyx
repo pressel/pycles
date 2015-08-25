@@ -53,7 +53,7 @@ cdef void momentum_flux_divergence(Grid.DimStruct *dims, double *alpha0, double 
 
     #Compute the strides given the dimensionality
         Py_ssize_t [3] p1 = [istride, jstride, 1]
-        Py_ssize_t m1 =  -p1[d_advecting]
+        Py_ssize_t sm1 =  -p1[d_advecting]
 
     #apply some logic to make sure the correct specific volume is used
     with nogil:
@@ -64,7 +64,7 @@ cdef void momentum_flux_divergence(Grid.DimStruct *dims, double *alpha0, double 
                     jshift = j * jstride
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
-                        tendency[ijk] = tendency[ijk] - (flux[ijk] - flux[ijk + m1])*alpha0_half[k]*dxi
+                        tendency[ijk] = tendency[ijk] - (flux[ijk] - flux[ijk + sm1])*alpha0_half[k]*dxi
         else:
             for i in xrange(imin,imax):
                 ishift = i * istride
@@ -72,5 +72,5 @@ cdef void momentum_flux_divergence(Grid.DimStruct *dims, double *alpha0, double 
                     jshift = j * jstride
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
-                        tendency[ijk] = tendency[ijk] - (flux[ijk] - flux[ijk + m1])*alpha0[k]*dxi
+                        tendency[ijk] = tendency[ijk] - (flux[ijk] - flux[ijk + sm1])*alpha0[k]*dxi
     return
