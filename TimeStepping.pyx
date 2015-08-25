@@ -15,7 +15,6 @@ cdef class TimeStepping:
 
         return
 
-
     cpdef initialize(self,namelist,PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
 
         #Get the time stepping potions from the name list
@@ -56,20 +55,19 @@ cdef class TimeStepping:
             Pa.root_print('t_max (time at end of simulation) not given in name list! Killing Simulation Now')
             Pa.kill()
 
-
         #Now initialize the correct time stepping routine
         if self.ts_type == 2:
             self.initialize_second(PV)
         elif self.ts_type == 3:
             self.initialize_third(PV)
+        elif self.ts_type == 4:
+            self.initialize_fourth(PV)
         else:
             Pa.root_print('Invalid ts_type: ' + str(self.ts_type))
             Pa.root_print('Killing simulation now')
             Pa.kill()
 
-
         return
-
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
@@ -80,7 +78,12 @@ cdef class TimeStepping:
             self.update_second(Gr,PV)
         elif self.ts_type == 3:
             self.update_third(Gr,PV)
-
+        elif self.ts_type == 4:
+            self.update_fourth(Gr,PV)
+        else:
+            Pa.root_print('Time stepping option not found ts_type = ' + str(self.ts_type))
+            Pa.root_print('Killing Simulation Now!')
+            Pa.kill()
         return
 
     cpdef adjust_timestep(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
@@ -103,17 +106,17 @@ cdef class TimeStepping:
         cdef:
             Py_ssize_t i
 
-
-        if self.rk_step == 0:
-            for i in xrange(Gr.dims.npg*PV.nv):
-                self.value_copies[0,i] = PV.values[i]
-                PV.values[i] += PV.tendencies[i]*self.dt
-                PV.tendencies[i] = 0.0
-        else:
-            for i in xrange(Gr.dims.npg*PV.nv):
-                PV.values[i] = 0.5 * (self.value_copies[0,i] + PV.values[i] + PV.tendencies[i] * self.dt)
-                PV.tendencies[i] = 0.0
-            self.t += self.dt
+        with nogil:
+            if self.rk_step == 0:
+                for i in xrange(Gr.dims.npg*PV.nv):
+                    self.value_copies[0,i] = PV.values[i]
+                    PV.values[i] += PV.tendencies[i]*self.dt
+                    PV.tendencies[i] = 0.0
+            else:
+                for i in xrange(Gr.dims.npg*PV.nv):
+                    PV.values[i] = 0.5 * (self.value_copies[0,i] + PV.values[i] + PV.tendencies[i] * self.dt)
+                    PV.tendencies[i] = 0.0
+                self.t += self.dt
 
         return
 
@@ -121,49 +124,96 @@ cdef class TimeStepping:
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
     cpdef update_third(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
-
         cdef:
             Py_ssize_t i
 
-        if self.rk_step == 0:
-            for i in xrange(Gr.dims.npg*PV.nv):
-                self.value_copies[0,i] = PV.values[i]
-                PV.values[i] += PV.tendencies[i]*self.dt
-                PV.tendencies[i] = 0.0
-        elif self.rk_step == 1:
-            for i in xrange(Gr.dims.npg*PV.nv):
-                PV.values[i] = 0.75 * self.value_copies[0,i] +  0.25*(PV.values[i] + PV.tendencies[i]*self.dt)
-                PV.tendencies[i] = 0.0
-        else:
-            for i in xrange(Gr.dims.npg*PV.nv):
-                PV.values[i] = (1.0/3.0) * self.value_copies[0,i] + (2.0/3.0)*(PV.values[i] + PV.tendencies[i]*self.dt)
-                PV.tendencies[i] = 0.0
-            self.t += self.dt
+        with nogil:
+            if self.rk_step == 0:
+                for i in xrange(Gr.dims.npg*PV.nv):
+                    self.value_copies[0,i] = PV.values[i]
+                    PV.values[i] += PV.tendencies[i]*self.dt
+                    PV.tendencies[i] = 0.0
+            elif self.rk_step == 1:
+                for i in xrange(Gr.dims.npg*PV.nv):
+                    PV.values[i] = 0.75 * self.value_copies[0,i] +  0.25*(PV.values[i] + PV.tendencies[i]*self.dt)
+                    PV.tendencies[i] = 0.0
+            else:
+                for i in xrange(Gr.dims.npg*PV.nv):
+                    PV.values[i] = (1.0/3.0) * self.value_copies[0,i] + (2.0/3.0)*(PV.values[i] + PV.tendencies[i]*self.dt)
+                    PV.tendencies[i] = 0.0
+                self.t += self.dt
 
         return
 
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cpdef update_fourth(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
+        cdef:
+            Py_ssize_t i
 
+        with nogil:
+            if self.rk_step == 0:
+                for i in xrange(Gr.dims.npg*PV.nv):
+                    self.value_copies[0,i] = PV.values[i]
+                    PV.values[i] += 0.391752226571890 * PV.tendencies[i]*self.dt
+                    PV.tendencies[i] = 0.0
+            elif self.rk_step == 1:
+                for i in xrange(Gr.dims.npg*PV.nv):
+                    PV.values[i] = (0.444370493651235*self.value_copies[0,i] + 0.555629506348765*PV.values[i]
+                                    + 0.368410593050371*PV.tendencies[i]*self.dt )
+                    PV.tendencies[i] = 0.0
+            elif self.rk_step == 2:
+                for i in xrange(Gr.dims.npg*PV.nv):
+                    self.value_copies[1,i] = PV.values[i]
+                    PV.values[i] = (0.620101851488403*self.value_copies[0,i] + 0.379898148511597*PV.values[i]
+                                    + 0.251891774271694*PV.tendencies[i]*self.dt)
+                    PV.tendencies[i] = 0.0
+            elif self.rk_step == 3:
+                for i in xrange(Gr.dims.npg*PV.nv):
+                    self.value_copies[2,i] = PV.values[i]
+                    self.tendency_copies[0,i] = PV.tendencies[i]
+                    PV.values[i] = (0.178079954393132*self.value_copies[0,i] + 0.821920045606868*PV.values[i]
+                                    +0.544974750228521*PV.tendencies[i]*self.dt)
+                    PV.tendencies[i] = 0.0
+            else:
+                for i in xrange(Gr.dims.npg*PV.nv):
+                    PV.values[i] = (0.517231671970585*self.value_copies[1,i]
+                                    + 0.096059710526147*self.value_copies[2,i] +0.063692468666290*self.tendency_copies[0,i]*self.dt
+                                    + 0.386708617503269*PV.values[i] + 0.226007483236906*PV.tendencies[i]*self.dt)
+                    PV.tendencies[i] = 0.0
+                self.t += self.dt
+        return
 
     cdef void initialize_second(self,PrognosticVariables.PrognosticVariables PV):
 
         self.rk_step = 0
         self.n_rk_steps = 2
 
-        #Now initialize storage
+        #Initialize storage
         self.value_copies = np.zeros((1,PV.values.shape[0]),dtype=np.double,order='c')
         self.tendency_copies = None
 
         return
-
 
     cdef void initialize_third(self,PrognosticVariables.PrognosticVariables PV):
 
         self.rk_step = 0
         self.n_rk_steps = 3
 
-        #Now initialize storage
+        #Initialize storage
         self.value_copies = np.zeros((1,PV.values.shape[0]),dtype=np.double,order='c')
         self.tendency_copies = None
+
+        return
+
+    cdef void initialize_fourth(self,PrognosticVariables.PrognosticVariables PV):
+        self.rk_step = 0
+        self.n_rk_steps = 5
+
+        #Initialize storage
+        self.value_copies = np.zeros((3,PV.values.shape[0]),dtype=np.double,order='c')
+        self.tendency_copies = np.zeros((1,PV.values.shape[0]),dtype=np.double,order='c')
 
         return
 
@@ -203,8 +253,5 @@ cdef class TimeStepping:
         self.cfl_max += 1e-11
         return
 
-
     cdef inline double cfl_time_step(self):
         return fmin(self.dt_max,self.cfl_limit/(self.cfl_max/self.dt))
-
-
