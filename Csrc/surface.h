@@ -12,7 +12,7 @@ inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0,
     double ustar = windspeed * kappa / lnz;
 
     if(fabs(buoyancy_flux)>1.0e-10){
-        for (long i=0; i<6; i++){
+        for (size_t i=0; i<6; i++){
             double lmo = -pow(ustar,3.0)/(buoyancy_flux * kappa);
             double zeta = z1/lmo;
             if(zeta > 0.0){
