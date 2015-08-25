@@ -37,6 +37,7 @@ cdef class SurfaceBomex:
         double theta_flux
         double qt_flux
         double ustar
+        double gustiness
         double [:] windspeed
         double [:] u_flux
         double [:] v_flux

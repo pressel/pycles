@@ -23,12 +23,10 @@ cdef extern from "thermodynamic_functions.h":
     inline double exner_c(const double p0) nogil
 
 
-
-
-
 cdef extern from "surface.h":
     inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0, double z1) nogil
     inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0_b, double T_b, double qt_b, double qv_b) nogil
+    void compute_windspeed(Grid.DimStruct *dims, double* u, double*  v, double*  speed, double u0, double v0, double gustiness )
 
 
 cdef class Surface:
@@ -113,14 +111,13 @@ cdef class SurfaceSullivanPatton:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.windspeed[0],Ref.u0, Ref.v0,self.gustiness)
+
         # Get the shear stresses
         with nogil:
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
-                    ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.windspeed[ij] = fmax(sqrt((interp_2(PV.values[u_shift+ijk-istride],PV.values[u_shift+ijk])+Ref.u0)**2
-                                                    + (interp_2(PV.values[v_shift+ijk-jstride],PV.values[v_shift+ijk]) + Ref.v0)**2), self.gustiness)
                     self.ustar[ij] = compute_ustar_c(self.windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
@@ -189,16 +186,10 @@ cdef class SurfaceBomex:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.windspeed[0],Ref.u0, Ref.v0,self.gustiness)
 
         # Get the shear stresses
         with nogil:
-            for i in xrange(1,imax):
-                for j in xrange(1,jmax):
-                    ijk = i * istride + j * jstride + gw
-                    ij = i * istride_2d + j
-                    self.windspeed[ij] = sqrt((interp_2(PV.values[u_shift+ijk-istride],PV.values[u_shift+ijk])+Ref.u0)**2
-                                              + (interp_2(PV.values[v_shift+ijk-jstride],PV.values[v_shift+ijk])+Ref.v0)**2)
-
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw

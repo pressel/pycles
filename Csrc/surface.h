@@ -112,3 +112,34 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double cm, doub
 
     return;
 }
+
+
+void compute_windspeed(const struct DimStruct *dims, double* restrict u, double* restrict v, double* restrict speed, double u0, double v0, double gustiness ){
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
+    const size_t istride_2d = dims->nlg[1];
+
+    const size_t imin = 1;
+    const size_t jmin = 1;
+    const size_t kmin =1;
+
+    const size_t imax = dims->nlg[0];
+    const size_t jmax = dims->nlg[1];
+    const size_t kmax = dims->nlg[2];
+
+    const size_t gw = dims->gw;
+
+    for(size_t i=imin;i<imax;i++){
+        const size_t ishift = i*istride ;
+        for(size_t j=jmin;j<jmax;j++){
+            const size_t jshift = j*jstride;
+            const size_t ij = i * istride_2d + j;
+            const size_t ijk = ishift + jshift + gw ;
+            const double u_interp = interp_2(u[ijk-istride],u[ijk]) + u0;
+            const double v_interp = interp_2(v[ijk-jstride],v[ijk]) + v0;
+            speed[ij] = fmax(sqrt(u_interp*u_interp + v_interp*v_interp),gustiness);
+        }
+    }
+
+    return;
+}
