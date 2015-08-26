@@ -3,9 +3,10 @@ cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ParallelMPI
-from Thermodynamics cimport LatentHeat
+cimport TimeStepping
+from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 import cython
-from thermodynamic_functions import exner
+from thermodynamic_functions import exner, theta_rho
 from libc.math cimport sqrt, log, fabs,atan, exp, fmax
 cimport numpy as np
 import numpy as np
@@ -21,23 +22,30 @@ cdef extern from "thermodynamic_functions.h":
     inline double pd_c(double p0, double qt, double qv) nogil
     inline double pv_c(double p0, double qt, double qv) nogil
     inline double exner_c(const double p0) nogil
-
-
-
+    inline double theta_rho_c(double p0, double T,double qt, double qv) nogil
 
 
 cdef extern from "surface.h":
     inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0, double z1) nogil
     inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0_b, double T_b, double qt_b, double qv_b) nogil
+    void compute_windspeed(Grid.DimStruct *dims, double* u, double*  v, double*  speed, double u0, double v0, double gustiness ) nogil
+    void exchange_coefficients_byun(double Ri, double zb, double z0, double cm, double ch) nogil
+
+
+cdef extern from "entropies.h":
+    inline double sd_c(double pd, double T) nogil
+    inline double sv_c(double pv, double T) nogil
 
 
 cdef class Surface:
-    def __init__(self,namelist, LatentHeat LH):
+    def __init__(self,namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
             self.scheme = SurfaceSullivanPatton()
         elif casename == 'Bomex':
             self.scheme = SurfaceBomex()
+        elif casename == 'Gabls':
+            self.scheme = SurfaceGabls(namelist,LH, Par)
         else:
             self.scheme= SurfaceNone()
 
@@ -45,7 +53,7 @@ cdef class Surface:
         self.scheme.initialize(Gr, Ref)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         self.scheme.update(Gr, Ref, PV, DV, Pa)
         return
 
@@ -57,7 +65,7 @@ cdef class SurfaceNone:
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref):
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         return
 
 
@@ -80,7 +88,7 @@ cdef class SurfaceSullivanPatton:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         # Since this case is completely dry, the computation of entropy flux from sensible heat flux is very simple
 
         if Pa.sub_z_rank != 0:
@@ -100,6 +108,7 @@ cdef class SurfaceSullivanPatton:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             double dzi = 1.0/Gr.dims.dx[2]
             double entropy_flux
+            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         #Get the scalar flux (dry entropy only)
         with nogil:
@@ -107,29 +116,28 @@ cdef class SurfaceSullivanPatton:
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
                     entropy_flux = cpd * self.theta_flux*exner_c(Ref.p0_half[gw])/DV.values[temp_shift+ijk]
-                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
+                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux * tendency_factor
 
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.windspeed[0],Ref.u0, Ref.v0,self.gustiness)
+
         # Get the shear stresses
         with nogil:
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
-                    ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.windspeed[ij] = fmax(sqrt((interp_2(PV.values[u_shift+ijk-istride],PV.values[u_shift+ijk])+Ref.u0)**2
-                                                    + (interp_2(PV.values[v_shift+ijk-jstride],PV.values[v_shift+ijk]) + Ref.v0)**2), self.gustiness)
                     self.ustar[ij] = compute_ustar_c(self.windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * PV.values[u_shift + ijk]
-                    self.v_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+1])**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * PV.values[v_shift + ijk]
-                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
-                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
+                    self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+1])**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij] * tendency_factor
+                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij] * tendency_factor
 
         return
 
@@ -152,7 +160,7 @@ cdef class SurfaceBomex:
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         if Pa.sub_z_rank != 0:
             return
@@ -173,6 +181,7 @@ cdef class SurfaceBomex:
             Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
             double dzi = 1.0/Gr.dims.dx[2]
             double entropy_flux
+            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         # Get the scalar flux
         with nogil:
@@ -182,34 +191,120 @@ cdef class SurfaceBomex:
                     ij = i * istride_2d + j
 
                     entropy_flux = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
-                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
-                    PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux*Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
+                    PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + entropy_flux * tendency_factor
+                    PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux * tendency_factor
 
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.windspeed[0],Ref.u0, Ref.v0,self.gustiness)
 
         # Get the shear stresses
         with nogil:
-            for i in xrange(1,imax):
-                for j in xrange(1,jmax):
-                    ijk = i * istride + j * jstride + gw
-                    ij = i * istride_2d + j
-                    self.windspeed[ij] = sqrt((interp_2(PV.values[u_shift+ijk-istride],PV.values[u_shift+ijk])+Ref.u0)**2
-                                              + (interp_2(PV.values[v_shift+ijk-jstride],PV.values[v_shift+ijk])+Ref.v0)**2)
-
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * PV.values[u_shift + ijk]
-                    self.v_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * PV.values[v_shift + ijk]
-                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
-                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij]/Ref.alpha0[gw-1]*Ref.alpha0_half[gw]*dzi
+                    self.u_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -self.ustar**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij] * tendency_factor
+                    PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij] * tendency_factor
 
         return
 
+
+
+
+cdef class SurfaceGabls:
+    def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
+        self.gustiness = 0.001
+        self.z0 = 0.1
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+        self.CC = ClausiusClapeyron()
+        self.CC.initialize(namelist, LH, Par)
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref):
+        self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.ustar = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+
+        return
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+
+        if Pa.sub_z_rank != 0:
+            return
+
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
+            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
+            Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+
+
+
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.windspeed[0],Ref.u0, Ref.v0,self.gustiness)
+
+        cdef:
+            Py_ssize_t i,j, ijk, ij
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t istride_2d = Gr.dims.nlg[1]
+
+            double theta_rho_b, Nb2, Ri
+            double zb = Gr.dims.dx[2] * 0.5
+            double cm=0.0
+            double ch=0.0
+
+            double sst = 265.0 - 0.25 * TS.t/3600.0
+            double pv_star = self.CC.LT.fast_lookup(sst)
+            double qv_star = eps_v*pv_star/((eps_v-1)*pv_star-Ref.Pg)
+            double theta_rho_g = theta_rho_c(Ref.Pg,sst,qv_star,qv_star)
+            double s_star = (1.0 - qv_star) * sd_c(Ref.Pg-pv_star,sst) + qv_star * sv_c(pv_star,sst)
+
+            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]/Gr.dims.dx[2]
+
+
+
+
+        with nogil:
+            for i in xrange(gw-1,imax-gw+1):
+                for j in xrange(gw-1,jmax-gw+1):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    theta_rho_b=theta_rho_c(Ref.p0_half[gw],DV.values[t_shift+ijk],PV.values[qt_shift+ijk],DV.values[qv_shift+ijk])
+                    Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
+                    Ri = Nb2 * zb* zb/(self.windspeed[ij] * self.windspeed[ij])
+                    exchange_coefficients_byun(Ri,zb,self.z0, cm, ch)
+                    self.qt_flux[ij] = -ch * self.windspeed[ij] * (PV.values[qt_shift+ijk] - qv_star)
+                    self.s_flux[ij] = -ch * self.windspeed[ij] * (PV.values[s_shift+ijk] - s_star)
+                    self.ustar[ij] = sqrt(cm) * self.windspeed[ij]
+            for i in xrange(gw,imax-gw):
+                for j in xrange(gw,jmax-gw):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(self.windspeed[ij], self.windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+1])**2/interp_2(self.windspeed[ij], self.windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    PV.tendencies[u_shift  + ijk] = PV.tendencies[u_shift  + ijk] + self.u_flux[ij] * tendency_factor
+                    PV.tendencies[v_shift  + ijk] = PV.tendencies[v_shift  + ijk] + self.v_flux[ij] * tendency_factor
+                    PV.tendencies[s_shift  + ijk] = PV.tendencies[s_shift  + ijk] + self.s_flux[ij] * tendency_factor
+                    PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux[ij]* tendency_factor
+
+        return
 
 
 
