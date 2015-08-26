@@ -72,7 +72,7 @@ class Simulation3d:
         self.TS.initialize(namelist,self.PV,self.Pa)
         SetInitialConditions = InitializationFactory(namelist)
         SetInitialConditions(self.Gr,self.PV,self.Ref,self.Th)
-        self.Sur.initialize(self.Gr,self.Ref)
+        self.Sur.initialize(self.Gr,self.Ref,self.StatsIO,self.Pa)
         self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Pr.initialize(namelist,self.Gr,self.Ref,self.DV,self.Pa)
         self.DV.initialize(self.Gr,self.StatsIO,self.Pa)
@@ -148,6 +148,7 @@ class Simulation3d:
                 self.DV.stats_io(self.Gr,self.StatsIO,self.Pa)
                 self.Fo.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Th.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
+                self.Sur.stats_io(self.Gr,self.StatsIO,self.Pa)
         return
 
     def force_io(self):
