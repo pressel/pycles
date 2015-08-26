@@ -27,10 +27,10 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
                 for(size_t k=kmin; k<kmax; k++){
                     const size_t ijk = ishift + jshift + k;
                     flux[ijk] = -interp_2(diffusivity[ijk],diffusivity[ijk+stencil[d]]) * (scalar[ijk+stencil[d]]-scalar[ijk])*rho0[k]*dxi;
-                }
-            }
-        }
-    }
+                } // End k loop
+            } // End j loop
+        } // End i loop
+    } // End if
     else{
         for(size_t i=imin; i<imax; i++){
             const size_t ishift = i * istride;
@@ -39,10 +39,10 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
                 for(size_t k=kmin; k<kmax; k++){
                     const size_t ijk = ishift + jshift + k;
                     flux[ijk] = -interp_2(diffusivity[ijk],diffusivity[ijk+stencil[d]])*(scalar[ijk+stencil[d]]-scalar[ijk])*rho0_half[k]*dxi;
-                }
-            }
-        }
-    }
+                } // End k loop
+            }  // End j loop
+        } // End i loop
+    } // End else
 
     return;
 }
@@ -74,31 +74,28 @@ void compute_qt_diffusion_s_source(const struct DimStruct *dims, double *p0_half
     const double dxi = 1.0/dx;
     const size_t stencil[3] = {istride,jstride,1};
 
-    if(d != 2){
-        for(size_t i=imin; i<imax; i++){
-            const size_t ishift = i * istride;
-            for(size_t j=jmin; j<jmax; j++){
-                const size_t jshift = j * jstride;
-                for(size_t k=kmin; k<kmax; k++){
-                    const size_t ijk = ishift + jshift + k;
+    for(size_t i=imin; i<imax; i++){
+        const size_t ishift = i * istride;
+        for(size_t j=jmin; j<jmax; j++){
+            const size_t jshift = j * jstride;
+            for(size_t k=kmin; k<kmax; k++){
+                const size_t ijk = ishift + jshift + k;
 
-                    // Compute Dry air entropy specific entropy
-                    double pd = pd_c(p0_half[k],qt[ijk],qv[ijk]);
-                    double sd = sd_c(pd,T[ijk]);
+                // Compute Dry air entropy specific entropy
+                double pd = pd_c(p0_half[k],qt[ijk],qv[ijk]);
+                double sd = sd_c(pd,T[ijk]);
 
-                    //Compute water vapor entropy specific entrop
-                    double pv = pv_c(p0_half[k],qt[ijk],qv[ijk]);
-                    double sv = sv_c(pv,T[ijk]);
+                //Compute water vapor entropy specific entrop
+                double pv = pv_c(p0_half[k],qt[ijk],qv[ijk]);
+                double sv = sv_c(pv,T[ijk]);
 
-                    //Compute water entropy
-                    double lam = lam_fp(T[ijk]);
-                    double L = L_fp(lam,T[ijk]);
-                    double sw = sv - (((qt[ijk] - sv)/qt[ijk])*L/T[ijk]);
+                //Compute water entropy
+                double lam = lam_fp(T[ijk]);
+                double L = L_fp(lam,T[ijk]);
+                double sw = sv - (((qt[ijk] - sv)/qt[ijk])*L/T[ijk]);
 
-                    tendency[ijk] += (sw - sd) * alpha0_half[k] * (flux[ijk] - flux[ijk + stencil[d]])*dxi;
-                }
-            }
-        }
-    }
-
+                tendency[ijk] += (sw - sd) * alpha0_half[k] * (flux[ijk] - flux[ijk + stencil[d]])*dxi;
+            }  // End k loop
+        } // End j loop
+    } // End i loop
 }
