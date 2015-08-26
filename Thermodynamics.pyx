@@ -13,8 +13,6 @@ include 'parameters.pxi'
 cdef class LatentHeat:
     def __init__(self,namelist,ParallelMPI.ParallelMPI Par):
 
-
-
         return
 
     cpdef L(self,double T, double Lambda):
