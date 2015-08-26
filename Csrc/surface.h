@@ -42,7 +42,7 @@ inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux,
 }
 
 
-void exchange_coefficients_byun(double Ri, double zb, double z0, double cm, double ch){
+void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch){
 
     //Monin-Obukhov similarity based on
     //Daewon W. Byun, 1990: On the Analytical Solutions of Flux-Profile Relationships for the Atmospheric Surface Layer. J. Appl. Meteor., 29, 652–657.
@@ -107,8 +107,8 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double cm, doub
     }
     const double cu = fmin(vkb/(logz-psi_m),2.0*C_neu);
     const double cth = fmin(vkb/(logz-psi_h)/Pr0,4.5*C_neu);
-    cm = cu * cu;
-    ch = cu * cth;
+    *cm = cu * cu;
+    *ch = cu * cth;
 
     return;
 }

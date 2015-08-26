@@ -19,6 +19,8 @@ def main():
         namelist = SullivanPatton()
     elif case_name == 'Bomex':
         namelist = Bomex()
+    elif case_name == 'Gabls':
+        namelist = Gabls()
     else:
         print('Not a vaild case name')
         exit()
@@ -305,6 +307,80 @@ def Bomex():
 
 
     return namelist
+
+
+
+def Gabls():
+
+    namelist = {}
+
+    namelist["grid"] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 64
+    namelist['grid']['ny'] = 64
+    namelist['grid']['nz'] = 64
+    namelist['grid']['gw'] = 7
+    namelist['grid']['dx'] = 6.25
+    namelist['grid']['dy'] = 6.25
+    namelist['grid']['dz'] = 6.25
+
+    namelist["mpi"] = {}
+    namelist["mpi"]["nprocx"] = 1
+    namelist["mpi"]["nprocy"] = 1
+    namelist["mpi"]["nprocz"] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 30.0
+    namelist['time_stepping']['t_max'] = 43200.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_Dry'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+
+    namelist["sgs"] = {}
+    namelist["sgs"]['scheme'] = 'Smagorinsky'
+
+    namelist["diffusion"] = {}
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 7
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 7
+
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
+    namelist['damping']['Rayleigh']['z_d'] = 300.0
+
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = '/Users/ckaul/'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['frequency'] = 300.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = "fields"
+    namelist['fields_io']['frequency'] = 3600.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Gabls'
+    namelist['meta']['casename'] = 'Gabls'
+
+
+    return namelist
+
+
 
 
 def write_file(namelist):
