@@ -18,8 +18,8 @@ cdef class SGS:
             self.scheme = Smagorinsky(namelist)
         return
 
-    cpdef initialize(self, Grid.Grid Gr):
-        self.scheme.initialize(Gr)
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+        self.scheme.initialize(Gr,PV)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
@@ -45,7 +45,7 @@ cdef class UniformViscosity:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr):
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
 
         return
 
@@ -83,7 +83,7 @@ cdef class Smagorinsky:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr):
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
 
         return
 
@@ -102,3 +102,29 @@ cdef class Smagorinsky:
 
         return
 
+
+
+cdef class TKE:
+    def __init__(self,namelist):
+        try:
+            self.ck = namelist['sgs']['TKE']['ck']
+        except:
+            self.ck = 0.1
+        try:
+            self.cn = namelist['sgs']['TKE']['cn']
+        except:
+            self.prt = 0.76
+
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+        PV.add_variable('e', 'm^2/s^2', 'sym','scalar',Pa)
+
+        return
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke):
+        return
