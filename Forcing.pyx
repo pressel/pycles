@@ -15,8 +15,10 @@ cdef class Forcing:
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
             self.scheme = ForcingSullivanPatton()
-        if casename == 'Bomex':
+        elif casename == 'Bomex':
             self.scheme = ForcingBomex()
+        elif casename == 'Gabls':
+            self.scheme = ForcingGabls()
         else:
             self.scheme= ForcingNone()
         return

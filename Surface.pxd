@@ -59,7 +59,7 @@ cdef class SurfaceGabls:
         double [:] ustar
         double [:] u_flux
         double [:] v_flux
-        double [:] qt_flux
+        # double [:] qt_flux
         double [:] s_flux
 
 
