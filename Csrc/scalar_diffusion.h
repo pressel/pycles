@@ -92,7 +92,7 @@ void compute_qt_diffusion_s_source(const struct DimStruct *dims, double *p0_half
                 //Compute water entropy
                 double lam = lam_fp(T[ijk]);
                 double L = L_fp(lam,T[ijk]);
-                double sw = sv - (((qt[ijk] - sv)/qt[ijk])*L/T[ijk]);
+                double sw = sv - (((qt[ijk] - qv[ijk])/qt[ijk])*L/T[ijk]);
 
                 tendency[ijk] += (sw - sd) * alpha0_half[k] * (flux[ijk] - flux[ijk + stencil[d]])*dxi;
             }  // End k loop
