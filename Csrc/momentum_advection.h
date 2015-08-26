@@ -734,7 +734,6 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
         return;
     }
 
-
 void compute_advective_fluxes_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
                                 double* restrict flux, size_t d_advected, size_t d_advecting, int scheme){
 
@@ -776,6 +775,4 @@ void compute_advective_fluxes_m(struct DimStruct *dims, double* restrict rho0, d
                 flux, d_advected, d_advecting);
             break;
     };
-
-
-};
+}

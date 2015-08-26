@@ -11,6 +11,7 @@ import cython
 cdef class PrognosticVariables:
     def __init__(self, Grid.Grid Gr):
         self.name_index = {}
+        self.index_name = []
         self.units = {}
         self.nv = 0
         self.nv_scalars = 0
@@ -24,6 +25,7 @@ cdef class PrognosticVariables:
 
         #Store names and units
         self.name_index[name] = self.nv
+        self.index_name.append(name)
         self.units[name] = units
         self.nv = len(self.name_index.keys())
 

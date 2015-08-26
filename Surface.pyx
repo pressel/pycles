@@ -49,10 +49,12 @@ cdef class Surface:
             self.scheme = SurfaceGabls(namelist,LH, Par)
         else:
             self.scheme= SurfaceNone()
+        return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.scheme.initialize(Gr, Ref, NS, Pa)
         return
+
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         self.scheme.update(Gr, Ref, PV, DV, Pa, TS)

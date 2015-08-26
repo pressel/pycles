@@ -6,13 +6,13 @@ void compute_diffusive_flux(const struct DimStruct *dims, double* restrict strai
     const size_t istride = dims->nlg[1] * dims->nlg[2];
     const size_t jstride = dims->nlg[2];
 
-    const size_t imin = 0;
-    const size_t jmin = 0;
-    const size_t kmin = 0;
+    const size_t imin = dims->gw-1;
+    const size_t jmin = dims->gw-1;
+    const size_t kmin = dims->gw-1;
 
-    const size_t imax = dims->nlg[0];
-    const size_t jmax = dims->nlg[1];
-    const size_t kmax = dims->nlg[2];
+    const size_t imax = dims->nlg[0]-dims->gw;
+    const size_t jmax = dims->nlg[1]-dims->gw;
+    const size_t kmax = dims->nlg[2]-dims->gw;
 
     const size_t stencil[3] = {istride,jstride,1};
 
@@ -50,13 +50,13 @@ void compute_entropy_source(const struct DimStruct *dims, double* restrict visco
     const size_t istride = dims->nlg[1] * dims->nlg[2];
     const size_t jstride = dims->nlg[2];
 
-    const size_t imin = 0;
-    const size_t jmin = 0;
-    const size_t kmin = 0;
+    const size_t imin = dims->gw;
+    const size_t jmin = dims->gw;
+    const size_t kmin = dims->gw;
 
-    const size_t imax = dims->nlg[0];
-    const size_t jmax = dims->nlg[1];
-    const size_t kmax = dims->nlg[2];
+    const size_t imax = dims->nlg[0]-dims->gw;
+    const size_t jmax = dims->nlg[1]-dims->gw;
+    const size_t kmax = dims->nlg[2]-dims->gw;
 
     for(size_t i=imin;i<imax;i++){
         const size_t ishift = i*istride ;
