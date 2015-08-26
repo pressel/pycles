@@ -21,6 +21,8 @@ def InitializationFactory(namelist):
             return InitSaturatedBubble
         elif casename == 'Bomex':
             return InitBomex
+        elif casename == 'Gabls':
+            return InitGabls
         else:
             pass
 
@@ -306,3 +308,68 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt[k],0.0,0.0)
                 PV.values[qt_varshift + ijk] = qt[k]
                 count += 1
+
+    return
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def InitGabls(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th):
+
+    #First generate the reference profiles
+    RS.Pg = 1.0e5  #Pressure at ground
+    RS.Tg = 265.0  #Temperature at ground
+    RS.qtg = 0.0   #Total water mixing ratio at surface
+    RS.u0 = 8.0  # velocities removed in Galilean transformation
+    RS.v0 = 0.0
+
+    RS.initialize(Gr, Th)
+
+    #Get the variable number for each of the velocity components
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift
+        Py_ssize_t ijk
+        double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double t
+
+        #Generate initial perturbations (here we are generating more than we need)
+        cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+        cdef double theta_pert_
+
+    for k in xrange(Gr.dims.nlg[2]):
+        if Gr.zl_half[k] <=  100.0:
+            theta[k] = 265.0
+
+        else:
+            theta[k] = 265.0 + (Gr.zl_half[k] - 100.0) * 0.01
+
+    cdef double [:] p0 = RS.p0_half
+
+    #Now loop and set the initial condition
+    #First set the velocities
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = 8.0 - RS.u0
+                PV.values[v_varshift + ijk] = 0.0 - RS.v0
+                PV.values[w_varshift + ijk] = 0.0
+
+                #Now set the entropy prognostic variable including a potential temperature perturbation
+                if Gr.zl_half[k] < 50.0:
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                else:
+                    theta_pert_ = 0.0
+                t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
+
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+    return

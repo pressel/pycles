@@ -100,8 +100,8 @@ cdef class ParallelMPI:
         return
 
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.cdivision(True)
     cdef double [:] HorizontalMean(self,Grid.Grid Gr,double *values):
 
@@ -292,6 +292,55 @@ cdef class ParallelMPI:
         mpi.MPI_Allreduce(&min_local[0],&min[0],Gr.dims.nlg[2],
                           mpi.MPI_DOUBLE,mpi.MPI_MIN,self.cart_comm_sub_xy)
         return min
+
+
+
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef double HorizontalMeanSurface(self,Grid.Grid Gr,double *values):
+        # Some assumptions for using this function:
+        #--the <values> array is defined for all processors
+        #--<values> = 0 on all processors for which zrank !=0
+        # this is necessary to ensure that the root processor has the correct mean
+
+        cdef:
+            double mean_local = 0.0
+            double mean = 0.0
+            int i,j,ij
+            int imin = Gr.dims.gw
+            int jmin = Gr.dims.gw
+            int imax = Gr.dims.nlg[0] - Gr.dims.gw
+            int jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            int gw = Gr.dims.gw
+            int istride_2d = Gr.dims.nlg[1]
+            int ishift, jshift
+            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+
+        with nogil:
+            for i in xrange(imin,imax):
+                ishift = i * istride_2d
+                for j in xrange(jmin,jmax):
+                    ij = ishift + j
+                    mean_local += values[ij]
+
+
+
+        mpi.MPI_Allreduce(&mean_local,&mean,1,
+                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.comm_world)
+
+        mean = mean*n_horizontal_i
+
+
+        return mean
+
+
+
+
+
+
+
 
 cdef class Pencil:
 

@@ -29,6 +29,7 @@ cdef class ParallelMPI:
         double [:] HorizontalMeanofCubes(self, Grid.Grid Gr, double* values1, double* values2, double* values3)
         double [:] HorizontalMaximum(self, Grid.Grid Gr, double* values)
         double [:] HorizontalMinimum(self, Grid.Grid Gr, double* values)
+        double HorizontalMeanSurface(self, Grid.Grid Gr, double* values)
 
     cpdef root_print(self, txt_output)
 
