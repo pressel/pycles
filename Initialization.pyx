@@ -254,7 +254,7 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
         #Set Thetal profile
         if Gr.zl_half[k] <= 520.:
-            thetal[k] = 298.0
+            thetal[k] = 298.7
         if Gr.zl_half[k] > 520.0 and Gr.zl_half[k] <= 1480.0:
             thetal[k] = 298.7 + (Gr.zl_half[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
         if Gr.zl_half[k] > 1480.0 and Gr.zl_half[k] <= 2000:
