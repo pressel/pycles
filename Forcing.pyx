@@ -58,8 +58,8 @@ cdef class ForcingBomex:
     def __init__(self):
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.cdivision(True)
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -105,8 +105,8 @@ cdef class ForcingBomex:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
@@ -165,6 +165,9 @@ cdef class ForcingBomex:
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
         return
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -223,7 +226,68 @@ cdef class ForcingSullivanPatton:
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
         self.coriolis_param = 1.0e-4 #s^{-1}
+
+        NS.add_profile('u_coriolis_tendency', Gr, Pa)
+        NS.add_profile('v_coriolis_tendency',Gr, Pa)
         return
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+        return
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
+            double [:] mean_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+
+        #Only need to output coriolis_forcing
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
+        NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_profile('v_coriolis_tendency',mean_tendency_2[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        return
+
+
+
+cdef class ForcingGabls:
+    def __init__(self):
+        return
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * 8.0
+        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.coriolis_param = 1.39e-4 #s^{-1}
+        NS.add_profile('u_coriolis_tendency', Gr, Pa)
+        NS.add_profile('v_coriolis_tendency',Gr, Pa)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
         cdef:
@@ -313,3 +377,4 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                     fluxm = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
                     tendencies[ijk] = tendencies[ijk] + rho0_half[k] * (fluxp - fluxm)/dims.dx[2]
     return
+

@@ -54,7 +54,7 @@ cdef class Surface:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
-        self.scheme.update(Gr, Ref, PV, DV, Pa)
+        self.scheme.update(Gr, Ref, PV, DV, Pa, TS)
         return
 
 
@@ -231,7 +231,7 @@ cdef class SurfaceGabls:
         self.ustar = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
-        self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        # self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
 
         return
@@ -248,9 +248,10 @@ cdef class SurfaceGabls:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
-            Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
+            # Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
-            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+            # Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+            Py_ssize_t th_shift = DV.get_varshift(Gr,'theta')
 
 
 
@@ -271,11 +272,13 @@ cdef class SurfaceGabls:
             double ch=0.0
 
             double sst = 265.0 - 0.25 * TS.t/3600.0
-            double pv_star = self.CC.LT.fast_lookup(sst)
-            double qv_star = eps_v*pv_star/((eps_v-1)*pv_star-Ref.Pg)
-            double theta_rho_g = theta_rho_c(Ref.Pg,sst,qv_star,qv_star)
-            double s_star = (1.0 - qv_star) * sd_c(Ref.Pg-pv_star,sst) + qv_star * sv_c(pv_star,sst)
+            # double pv_star = self.CC.LT.fast_lookup(sst)
+            # double qv_star = eps_v*pv_star/((eps_v-1)*pv_star-Ref.Pg)
+            # double theta_rho_g = theta_rho_c(Ref.Pg,sst,qv_star,qv_star)
+            # double s_star = (1.0 - qv_star) * sd_c(Ref.Pg-pv_star,sst) + qv_star * sv_c(pv_star,sst)
 
+            double theta_rho_g = theta_rho_c(Ref.Pg,sst,0.0,0.0)
+            double s_star = sd_c(Ref.Pg,sst)
             double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]/Gr.dims.dx[2]
 
 
@@ -286,11 +289,12 @@ cdef class SurfaceGabls:
                 for j in xrange(gw-1,jmax-gw+1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    theta_rho_b=theta_rho_c(Ref.p0_half[gw],DV.values[t_shift+ijk],PV.values[qt_shift+ijk],DV.values[qv_shift+ijk])
+                    # theta_rho_b=theta_rho_c(Ref.p0_half[gw],DV.values[t_shift+ijk],PV.values[qt_shift+ijk],DV.values[qv_shift+ijk])
+                    theta_rho_b=DV.values[th_shift + ijk]
                     Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
                     Ri = Nb2 * zb* zb/(self.windspeed[ij] * self.windspeed[ij])
                     exchange_coefficients_byun(Ri,zb,self.z0, cm, ch)
-                    self.qt_flux[ij] = -ch * self.windspeed[ij] * (PV.values[qt_shift+ijk] - qv_star)
+                    # self.qt_flux[ij] = -ch * self.windspeed[ij] * (PV.values[qt_shift+ijk] - qv_star)
                     self.s_flux[ij] = -ch * self.windspeed[ij] * (PV.values[s_shift+ijk] - s_star)
                     self.ustar[ij] = sqrt(cm) * self.windspeed[ij]
             for i in xrange(gw,imax-gw):
@@ -302,7 +306,7 @@ cdef class SurfaceGabls:
                     PV.tendencies[u_shift  + ijk] = PV.tendencies[u_shift  + ijk] + self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift  + ijk] = PV.tendencies[v_shift  + ijk] + self.v_flux[ij] * tendency_factor
                     PV.tendencies[s_shift  + ijk] = PV.tendencies[s_shift  + ijk] + self.s_flux[ij] * tendency_factor
-                    PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux[ij]* tendency_factor
+                    # PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux[ij]* tendency_factor
 
         return
 
