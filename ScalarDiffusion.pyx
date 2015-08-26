@@ -78,12 +78,3 @@ cdef class ScalarDiffusion:
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
-
-#cdef compute_diffusive_flux(Grid.DimStruct *dims, double *rho0, double *rho0_half,
-#                            double *diffusivity, double *scalar, double* flux, double dx, Py_ssize_t d, Py_ssize_t scheme):#
-#
-#    if scheme == 2:
-#        second_order_diffusion(dims, rho0, rho0_half,
-#                            diffusivity, scalar, flux, dx, d)#
-#
-#    return
