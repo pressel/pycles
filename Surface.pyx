@@ -294,15 +294,15 @@ cdef class SurfaceGabls:
         # self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
 
-        NS.add_ts('friction_velocity_mean', Gr, Pa)
-        NS.add_ts('uw_surface_mean',Gr, Pa)
-        NS.add_ts('vw_surface_mean',Gr, Pa)
-        NS.add_ts('s_flux_surface_mean', Gr, Pa)
-
-        NS.write_ts('friction_velocity_mean', 0.0, Pa)
-        NS.write_ts('uw_surface_mean', 0.0, Pa)
-        NS.write_ts('vw_surface_mean',0.0, Pa)
-        NS.write_ts('s_flux_surface_mean', 0.0, Pa)
+        # NS.add_ts('friction_velocity_mean', Gr, Pa)
+        # NS.add_ts('uw_surface_mean',Gr, Pa)
+        # NS.add_ts('vw_surface_mean',Gr, Pa)
+        # NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        #
+        # NS.write_ts('friction_velocity_mean', 0.0, Pa)
+        # NS.write_ts('uw_surface_mean', 0.0, Pa)
+        # NS.write_ts('vw_surface_mean',0.0, Pa)
+        # NS.write_ts('s_flux_surface_mean', 0.0, Pa)
 
         return
 
