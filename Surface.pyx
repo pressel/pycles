@@ -385,6 +385,8 @@ cdef class SurfaceGabls:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef double tmp
 
+
+
         tmp = Pa.HorizontalMeanSurface(Gr, &self.ustar[0])
         NS.write_ts('friction_velocity_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
