@@ -91,15 +91,15 @@ cdef class SurfaceSullivanPatton:
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
 
-        NS.add_ts('friction_velocity_mean', Gr, Pa)
-        NS.add_ts('uw_surface_mean',Gr, Pa)
-        NS.add_ts('vw_surface_mean',Gr, Pa)
-        NS.add_ts('s_flux_surface_mean', Gr, Pa)
-
-        NS.write_ts('friction_velocity_mean', 0.0, Pa)
-        NS.write_ts('uw_surface_mean', 0.0, Pa)
-        NS.write_ts('vw_surface_mean',0.0, Pa)
-        NS.write_ts('s_flux_surface_mean', 0.0, Pa)
+        # NS.add_ts('friction_velocity_mean', Gr, Pa)
+        # NS.add_ts('uw_surface_mean',Gr, Pa)
+        # NS.add_ts('vw_surface_mean',Gr, Pa)
+        # NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        #
+        # NS.write_ts('friction_velocity_mean', 0.0, Pa)
+        # NS.write_ts('uw_surface_mean', 0.0, Pa)
+        # NS.write_ts('vw_surface_mean',0.0, Pa)
+        # NS.write_ts('s_flux_surface_mean', 0.0, Pa)
 
         return
 
@@ -164,14 +164,14 @@ cdef class SurfaceSullivanPatton:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef double tmp
 
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.ustar[0])
-        NS.write_ts('friction_velocity_mean', tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
-        NS.write_ts('uw_surface_mean',tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
-        NS.write_ts('vw_surface_mean', tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
-        NS.write_ts('s_flux_surface_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr, &self.ustar[0])
+        # NS.write_ts('friction_velocity_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
+        # NS.write_ts('uw_surface_mean',tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
+        # NS.write_ts('vw_surface_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
+        # NS.write_ts('s_flux_surface_mean', tmp, Pa)
 
 
         return
@@ -264,12 +264,12 @@ cdef class SurfaceBomex:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef double tmp
 
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
-        NS.write_ts('uw_surface_mean', tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
-        NS.write_ts('vw_surface_mean', tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
-        NS.write_ts('s_flux_surface_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
+        # NS.write_ts('uw_surface_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
+        # NS.write_ts('vw_surface_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
+        # NS.write_ts('s_flux_surface_mean', tmp, Pa)
 
 
         return
@@ -387,14 +387,14 @@ cdef class SurfaceGabls:
 
 
 
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.ustar[0])
-        NS.write_ts('friction_velocity_mean', tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
-        NS.write_ts('uw_surface_mean', tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
-        NS.write_ts('vw_surface_mean', tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
-        NS.write_ts('s_flux_surface_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr, &self.ustar[0])
+        # NS.write_ts('friction_velocity_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
+        # NS.write_ts('uw_surface_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
+        # NS.write_ts('vw_surface_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
+        # NS.write_ts('s_flux_surface_mean', tmp, Pa)
 
 
         return
