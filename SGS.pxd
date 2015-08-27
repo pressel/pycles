@@ -3,7 +3,8 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ReferenceState
 cimport Kinematics
-from libc.math cimport  fmax
+cimport ParallelMPI
+
 
 cdef class SGS:
     cdef:
@@ -36,9 +37,9 @@ cdef class Smagorinsky:
 
 
 cdef class TKE:
-        cdef:
-            double ck
-            double cn
+    cdef:
+        double ck
+        double cn
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,

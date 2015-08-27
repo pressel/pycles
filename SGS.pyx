@@ -3,12 +3,16 @@ cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport Kinematics
-from libc.math cimport  fmax
+cimport ParallelMPI
+
 import cython
 
 cdef extern from "sgs.h":
     void smagorinsky_update(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
                             double* strain_rate_mag, double cs, double prt)
+    void tke_viscosity_diffusivity(Grid.DimStruct *dims, double* e, double* buoy_freq,double* visc, double* diff,
+                                   double cn, double ck)
+    void tke_dissipation(Grid.DimStruct* dims, double* e, double* e_tendency, double* buoy_freq, double cn, double ck)
 
 cdef class SGS:
     def __init__(self,namelist):
@@ -98,7 +102,8 @@ cdef class Smagorinsky:
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
             Py_ssize_t bf_shift =DV.get_varshift(Gr, 'buoyancy_frequency')
 
-        smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],&Ke.strain_rate_mag[0],self.cs,self.prt)
+        smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                           &Ke.strain_rate_mag[0],self.cs,self.prt)
 
         return
 
@@ -127,4 +132,15 @@ cdef class TKE:
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke):
+
+        cdef:
+            Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
+            Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
+            Py_ssize_t bf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
+            Py_ssize_t e_shift = PV.get_varshift(Gr,'e')
+
+        tke_viscosity_diffusivity(&Gr.dims, &PV.values[e_shift], &DV.values[bf_shift], &DV.values[visc_shift],
+                                  &DV.values[diff_shift], self.cn, self.ck)
+        tke_dissipation(&Gr.dims, &PV.values[e_shift], &PV.tendencies[e_shift], &DV.values[bf_shift], self.cn, self.ck)
+
         return
