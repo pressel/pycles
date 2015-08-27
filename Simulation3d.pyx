@@ -165,4 +165,5 @@ class Simulation3d:
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Th.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+        self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         return
