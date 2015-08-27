@@ -55,7 +55,6 @@ cdef class Surface:
         self.scheme.initialize(Gr, Ref, NS, Pa)
         return
 
-
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         self.scheme.update(Gr, Ref, PV, DV, Pa, TS)
         return

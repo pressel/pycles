@@ -13,6 +13,8 @@ cdef extern from "sgs.h":
     void tke_viscosity_diffusivity(Grid.DimStruct *dims, double* e, double* buoy_freq,double* visc, double* diff,
                                    double cn, double ck)
     void tke_dissipation(Grid.DimStruct* dims, double* e, double* e_tendency, double* buoy_freq, double cn, double ck)
+    void tke_shear_production(Grid.DimStruct *dims,  double* e_tendency, double* visc, double* strain_rate_mag)
+    void tke_buoyant_production(Grid.DimStruct *dims,  double* e_tendency, double* diff, double* buoy_freq)
 
 cdef class SGS:
     def __init__(self,namelist):
@@ -141,6 +143,13 @@ cdef class TKE:
 
         tke_viscosity_diffusivity(&Gr.dims, &PV.values[e_shift], &DV.values[bf_shift], &DV.values[visc_shift],
                                   &DV.values[diff_shift], self.cn, self.ck)
+
         tke_dissipation(&Gr.dims, &PV.values[e_shift], &PV.tendencies[e_shift], &DV.values[bf_shift], self.cn, self.ck)
+
+        tke_shear_production(&Gr.dims,  &PV.tendencies[e_shift], &DV.values[visc_shift], &Ke.strain_rate_mag[0])
+
+        tke_buoyant_production(&Gr.dims, &PV.tendencies[e_shift], &DV.values[diff_shift], &DV.values[bf_shift])
+
+
 
         return
