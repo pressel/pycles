@@ -6,7 +6,6 @@ cimport ParallelMPI
 from NetCDFIO cimport NetCDFIO_Stats
 
 cdef class ScalarDiffusion:
-
     cdef:
         double [:] flux
         double (*L_fp)(double T, double Lambda) nogil
