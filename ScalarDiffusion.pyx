@@ -37,7 +37,7 @@ cdef class ScalarDiffusion:
                      DiagnosticVariables.DiagnosticVariables DV):
 
         cdef:
-            Py_ssize_t diff_shift = DV.get_nv('diffusivity')
+            Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
             Py_ssize_t s_shift
             Py_ssize_t qt_shift
             Py_ssize_t t_shift
