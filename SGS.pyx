@@ -30,9 +30,9 @@ cdef class SGS:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, Surface.Surface Sur):
+                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, Surface.Surface Sur, ParallelMPI.ParallelMPI Pa):
 
-        self.scheme.update(Gr,Ref,DV,PV,Ke,Sur)
+        self.scheme.update(Gr,Ref,DV,PV,Ke,Sur,Pa)
 
         return
 
@@ -60,7 +60,7 @@ cdef class UniformViscosity:
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -98,7 +98,7 @@ cdef class Smagorinsky:
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -128,19 +128,39 @@ cdef class TKE:
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
         PV.add_variable('e', 'm^2/s^2', 'sym','scalar',Pa)
 
+        self.Z_Pencil = ParallelMPI.Pencil()
+        self.Z_Pencil.initialize(Gr,Pa,dim=2)
+
         return
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
             Py_ssize_t bf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
             Py_ssize_t e_shift = PV.get_varshift(Gr,'e')
+            Py_ssize_t th_shift
+            double [:,:] theta_pencil
+            double h_local = 0.0
+            double h_global = 0.0
+            double n_xy_i = 1.0/(Gr.dims.nlg[0]*Gr.dims.nlg[1])
+
+
+        if 'theta_rho' in DV.name_index:
+            th_shift = DV.get_varshift(Gr,'theta_rho')
+        else:
+            th_shift = DV.get_varshift(Gr,'theta')
+
+        theta_pencil = self.Z_Pencil.forward_double(&Gr.dims, Pa, &DV.values[th_shift])
+
+
+
+
 
         tke_viscosity_diffusivity(&Gr.dims, &PV.values[e_shift], &DV.values[bf_shift], &DV.values[visc_shift],
                                   &DV.values[diff_shift], self.cn, self.ck)
@@ -154,3 +174,5 @@ cdef class TKE:
 
 
         return
+
+
