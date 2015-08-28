@@ -30,7 +30,7 @@ cdef extern from "surface.h":
     inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0, double z1) nogil
     inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0_b, double T_b, double qt_b, double qv_b) nogil
     void compute_windspeed(Grid.DimStruct *dims, double* u, double*  v, double*  speed, double u0, double v0, double gustiness ) nogil
-    void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch) nogil
+    void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch, double* lmo) nogil
 
 
 cdef extern from "entropies.h":
@@ -90,16 +90,14 @@ cdef class SurfaceSullivanPatton:
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.obukhov_length = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
 
         NS.add_ts('friction_velocity_mean', Gr, Pa)
         NS.add_ts('uw_surface_mean',Gr, Pa)
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        NS.add_ts('obukhov_length_mean', Gr, Pa)
 
-        NS.write_ts('friction_velocity_mean', 0.0, Pa)
-        NS.write_ts('uw_surface_mean', 0.0, Pa)
-        NS.write_ts('vw_surface_mean',0.0, Pa)
-        NS.write_ts('s_flux_surface_mean', 0.0, Pa)
 
         return
 
@@ -150,6 +148,7 @@ cdef class SurfaceSullivanPatton:
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
                     self.ustar[ij] = compute_ustar_c(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    self.obukhov_length[ij] = -self.ustar[ij]*self.ustar[ij]*self.ustar[ij]/self.buoyancy_flux/vkb
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
@@ -172,11 +171,11 @@ cdef class SurfaceSullivanPatton:
         NS.write_ts('vw_surface_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
         NS.write_ts('s_flux_surface_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.obukhov_length[0])
+        NS.write_ts('obukhov_length_mean', tmp, Pa)
 
 
         return
-
-
 
 
 
@@ -184,25 +183,39 @@ cdef class SurfaceBomex:
     def __init__(self):
         self.theta_flux = 8.0e-3 # K m/s
         self.qt_flux = 5.2e-5 # m/s
-        self.ustar = 0.28 #m/s
+        self.ustar_ = 0.28 #m/s
+        self.theta_surface = 299.1 #K
+        self.qt_surface = 22.45e-3 # kg/kg
+        self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux + self.qt_surface *self.theta_flux))
+                              /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))
 
         pass
 
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-
+        self.ustar = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')*self.ustar_
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.obukhov_length = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+
+        cdef:
+            Py_ssize_t i
+
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]*Gr.dims.nlg[1]):
+                self.obukhov_length[i] = -self.ustar_*self.ustar_*self.ustar_/self.buoyancy_flux/vkb
 
 
+        NS.add_ts('friction_velocity_mean',Gr,Pa)
         NS.add_ts('uw_surface_mean',Gr, Pa)
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        NS.add_ts('obukhov_length_mean', Gr, Pa)
 
-        NS.write_ts('uw_surface_mean', 0.0, Pa)
-        NS.write_ts('vw_surface_mean',0.0, Pa)
-        NS.write_ts('s_flux_surface_mean', 0.0, Pa)
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -236,7 +249,6 @@ cdef class SurfaceBomex:
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-
                     self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
                     PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + self.s_flux[ij] * tendency_factor
                     PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux * tendency_factor
@@ -254,8 +266,8 @@ cdef class SurfaceBomex:
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -self.ustar**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -self.ustar**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    self.u_flux[ij] = -self.ustar_**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -self.ustar_**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
                     PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij] * tendency_factor
 
@@ -264,12 +276,16 @@ cdef class SurfaceBomex:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef double tmp
 
+        tmp = Pa.HorizontalMeanSurface(Gr, &self.ustar[0])
+        NS.write_ts('friction_velocity_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
         NS.write_ts('uw_surface_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
         NS.write_ts('vw_surface_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
         NS.write_ts('s_flux_surface_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.obukhov_length[0])
+        NS.write_ts('obukhov_length_mean', tmp, Pa)
 
 
         return
@@ -293,16 +309,14 @@ cdef class SurfaceGabls:
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         # self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.obukhov_length = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
 
         NS.add_ts('friction_velocity_mean', Gr, Pa)
         NS.add_ts('uw_surface_mean',Gr, Pa)
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        NS.add_ts('obukhov_length_mean', Gr, Pa)
 
-        NS.write_ts('friction_velocity_mean', 0.0, Pa)
-        NS.write_ts('uw_surface_mean', 0.0, Pa)
-        NS.write_ts('vw_surface_mean',0.0, Pa)
-        NS.write_ts('s_flux_surface_mean', 0.0, Pa)
 
         return
 
@@ -365,7 +379,7 @@ cdef class SurfaceGabls:
                     theta_rho_b=DV.values[th_shift + ijk]
                     Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
                     Ri = Nb2 * zb* zb/(windspeed[ij] * windspeed[ij])
-                    exchange_coefficients_byun(Ri,zb,self.z0, &cm, &ch)
+                    exchange_coefficients_byun(Ri,zb,self.z0, &cm, &ch, &self.obukhov_length[ij])
                     # self.qt_flux[ij] = -ch * self.windspeed[ij] * (PV.values[qt_shift+ijk] - qv_star)
                     self.s_flux[ij] = -ch * windspeed[ij] * (PV.values[s_shift+ijk] - s_star)
                     self.ustar[ij] = sqrt(cm) * windspeed[ij]
@@ -393,7 +407,8 @@ cdef class SurfaceGabls:
         NS.write_ts('vw_surface_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
         NS.write_ts('s_flux_surface_mean', tmp, Pa)
-
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.obukhov_length[0])
+        NS.write_ts('obukhov_length_mean', tmp, Pa)
 
         return
 

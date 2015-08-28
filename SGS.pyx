@@ -4,6 +4,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport Kinematics
 cimport ParallelMPI
+cimport Surface
 
 import cython
 
@@ -25,13 +26,13 @@ cdef class SGS:
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
-        self.scheme.initialize(Gr,PV)
+        self.scheme.initialize(Gr,PV,Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke):
+                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, Surface.Surface Sur):
 
-        self.scheme.update(Gr,Ref,DV,PV,Ke)
+        self.scheme.update(Gr,Ref,DV,PV,Ke,Sur)
 
         return
 
@@ -59,7 +60,7 @@ cdef class UniformViscosity:
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -97,7 +98,7 @@ cdef class Smagorinsky:
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -120,7 +121,7 @@ cdef class TKE:
         try:
             self.cn = namelist['sgs']['TKE']['cn']
         except:
-            self.prt = 0.76
+            self.cn = 0.76
 
         return
 
@@ -133,7 +134,7 @@ cdef class TKE:
     @cython.wraparound(False)
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')

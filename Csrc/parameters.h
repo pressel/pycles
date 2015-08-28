@@ -15,4 +15,5 @@
 #define pv_star_t 611.7
 #define sd_tilde 6695.4
 #define sv_tilde 10513.6
+#define vkb 0.35
 //End generated code

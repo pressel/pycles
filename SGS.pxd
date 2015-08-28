@@ -4,7 +4,7 @@ cimport DiagnosticVariables
 cimport ReferenceState
 cimport Kinematics
 cimport ParallelMPI
-
+cimport Surface
 
 cdef class SGS:
     cdef:
@@ -12,7 +12,7 @@ cdef class SGS:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke)
+                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, Surface.Surface Sur)
 
 
 cdef class UniformViscosity:
@@ -24,7 +24,7 @@ cdef class UniformViscosity:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke)
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur)
 
 cdef class Smagorinsky:
     cdef:
@@ -33,7 +33,7 @@ cdef class Smagorinsky:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke)
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur)
 
 
 cdef class TKE:
@@ -43,5 +43,5 @@ cdef class TKE:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke)
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur)
 
