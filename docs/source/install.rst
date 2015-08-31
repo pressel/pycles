@@ -8,8 +8,8 @@ The simplest way to obtain the PyCLES source code is to clone it from GitHub_::
 
 $ git clone https://github.com/pressel/pycles.git
 
-Alternatively, if you anticipate contributing to PyCLES we recommend forking the code directly from GitHub_. To fork the
-repository, create a GitHub_ account. Then visit the `PyCLES Github Page`_ and click the Fork button that appears on the
+Alternatively, we recommend forking the code directly from GitHub_  if you anticipate contributing to PyCLES. To fork the
+repository, first create a GitHub_ account. Then visit the `PyCLES Github Page`_ and click the Fork button that appears on the
 upper right side of the page. Once you have forked PyCLES, clone your fork.
 
 .. _Github: http://www.github.com/
@@ -33,7 +33,7 @@ PyCLES depends on several Python packages:
 .. _mpi4py: https://pypi.python.org/pypi/mpi4py
 .. _netCDF4: https://pypi.python.org/pypi/netCDF4/
 
-The instructions for installation of these packages on Mac and Linux systems is given below.
+Instructions for installation of these packages on Mac and Linux systems are given below.
 
 Building on a Mac
 +++++++++++++++++
@@ -47,8 +47,8 @@ contribute your experience to this documentation!
 .. _Homebrew: http://brew.sh/
 
 MacPorts_ makes the installation straight forward. We recommend using a version of Python installed using MacPorts. PyCLES
-has been written to support both Python 2.7 and Python 3.x, however for the purposes of this documentation we will
-describe installation using Python 2.7, an installation using Python 3.x follows a similar progression. To install
+has been written to support both Python 2.7 and Python 3.x. In this documentation we will specifically
+describe installation using Python 2.7, but installation using Python 3.x follows a similar progression. To install
 Python 2.7 using Macports run::
 
 
@@ -94,7 +94,7 @@ Building on Linux
 +++++++++++++++++
 
 Building PyCLES on Linux systems involves installing the requires Python modules and their individual dependencies. The
-python packages requried by PyCLES are fairly standard and are likely pre-installed on most HPC systems. If the required
+python packages required by PyCLES are fairly standard and are likely pre-installed on most HPC systems. If the required
 packages are not install we recommend consulting your system administrator to have them installed for you.
 
 To install them on a non-HPC system we recommend using the package manager of your choice.
@@ -129,7 +129,7 @@ Site Specific Builds
 Euler @ ETH Zurich
 ++++++++++++++++++
 PyCLES has been extensively tested and run on Euler using a Python Virtual Environment that has all of PyCLES's
-dependencies pre-installed. To use the Python virtual envirnment add the following lines to your .bashrc file:
+dependencies pre-installed. To use the Python virtual environment add the following lines to your .bashrc file:
 
 .. code-block:: bash
 
