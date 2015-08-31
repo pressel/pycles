@@ -19,6 +19,10 @@ cdef class DiagnosticVariables:
         self.nv = 0
         self.bc_type = np.array([],dtype=np.double,order='c')
 
+        self.name_index_2d = {}
+        self.units_2d = {}
+        self.nv_2d = 0
+
     cpdef add_variables(self, name, units,bc_type,  ParallelMPI.ParallelMPI Pa):
         self.name_index[name] = self.nv
         self.units[name] = units
@@ -31,6 +35,13 @@ cdef class DiagnosticVariables:
             Pa.root_print("Not a valid bc_type. Killing simulation now!")
             Pa.kill()
         self.nv = len(self.name_index.keys())
+
+        return
+
+    cpdef add_variables_2d(self, name, units):
+        self.name_index_2d[name] = self.nv_2d
+        self.units_2d[name] = units
+        self.nv_2d = len(self.name_index_2d.keys())
 
         return
 
@@ -98,6 +109,8 @@ cdef class DiagnosticVariables:
 
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.values = np.empty((self.nv*Gr.dims.npg),dtype=np.double,order='c')
+        self.values_2d = np.empty((self.nv_2d*Gr.dims.nlg[0]*Gr.dims.nlg[1]),dtype=np.double,order='c' )
+
 
         #Add prognostic variables to Statistics IO
         Pa.root_print('Setting up statistical output files for Prognostic Variables')

@@ -30,7 +30,7 @@ cdef class ParallelMPI:
         double [:] HorizontalMaximum(self, Grid.Grid Gr, double* values)
         double [:] HorizontalMinimum(self, Grid.Grid Gr, double* values)
         double HorizontalMeanSurface(self, Grid.Grid Gr, double* values)
-        double GlobalMeanScalar(self,Grid.Grid Gr,double *value)
+        double GlobalMeanScalar(self,Grid.Grid Gr,double value)
 
     cpdef root_print(self, txt_output)
 

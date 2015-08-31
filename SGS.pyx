@@ -4,7 +4,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport Kinematics
 cimport ParallelMPI
-cimport Surface
+
 
 import cython
 
@@ -16,6 +16,7 @@ cdef extern from "sgs.h":
     void tke_dissipation(Grid.DimStruct* dims, double* e, double* e_tendency, double* buoy_freq, double cn, double ck)
     void tke_shear_production(Grid.DimStruct *dims,  double* e_tendency, double* visc, double* strain_rate_mag)
     void tke_buoyant_production(Grid.DimStruct *dims,  double* e_tendency, double* diff, double* buoy_freq)
+    void tke_surface(Grid.DimStruct *dims, double* e, double* lmo, double* ustar, double h_bl, double zb) nogil
 
 cdef class SGS:
     def __init__(self,namelist):
@@ -23,6 +24,8 @@ cdef class SGS:
             self.scheme = UniformViscosity(namelist)
         elif(namelist['sgs']['scheme'] == 'Smagorinsky'):
             self.scheme = Smagorinsky(namelist)
+        elif(namelist['sgs']['scheme'] == 'TKE'):
+            self.scheme = TKE(namelist)
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
@@ -30,9 +33,9 @@ cdef class SGS:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, Surface.Surface Sur, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
 
-        self.scheme.update(Gr,Ref,DV,PV,Ke,Sur,Pa)
+        self.scheme.update(Gr,Ref,DV,PV,Ke,Pa)
 
         return
 
@@ -60,7 +63,7 @@ cdef class UniformViscosity:
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -98,7 +101,7 @@ cdef class Smagorinsky:
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -137,7 +140,7 @@ cdef class TKE:
     @cython.wraparound(False)
     @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.Surface Sur, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -158,13 +161,13 @@ cdef class TKE:
             th_shift = DV.get_varshift(Gr,'theta')
 
         theta_pencil = self.Z_Pencil.forward_double(&Gr.dims, Pa, &DV.values[th_shift])
-        with nogil:
-            for i in xrange(self.Z_Pencil.n_local_pencils):
-                k=0
-                while theta_pencil[i,k] <= theta_pencil[i,0]:
-                    k = k + 1
-                h_local = h_local + Gr.z_half[k]
-        h_global = Pa.GlobalMeanScalar(Gr,&h_local)
+
+        for i in xrange(self.Z_Pencil.n_local_pencils):
+            k=Gr.dims.gw
+            while theta_pencil[i,k] <= theta_pencil[i,Gr.dims.gw]:
+                k = k + 1
+            h_local = h_local + Gr.z_half[k]
+        h_global = Pa.GlobalMeanScalar(Gr, h_local)
 
 
 
@@ -177,6 +180,11 @@ cdef class TKE:
         tke_shear_production(&Gr.dims,  &PV.tendencies[e_shift], &DV.values[visc_shift], &Ke.strain_rate_mag[0])
 
         tke_buoyant_production(&Gr.dims, &PV.tendencies[e_shift], &DV.values[diff_shift], &DV.values[bf_shift])
+
+        cdef Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr,'obukhov_length')
+        cdef Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr,'friction_velocity')
+        if Pa.sub_z_rank == 0:
+            tke_surface(&Gr.dims, &PV.values[e_shift], &DV.values_2d[lmo_shift], &DV.values_2d[ustar_shift] , h_global, Gr.zl_half[Gr.dims.gw])
 
 
 

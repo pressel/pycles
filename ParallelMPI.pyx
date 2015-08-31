@@ -340,7 +340,7 @@ cdef class ParallelMPI:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef double GlobalMeanScalar(self,Grid.Grid Gr,double *value):
+    cdef double GlobalMeanScalar(self,Grid.Grid Gr,double value):
 
         cdef:
             double  mean = 0.0

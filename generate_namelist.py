@@ -323,8 +323,8 @@ def Gabls():
     namelist['time_stepping'] = {}
     namelist['time_stepping']['ts_type'] = 3
     namelist['time_stepping']['cfl_limit'] = 0.7
-    namelist['time_stepping']['dt_initial'] = 10.0
-    namelist['time_stepping']['dt_max'] = 30.0
+    namelist['time_stepping']['dt_initial'] =1.0
+    namelist['time_stepping']['dt_max'] = 2.0
     namelist['time_stepping']['t_max'] = 43200.0
 
     namelist['thermodynamics'] = {}
@@ -352,7 +352,7 @@ def Gabls():
     namelist['damping']['Rayleigh']['z_d'] = 300.0
 
     namelist['output'] = {}
-    namelist['output']['output_root'] = '/Users/ckaul/'
+    namelist['output']['output_root'] = './'
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = "stats"

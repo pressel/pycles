@@ -121,7 +121,7 @@ void compute_windspeed(const struct DimStruct *dims, double* restrict u, double*
 
     const size_t imin = 1;
     const size_t jmin = 1;
-    const size_t kmin =1;
+    const size_t kmin = 1;
 
     const size_t imax = dims->nlg[0];
     const size_t jmax = dims->nlg[1];
@@ -143,3 +143,4 @@ void compute_windspeed(const struct DimStruct *dims, double* restrict u, double*
 
     return;
 }
+
