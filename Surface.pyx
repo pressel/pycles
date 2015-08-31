@@ -98,7 +98,6 @@ cdef class SurfaceSullivanPatton:
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
         NS.add_ts('obukhov_length_mean', Gr, Pa)
 
-
         return
 
     @cython.boundscheck(False)
@@ -316,7 +315,6 @@ cdef class SurfaceGabls:
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
         NS.add_ts('obukhov_length_mean', Gr, Pa)
-
 
         return
 

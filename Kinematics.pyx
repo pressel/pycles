@@ -14,15 +14,18 @@ cdef class Kinematics:
         pass
 
     cpdef initialize(self, Grid.Grid Gr):
-        self.vgrad = np.zeros(Gr.dims.npg * Gr.dims.dims * Gr.dims.dims,dtype=np.double, order='c')
-        self.strain_rate = np.zeros(Gr.dims.npg * Gr.dims.dims * Gr.dims.dims, dtype=np.double, order = 'c')
-        self.strain_rate_mag = np.zeros(Gr.dims.npg,dtype=np.double, order='c')
+        self.vgrad = np.zeros(
+            Gr.dims.npg * Gr.dims.dims * Gr.dims.dims, dtype=np.double, order='c')
+        self.strain_rate = np.zeros(
+            Gr.dims.npg * Gr.dims.dims * Gr.dims.dims, dtype=np.double, order='c')
+        self.strain_rate_mag = np.zeros(
+            Gr.dims.npg, dtype=np.double, order='c')
         return
 
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
 
         cdef:
-            Py_ssize_t vi1, d, count=0
+            Py_ssize_t vi1, d, count = 0
             Py_ssize_t shift_v1
             Py_ssize_t shift_v_grad, shift_strain
 
@@ -30,11 +33,11 @@ cdef class Kinematics:
             shift_v1 = PV.velocity_directions[vi1] * Gr.dims.npg
             for d in xrange(Gr.dims.dims):
                 shift_v_grad = Gr.dims.npg * count
-                compute_velocity_gradient(&Gr.dims,&PV.values[shift_v1],&self.vgrad[shift_v_grad],d)
+                compute_velocity_gradient( & Gr.dims, & PV.values[shift_v1], & self.vgrad[shift_v_grad], d)
                 count += 1
 
-        compute_strain_rate(&Gr.dims, &self.vgrad[0],&self.strain_rate[0])
-        compute_strain_rate_mag(&Gr.dims, &self.strain_rate[0],&self.strain_rate_mag[0])
+        compute_strain_rate( & Gr.dims, & self.vgrad[0], & self.strain_rate[0])
+        compute_strain_rate_mag( & Gr.dims, & self.strain_rate[0], & self.strain_rate_mag[0])
 
         return
 

@@ -8,6 +8,8 @@ parameters.pxi
 /Csrc/parameters.h
 *.idea
 *.in
-/build
-/figs
+build/
+figs/
+_static/
+_templates/
 *.png 
