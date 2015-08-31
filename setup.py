@@ -5,7 +5,7 @@ import numpy as np
 import mpi4py as mpi4py
 #import petsc4py
 
-#Now get include paths from relevant python modules
+# Now get include paths from relevant python modules
 include_path = [mpi4py.get_include()]
 include_path += [np.get_include()]
 #include_path += [petsc4py.get_include()]
@@ -14,146 +14,153 @@ include_path += ['./Csrc']
 
 
 #library_dirs =['/opt/local/lib/petsc/lib/']
-library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
+library_dirs = []
 libraries = []
-libraries.append('mpi')
-
-
 extensions = []
-extra_compile_args=[]
-extra_compile_args+=['-std=c99','-O3','-march=native','-Wno-unused']#,'-Wno-#warnings']#,'-Rpass=loop-vectorize']
+extra_compile_args = []
+# ,'-Rpass=loop-vectorize']
+extra_compile_args += ['-O3', '-march=native', '-Wno-unused', '-Wno-#warnings']
 
-_ext = Extension("Grid",["Grid.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+# libraries.append('petsc')
+
+
+# Library dirs for euler
+#library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
+#libraries = []
+# libraries.append('mpi')
+#extensions = []
+# extra_compile_args=[]
+# extra_compile_args+=['-std=c99','-O3','-march=native','-Wno-unused','-Wno-#warnings']#,'-Rpass=loop-vectorize']
+
+_ext = Extension("Grid", ["Grid.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("Initialization",["Initialization.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("Initialization", ["Initialization.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("Microphysics",["Microphysics.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("Microphysics", ["Microphysics.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("thermodynamic_functions",["thermodynamic_functions.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("thermodynamic_functions", ["thermodynamic_functions.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("Thermodynamics",["Thermodynamics.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("Thermodynamics", ["Thermodynamics.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("ThermodynamicsDry",["ThermodynamicsDry.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("ThermodynamicsDry", ["ThermodynamicsDry.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("ThermodynamicsSA",["ThermodynamicsSA.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("ThermodynamicsSA", ["ThermodynamicsSA.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("ReferenceState",["ReferenceState.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("ReferenceState", ["ReferenceState.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("Simulation3d",["Simulation3d.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("Simulation3d", ["Simulation3d.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("ParallelMPI",["ParallelMPI.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("ParallelMPI", ["ParallelMPI.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("PrognosticVariables",["PrognosticVariables.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("PrognosticVariables", ["PrognosticVariables.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("DiagnosticVariables",["DiagnosticVariables.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("DiagnosticVariables", ["DiagnosticVariables.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("ScalarAdvection",["ScalarAdvection.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("ScalarAdvection", ["ScalarAdvection.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("MomentumAdvection",["MomentumAdvection.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("MomentumAdvection", ["MomentumAdvection.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("ScalarDiffusion",["ScalarDiffusion.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("ScalarDiffusion", ["ScalarDiffusion.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("MomentumDiffusion",["MomentumDiffusion.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("MomentumDiffusion", ["MomentumDiffusion.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("FluxDivergence",["FluxDivergence.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("FluxDivergence", ["FluxDivergence.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("PressureSolver",["PressureSolver.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("PressureSolver", ["PressureSolver.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("PressureFFTSerial",["PressureFFTSerial.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("PressureFFTSerial", ["PressureFFTSerial.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("PressureFFTParallel",["PressureFFTParallel.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("PressureFFTParallel", ["PressureFFTParallel.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("SparseSolvers",["SparseSolvers.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("SparseSolvers", ["SparseSolvers.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("SGS",["SGS.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("SGS", ["SGS.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("TimeStepping",["TimeStepping.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("TimeStepping", ["TimeStepping.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-
-_ext = Extension("Kinematics",["Kinematics.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("Kinematics", ["Kinematics.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("Lookup",["Lookup.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("Lookup", ["Lookup.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension("NetCDFIO",["NetCDFIO.pyx"],include_dirs = include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs  )
+_ext = Extension("NetCDFIO", ["NetCDFIO.pyx"], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
 extensions.append(_ext)
-
 
 _ext = Extension("Surface", ["Surface.pyx"], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
@@ -166,7 +173,7 @@ _ext = Extension("Damping", ["Damping.pyx"], include_dirs=include_path,
 extensions.append(_ext)
 
 _ext = Extension("Forcing", ["Forcing.pyx"], include_dirs=include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries , library_dirs=library_dirs,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
@@ -176,5 +183,5 @@ _ext = Extension("entropies", ["entropies.pyx"], include_dirs=include_path,
 extensions.append(_ext)
 
 setup(
-    ext_modules = cythonize(extensions,verbose=1,include_path=include_path)
+    ext_modules=cythonize(extensions, verbose=1, include_path=include_path)
 )
