@@ -129,12 +129,17 @@ cdef class DiagnosticVariables:
             NS.add_ts(var_name+'_max',Gr,Pa)
             #Add min ts
             NS.add_ts(var_name+'_min',Gr,Pa)
+        for var_name in self.name_index_2d.keys():
+            #Add mean profile
+            NS.add_ts(var_name+'_mean',Gr,Pa)
+
         return
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
             int var_shift
             double [:] tmp
+            double tmp2
 
         for var_name in self.name_index.keys():
             var_shift = self.get_varshift(Gr,var_name)
@@ -159,5 +164,14 @@ cdef class DiagnosticVariables:
             tmp = Pa.HorizontalMinimum(Gr,&self.values[var_shift])
             NS.write_profile(var_name + '_min',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
             NS.write_ts(var_name+'_min',np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
+
+        for var_name in self.name_index_2d.keys():
+            var_shift = self.get_varshift_2d(Gr,var_name)
+
+            #Compute and write mean
+            tmp2 = Pa.HorizontalMeanSurface(Gr,&self.values[var_shift])
+            NS.write_ts(var_name + '_mean',tmp2,Pa)
+
+
 
         return
