@@ -337,6 +337,23 @@ cdef class ParallelMPI:
 
 
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef double GlobalMeanScalar(self,Grid.Grid Gr,double *value):
+
+        cdef:
+            double  mean = 0.0
+            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+
+        mpi.MPI_Allreduce(&value,&mean,1, mpi.MPI_DOUBLE,mpi.MPI_SUM,self.comm_world)
+
+        mean = mean*n_horizontal_i
+
+
+        return mean
+
+
 
 
 

@@ -145,6 +145,7 @@ cdef class TKE:
             Py_ssize_t bf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
             Py_ssize_t e_shift = PV.get_varshift(Gr,'e')
             Py_ssize_t th_shift
+            Py_ssize_t i,k
             double [:,:] theta_pencil
             double h_local = 0.0
             double h_global = 0.0
@@ -157,7 +158,13 @@ cdef class TKE:
             th_shift = DV.get_varshift(Gr,'theta')
 
         theta_pencil = self.Z_Pencil.forward_double(&Gr.dims, Pa, &DV.values[th_shift])
-
+        with nogil:
+            for i in xrange(self.Z_Pencil.n_local_pencils):
+                k=0
+                while theta_pencil[i,k] <= theta_pencil[i,0]:
+                    k = k + 1
+                h_local = h_local + Gr.z_half[k]
+        h_global = Pa.GlobalMeanScalar(Gr,&h_local)
 
 
 
