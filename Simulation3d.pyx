@@ -21,7 +21,7 @@ cimport Damping
 cimport NetCDFIO
 cimport Surface
 cimport Forcing
-
+cimport Radiation
 
 class Simulation3d:
 
@@ -46,6 +46,7 @@ class Simulation3d:
         self.Ref = ReferenceState.ReferenceState(self.Gr)
         self.Sur = Surface.Surface(namelist, self.LH, self.Pa)
         self.Fo = Forcing.Forcing(namelist)
+        self.Ra = Radiation.Radiation(namelist, self.Pa)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
         self.Damping = Damping.Damping(namelist, self.Pa)
@@ -74,6 +75,7 @@ class Simulation3d:
         SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th)
         self.Sur.initialize(self.Gr, self.Ref, self.StatsIO, self.Pa)
         self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
+        self.Ra.initialize(self.Gr,self.StatsIO,self.Pa)
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Damping.initialize(self.Gr)
@@ -104,6 +106,7 @@ class Simulation3d:
                 self.Sur.update(
                     self.Gr, self.Ref, self.PV, self.DV, self.Pa, self.TS)
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV)
+                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
