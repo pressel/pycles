@@ -23,6 +23,8 @@ def InitializationFactory(namelist):
             return InitBomex
         elif casename == 'Gabls':
             return InitGabls
+        elif casename == 'Mpace':
+            return InitMpace
         else:
             pass
 
@@ -373,3 +375,120 @@ def InitGabls(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
     return
+
+@cython.boundscheck(False)  #Turn off numpy array index bounds checking
+@cython.wraparound(False)   #Turn off numpy array wrap around indexing
+@cython.cdivision(True)
+def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th):
+
+    #First generate the reference profiles
+    RS.Pg = 1.01e5  #Pressure at ground
+    RS.Tg = 274.04  #Temperature at ground
+    RS.qtg = 0.00195   #Total water mixing ratio at surface
+
+    RS.u0 = -13.0  # velocities removed in Galilean transformation
+    RS.v0 = -3.0
+
+    RS.initialize(Gr, Th)
+
+    #Get the variable number for each of the velocity components
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift
+        Py_ssize_t ijk
+        double temp
+        double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] ql = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        Py_ssize_t count
+
+        theta_pert = np.random.random_sample(Gr.dims.npg)*0.1
+
+    for k in xrange(Gr.dims.nlg[2]):
+
+        #Set Thetal profile (better to get temperature directly from file?)
+        if RS.p0_half[k] >= 85000.:
+            thetal[k] = 269.2
+        if RS.p0_half[k] < 85000.:
+            thetal[k] = 275.33 + 0.0791/100.*(81500. - RS.p0_half[k])
+
+        #Set qt profile
+        if RS.p0_half[k] >= 85000.:
+            qt[k] = 1.95
+        if RS.p0_half[k] < 85000.:
+            qt[k] = 0.291 + 0.00204/100.*(RS.p0_half[k] - 59000.)
+
+        #Change units to kg/kg
+        qt[k]/= 1000.0
+
+    #Thetal defined in Klein et al. 2009
+    def thetal_mpace(p_,t_,ql_):
+
+        t_cb = 263. #cloud base temperature
+
+        return t_*(100000./p_)**(287.1/1004.)*np.exp(-(2.26e6*ql_)/(1004.*t_cb))
+
+    #Now get ql profile from file... or do iterations!
+    def thetal_to_T(p0_,thetal_,qt_):
+
+        Tt = thetal_*exner_c(p0_)
+        T1 = Tt
+        T2 = Tt + 1.
+
+        pv1 = Th.get_pv_star(T1)
+        pv2 = Th.get_pv_star(T2)
+
+        qs1 = qv_star_c(p0_, qt_, pv1)
+
+        ql1 = np.max([0.0, qt_ - qs1])
+        L1 = Th.get_lh(T1)
+        f1 = thetal_ - thetal_mpace(p0_,T1,ql1)
+
+        delta = np.abs(T1 - T2)
+        while delta >= 1e-12:
+
+
+            L2 = Th.get_lh(T2)
+            pv2 = Th.get_pv_star(T2)
+            qs2 = qv_star_c(p0_, qt_, pv2)
+            ql2 = np.max([0.0, qt_ - qs2])
+            f2 = thetal_ - thetal_mpace(p0_,T2,ql2)
+
+            Tnew = T2 - f2 * (T2 - T1)/(f2 - f1)
+            T1 = T2
+            T2 = Tnew
+            f1 = f2
+
+            delta = np.abs(T1 - T2)
+        return T2, ql2
+
+
+
+    #Now loop and set the initial condition
+    #First set the velocities
+    count = 0
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = -13.0 - RS.u0
+                PV.values[v_varshift + ijk] = -3.0 - RS.v0
+                PV.values[w_varshift + ijk] = 0.0
+                temp, ql[k] = thetal_to_T(RS.p0_half[k],thetal[k],qt[k])
+                if Gr.z_half[k] <= 800.0:
+                    temp = (temp / exner_c(RS.p0_half[k]) + (theta_pert[count] - 0.05)) * exner_c(RS.p0_half[k])
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt[k],ql[k],0.0)
+                PV.values[qt_varshift + ijk] = qt[k]
+                count += 1
+
+    return
+
