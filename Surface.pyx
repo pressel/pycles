@@ -188,6 +188,7 @@ cdef class SurfaceBomex:
         self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux + self.qt_surface *self.theta_flux))
                               /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))
 
+
         pass
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -222,6 +223,8 @@ cdef class SurfaceBomex:
             Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
             Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
 
+
+
             Py_ssize_t i
             Py_ssize_t j
             Py_ssize_t gw = Gr.dims.gw
@@ -237,6 +240,7 @@ cdef class SurfaceBomex:
             Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
             double dzi = 1.0/Gr.dims.dx[2]
             double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
+
 
         # Get the scalar flux
         with nogil:

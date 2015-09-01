@@ -169,7 +169,7 @@ cdef class DiagnosticVariables:
             var_shift = self.get_varshift_2d(Gr,var_name)
 
             #Compute and write mean
-            tmp2 = Pa.HorizontalMeanSurface(Gr,&self.values[var_shift])
+            tmp2 = Pa.HorizontalMeanSurface(Gr,&self.values_2d[var_shift])
             NS.write_ts(var_name + '_mean',tmp2,Pa)
 
 

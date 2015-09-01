@@ -4,7 +4,7 @@
 void smagorinsky_update(const struct DimStruct *dims, double* restrict visc, double* restrict diff,
 double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double prt){
 
-    double delta = pow(dims->dx[0]*dims->dx[1]*dims->dx[2],1.0/3.0);
+    double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
 
     for (size_t i=0; i<dims->npg; i++){
         double s2 = strain_rate_mag[i]*strain_rate_mag[i];
@@ -33,7 +33,7 @@ double tke_ell(double cn, double e, double buoy_freq, double delta){
 }
 void tke_viscosity_diffusivity(const struct DimStruct *dims, double* restrict e, double* restrict buoy_freq,
 double* restrict visc, double* restrict diff, double cn, double ck){
-    const double delta = pow(dims->dx[0]*dims->dx[1]*dims->dx[2],1.0/3.0);
+    const double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
     double ell = delta;
 
 
