@@ -13,6 +13,7 @@ from libc.math cimport cos
 import cython
 include 'parameters.pxi'
 
+
 cdef class PressureFFTParallel:
     def __init__(self):
         pass
