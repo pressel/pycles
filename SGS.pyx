@@ -1,11 +1,11 @@
 cimport Grid
-cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport Kinematics
 cimport ParallelMPI
-
-
+from NetCDFIO cimport NetCDFIO_Stats
+cimport numpy as np
+import numpy as np
 import cython
 
 cdef extern from "sgs.h":
@@ -28,15 +28,20 @@ cdef class SGS:
             self.scheme = TKE(namelist)
         return
 
-    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
-        self.scheme.initialize(Gr,PV,Pa)
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.scheme.initialize(Gr,PV,NS,Pa)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
 
-        self.scheme.update(Gr,Ref,DV,PV,Ke,Pa)
+        self.scheme.update(Gr,DV,PV,Ke,Pa)
 
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.scheme.stats_io(Gr,DV,PV,Ke,NS,Pa)
         return
 
 cdef class UniformViscosity:
@@ -55,14 +60,14 @@ cdef class UniformViscosity:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -80,6 +85,11 @@ cdef class UniformViscosity:
 
         return
 
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
 cdef class Smagorinsky:
     def __init__(self,namelist):
         try:
@@ -93,14 +103,14 @@ cdef class Smagorinsky:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef update(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -113,7 +123,9 @@ cdef class Smagorinsky:
 
         return
 
-
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
 
 cdef class TKE:
     def __init__(self,namelist):
@@ -128,19 +140,24 @@ cdef class TKE:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         PV.add_variable('e', 'm^2/s^2', 'sym','scalar',Pa)
+
 
         self.Z_Pencil = ParallelMPI.Pencil()
         self.Z_Pencil.initialize(Gr,Pa,dim=2)
+
+        NS.add_profile('tke_dissipation_tendency', Gr, Pa)
+        NS.add_profile('tke_shear_tendency', Gr, Pa)
+        NS.add_profile('tke_buoyancy_tendency', Gr, Pa)
+        NS.add_profile('tke_prandtl_number', Gr, Pa)
 
         return
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV, PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -191,3 +208,45 @@ cdef class TKE:
         return
 
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
+            Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
+            Py_ssize_t bf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
+            Py_ssize_t e_shift = PV.get_varshift(Gr,'e')
+            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
+            double [:] prt  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
+
+
+        tke_dissipation(&Gr.dims, &PV.values[e_shift], &tmp_tendency[0], &DV.values[bf_shift], self.cn, self.ck)
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('tke_dissipation_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tke_shear_production(&Gr.dims,   &tmp_tendency[0], &DV.values[visc_shift], &Ke.strain_rate_mag[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('tke_shear_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tke_buoyant_production(&Gr.dims,  &tmp_tendency[0], &DV.values[diff_shift], &DV.values[bf_shift])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('tke_buoyancy_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        cdef:
+            Py_ssize_t i
+            Py_ssize_t npg = Gr.dims.npg
+
+        with nogil:
+            for i in xrange(npg):
+                prt[i] = DV.values[visc_shift + i]/(DV.values[diff_shift + i] + 1.0e-20)
+
+
+        mean = Pa.HorizontalMean(Gr,&prt[0])
+        NS.write_profile('tke_prandtl_number',mean[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        return

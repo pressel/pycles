@@ -9,13 +9,11 @@ double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double 
     for (size_t i=0; i<dims->npg; i++){
         double s2 = strain_rate_mag[i]*strain_rate_mag[i];
         visc[i] = cs*cs*delta*delta*s2;
-        diff[i] = visc[i]/prt;
         if(buoy_freq[i] > 0.0){
-            double fb = fmax(1.0 - buoy_freq[i]/(prt*s2),0.0);
+            double fb = sqrt(fmax(1.0 - buoy_freq[i]/(prt*s2),0.0));
             visc[i] = visc[i] * fb;
-            diff[i] = diff[i] * fb;
         }
-
+        diff[i] = visc[i]/prt;
     }
     return;
 }

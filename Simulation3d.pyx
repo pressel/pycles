@@ -62,9 +62,9 @@ class Simulation3d:
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist, self.Pa)
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.SGS.initialize(self.Gr,self.PV, self.Pa)
+        self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
         self.PV.initialize(self.Gr, self.StatsIO, self.Pa)
-        self.Ke.initialize(self.Gr)
+        self.Ke.initialize(self.Gr, self.StatsIO, self.Pa)
 
         self.SA.initialize(self.Gr,self.PV)
         self.MA.initialize(self.Gr,self.PV)
@@ -100,7 +100,7 @@ class Simulation3d:
                 self.SA.update_cython(self.Gr,self.Ref,PV_,self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
-                self.SGS.update(self.Gr,self.Ref,self.DV,self.PV, self.Ke,self.Pa)
+                self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
                 self.Damping.update(self.Gr,self.PV,self.Pa)
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
@@ -157,6 +157,8 @@ class Simulation3d:
                     self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Th.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
+                self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
+                self.Ke.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
         return
 
     def force_io(self):
@@ -168,5 +170,7 @@ class Simulation3d:
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Th.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
+        self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
+        self.Ke.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
         return
 
