@@ -69,6 +69,9 @@ cdef class RadiationDyCOMS_RF01:
         self.z_pencil.initialize(Gr, Pa, 2)
         return
 
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  ParallelMPI.ParallelMPI Pa):
@@ -141,10 +144,12 @@ cdef class RadiationDyCOMS_RF01:
 
                 for k in xrange(Gr.dims.n[2]):
                     f_heat[pi, k] = - \
-                        (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi * rho_half[k]
+                        (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
-        self.z_pencil.reverse_double(& Gr.dims, Pa, f_rad, & heating_rate[0])
+        self.z_pencil.reverse_double(& Gr.dims, Pa, f_heat, & heating_rate[0])
+
+
 
         # Now update entropy tendencies
         with nogil:
