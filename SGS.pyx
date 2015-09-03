@@ -17,6 +17,7 @@ cdef extern from "sgs.h":
     void tke_shear_production(Grid.DimStruct *dims,  double* e_tendency, double* visc, double* strain_rate_mag)
     void tke_buoyant_production(Grid.DimStruct *dims,  double* e_tendency, double* diff, double* buoy_freq)
     void tke_surface(Grid.DimStruct *dims, double* e, double* lmo, double* ustar, double h_bl, double zb) nogil
+    double tke_ell(double cn, double e, double buoy_freq, double delta) nogil
 
 cdef class SGS:
     def __init__(self,namelist):
@@ -151,6 +152,7 @@ cdef class TKE:
         NS.add_profile('tke_shear_tendency', Gr, Pa)
         NS.add_profile('tke_buoyancy_tendency', Gr, Pa)
         NS.add_profile('tke_prandtl_number', Gr, Pa)
+        NS.add_profile('tke_mixing_length', Gr, Pa)
 
         return
 
@@ -221,7 +223,7 @@ cdef class TKE:
             Py_ssize_t e_shift = PV.get_varshift(Gr,'e')
             double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
-            double [:] prt  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+
             double [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
 
@@ -240,13 +242,21 @@ cdef class TKE:
         cdef:
             Py_ssize_t i
             Py_ssize_t npg = Gr.dims.npg
+            double delta = (Gr.dims.dx[0] * Gr.dims.dx[1] * Gr.dims.dx[2])**(1.0/3.0)
+            double [:] prt  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] mixing_length = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
 
         with nogil:
             for i in xrange(npg):
-                prt[i] = DV.values[visc_shift + i]/(DV.values[diff_shift + i] + 1.0e-20)
+                mixing_length[i] = tke_ell(self.cn, PV.values[e_shift+i], DV.values[bf_shift+i], delta)
+                prt[i] = delta/(delta + 2.0*mixing_length[i])
 
 
         mean = Pa.HorizontalMean(Gr,&prt[0])
         NS.write_profile('tke_prandtl_number',mean[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        mean = Pa.HorizontalMean(Gr,&mixing_length[0])
+        NS.write_profile('tke_mixing_length',mean[Gr.dims.gw:-Gr.dims.gw],Pa)
+
 
         return

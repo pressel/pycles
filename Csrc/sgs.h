@@ -7,10 +7,9 @@ double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double 
     double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
 
     for (size_t i=0; i<dims->npg; i++){
-        double s2 = strain_rate_mag[i]*strain_rate_mag[i];
-        visc[i] = cs*cs*delta*delta*s2;
+        visc[i] = cs*cs*delta*delta*strain_rate_mag[i];
         if(buoy_freq[i] > 0.0){
-            double fb = sqrt(fmax(1.0 - buoy_freq[i]/(prt*s2),0.0));
+            double fb = sqrt(fmax(1.0 - buoy_freq[i]/(prt*strain_rate_mag[i]*strain_rate_mag[i]),0.0));
             visc[i] = visc[i] * fb;
         }
         diff[i] = visc[i]/prt;
@@ -21,7 +20,7 @@ double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double 
 double tke_ell(double cn, double e, double buoy_freq, double delta){
     double ell;
     if(buoy_freq> 1.0e-10){
-        ell = fmax(fmin(cn*sqrt(fmax(e,0.0)/buoy_freq),delta),1.0e-10);
+        ell = fmax(fmin(cn*sqrt(fmax(e,0.0)/buoy_freq),delta),1e-10);
     }
     else{
         ell = delta;

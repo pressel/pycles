@@ -1,6 +1,7 @@
 cimport Grid
 cimport PrognosticVariables
 cimport ParallelMPI
+cimport ReferenceState
 from NetCDFIO cimport NetCDFIO_Stats
 
 import numpy as np
@@ -10,7 +11,7 @@ cdef extern from "kinematics.h":
     void compute_velocity_gradient(Grid.DimStruct *dims, double *v, double *vgrad, long d)
     void compute_strain_rate(Grid.DimStruct *dims, double *vgrad, double *strain_rate)
     void compute_strain_rate_mag(Grid.DimStruct *dims, double *vgrad, double *strain_rate)
-    void compute_wind_speed_angle(Grid.DimStruct *dims, double *u, double *v, double *wind_speed, double *wind_angle)
+    void compute_wind_speed_angle(Grid.DimStruct *dims, double *u, double *v, double *wind_speed, double *wind_angle, double u0, double v0)
 
 cdef class Kinematics:
     def __init__(self):
@@ -50,7 +51,7 @@ cdef class Kinematics:
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
             double [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
@@ -60,12 +61,12 @@ cdef class Kinematics:
         mean = Pa.HorizontalMean(Gr,&self.strain_rate_mag[0])
         NS.write_profile('strain_rate_magnitude',mean[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        compute_wind_speed_angle(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.wind_speed[0], &self.wind_angle[0])
+        compute_wind_speed_angle(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.wind_speed[0], &self.wind_angle[0],RS.u0, RS.v0)
 
         mean = Pa.HorizontalMean(Gr,&self.wind_speed[0])
         NS.write_profile('wind_speed',mean[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        mean = Pa.HorizontalMean(Gr,&self.wind_speed[0])
+        mean = Pa.HorizontalMean(Gr,&self.wind_angle[0])
         NS.write_profile('wind_angle',mean[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         return

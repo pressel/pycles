@@ -158,7 +158,7 @@ class Simulation3d:
                 self.Th.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
-                self.Ke.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
+                self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
         return
 
     def force_io(self):
@@ -171,6 +171,6 @@ class Simulation3d:
         self.Th.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
-        self.Ke.stats_io(self.Gr,self.PV,self.StatsIO,self.Pa)
+        self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
         return
 

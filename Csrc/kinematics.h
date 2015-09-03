@@ -141,7 +141,8 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
     return;
 }
 
-void compute_wind_speed_angle(const struct DimStruct *dims, double* restrict u, double* restrict v, double* restrict wind_speed, double* restrict wind_angle){
+void compute_wind_speed_angle(const struct DimStruct *dims, double* restrict u, double* restrict v,
+ double* restrict wind_speed, double* restrict wind_angle, double u0, double v0){
     const size_t istride = dims->nlg[1] * dims->nlg[2];
     const size_t jstride = dims->nlg[2];
 
@@ -160,8 +161,8 @@ void compute_wind_speed_angle(const struct DimStruct *dims, double* restrict u, 
             const size_t jshift = j*jstride;
             for(size_t k=kmin;k<kmax;k++){
                 const size_t ijk = ishift + jshift + k ;
-                const double u_interp = interp_2(u[ijk + istride], u[ijk]);
-                const double v_interp = interp_2(v[ijk + jstride], v[ijk]);
+                const double u_interp = interp_2(u[ijk + istride], u[ijk])+u0;
+                const double v_interp = interp_2(v[ijk + jstride], v[ijk])+v0;
                 wind_speed[ijk] = sqrt(u_interp * u_interp + v_interp * v_interp);
                 wind_angle[ijk] = atan2(v_interp,u_interp+1.0e-20);
             }
