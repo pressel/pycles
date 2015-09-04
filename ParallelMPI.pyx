@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 cimport mpi4py.mpi_c as mpi
 cimport Grid
 from time import time
@@ -99,10 +105,6 @@ cdef class ParallelMPI:
 
         return
 
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
     cdef double [:] HorizontalMean(self,Grid.Grid Gr,double *values):
 
         cdef:
@@ -143,9 +145,6 @@ cdef class ParallelMPI:
         return mean
 
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef double [:] HorizontalMeanofSquares(self,Grid.Grid Gr,const double *values1,const double *values2):
 
         cdef:
@@ -183,9 +182,6 @@ cdef class ParallelMPI:
             mean[i] = mean[i]*n_horizontal_i
         return mean
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef double [:] HorizontalMeanofCubes(self,Grid.Grid Gr,const double *values1,const double *values2, const double *values3):
 
         cdef:
@@ -222,9 +218,6 @@ cdef class ParallelMPI:
 
         return mean
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef double [:] HorizontalMaximum(self, Grid.Grid Gr, double *values):
         cdef:
             double [:] max_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -257,10 +250,6 @@ cdef class ParallelMPI:
                           mpi.MPI_DOUBLE,mpi.MPI_MAX,self.cart_comm_sub_xy)
         return max
 
-
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef double [:] HorizontalMinimum(self, Grid.Grid Gr, double *values):
         cdef:
             double [:] min_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -293,12 +282,6 @@ cdef class ParallelMPI:
                           mpi.MPI_DOUBLE,mpi.MPI_MIN,self.cart_comm_sub_xy)
         return min
 
-
-
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
     cdef double HorizontalMeanSurface(self,Grid.Grid Gr,double *values):
         # Some assumptions for using this function:
         #--the <values> array is defined for all processors
@@ -334,13 +317,6 @@ cdef class ParallelMPI:
 
 
         return mean
-
-
-
-
-
-
-
 
 cdef class Pencil:
 
@@ -384,9 +360,6 @@ cdef class Pencil:
             if i < remainder:
                 self.n_pencil_map[i] += 1
 
-
-
-
         self.n_local_pencils = self.n_pencil_map[self.rank]               #Number of pencils locally
         self.nl_map = np.empty((self.size),dtype=np.int,order='c')        #Number of local grid points in pencild dir
         self.send_counts = np.empty((self.size),dtype=np.intc,order='c')  #Total number of points to send to each rank
@@ -422,29 +395,9 @@ cdef class Pencil:
             self.sdispls[i+1] = self.sdispls[i] + self.send_counts[i]
             self.rdispls[i+1] = self.rdispls[i] + self.recv_counts[i]
 
-
-        # import time; time.sleep(self.rank)
-        # print "\n\n\n"
-        # print "rank", self.rank
-        # print "dims.nl[0]", Gr.dims.nl[0], "dims.npl", Gr.dims.npl
-        # print "n_pencil_map",np.array(self.n_pencil_map)
-        # print "sdispls", np.array(self.sdispls)
-        # print "rdispls", np.array(self.rdispls)
-        # print "send_counts", np.array(self.send_counts), np.sum(self.send_counts)
-        # print "recv_counts", np.array(self.recv_counts), np.sum(self.recv_counts)
-        # print "reverse recv_buffer", self.n_local_pencils * self.pencil_length
-        # print "index_lo", Gr.dims.indx_lo[0], Gr.dims.indx_lo[1]
-
-        #import sys; sys.exit()
-
-
-
         Pa.barrier()
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef double [:,:] forward_double(self, Grid.DimStruct *dims, ParallelMPI Pa ,double *data):
 
         cdef:
@@ -475,9 +428,6 @@ cdef class Pencil:
 
         return pencils
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void build_buffer_double(self, Grid.DimStruct *dims, double *data, double *local_transpose ):
 
         cdef:
@@ -532,9 +482,6 @@ cdef class Pencil:
                         local_transpose[ijk_no_gw] = data[ijk]
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void unpack_buffer_double(self,Grid.DimStruct *dims, double *recv_buffer, double  [:,:] pencils):
 
         cdef:
@@ -560,9 +507,6 @@ cdef class Pencil:
                         count += 1
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void reverse_double(self, Grid.DimStruct *dims, ParallelMPI Pa, double [:,:] pencils, double *data):
 
         cdef:
@@ -594,9 +538,6 @@ cdef class Pencil:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void reverse_build_buffer_double(self, Grid.DimStruct *dims, double [:,:] pencils, double *send_buffer):
         cdef:
             long m, p, i
@@ -619,9 +560,6 @@ cdef class Pencil:
                         count += 1
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void reverse_unpack_buffer_double(self, Grid.DimStruct *dims, double *recv_buffer, double *data ):
 
         cdef:
@@ -677,10 +615,6 @@ cdef class Pencil:
                         data[ijk] = recv_buffer[ijk_no_gw]
         return
 
-
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void build_buffer_complex(self, Grid.DimStruct *dims, complex *data, complex *local_transpose ):
 
         cdef:
@@ -735,10 +669,6 @@ cdef class Pencil:
                         local_transpose[ijk_no_gw] = data[ijk]
         return
 
-
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void unpack_buffer_complex(self,Grid.DimStruct *dims, complex *recv_buffer, complex  [:,:] pencils):
 
         cdef:
@@ -763,9 +693,6 @@ cdef class Pencil:
                         count += 1
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef complex [:,:] forward_complex(self, Grid.DimStruct *dims, ParallelMPI Pa ,complex *data):
 
         cdef:
@@ -796,9 +723,6 @@ cdef class Pencil:
 
         return pencils
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void reverse_complex(self, Grid.DimStruct *dims, ParallelMPI Pa, complex [:,:] pencils, complex *data):
 
         cdef:
@@ -827,9 +751,6 @@ cdef class Pencil:
         return
 
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void reverse_build_buffer_complex(self, Grid.DimStruct *dims, complex [:,:] pencils, complex *send_buffer):
         cdef:
             long m, p, i
@@ -853,9 +774,6 @@ cdef class Pencil:
                         count += 1
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void reverse_unpack_buffer_complex(self, Grid.DimStruct *dims, complex *recv_buffer, complex *data ):
 
         cdef:

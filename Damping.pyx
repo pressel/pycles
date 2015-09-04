@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 from libc.math cimport fmin, fmax, sin
 import cython
 import numpy as np
@@ -56,9 +62,6 @@ cdef class Rayleigh:
 
         return
 
-    @cython.boundscheck(False)  # Turn off numpy array index bounds checking
-    @cython.wraparound(False)  # Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef initialize(self, Grid.Grid Gr):
         cdef:
             int k
@@ -80,9 +83,6 @@ cdef class Rayleigh:
                         k] = self.gamma_r * sin((pi / 2.0) * (1.0 - (z_top - Gr.zl[k]) / self.z_d))**2.0
         return
 
-    @cython.boundscheck(False)  # Turn off numpy array index bounds checking
-    @cython.wraparound(False)  # Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
 
         cdef:

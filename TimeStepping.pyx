@@ -2,6 +2,7 @@
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: initializedcheck=False
+#cython: cdivision=True
 
 cimport ParallelMPI as ParallelMPI
 cimport PrognosticVariables as PrognosticVariables

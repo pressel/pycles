@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 cimport mpi4py.mpi_c as mpi
 cimport ParallelMPI
 cimport numpy as np

@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 import numpy as np
 cimport numpy as np
 cimport ParallelMPI
@@ -28,9 +34,6 @@ def InitializationFactory(namelist):
         else:
             pass
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
@@ -73,9 +76,6 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
@@ -160,9 +160,6 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
@@ -222,9 +219,6 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
     return
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
@@ -312,10 +306,6 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.cdivision(True)
 def InitGabls(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
@@ -375,9 +365,6 @@ def InitGabls(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
     return
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.cdivision(True)
 def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
@@ -497,6 +484,5 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     theta_pert_ = 0.0
                 T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
                 PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
-
 
     return
