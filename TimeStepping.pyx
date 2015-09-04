@@ -74,9 +74,7 @@ cdef class TimeStepping:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
+
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
 
         if self.ts_type == 2:
@@ -103,9 +101,7 @@ cdef class TimeStepping:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
+
     cpdef update_second(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
 
         cdef:
