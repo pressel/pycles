@@ -3,11 +3,12 @@ cimport numpy as np
 cimport ParallelMPI
 cimport Grid
 cimport PrognosticVariables
+
 from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
 cimport ReferenceState
 import time
 import cython
-from libc.math cimport sqrt, fmin, cos
+from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
 
 def InitializationFactory(namelist):
@@ -25,6 +26,8 @@ def InitializationFactory(namelist):
             return InitGabls
         elif casename == 'Mpace':
             return InitMpace
+        elif casename == 'Isdac':
+            return InitIsdac
         else:
             pass
 
@@ -382,6 +385,18 @@ def InitGabls(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
+    '''
+    Initialize the M-PACE case described in Klein et al. (2009): Intercomparison of model simulations
+    of mixed-phase clouds observed during the ARM Mixed-Phase Arctic Cloud Experiment. I: Single-layer cloud
+
+    :param Gr: Grid cdef extension class
+    :param PV: PrognosticVariables cdef extension class
+    :param RS: ReferenceState cdef extension class
+    :param Th: Thermodynamics class
+    :return: None
+
+    '''
+
     #First generate the reference profiles
     RS.Pg = 1.01e5  #Pressure at ground
     RS.Tg = 274.04  #Temperature at ground
@@ -394,101 +409,289 @@ def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     #Get the variable number for each of the velocity components
     cdef:
+        Py_ssize_t i
+        Py_ssize_t j
+        Py_ssize_t k
+        Py_ssize_t ijk, ishift, jshift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
-        Py_ssize_t i,j,k
-        Py_ssize_t ishift, jshift
-        Py_ssize_t ijk
-        double temp
-        double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] ql = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        Py_ssize_t count
+        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
-        theta_pert = np.random.random_sample(Gr.dims.npg)*0.1
 
     for k in xrange(Gr.dims.nlg[2]):
 
-        #Set Thetal profile (better to get temperature directly from file?)
+        #Set thetal and qt profiles
         if RS.p0_half[k] >= 85000.:
             thetal[k] = 269.2
-        if RS.p0_half[k] < 85000.:
-            thetal[k] = 275.33 + 0.0791/100.*(81500. - RS.p0_half[k])
-
-        #Set qt profile
-        if RS.p0_half[k] >= 85000.:
             qt[k] = 1.95
         if RS.p0_half[k] < 85000.:
+            thetal[k] = 275.33 + 0.0791/100.*(81500. - RS.p0_half[k])
             qt[k] = 0.291 + 0.00204/100.*(RS.p0_half[k] - 59000.)
 
         #Change units to kg/kg
         qt[k]/= 1000.0
 
-    #Thetal defined in Klein et al. 2009
-    def thetal_mpace(p_,t_,ql_):
+    # #Thetal defined in Klein et al. 2009
+    # def thetal_mpace(p_,t_,ql_):
+    #     t_cb = 263. #cloud base temperature
+    #     return t_*(p_tilde/p_)**(Rd/cpd)*np.exp(-(2.26e6*ql_)/(cpd*t_cb))
+    #
+    # #Now do saturation adjustment to get temperature and ql
+    # def sat_adjst(p_,thetal_,qt_):
+    #     '''
+    #     Use saturation adjustment scheme to compute temperature and ql given thetal and qt.
+    #     :param p: pressure [Pa]
+    #     :param thetal: liquid water potential temperature  [K]
+    #     :param qt:  total water specific humidity
+    #     :return: T, ql
+    #     '''
+    #
+    #     #Compute temperature
+    #     t_1 = thetal_ * (p_/p_tilde)**(Rd/cpd)
+    #     #Compute saturation vapor pressure
+    #     pv_star_1 = Th.get_pv_star(t_1)
+    #     #Compute saturation mixing ratio
+    #     qs_1 = qv_star_c(p_,qt_,pv_star_1)
+    #
+    #     if qt_ <= qs_1:
+    #         #If not saturated return temperature and ql = 0.0
+    #         return t_1, 0.0
+    #     else:
+    #         ql_1 = qt_ - qs_1
+    #         f_1 = thetal_ - thetal_mpace(p_,t_1,ql_1)
+    #         t_2 = t_1 + 2.26e6*ql_1/cpd
+    #         pv_star_2 = Th.get_pv_star(t_2)
+    #         qs_2 = qv_star_c(p_,qt_,pv_star_2)
+    #         ql_2 = qt_ - qs_2
+    #
+    #         while fabs(t_2 - t_1) >= 1e-9:
+    #             pv_star_2 = Th.get_pv_star(t_2)
+    #             qs_2 = qv_star_c(p_,qt_,pv_star_2)
+    #             ql_2 = qt_ - qs_2
+    #             f_2 = thetal_ - thetal_mpace(p_, t_2, ql_2)
+    #             t_n = t_2 - f_2 * (t_2 - t_1)/(f_2 - f_1)
+    #             t_1 = t_2
+    #             t_2 = t_n
+    #             f_1 = f_2
+    #
+    #         return t_2, ql_2
 
-        t_cb = 263. #cloud base temperature
-
-        return t_*(100000./p_)**(287.1/1004.)*np.exp(-(2.26e6*ql_)/(1004.*t_cb))
-
-    #Now get ql profile from file... or do iterations!
-    def thetal_to_T(p0_,thetal_,qt_):
-
-        Tt = thetal_*exner_c(p0_)
-        T1 = Tt
-        T2 = Tt + 1.
-
-        pv1 = Th.get_pv_star(T1)
-        pv2 = Th.get_pv_star(T2)
-
-        qs1 = qv_star_c(p0_, qt_, pv1)
-
-        ql1 = np.max([0.0, qt_ - qs1])
-        L1 = Th.get_lh(T1)
-        f1 = thetal_ - thetal_mpace(p0_,T1,ql1)
-
-        delta = np.abs(T1 - T2)
-        while delta >= 1e-12:
-
-
-            L2 = Th.get_lh(T2)
-            pv2 = Th.get_pv_star(T2)
-            qs2 = qv_star_c(p0_, qt_, pv2)
-            ql2 = np.max([0.0, qt_ - qs2])
-            f2 = thetal_ - thetal_mpace(p0_,T2,ql2)
-
-            Tnew = T2 - f2 * (T2 - T1)/(f2 - f1)
-            T1 = T2
-            T2 = Tnew
-            f1 = f2
-
-            delta = np.abs(T1 - T2)
-        return T2, ql2
-
-
+    #Generate initial perturbations (here we are generating more than we need)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef double theta_pert_
 
     #Now loop and set the initial condition
-    #First set the velocities
-    count = 0
     for i in xrange(Gr.dims.nlg[0]):
-        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        ishift = istride * i
         for j in xrange(Gr.dims.nlg[1]):
-            jshift = j * Gr.dims.nlg[2]
+            jshift = jstride * j
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
-                PV.values[u_varshift + ijk] = -13.0 - RS.u0
-                PV.values[v_varshift + ijk] = -3.0 - RS.v0
-                PV.values[w_varshift + ijk] = 0.0
-                temp, ql[k] = thetal_to_T(RS.p0_half[k],thetal[k],qt[k])
-                if Gr.z_half[k] <= 800.0:
-                    temp = (temp / exner_c(RS.p0_half[k]) + (theta_pert[count] - 0.05)) * exner_c(RS.p0_half[k])
-                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt[k],ql[k],0.0)
-                PV.values[qt_varshift + ijk] = qt[k]
-                count += 1
+                PV.values[ijk + u_varshift] = 0.0
+                PV.values[ijk + v_varshift] = 0.0
+                PV.values[ijk + w_varshift] = 0.0
+                PV.values[ijk + qt_varshift]  = qt[k]
+
+                #Now set the entropy prognostic variable including a potential temperature perturbation
+                if Gr.zl_half[k] < 200.0:
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                else:
+                    theta_pert_ = 0.0
+                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
+                PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+
 
     return
 
+
+@cython.boundscheck(False)  #Turn off numpy array index bounds checking
+@cython.wraparound(False)   #Turn off numpy array wrap around indexing
+@cython.cdivision(True)
+def InitIsdac(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th):
+
+    '''
+    Initialize the ISDAC case described in Ovchinnikov et al. (2014):
+    Intercomparison of large-eddy simulations of Arctic mixed-phase clouds:
+    Importance of ice size distribution assumptions
+
+    :param Gr: Grid cdef extension class
+    :param PV: PrognosticVariables cdef extension class
+    :param RS: ReferenceState cdef extension class
+    :param Th: Thermodynamics class
+    :return: None
+
+    '''
+
+    #First generate the reference profiles
+    RS.Pg = 1.02e5  #Pressure at ground
+    RS.Tg = 267.0  #Temperature at ground
+    RS.qtg = 0.0015   #Total water mixing ratio at surface
+
+    RS.initialize(Gr, Th)
+
+
+    #Get the variable number for each of the velocity components
+    cdef:
+        Py_ssize_t i
+        Py_ssize_t j
+        Py_ssize_t k
+        Py_ssize_t ijk, ishift, jshift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+
+
+    for k in xrange(Gr.dims.nlg[2]):
+
+        #Set thetal and qt profile
+        if Gr.zl_half[k] < 400.0:
+            thetal[k] = 265.0 + 0.004 * (Gr.zl_half[k] - 400.0)
+            qt[k] = 1.5 - 0.00075 * (Gr.zl_half[k] - 400.0)
+        if Gr.zl_half[k] >= 400.0 and Gr.zl_half[k] < 825.0:
+            thetal[k] = 265.0
+            qt[k] = 1.5
+        if Gr.zl_half[k] >= 825.0 and Gr.zl_half[k] < 2045.0:
+            thetal[k] = 266.0 + (Gr.zl_half[k] - 825.0) ** 0.3
+            qt[k] = 1.2
+        if Gr.zl_half[k] >= 2045.0:
+            thetal[k] = 271.0 + (Gr.zl_half[k] - 2000.0) ** 0.33
+            qt[k] = 0.5 - 0.000075 * (Gr.zl_half[k] - 2045.0)
+
+        #Change units to kg/kg
+        qt[k]/= 1000.0
+
+        #Set u profile
+        v[k] = -2.0 + 0.003 * Gr.zl_half[k]
+
+    #Set velocities for Galilean transformation
+    RS.u0 = -7.0
+    RS.v0 = 0.5 * (np.amax(v)+np.amin(v))
+
+    # #Thetal defined in Klein et al. 2009
+    # def thetal_mpace(p_,t_,ql_):
+    #     t_cb = 263. #cloud base temperature
+    #     return t_*(p_tilde/p_)**(Rd/cpd)*np.exp(-(2.26e6*ql_)/(cpd*t_cb))
+    #
+    # #Now do saturation adjustment to get temperature and ql
+    # def sat_adjst(p_,thetal_,qt_):
+    #     '''
+    #     Use saturation adjustment scheme to compute temperature and ql given thetal and qt.
+    #     :param p: pressure [Pa]
+    #     :param thetal: liquid water potential temperature  [K]
+    #     :param qt:  total water specific humidity
+    #     :return: T, ql
+    #     '''
+    #
+    #     #Compute temperature
+    #     t_1 = thetal_ * (p_/p_tilde)**(Rd/cpd)
+    #     #Compute saturation vapor pressure
+    #     pv_star_1 = Th.get_pv_star(t_1)
+    #     #Compute saturation mixing ratio
+    #     qs_1 = qv_star_c(p_,qt_,pv_star_1)
+    #
+    #     if qt_ <= qs_1:
+    #         #If not saturated return temperature and ql = 0.0
+    #         return t_1, 0.0
+    #     else:
+    #         ql_1 = qt_ - qs_1
+    #         f_1 = thetal_ - thetal_mpace(p_,t_1,ql_1)
+    #         t_2 = t_1 + 2.26e6*ql_1/cpd
+    #         pv_star_2 = Th.get_pv_star(t_2)
+    #         qs_2 = qv_star_c(p_,qt_,pv_star_2)
+    #         ql_2 = qt_ - qs_2
+    #
+    #         while fabs(t_2 - t_1) >= 1e-9:
+    #             pv_star_2 = Th.get_pv_star(t_2)
+    #             qs_2 = qv_star_c(p_,qt_,pv_star_2)
+    #             ql_2 = qt_ - qs_2
+    #             f_2 = thetal_ - thetal_mpace(p_, t_2, ql_2)
+    #             t_n = t_2 - f_2 * (t_2 - t_1)/(f_2 - f_1)
+    #             t_1 = t_2
+    #             t_2 = t_n
+    #             f_1 = f_2
+    #
+    #         return t_2, ql_2
+
+    #Generate initial perturbations (here we are generating more than we need)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef double theta_pert_
+
+    #Now loop and set the initial condition
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift = istride * i
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = jstride * j
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[ijk + u_varshift] = 0.0
+                PV.values[ijk + v_varshift] = v[k] - RS.v0
+                PV.values[ijk + w_varshift] = 0.0
+                PV.values[ijk + qt_varshift]  = qt[k]
+
+                #Now set the entropy prognostic variable including a potential temperature perturbation
+                if Gr.zl_half[k] < 825.0:
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                else:
+                    theta_pert_ = 0.0
+                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
+                PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+
+
+    return
+
+def thetal_mpace(p_, t_, ql_):
+    return t_*(p_tilde/p_)**(Rd/cpd)*np.exp(-(2.26e6*ql_)/(cpd*263.0))
+
+def sat_adjst(p_, thetal_, qt_):
+
+    """
+    Use saturation adjustment scheme to compute temperature and ql given thetal and qt.
+    :param p_: pressure [Pa]
+    :param thetal_: liquid water potential temperature  [K]
+    :param qt_:  total water specific humidity
+    :return: t_2, ql_2
+    """
+
+    #Compute temperature
+    t_1 = thetal_ * (p_/p_tilde)**(Rd/cpd)
+    #Compute saturation vapor pressure
+    pv_star_1 = Th.get_pv_star(t_1)
+    #Compute saturation mixing ratio
+    qs_1 = qv_star_c(p_,qt_,pv_star_1)
+
+    if qt_ <= qs_1:
+        #If not saturated return temperature and ql = 0.0
+        return t_1, 0.0
+    else:
+        ql_1 = qt_ - qs_1
+        f_1 = thetal_ - thetal_mpace(p_,t_1,ql_1)
+        t_2 = t_1 + 2.26e6*ql_1/cpd
+        pv_star_2 = Th.get_pv_star(t_2)
+        qs_2 = qv_star_c(p_,qt_,pv_star_2)
+        ql_2 = qt_ - qs_2
+
+        while fabs(t_2 - t_1) >= 1e-9:
+            pv_star_2 = Th.get_pv_star(t_2)
+            qs_2 = qv_star_c(p_,qt_,pv_star_2)
+            ql_2 = qt_ - qs_2
+            f_2 = thetal_ - thetal_mpace(p_, t_2, ql_2)
+            t_n = t_2 - f_2 * (t_2 - t_1)/(f_2 - f_1)
+            t_1 = t_2
+            t_2 = t_n
+            f_1 = f_2
+
+    return t_2, ql_2
