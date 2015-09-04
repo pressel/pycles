@@ -1,3 +1,8 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+
 cimport ParallelMPI as ParallelMPI
 cimport PrognosticVariables as PrognosticVariables
 cimport Grid as Grid
@@ -120,9 +125,7 @@ cdef class TimeStepping:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
+
     cpdef update_third(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
         cdef:
             Py_ssize_t i
@@ -145,9 +148,6 @@ cdef class TimeStepping:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef update_fourth(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
         cdef:
             Py_ssize_t i
@@ -217,9 +217,6 @@ cdef class TimeStepping:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
