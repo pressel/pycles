@@ -1,6 +1,6 @@
 #!python
 #cython: boundscheck=False
-#cython: wraparound=False
+#cython: wraparound=True
 #cython: initializedcheck=False
 #cython: cdivision=True
 
