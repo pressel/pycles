@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=True
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 import numpy as np
 cimport numpy as np
 cimport ParallelMPI
@@ -28,16 +34,15 @@ def InitializationFactory(namelist):
             return InitMpace
         elif casename == 'Isdac':
             return InitIsdac
+        elif casename == 'DYCOMS_RF01':
+            return InitDYCOMS_RF01
         else:
             pass
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
-    #First generate reference profiles
+    #Generate reference profiles
     RS.Pg = 1.0e5
     RS.Tg = 300.0
     RS.qtg = 0.0
@@ -76,13 +81,10 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
-    #First generate reference profiles
+    #Generate reference profiles
     RS.Pg = 1.0e5
     RS.qtg = 0.02
     #RS.Tg = 300.0
@@ -163,13 +165,10 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
-    #First generate the reference profiles
+    #Generate the reference profiles
     RS.Pg = 1.0e5  #Pressure at ground
     RS.Tg = 300.0  #Temperature at ground
     RS.qtg = 0.0   #Total water mixing ratio at surface
@@ -205,7 +204,6 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     cdef double [:] p0 = RS.p0_half
 
     #Now loop and set the initial condition
-    #First set the velocities
     for i in xrange(Gr.dims.nlg[0]):
         ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
         for j in xrange(Gr.dims.nlg[1]):
@@ -226,9 +224,6 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
     return
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
@@ -316,14 +311,10 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.cdivision(True)
 def InitGabls(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
-    #First generate the reference profiles
+    #Generate the reference profiles
     RS.Pg = 1.0e5  #Pressure at ground
     RS.Tg = 265.0  #Temperature at ground
     RS.qtg = 0.0   #Total water mixing ratio at surface
@@ -379,9 +370,127 @@ def InitGabls(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
     return
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
+def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                    ReferenceState.ReferenceState RS, Th):
+
+    """
+    Initialize the DYCOMS_RF01 case described in
+    Bjorn Stevens, Chin-Hoh Moeng, Andrew S. Ackerman, Christopher S. Bretherton, Andreas Chlond, Stephan de Roode,
+    James Edwards, Jean-Christophe Golaz, Hongli Jiang, Marat Khairoutdinov, Michael P. Kirkpatrick, David C. Lewellen,
+    Adrian Lock, Frank Müller, David E. Stevens, Eoin Whelan, and Ping Zhu, 2005: Evaluation of Large-Eddy Simulations
+    via Observations of Nocturnal Marine Stratocumulus. Mon. Wea. Rev., 133, 1443–1462.
+    doi: http://dx.doi.org/10.1175/MWR2930.1
+    :param Gr: Grid cdef extension class
+    :param PV: PrognosticVariables cdef extension class
+    :param RS: ReferenceState cdef extension class
+    :param Th: Thermodynamics class
+    :return: None
+    """
+
+    # Generate Reference Profiles
+    RS.Pg = 1017.8 * 100.0
+    RS.qtg = 9.0/1000.0
+    RS.u0 = 7.0
+    RS.v0 = -5.5
+
+    # Use an exner function with values for Rd, and cp given in Stevens 2004 to compute temperature given $\theta_l$
+    RS.Tg = 289.0 * (RS.Pg/p_tilde)**(287.0/1015.0)
+
+    RS.initialize(Gr,Th)
+
+    #Set up $\tehta_l$ and $\qt$ profiles
+    cdef:
+        Py_ssize_t i
+        Py_ssize_t j
+        Py_ssize_t k
+        Py_ssize_t ijk, ishift, jshift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+
+    for k in xrange(Gr.dims.nlg[2]):
+        if Gr.zl_half[k] <=840.0:
+            thetal[k] = 289.0
+            qt[k] = 9.0/1000.0
+        if Gr.zl_half[k] > 840.0:
+            thetal[k] = 297.5 + (Gr.zl_half[k] - 840.0)**(1.0/3.0)
+            qt[k] = 1.5/1000.0
+
+    def compute_thetal(p_,T_,ql_):
+        theta_ = T_ / (p_/p_tilde)**(287.0/1015.0)
+        return theta_ * exp(-2.47e6 * ql_ / (1015.0 * T_))
+
+    def sat_adjst(p_,thetal_,qt_):
+        '''
+        Use saturation adjustment scheme to compute temperature and ql given thetal and qt.
+        :param p: pressure [Pa]
+        :param thetal: liquid water potential temperature  [K]
+        :param qt:  total water specific humidity
+        :return: T, ql
+        '''
+
+        #Compute temperature
+        t_1 = thetal_ * (p_/p_tilde)**(287.0/1015.0)
+        #Compute saturation vapor pressure
+        pv_star_1 = Th.get_pv_star(t_1)
+        #Compute saturation mixing ratio
+        qs_1 = qv_star_c(p_,qt_,pv_star_1)
+
+        if qt_ <= qs_1:
+            #If not saturated return temperature and ql = 0.0
+            return t_1, 0.0
+        else:
+            ql_1 = qt_ - qs_1
+            f_1 = thetal_ - compute_thetal(p_,t_1,ql_1)
+            t_2 = t_1 + 2.47e6*ql_1/1015.0
+            pv_star_2 = Th.get_pv_star(t_2)
+            qs_2 = qv_star_c(p_,qt_,pv_star_2)
+            ql_2 = qt_ - qs_2
+
+            while fabs(t_2 - t_1) >= 1e-9:
+                pv_star_2 = Th.get_pv_star(t_2)
+                qs_2 = qv_star_c(p_,qt_,pv_star_2)
+                ql_2 = qt_ - qs_2
+                f_2 = thetal_ - compute_thetal(p_, t_2, ql_2)
+                t_n = t_2 - f_2 * (t_2 - t_1)/(f_2 - f_1)
+                t_1 = t_2
+                t_2 = t_n
+                f_1 = f_2
+
+            return t_2, ql_2
+
+    #Generate initial perturbations (here we are generating more than we need)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef double theta_pert_
+
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift = istride * i
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = jstride * j
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[ijk + u_varshift] = 0.0
+                PV.values[ijk + v_varshift] = 0.0
+                PV.values[ijk + w_varshift] = 0.0
+                PV.values[ijk + qt_varshift]  = qt[k]
+
+                #Now set the entropy prognostic variable including a potential temperature perturbation
+                if Gr.zl_half[k] < 200.0:
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                else:
+                    theta_pert_ = 0.0
+                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
+                PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+
+    return
+
+
 def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
@@ -510,9 +619,6 @@ def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 def InitIsdac(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th):
 
@@ -695,3 +801,4 @@ def sat_adjst(p_, thetal_, qt_):
             f_1 = f_2
 
     return t_2, ql_2
+

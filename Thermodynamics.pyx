@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 cimport ParallelMPI
 from ThermodynamicsDry cimport ThermodynamicsDry
 from ThermodynamicsSA cimport ThermodynamicsSA

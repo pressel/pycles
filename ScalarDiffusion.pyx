@@ -1,3 +1,10 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
+
 cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
@@ -10,9 +17,6 @@ from Thermodynamics cimport LatentHeat
 from FluxDivergence cimport scalar_flux_divergence
 
 import cython
-
-#cdef extern from "advection_interpolation.h":
-#    inline double interp_2(double phi, double phip1) nogil
 
 cdef extern from "scalar_diffusion.h":
     void compute_diffusive_flux(Grid.DimStruct *dims, double *alpha0, double *alpha0_half, double *diffusivity,

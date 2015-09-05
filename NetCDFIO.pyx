@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 import netCDF4 as nc
 import os
 import shutil
@@ -13,7 +19,7 @@ import cython
 cdef class NetCDFIO_Stats:
     def __init__(self):
         return
-
+    @cython.wraparound(True)
     cpdef initialize(self, dict namelist, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
 
         self.last_output_time = 0.0
@@ -111,6 +117,7 @@ cdef class NetCDFIO_Stats:
             root_grp.close()
         return
 
+    @cython.wraparound(True)
     cpdef write_ts(self, var_name, double data, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
@@ -140,6 +147,8 @@ cdef class NetCDFIO_Stats:
 cdef class NetCDFIO_Fields:
     def __init__(self):
         return
+
+    @cython.wraparound(True)
     cpdef initialize(self, dict namelist, ParallelMPI.ParallelMPI Pa):
 
         self.last_output_time = 0.0
@@ -236,9 +245,6 @@ cdef class NetCDFIO_Fields:
         rootgrp.close()
         return
 
-    @cython.boundscheck(False)  # Turn off numpy array index bounds checking
-    @cython.wraparound(False)  # Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef dump_prognostic_variables(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
 
         cdef:
@@ -270,9 +276,7 @@ cdef class NetCDFIO_Fields:
             self.write_field(name, data)
         return
 
-    @cython.boundscheck(False)  # Turn off numpy array index bounds checking
-    @cython.wraparound(False)  # Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
+
     cpdef dump_diagnostic_variables(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV):
 
         cdef:

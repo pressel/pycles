@@ -8,10 +8,10 @@ cdef extern from "lookup.h":
         double x_min
         double dx
         double dxi
-        double * table_values
+        double* table_values
 
-    void init_table(LookupStruct * LT, long n, double * x, double * y) nogil
-    void free_table(LookupStruct * LT) nogil
+    void init_table(LookupStruct *LT, long n, double *x, double *y) nogil
+    void free_table(LookupStruct *LT) nogil
     inline double lookup(LookupStruct * LT, double x) nogil
 
 cdef class Lookup:

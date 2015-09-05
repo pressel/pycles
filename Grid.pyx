@@ -1,10 +1,25 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 cimport mpi4py.mpi_c as mpi
 cimport ParallelMPI
 cimport numpy as np
 import numpy as np
 import time
 cdef class Grid:
+    '''
+    A class for storing information about the LES grid.
+    '''
     def __init__(self,namelist,Parallel):
+        '''
+
+        :param namelist: Namelist dictionary
+        :param Parallel: ParallelMPI class
+        :return:
+        '''
 
         self.dims.dims = namelist['grid']['dims']
 
@@ -32,7 +47,10 @@ cdef class Grid:
         return
 
     cdef inline void compute_global_dims(self):
-        #Compute the global grid dimensons
+        '''
+        Compute the dimensions of the global of the domain, including ghost points and store the to self.dims.
+        :return:
+        '''
         cdef int i
         with nogil:
             for i in range(self.dims.dims):
@@ -105,6 +123,11 @@ cdef class Grid:
         return
 
     cdef void compute_coordinates(self):
+        '''
+        Compute the dimensional (with units) of meters coordiantes. x_half, y_half and z_half are
+        the grid cell center and x,y,z are at the grid cell edges.
+        :return:
+        '''
 
 
         self.x_half = np.empty((self.dims.n[0]+2*self.dims.gw),dtype=np.double,order='c')
