@@ -24,6 +24,8 @@ cdef class Radiation:
         casename = namelist['meta']['casename']
         if casename == 'DYCOMS_RF01':
             self.scheme = RadiationDyCOMS_RF01()
+        elif casename == 'Isdac':
+            self.scheme = RadiationIsdac()
         else:
             self.scheme = RadiationNone()
         return
@@ -128,6 +130,101 @@ cdef class RadiationDyCOMS_RF01:
                 for k in xrange(Gr.dims.n[2]):
                     f_rad[pi, k + 1] = rhoi * cpd * self.divergence * self.alpha_z * (cbrt(pow(z[gw + k] - zi, 4)) / 4.0
                                                                                       + zi * cbrt(z[gw + k] - zi))
+                # Compute the second term on RHS of Stevens et al. 2005
+                # (equation 3)
+                q_1 = 0.0
+                f_rad[pi, 0] += self.f1 * exp(-q_1)
+                for k in xrange(1, Gr.dims.n[2] + 1):
+                    q_1 += self.kap * \
+                        rho_half[gw + k - 1] * ql_pencils[pi, k - 1] * dz
+                    f_rad[pi, k] += self.f1 * exp(-q_1)
+
+                # Compute the first term on RHS of Stevens et al. 2005
+                # (equation 3)
+                q_0 = 0.0
+                f_rad[pi, Gr.dims.n[2]] += self.f0 * exp(-q_0)
+                for k in xrange(Gr.dims.n[2] - 1, -1, -1):
+                    q_0 += self.kap * rho_half[gw + k] * ql_pencils[pi, k] * dz
+                    f_rad[pi, k] += self.f0 * exp(-q_0)
+
+                for k in xrange(Gr.dims.n[2]):
+                    f_heat[pi, k] = - \
+                        (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
+
+        # Now transpose the flux pencils
+        self.z_pencil.reverse_double(& Gr.dims, Pa, f_heat, & heating_rate[0])
+
+
+
+        # Now update entropy tendencies
+        with nogil:
+            for i in xrange(imin, imax):
+                ishift = i * istride
+                for j in xrange(jmin, jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        PV.tendencies[
+                            s_shift + ijk] += heating_rate[ijk] / DV.values[ijk + t_shift]
+
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
+cdef class RadiationIsdac:
+    def __init__(self):
+        self.kap = 170.0
+        self.f0 = 72.0
+        self.f1 = 15.0
+
+        self.z_pencil = ParallelMPI.Pencil()
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.z_pencil.initialize(Gr, Pa, 2)
+        return
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+
+            Py_ssize_t pi, i, j, k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t gw = Gr.dims.gw
+            double [:, :] ql_pencils =  self.z_pencil.forward_double(& Gr.dims, Pa, & DV.values[ql_shift])
+            double [:, :] qt_pencils =  self.z_pencil.forward_double(& Gr.dims, Pa, & PV.values[qt_shift])
+            double[:, :] f_rad = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
+            double[:, :] f_heat = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
+            double[:] heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double q_0
+            double q_1
+
+            double dz = Gr.dims.dx[2]
+            double dzi = Gr.dims.dxi[2]
+            double[:] z = Gr.z
+            double[:] rho = Ref.rho0
+            double[:] rho_half = Ref.rho0_half
+
+        with nogil:
+            for pi in xrange(self.z_pencil.n_local_pencils):
+
                 # Compute the second term on RHS of Stevens et al. 2005
                 # (equation 3)
                 q_1 = 0.0
