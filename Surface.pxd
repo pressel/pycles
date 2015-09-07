@@ -55,6 +55,7 @@ cdef class SurfaceBomex:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
+
 cdef class SurfaceGabls:
     cdef:
         double gustiness
@@ -72,6 +73,26 @@ cdef class SurfaceGabls:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
+cdef class SurfaceDYCOMS_RF01:
+    cdef:
+        double lv
+        double ft
+        double fq
+        double cm
+        double gustiness
+        double (*L_fp)(double T, double Lambda) nogil
+        double (*Lambda_fp)(double T) nogil
+        double [:] windspeed
+        double [:] u_flux
+        double [:] qt_flux
+        double [:] v_flux
+        double [:] s_flux
+        double [:] ustar
+
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 cdef inline double compute_z0(double z1, double windspeed) nogil
 

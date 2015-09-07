@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 cimport Grid
 cimport PrognosticVariables
 cimport DiagnosticVariables
@@ -65,11 +71,10 @@ cdef class UniformViscosity:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
+
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
+
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -108,9 +113,6 @@ cdef class Smagorinsky:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef update(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
 
@@ -156,9 +158,7 @@ cdef class TKE:
 
         return
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
+
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV, PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -186,7 +186,7 @@ cdef class TKE:
             while theta_pencil[i,k] <= theta_pencil[i,Gr.dims.gw]:
                 k = k + 1
             h_local = h_local + Gr.z_half[k]
-        h_global = Pa.GlobalMeanScalar(Gr, h_local)
+        h_global = Pa.domain_scalar_sum(h_local)/(Gr.dims.n[0]*Gr.dims.n[1])
 
 
 

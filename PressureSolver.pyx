@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 cimport ParallelMPI
 cimport Grid
 cimport ReferenceState
@@ -29,9 +35,6 @@ cdef class PressureSolver:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef update(self,Grid.Grid Gr, ReferenceState.ReferenceState RS,
                   DiagnosticVariables.DiagnosticVariables DV, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI PM):
 
@@ -77,10 +80,6 @@ cdef class PressureSolver:
 
         return
 
-
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, double *u, double *v, double *w ):
 
     cdef:
@@ -111,9 +110,6 @@ cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, doub
     return
 
 
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity):
 
     cdef:
@@ -139,10 +135,6 @@ cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity
 
     return
 
-
-@cython.boundscheck(False)  #Turn off numpy array index bounds checking
-@cython.wraparound(False)   #Turn off numpy array wrap around indexing
-@cython.cdivision(True)
 cdef void second_order_divergence(Grid.DimStruct *dims, double *alpha0, double *alpha0_half, double *velocity,
                                   double *divergence, Py_ssize_t d):
 

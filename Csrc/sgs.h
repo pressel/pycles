@@ -108,7 +108,7 @@ void tke_surface(const struct DimStruct *dims, double* e, double* lmo, double* u
             else{
                 const double wstar = ustar[ij] * pow(-h_bl/lmo[ij]/vkb,onethird);
                 e[ijk] =  (3.75 + pow(-zb/lmo[ij],2.0*onethird))  * ustar[ij] * ustar[ij] + 0.2 * wstar * wstar;
-             }
+            }
         }
     }
 

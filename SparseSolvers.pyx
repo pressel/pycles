@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 import numpy as np
 cimport numpy as np
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
@@ -15,9 +21,6 @@ cdef class TDMA:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef inline void solve(self, double* x, double* a, double* b, double* c) nogil:
 
         cdef:

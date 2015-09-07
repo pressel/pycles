@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=True
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 cimport Grid
 cimport numpy as np
 import numpy as np

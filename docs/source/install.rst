@@ -74,6 +74,15 @@ Install netCDF4::
 
 $[sudo] port install py27-netcdf4
 
+The above sequence of steps installs python to `/opt/local/bin` as `python2.7`, to make this version of python runnable
+as `python` install `python_select`::
+
+$[sudo] port install python_select
+
+and then select python2.7 using::
+
+$[sudo] port select --set python python2.7
+
 Once all dependencies have been installed, move to the directory created when you cloned the PyCLES Github_ repository.
 This probably requires something like::
 

@@ -1,3 +1,9 @@
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: initializedcheck=False
+#cython: cdivision=True
+
 from scipy.fftpack import fft2, ifft2
 cimport DiagnosticVariables
 
@@ -29,9 +35,6 @@ cdef class PressureFFTSerial:
         print('Initializing variables')
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef compute_modified_wave_numbers(self,Grid.Grid Gr):
         self.kx2 = np.zeros(Gr.dims.nl[0],dtype=np.double,order='c')
         self.ky2 = np.zeros(Gr.dims.nl[1],dtype=np.double,order='c')
@@ -58,10 +61,6 @@ cdef class PressureFFTSerial:
 
         return
 
-
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef compute_off_diagonals(self,Grid.Grid Gr, ReferenceState.ReferenceState RS):
 
         cdef:
@@ -88,9 +87,6 @@ cdef class PressureFFTSerial:
 
         return
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cdef inline void compute_diagonal(self,Grid.Grid Gr,ReferenceState.ReferenceState RS,Py_ssize_t i, Py_ssize_t j) nogil:
 
         cdef:
@@ -113,12 +109,6 @@ cdef class PressureFFTSerial:
         return
 
 
-
-
-
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef solve(self,Grid.Grid Gr, ReferenceState.ReferenceState RS,DiagnosticVariables.DiagnosticVariables DV,
                  ParallelMPI.ParallelMPI PM):
 

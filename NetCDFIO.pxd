@@ -30,6 +30,7 @@ cdef class NetCDFIO_Fields:
         str output_path
         str path_plus_file
         str uuid
+        list diagnostic_fields
 
         public double last_output_time
         public double frequency
@@ -42,7 +43,7 @@ cdef class NetCDFIO_Fields:
     cpdef create_fields_file(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
 
     cpdef dump_prognostic_variables(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
-    cpdef dump_diagnostic_variables(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV)
+    cpdef dump_diagnostic_variables(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 
     cpdef add_field(self, name)
     cpdef write_field(self, name, double[:] data)

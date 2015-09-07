@@ -21,7 +21,7 @@ cimport Damping
 cimport NetCDFIO
 cimport Surface
 cimport Forcing
-
+cimport Radiation
 
 class Simulation3d:
 
@@ -46,6 +46,7 @@ class Simulation3d:
         self.Ref = ReferenceState.ReferenceState(self.Gr)
         self.Sur = Surface.Surface(namelist, self.LH, self.Pa)
         self.Fo = Forcing.Forcing(namelist)
+        self.Ra = Radiation.Radiation(namelist, self.Pa)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
         self.Damping = Damping.Damping(namelist, self.Pa)
@@ -76,6 +77,7 @@ class Simulation3d:
         SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th)
         self.Sur.initialize(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
         self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
+        self.Ra.initialize(self.Gr,self.StatsIO,self.Pa)
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Damping.initialize(self.Gr)
@@ -106,6 +108,7 @@ class Simulation3d:
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV)
+                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
@@ -140,25 +143,29 @@ class Simulation3d:
 
             # If time to ouptut fields do output
             if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
-                print 'Doing Ouput'
+                self.Pa.root_print('Doing 3D FiledIO')
                 self.FieldsIO.last_output_time = self.TS.t
                 self.FieldsIO.update(
                     self.Gr, self.PV, self.DV, self.TS, self.Pa)
                 self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
-                self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV)
+                self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)
+                self.Pa.root_print('Finished Doing 3D FieldIO')
 
             # If time to ouput stats do output
             if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t:
+                self.Pa.root_print('Doing StatsIO')
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
                 self.PV.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.Fo.stats_io(
                     self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-                self.Th.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+                self.Th.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
                 self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
+
+                self.Pa.root_print('Finished Doing StatsIO')
         return
 
     def force_io(self):
@@ -168,7 +175,7 @@ class Simulation3d:
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.Th.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+        self.Th.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
         self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
