@@ -105,6 +105,20 @@ cdef class ParallelMPI:
 
         return
 
+    cdef double domain_scalar_sum(self, double local_value):
+        '''
+        Compute the sum over all mpi ranks of a single scalar of type double.
+        :param local_value: the value to be summed over the ranks
+        :return: sum of local values on all processes
+        '''
+
+        cdef:
+            double global_sum
+
+        mpi.MPI_Allreduce(&local_value, &global_sum,1,mpi.MPI_DOUBLE,mpi.MPI_SUM,self.comm_world)
+
+        return global_sum
+
     cdef double [:] HorizontalMean(self,Grid.Grid Gr,double *values):
 
         cdef:
@@ -143,7 +157,6 @@ cdef class ParallelMPI:
 
 
         return mean
-
 
     cdef double [:] HorizontalMeanofSquares(self,Grid.Grid Gr,const double *values1,const double *values2):
 

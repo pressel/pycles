@@ -158,7 +158,7 @@ class Simulation3d:
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.Fo.stats_io(
                     self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-                self.Th.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+                self.Th.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.Pa.root_print('Finished Doing StatsIO')
         return
@@ -170,6 +170,6 @@ class Simulation3d:
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.Th.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+        self.Th.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         return
