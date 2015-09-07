@@ -176,7 +176,7 @@ cdef class ThermodynamicsSA:
             double [:] data = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
             double [:] tmp
 
-        #Add entropy potential temperature to 3d fields
+        #Ouput profiles of thetas
         with nogil:
             count = 0
             for i in range(imin,imax):
