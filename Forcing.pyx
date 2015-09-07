@@ -81,7 +81,7 @@ cdef class ForcingBomex:
 
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
-                self.vg[k] = -10.0 + (1.8e-3)*Gr.zl_half[k]
+                self.ug[k] = -10.0 + (1.8e-3)*Gr.zl_half[k]
 
                 #Set large scale cooling
                 if Gr.zl_half[k] <= 1500.0:
