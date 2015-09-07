@@ -16,6 +16,7 @@ from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 from thermodynamic_functions cimport thetas_c
 import cython
 from NetCDFIO cimport NetCDFIO_Stats, NetCDFIO_Fields
+from libc.math cimport fmax, fmin
 
 cdef extern from "thermodynamics_sa.h":
     inline double alpha_c(double p0, double T, double qt, double qv) nogil
@@ -66,6 +67,9 @@ cdef class ThermodynamicsSA:
         NS.add_ts('thetas_max',Gr,Pa)
         NS.add_ts('thetas_min',Gr,Pa)
         NS.add_ts('cloud_fraction', Gr, Pa)
+        NS.add_ts('cloud_top',Gr,Pa)
+        NS.add_ts('cloud_base',Gr,Pa)
+        NS.add_ts('lwp',Gr,Pa)
 
         return
 
@@ -159,7 +163,7 @@ cdef class ThermodynamicsSA:
         NF.write_field('thetas',data)
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                    DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -213,25 +217,32 @@ cdef class ThermodynamicsSA:
         NS.write_ts('thetas_min',np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
 
         #Compute additional stats
-        self.liquid_stats(Gr,PV, DV, NS, Pa)
+        self.liquid_stats(Gr, RS, PV, DV, NS, Pa)
 
         return
 
-    cpdef liquid_stats(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    cpdef liquid_stats(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                         DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t kmin = 0
             Py_ssize_t kmax = Gr.dims.n[2]
+            Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t pi, k
             ParallelMPI.Pencil z_pencil = ParallelMPI.Pencil()
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
             double [:,:] ql_pencils
             #Cloud indicator
             double [:] ci
+            double cb
+            double ct
             #Weighted sum of local cloud indicator
             double ci_weighted_sum = 0.0
             double mean_divisor = np.double(Gr.dims.n[0] * Gr.dims.n[1])
+
+            double dz = Gr.dims.dx[2]
+            double [:] lwp
+            double lwp_weighted_sum  = 0.0
 
 
         #Initialize the z-pencil
@@ -254,6 +265,37 @@ cdef class ThermodynamicsSA:
 
         ci_weighted_sum = Pa.domain_scalar_sum(ci_weighted_sum)
         NS.write_ts('cloud_fraction',ci_weighted_sum,Pa)
+
+
+        #Compute cloud top and cloud base height
+        cb = 99999.9
+        ct = -99999.9
+        with nogil:
+            for pi in xrange(z_pencil.n_local_pencils):
+                for k in xrange(kmin,kmax):
+                    if ql_pencils[pi,k] > 1e-5:
+                        cb = fmin(cb,Gr.z_half[gw+k])
+                        ct = fmax(ct,Gr.z_half[gw+k])
+
+        cb = Pa.domain_scalar_min(cb)
+        ct = Pa.domain_scalar_max(ct)
+        NS.write_ts('cloud_base',cb,Pa)
+        NS.write_ts('cloud_top',ct,Pa)
+
+        #Compute liquid water path
+        lwp = np.empty((z_pencil.n_local_pencils),dtype=np.double,order='c')
+        with nogil:
+            for pi in xrange(z_pencil.n_local_pencils):
+                lwp[pi] = 0.0
+                for k in xrange(kmin,kmax):
+                    lwp[pi] += RS.rho0_half[k] * ql_pencils[pi,k] * dz
+
+            for pi in xrange(z_pencil.n_local_pencils):
+                lwp_weighted_sum += lwp[pi]
+            lwp_weighted_sum /= mean_divisor
+
+        lwp_weighted_sum = Pa.domain_scalar_sum(lwp_weighted_sum)
+        NS.write_ts('lwp',lwp_weighted_sum,Pa)
 
         return
 

@@ -119,6 +119,36 @@ cdef class ParallelMPI:
 
         return global_sum
 
+
+    cdef double domain_scalar_max(self, double local_value):
+        '''
+        Compute the maximum over all mpi ranks of a single scalar of type double.
+        :param local_value: the value to be maxed over the ranks
+        :return: maximum of local values on all processes
+        '''
+
+        cdef:
+            double global_max
+
+        mpi.MPI_Allreduce(&local_value, &global_max,1,mpi.MPI_DOUBLE,mpi.MPI_MAX,self.comm_world)
+
+        return global_max
+
+    cdef double domain_scalar_min(self, double local_value):
+        '''
+        Compute the minimum over all mpi ranks of a single scalar of type double.
+        :param local_value: the value to be min-ed over the ranks
+        :return: sum of local values on all processes
+        '''
+
+        cdef:
+            double global_min
+
+        mpi.MPI_Allreduce(&local_value, &global_min,1,mpi.MPI_DOUBLE,mpi.MPI_MIN,self.comm_world)
+
+        return global_min
+
+
     cdef double [:] HorizontalMean(self,Grid.Grid Gr,double *values):
 
         cdef:

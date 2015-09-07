@@ -25,6 +25,8 @@ cdef class ParallelMPI:
         void create_sub_communicators(self)
 
         double domain_scalar_sum(self, double local_value)
+        double domain_scalar_min(self, double local_value)
+        double domain_scalar_max(self, double local_value)
         double [:] HorizontalMean(self,Grid.Grid Gr, double* values)
         double [:] HorizontalMeanofSquares(self,Grid.Grid Gr, double* values1, double* values2)
         double [:] HorizontalMeanofCubes(self, Grid.Grid Gr, double* values1, double* values2, double* values3)
