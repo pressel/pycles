@@ -158,7 +158,8 @@ cdef class ThermodynamicsSA:
         NF.write_field('thetas',data)
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+                   DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t i,j,k, ijk, ishift, jshift
@@ -210,4 +211,16 @@ cdef class ThermodynamicsSA:
         NS.write_profile('thetas_min',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_ts('thetas_min',np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
 
+
         return
+
+    cpdef liquid_stats(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+                        DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+
+
+
+
+        return
+
+
