@@ -349,7 +349,7 @@ def Gabls():
     namelist['damping']['scheme'] = 'Rayleigh'
     namelist['damping']['Rayleigh'] = {}
     namelist['damping']['Rayleigh']['gamma_r'] = 0.02
-    namelist['damping']['Rayleigh']['z_d'] = 300.0
+    namelist['damping']['Rayleigh']['z_d'] = 100.0
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
