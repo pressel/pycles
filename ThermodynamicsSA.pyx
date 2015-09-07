@@ -65,6 +65,7 @@ cdef class ThermodynamicsSA:
         NS.add_profile('thetas_min',Gr,Pa)
         NS.add_ts('thetas_max',Gr,Pa)
         NS.add_ts('thetas_min',Gr,Pa)
+        NS.add_ts('cloud_fraction', Gr, Pa)
 
         return
 
@@ -211,15 +212,48 @@ cdef class ThermodynamicsSA:
         NS.write_profile('thetas_min',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_ts('thetas_min',np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
 
+        #Compute additional stats
+        self.liquid_stats(Gr,PV, DV, NS, Pa)
 
         return
 
     cpdef liquid_stats(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                         DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
+        cdef:
+            Py_ssize_t kmin = 0
+            Py_ssize_t kmax = Gr.dims.n[2]
+            Py_ssize_t pi, k
+            ParallelMPI.Pencil z_pencil = ParallelMPI.Pencil()
+            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
+            double [:,:] ql_pencils
+            #Cloud indicator
+            double [:] ci
+            #Weighted sum of local cloud indicator
+            double ci_weighted_sum = 0.0
+            double mean_divisor = np.double(Gr.dims.n[0] * Gr.dims.n[1])
 
 
+        #Initialize the z-pencil
+        z_pencil.initialize(Gr, Pa, 2)
+        ql_pencils =  z_pencil.forward_double(& Gr.dims, Pa, & DV.values[ql_shift])
 
+        #Compute all or nothing cloud fraction
+        ci = np.empty((z_pencil.n_local_pencils),dtype=np.double,order='c')
+        with nogil:
+            for pi in xrange(z_pencil.n_local_pencils):
+                for k in xrange(kmin,kmax):
+                    if ql_pencils[pi,k] > 1e-5:
+                        ci[pi] = 1.0
+                        break
+                    else:
+                        ci[pi] = 0.0
+            for pi in xrange(z_pencil.n_local_pencils):
+                ci_weighted_sum += ci[pi]
+            ci_weighted_sum /= mean_divisor
+
+        ci_weighted_sum = Pa.domain_scalar_sum(ci_weighted_sum)
+        NS.write_ts('cloud_fraction',ci_weighted_sum,Pa)
 
         return
 
