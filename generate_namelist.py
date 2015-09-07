@@ -444,7 +444,6 @@ def DYCOMS_RF01():
     return namelist
 
 
-
 def write_file(namelist):
 
     try:
