@@ -93,7 +93,6 @@ def SullivanPatton():
     namelist['fields_io']['frequency'] = 1800.0
     namelist['fields_io']['diagnostic_fields'] = ['temperature','buoyancy_frequency','viscosity']
 
-
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'SullivanPatton'
     namelist['meta']['casename'] = 'SullivanPatton'
@@ -443,7 +442,6 @@ def DYCOMS_RF01():
     namelist['meta']['casename'] = 'DYCOMS_RF01'
 
     return namelist
-
 
 
 
