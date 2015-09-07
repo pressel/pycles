@@ -160,7 +160,7 @@ class Simulation3d:
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.Fo.stats_io(
                     self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-                self.Th.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+                self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
                 self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
@@ -175,7 +175,7 @@ class Simulation3d:
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.Th.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
         self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)

@@ -8,7 +8,7 @@ cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
-from thermodynamic_functions cimport cpm_c, pv_c, pd_c
+from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c
 import numpy as np
 import cython
@@ -160,7 +160,7 @@ cdef class ForcingBomex:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
                         PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-                                                         * self.dtdt[k] * rho0)/t
+                                                         * self.dtdt[k] * exner_c(p0) * rho0)/t
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
@@ -395,7 +395,7 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
         Py_ssize_t ishift, jshift, ijk, i,j,k
         double phim, fluxm
         double phip, fluxp
-
+        double dxi = dims.dxi[2]
     with nogil:
         for i in xrange(imin,imax):
             ishift = i*istride
@@ -409,6 +409,6 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                     phip = values[ijk-1]
                     phim = values[ijk]
                     fluxm = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
-                    tendencies[ijk] = tendencies[ijk] + rho0_half[k] * (fluxp - fluxm)/dims.dx[2]
+                    tendencies[ijk] = tendencies[ijk] - (fluxp - fluxm)*dxi/rho0_half[k]
     return
 

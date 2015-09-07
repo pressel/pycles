@@ -139,7 +139,7 @@ cdef class ThermodynamicsDry:
         print(np.amax(data),np.amin(data))
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                    DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
