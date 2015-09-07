@@ -26,6 +26,8 @@ cdef extern from "advection_interpolation.h":
 
 
 cdef extern from "thermodynamic_functions.h":
+    inline double pd_c(double p0, double qt, double qv) nogil
+    inline double pv_c(double p0, double qt, double qv) nogil
     inline double exner_c(const double p0) nogil
     inline double theta_rho_c(double p0, double T,double qt, double qv) nogil
 
