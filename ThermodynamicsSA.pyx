@@ -85,6 +85,16 @@ cdef class ThermodynamicsSA:
         return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
 
     cpdef alpha(self, double p0, double T, double qt, double qv):
+        '''
+        Provide a python wrapper for the C function that computes the specific volume
+        consistent with Pressel et al. 2015 equation (44).
+
+        :param p0: reference state pressure [Pa]
+        :param T:  thermodynamic temperature [K]
+        :param qt: total water specific humidity [kg/kg]
+        :param qv: water vapor specific humidity [kg/kg]
+        :return: specific volume [m^3/kg]
+        '''
         return alpha_c(p0, T, qt, qv)
 
     cpdef eos(self, double p0, double s, double qt):
