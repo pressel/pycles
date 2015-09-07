@@ -74,6 +74,16 @@ cdef class ThermodynamicsSA:
         return
 
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
+        '''
+        Provide a python rapper for the c function that computes the specific entropy
+        consistent with Pressel et al. 2015 equation (40)
+        :param p0: reference state pressure [Pa]
+        :param T: thermodynamic temperature [K]
+        :param qt: total water specific humidity [kg/kg]
+        :param ql: liquid water specific humidity [kg/kg]
+        :param qi: ice water specific humidity [kg/kg]
+        :return: moist specific entropy
+        '''
         cdef:
             double qv = qt - ql - qi
             double qd = 1.0 - qt
