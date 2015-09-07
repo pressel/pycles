@@ -395,7 +395,7 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
         Py_ssize_t ishift, jshift, ijk, i,j,k
         double phim, fluxm
         double phip, fluxp
-
+        double dxi = dims.dxi[2]
     with nogil:
         for i in xrange(imin,imax):
             ishift = i*istride
@@ -409,6 +409,6 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                     phip = values[ijk-1]
                     phim = values[ijk]
                     fluxm = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
-                    tendencies[ijk] = tendencies[ijk] - rho0_half[k] * (fluxp - fluxm)/dims.dx[2]
+                    tendencies[ijk] = tendencies[ijk] - (fluxp - fluxm)*dxi/rho0_half[k]
     return
 
