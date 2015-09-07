@@ -45,7 +45,7 @@ cdef class ThermodynamicsSA:
 
     cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        PV.add_variable('s','m/s',"sym","scalar",Pa)
+        PV.add_variable('s', 'm/s', "sym","scalar", Pa)
         PV.add_variable('qt','kg/kg',"sym","scalar",Pa)
 
         #Initialize class member arrays
@@ -64,6 +64,7 @@ cdef class ThermodynamicsSA:
         NS.add_profile('thetas_mean3',Gr,Pa)
         NS.add_profile('thetas_max',Gr,Pa)
         NS.add_profile('thetas_min',Gr,Pa)
+        NS.add_profile('cloud_fraction',Gr, Pa)
         NS.add_ts('thetas_max',Gr,Pa)
         NS.add_ts('thetas_min',Gr,Pa)
         NS.add_ts('cloud_fraction', Gr, Pa)
@@ -244,10 +245,21 @@ cdef class ThermodynamicsSA:
             double [:] lwp
             double lwp_weighted_sum  = 0.0
 
+            double [:] cf_profile = np.zeros((Gr.dims.n[2]),dtype=np.double,order='c')
 
         #Initialize the z-pencil
         z_pencil.initialize(Gr, Pa, 2)
         ql_pencils =  z_pencil.forward_double(& Gr.dims, Pa, & DV.values[ql_shift])
+
+        #Compute cloud fraction profile
+        with nogil:
+            for pi in xrange(z_pencil.n_local_pencils):
+                for k in xrange(kmin,kmax):
+                    if ql_pencils[pi,k] > 1e-5:
+                        cf_profile[k] += 1.0/mean_divisor
+
+        cf_profile = Pa.domain_vector_sum(cf_profile,Gr.dims.n[2])
+        NS.write_profile('cloud_fraction',cf_profile,Pa)
 
         #Compute all or nothing cloud fraction
         ci = np.empty((z_pencil.n_local_pencils),dtype=np.double,order='c')

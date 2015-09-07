@@ -120,6 +120,7 @@ cdef class ParallelMPI:
         return global_sum
 
 
+
     cdef double domain_scalar_max(self, double local_value):
         '''
         Compute the maximum over all mpi ranks of a single scalar of type double.
@@ -142,12 +143,25 @@ cdef class ParallelMPI:
         '''
 
         cdef:
-            double global_min
+            double  global_min
 
         mpi.MPI_Allreduce(&local_value, &global_min,1,mpi.MPI_DOUBLE,mpi.MPI_MIN,self.comm_world)
 
         return global_min
 
+    cdef double [:] domain_vector_sum(self, double [:] local_vector, Py_ssize_t n):
+        '''
+        Compute the sum over all mpi ranks of a vector of type double.
+        :param local_vector: the value to be summed over the ranks
+        :return: sum of local vectors on all processes
+        '''
+
+        cdef:
+            double [:] global_sum = np.empty((n,),dtype=np.double,order='c')
+
+        mpi.MPI_Allreduce(&local_vector[0], &global_sum[0],n,mpi.MPI_DOUBLE,mpi.MPI_SUM,self.comm_world)
+
+        return global_sum
 
     cdef double [:] HorizontalMean(self,Grid.Grid Gr,double *values):
 
