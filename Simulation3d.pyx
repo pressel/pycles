@@ -141,15 +141,17 @@ class Simulation3d:
 
             # If time to ouptut fields do output
             if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
-                print 'Doing Ouput'
+                self.Pa.root_print('Doing 3D FiledIO')
                 self.FieldsIO.last_output_time = self.TS.t
                 self.FieldsIO.update(
                     self.Gr, self.PV, self.DV, self.TS, self.Pa)
                 self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
-                self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV)
+                self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)
+                self.Pa.root_print('Finished Doing 3D FieldIO')
 
             # If time to ouput stats do output
             if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t:
+                self.Pa.root_print('Doing StatsIO')
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
                 self.PV.stats_io(self.Gr, self.StatsIO, self.Pa)
@@ -158,6 +160,7 @@ class Simulation3d:
                     self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Th.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
+                self.Pa.root_print('Finished Doing StatsIO')
         return
 
     def force_io(self):

@@ -430,6 +430,7 @@ def DYCOMS_RF01():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'DYCOMS_RF01'
