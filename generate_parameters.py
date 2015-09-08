@@ -27,9 +27,7 @@ def main():
     parameters['sd_tilde'] = 6695.4
     parameters['sv_tilde'] = 10513.6
 
-    ########################################
-    # Parameters of the Byun surface scheme
-    #######################################
+    parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
 
     #############################
     # Users shouldn't modify below

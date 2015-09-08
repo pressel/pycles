@@ -262,7 +262,7 @@ def Bomex():
     namelist['time_stepping']['cfl_limit'] = 0.7
     namelist['time_stepping']['dt_initial'] = 10.0
     namelist['time_stepping']['dt_max'] = 10.0
-    namelist['time_stepping']['t_max'] = 7200.0
+    namelist['time_stepping']['t_max'] = 21600.0
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
@@ -329,8 +329,8 @@ def Gabls():
     namelist['time_stepping'] = {}
     namelist['time_stepping']['ts_type'] = 3
     namelist['time_stepping']['cfl_limit'] = 0.7
-    namelist['time_stepping']['dt_initial'] = 10.0
-    namelist['time_stepping']['dt_max'] = 30.0
+    namelist['time_stepping']['dt_initial'] =1.0
+    namelist['time_stepping']['dt_max'] = 2.0
     namelist['time_stepping']['t_max'] = 43200.0
 
     namelist['thermodynamics'] = {}

@@ -3,7 +3,7 @@
 #include "advection_interpolation.h"
 #include "thermodynamic_functions.h"
 #include "entropies.h"
-void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *rho0_half, double *diffusivity, double *scalar, double *flux, double dx, size_t d){
+void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *rho0_half, double *diffusivity, double *scalar, double *flux, double dx, size_t d, double factor){
 
     const size_t istride = dims->nlg[1] * dims->nlg[2];
     const size_t jstride = dims->nlg[2];
@@ -26,7 +26,7 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
                 const size_t jshift = j * jstride;
                 for(size_t k=kmin; k<kmax; k++){
                     const size_t ijk = ishift + jshift + k;
-                    flux[ijk] = -interp_2(diffusivity[ijk],diffusivity[ijk+stencil[d]]) * (scalar[ijk+stencil[d]]-scalar[ijk])*rho0[k]*dxi;
+                    flux[ijk] = -factor * interp_2(diffusivity[ijk],diffusivity[ijk+stencil[d]]) * (scalar[ijk+stencil[d]]-scalar[ijk])*rho0[k]*dxi;
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -38,7 +38,7 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
                 const size_t jshift = j * jstride;
                 for(size_t k=kmin; k<kmax; k++){
                     const size_t ijk = ishift + jshift + k;
-                    flux[ijk] = -interp_2(diffusivity[ijk],diffusivity[ijk+stencil[d]])*(scalar[ijk+stencil[d]]-scalar[ijk])*rho0_half[k]*dxi;
+                    flux[ijk] = -factor * interp_2(diffusivity[ijk],diffusivity[ijk+stencil[d]])*(scalar[ijk+stencil[d]]-scalar[ijk])*rho0_half[k]*dxi;
                 } // End k loop
             }  // End j loop
         } // End i loop
@@ -47,11 +47,11 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
     return;
 }
 
-void compute_diffusive_flux(const struct DimStruct *dims, double *rho0, double *rho0_half, double *diffusivity, double *scalar, double *flux, double dx, size_t d, size_t scheme){
+void compute_diffusive_flux(const struct DimStruct *dims, double *rho0, double *rho0_half, double *diffusivity, double *scalar, double *flux, double dx, size_t d, size_t scheme, double factor){
 
         switch(scheme){
             case 2:
-                second_order_diffusion(dims, rho0, rho0_half, diffusivity, scalar, flux, dx, d);
+                second_order_diffusion(dims, rho0, rho0_half, diffusivity, scalar, flux, dx, d, factor);
                 break;
                 };
 }

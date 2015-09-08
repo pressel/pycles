@@ -63,17 +63,20 @@ class Simulation3d:
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist, self.Pa)
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
         self.PV.initialize(self.Gr, self.StatsIO, self.Pa)
-        self.Ke.initialize(self.Gr)
-        self.SA.initialize(self.Gr, self.PV)
-        self.MA.initialize(self.Gr, self.PV)
-        self.SGS.initialize(self.Gr)
-        self.SD.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.MD.initialize(self.Gr, self.PV, self.DV, self.Pa)
-        self.TS.initialize(namelist, self.PV, self.Pa)
+        self.Ke.initialize(self.Gr, self.StatsIO, self.Pa)
+
+        self.SA.initialize(self.Gr,self.PV)
+        self.MA.initialize(self.Gr,self.PV)
+        self.SD.initialize(self.Gr,self.PV,self.DV,self.StatsIO,self.Pa)
+        self.MD.initialize(self.Gr,self.PV,self.DV,self.Pa)
+        self.TS.initialize(namelist,self.PV,self.Pa)
+
         SetInitialConditions = InitializationFactory(namelist)
-        SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th)
-        self.Sur.initialize(self.Gr, self.Ref, self.StatsIO, self.Pa)
+        SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa)
+        self.Sur.initialize(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
+
         self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr,self.StatsIO,self.Pa)
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
@@ -95,16 +98,16 @@ class Simulation3d:
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
-                self.Ke.update(self.Gr, PV_)
-                self.Th.update(self.Gr, self.Ref, PV_, DV_)
-                self.SA.update_cython(self.Gr, self.Ref, PV_, self.Pa)
-                self.MA.update(self.Gr, self.Ref, PV_, self.Pa)
-                self.SGS.update(self.Gr, self.Ref, self.DV, self.PV, self.Ke)
-                self.Damping.update(self.Gr, self.PV, self.Pa)
-                self.SD.update(self.Gr, self.Ref, self.PV, self.DV)
-                self.MD.update(self.Gr, self.Ref, self.PV, self.DV, self.Ke)
-                self.Sur.update(
-                    self.Gr, self.Ref, self.PV, self.DV, self.Pa, self.TS)
+                self.Ke.update(self.Gr,PV_)
+                self.Th.update(self.Gr,self.Ref,PV_,DV_)
+                self.SA.update_cython(self.Gr,self.Ref,PV_,self.Pa)
+                self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
+                self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
+                self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
+                self.Damping.update(self.Gr,self.PV,self.Pa)
+                self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
+                self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
+
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV)
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
@@ -158,8 +161,11 @@ class Simulation3d:
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.Fo.stats_io(
                     self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-                self.Th.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+                self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
+                self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
+                self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
+
                 self.Pa.root_print('Finished Doing StatsIO')
         return
 
@@ -170,6 +176,9 @@ class Simulation3d:
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.Th.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
+        self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
+        self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
         return
+

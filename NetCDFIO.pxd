@@ -18,8 +18,10 @@ cdef class NetCDFIO_Stats:
     cpdef initialize(self, dict namelist, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef setup_stats_file(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef add_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
+    cpdef add_reference_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef add_ts(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef write_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa)
+    cpdef write_reference_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa)
     cpdef write_ts(self, var_name, double data, ParallelMPI.ParallelMPI Pa)
     cpdef write_simulation_time(self, double t, ParallelMPI.ParallelMPI Pa)
 

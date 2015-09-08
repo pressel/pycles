@@ -25,7 +25,7 @@ cdef class ThermodynamicsSA:
     cpdef write_fields(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                        NetCDFIO_Fields NF, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                    DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef liquid_stats(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    cpdef liquid_stats(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

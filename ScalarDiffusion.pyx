@@ -20,7 +20,7 @@ import cython
 
 cdef extern from "scalar_diffusion.h":
     void compute_diffusive_flux(Grid.DimStruct *dims, double *alpha0, double *alpha0_half, double *diffusivity,
-                                double *scalar, double *flux, double dx, size_t d, Py_ssize_t scheme)
+                                double *scalar, double *flux, double dx, size_t d, Py_ssize_t scheme, double factor)
     void compute_qt_diffusion_s_source(Grid.DimStruct *dims, double *p0_half, double *alpha0, double *alpha0_half,
                                        double *flux, double *qt, double *qv, double *T, double *tendency, double (*lam_fp)(double),
                                        double (*L_fp)(double, double), double dx, Py_ssize_t d )
@@ -47,7 +47,10 @@ cdef class ScalarDiffusion:
             Py_ssize_t t_shift
             Py_ssize_t qv_shift
             Py_ssize_t n_qt
+            Py_ssize_t n_e
             Py_ssize_t d, i ,scalar_shift, scalar_count = 0, flux_shift
+            Py_ssize_t diff_shift_n = DV.get_varshift(Gr,'diffusivity')
+            double flux_factor = 1.0
 
         if 'qt' in PV.name_index:
             n_qt = PV.name_index['qt']
@@ -55,16 +58,25 @@ cdef class ScalarDiffusion:
             qt_shift = PV.get_varshift(Gr,'qt')
             t_shift = DV.get_varshift(Gr,'temperature')
             qv_shift = DV.get_varshift(Gr,'qv')
+        if 'e' in PV.name_index:
+            n_e = PV.name_index['e']
+
 
         for i in xrange(PV.nv):
             if PV.var_type[i] == 1:
                 scalar_shift = i * Gr.dims.npg
+                if i == n_e:
+                    diff_shift_n = DV.get_varshift(Gr,'viscosity')
+                    flux_factor = 2.0
+                else:
+                    diff_shift_n = DV.get_varshift(Gr,'viscosity')
+                    flux_factor = 1.0
                 for d in xrange(Gr.dims.dims):
                     flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
 
                     compute_diffusive_flux(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],
                                            &DV.values[diff_shift],&PV.values[scalar_shift],
-                                           &self.flux[flux_shift],Gr.dims.dx[d],d,2)
+                                           &self.flux[flux_shift],Gr.dims.dx[d],d,2, flux_factor)
 
                     scalar_flux_divergence(&Gr.dims,&RS.alpha0[0],&RS.alpha0_half[0],
                                            &self.flux[flux_shift],&PV.tendencies[scalar_shift],Gr.dims.dx[d],d)

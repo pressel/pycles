@@ -8,7 +8,7 @@ cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
-from thermodynamic_functions cimport cpm_c, pv_c, pd_c
+from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c
 import numpy as np
 import cython
@@ -160,7 +160,7 @@ cdef class ForcingBomex:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
                         PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-                                                         * self.dtdt[k] * rho0)/t
+                                                         * self.dtdt[k] * exner_c(p0) * rho0)/t
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
@@ -181,7 +181,7 @@ cdef class ForcingBomex:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
             double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
 
 
@@ -252,8 +252,8 @@ cdef class ForcingSullivanPatton:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
-            double [:] mean_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
+            double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
 
         #Only need to output coriolis_forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
@@ -395,7 +395,7 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
         Py_ssize_t ishift, jshift, ijk, i,j,k
         double phim, fluxm
         double phip, fluxp
-
+        double dxi = dims.dxi[2]
     with nogil:
         for i in xrange(imin,imax):
             ishift = i*istride
@@ -409,6 +409,6 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                     phip = values[ijk-1]
                     phim = values[ijk]
                     fluxm = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
-                    tendencies[ijk] = tendencies[ijk] + rho0_half[k] * (fluxp - fluxm)/dims.dx[2]
+                    tendencies[ijk] = tendencies[ijk] - (fluxp - fluxm)*dxi/rho0_half[k]
     return
 
