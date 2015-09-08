@@ -220,7 +220,7 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
     if 'e' in PV.name_index:
-        e_shift = PV.get_varshift(Gr, 'e')
+        e_varshift = PV.get_varshift(Gr, 'e')
         for i in xrange(Gr.dims.nlg[0]):
             ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
             for j in xrange(Gr.dims.nlg[1]):
