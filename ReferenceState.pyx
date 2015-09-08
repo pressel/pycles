@@ -25,7 +25,6 @@ cdef class ReferenceState:
         self.rho0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.rho0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
 
-
         return
 
     def initialize(self, Grid.Grid Gr, Thermodynamics, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
