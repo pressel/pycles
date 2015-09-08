@@ -75,6 +75,7 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 t = (300.0 )*exner_c(RS.p0_half[k]) - 15.0*( cos(np.pi * dist) + 1.0) /2.0
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
 
+
     return
 
 def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
@@ -180,7 +181,7 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
         Py_ssize_t i,j,k
-        Py_ssize_t ishift, jshift
+        Py_ssize_t ishift, jshift, e_varshift
         Py_ssize_t ijk
         double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double t
@@ -218,6 +219,15 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
 
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+    if 'e' in PV.name_index:
+        e_shift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[e_varshift + ijk] = 0.0
     return
 
 def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
@@ -239,7 +249,7 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift
-        Py_ssize_t ijk
+        Py_ssize_t ijk, e_varshift
         double temp
         double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
@@ -305,6 +315,17 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[qt_varshift + ijk] = qt[k]
                 count += 1
 
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[e_varshift + ijk] = 1.0-Gr.zl_half[k]/3000.0
+
+
     return
 
 def InitGabls(Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
@@ -326,7 +347,7 @@ def InitGabls(Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
         Py_ssize_t i,j,k
-        Py_ssize_t ishift, jshift
+        Py_ssize_t ishift, jshift, e_varshift
         Py_ssize_t ijk
         double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double t
@@ -364,6 +385,22 @@ def InitGabls(Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                 t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
 
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+
+
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    if Gr.zl_half[k] <= 250.0:
+                        PV.values[e_varshift + ijk] = 0.4*(1.0-Gr.zl_half[k]/250.0)**3.0
+                    else:
+                        PV.values[e_varshift + ijk] = 0.0
+
+
     return
 
 def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,

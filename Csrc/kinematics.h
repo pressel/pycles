@@ -1,5 +1,7 @@
 #pragma once
 #include "grid.h"
+#include "advection_interpolation.h"
+
 
 void compute_velocity_gradient(const struct DimStruct *dims, double* restrict v, double* restrict vgrad, const size_t d){
 
@@ -134,6 +136,37 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
     //Complete the calculation
     for(size_t i=0; i<dims->npg; i++){
         strain_rate_mag[i] = sqrt(2.0*strain_rate_mag[i]);
+    }
+
+    return;
+}
+
+void compute_wind_speed_angle(const struct DimStruct *dims, double* restrict u, double* restrict v,
+ double* restrict wind_speed, double* restrict wind_angle, double u0, double v0){
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
+
+    const size_t imin = 0;
+    const size_t jmin = 0;
+    const size_t kmin = 0;
+
+    const size_t imax = dims->nlg[0]-1;
+    const size_t jmax = dims->nlg[1]-1;
+    const size_t kmax = dims->nlg[2]-1;
+
+
+    for(size_t i=imin;i<imax;i++){
+        const size_t ishift = i*istride ;
+        for(size_t j=jmin;j<jmax;j++){
+            const size_t jshift = j*jstride;
+            for(size_t k=kmin;k<kmax;k++){
+                const size_t ijk = ishift + jshift + k ;
+                const double u_interp = interp_2(u[ijk + istride], u[ijk])+u0;
+                const double v_interp = interp_2(v[ijk + jstride], v[ijk])+v0;
+                wind_speed[ijk] = sqrt(u_interp * u_interp + v_interp * v_interp);
+                wind_angle[ijk] = atan2(v_interp,u_interp+1.0e-20);
+            }
+        }
     }
 
     return;

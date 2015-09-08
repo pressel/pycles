@@ -42,7 +42,7 @@ inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux,
 }
 
 
-void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch){
+void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch, double* lmo){
 
     //Monin-Obukhov similarity based on
     //Daewon W. Byun, 1990: On the Analytical Solutions of Flux-Profile Relationships for the Atmospheric Surface Layer. J. Appl. Meteor., 29, 652–657.
@@ -54,11 +54,10 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
     const double gamma_m = 15.0;
     const double gamma_h = 9.0;
     const double Ri_crit = 0.25;
-    const double vkb = 0.35; //Von Karman constant from Businger 1971 used by Byun
     const double logz = log(zb/z0);
     const double zfactor = zb/(zb-z0)*logz;
     const double C_neu = vkb/logz;
-    double zeta, lmo, zeta0, psi_m, psi_h;
+    double zeta, zeta0, psi_m, psi_h, lmo_;
 
     double sb = Ri/Pr0;
 
@@ -75,8 +74,8 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
             const double tb = pow((sqrt(-crit) + fabs(pb)),0.3333);
             zeta = zfactor * (1.0/(3.0*gamma_m)-(tb + qb/tb));
         }
-        lmo = zb/zeta;
-        zeta0 = z0/lmo;
+        lmo_ = zb/zeta;
+        zeta0 = z0/lmo_;
         const double x = pow((1.0 - gamma_m * zeta),0.25);
         const double x0 = pow((1.0 - gamma_m * zeta0), 0.25);
         const double y = sqrt(1.0 - gamma_h * zeta );
@@ -94,8 +93,8 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
         else{
             zeta = zfactor/(2.0*beta_h*(beta_m*Ri -1.0))*((1.0-2.0*beta_h*Ri)-sqrt(1.0+4.0*(beta_h - beta_m)*sb));
         }
-        lmo = zb/zeta;
-        zeta0 = z0/zeta;
+        lmo_ = zb/zeta;
+        zeta0 = z0/lmo_;
         if(zeta > 1.0){
             psi_m = 1.0 - beta_m - zeta;
             psi_h = 1.0 - beta_h - zeta;
@@ -109,6 +108,7 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
     const double cth = fmin(vkb/(logz-psi_h)/Pr0,4.5*C_neu);
     *cm = cu * cu;
     *ch = cu * cth;
+    *lmo = lmo_;
 
     return;
 }
@@ -121,7 +121,7 @@ void compute_windspeed(const struct DimStruct *dims, double* restrict u, double*
 
     const size_t imin = 1;
     const size_t jmin = 1;
-    const size_t kmin =1;
+    const size_t kmin = 1;
 
     const size_t imax = dims->nlg[0];
     const size_t jmax = dims->nlg[1];
@@ -143,3 +143,4 @@ void compute_windspeed(const struct DimStruct *dims, double* restrict u, double*
 
     return;
 }
+

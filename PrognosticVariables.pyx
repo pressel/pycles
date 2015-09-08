@@ -97,6 +97,7 @@ cdef class PrognosticVariables:
         for var_name in self.name_index.keys():
             var_shift = self.get_varshift(Gr,var_name)
 
+
             #Compute and write mean
             tmp = Pa.HorizontalMean(Gr,&self.values[var_shift])
             NS.write_profile(var_name + '_mean',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)

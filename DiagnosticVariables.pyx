@@ -25,6 +25,10 @@ cdef class DiagnosticVariables:
         self.nv = 0
         self.bc_type = np.array([],dtype=np.double,order='c')
 
+        self.name_index_2d = {}
+        self.units_2d = {}
+        self.nv_2d = 0
+
     cpdef add_variables(self, name, units,bc_type,  ParallelMPI.ParallelMPI Pa):
         self.name_index[name] = self.nv
         self.units[name] = units
@@ -37,6 +41,13 @@ cdef class DiagnosticVariables:
             Pa.root_print("Not a valid bc_type. Killing simulation now!")
             Pa.kill()
         self.nv = len(self.name_index.keys())
+
+        return
+
+    cpdef add_variables_2d(self, name, units):
+        self.name_index_2d[name] = self.nv_2d
+        self.units_2d[name] = units
+        self.nv_2d = len(self.name_index_2d.keys())
 
         return
 
@@ -104,6 +115,8 @@ cdef class DiagnosticVariables:
 
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.values = np.empty((self.nv*Gr.dims.npg),dtype=np.double,order='c')
+        self.values_2d = np.empty((self.nv_2d*Gr.dims.nlg[0]*Gr.dims.nlg[1]),dtype=np.double,order='c' )
+
 
         #Add prognostic variables to Statistics IO
         Pa.root_print('Setting up statistical output files for Prognostic Variables')
@@ -122,12 +135,17 @@ cdef class DiagnosticVariables:
             NS.add_ts(var_name+'_max',Gr,Pa)
             #Add min ts
             NS.add_ts(var_name+'_min',Gr,Pa)
+        for var_name in self.name_index_2d.keys():
+            #Add mean profile
+            NS.add_ts(var_name+'_mean',Gr,Pa)
+
         return
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
             int var_shift
             double [:] tmp
+            double tmp2
 
         for var_name in self.name_index.keys():
             var_shift = self.get_varshift(Gr,var_name)
@@ -153,5 +171,14 @@ cdef class DiagnosticVariables:
             tmp = Pa.HorizontalMinimum(Gr,&self.values[var_shift])
             NS.write_profile(var_name + '_min',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
             NS.write_ts(var_name+'_min',np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
+
+        for var_name in self.name_index_2d.keys():
+            var_shift = self.get_varshift_2d(Gr,var_name)
+
+            #Compute and write mean
+            tmp2 = Pa.HorizontalMeanSurface(Gr,&self.values_2d[var_shift])
+            NS.write_ts(var_name + '_mean',tmp2,Pa)
+
+
 
         return
