@@ -527,7 +527,7 @@ cdef class SurfaceIsdac:
             # Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
             # Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
             # Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            Py_ssize_t th_shift = DV.get_varshift(Gr,'theta')
+            Py_ssize_t th_shift = DV.get_varshift(Gr,'theta_rho')
 
         compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.windspeed[0],Ref.u0, Ref.v0,self.gustiness)
 

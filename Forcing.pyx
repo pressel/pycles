@@ -17,7 +17,7 @@ from libc.math cimport fabs, cos, fmin, fmax
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 include 'parameters.pxi'
-from Initialization cimport thetal_mpace, sat_adjst
+from Initialization import thetal_mpace, sat_adjst
 
 cdef class Forcing:
     def __init__(self, namelist):
@@ -38,8 +38,8 @@ cdef class Forcing:
             self.scheme= ForcingNone()
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.scheme.initialize(Gr, NS, Pa)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.scheme.initialize(Gr, RS, Th, NS, Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -547,7 +547,7 @@ cdef class ForcingIsdac:
             #double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
             double T, ql
 
-        self.w = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
+        #self.w = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
         with nogil:
             for k in range(Gr.dims.nlg[2]):
                 if Gr.zl[k] < 825.0:
@@ -580,7 +580,7 @@ cdef class ForcingIsdac:
             self.initial_u[k] = -7.0
 
             #Now get entropy profile
-            T, ql = sat_adjst(RS.p0_half[k], thetal[k], self.initial_qt[k])
+            T, ql = sat_adjst(RS.p0_half[k], thetal[k], self.initial_qt[k], Th)
             self.initial_entropy[k] = Th.entropy(RS.p0_half[k], T, self.initial_qt[k], ql, 0.0)
 
 

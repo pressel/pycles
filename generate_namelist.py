@@ -606,7 +606,7 @@ def Isdac():
     namelist['time_stepping']['cfl_limit'] = 0.7
     namelist['time_stepping']['dt_initial'] = 10.0
     namelist['time_stepping']['dt_max'] = 10.0
-    namelist['time_stepping']['t_max'] = 3600.0 * 12.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 8.0
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
@@ -637,11 +637,12 @@ def Isdac():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = "stats"
-    namelist['stats_io']['frequency'] = 100.0
+    namelist['stats_io']['frequency'] = 300.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = "fields"
-    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Isdac'

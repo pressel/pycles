@@ -613,7 +613,7 @@ def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
                 else:
                     theta_pert_ = 0.0
-                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
+                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k],Th)
                 PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
 
 
@@ -754,7 +754,7 @@ def InitIsdac(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
                 else:
                     theta_pert_ = 0.0
-                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
+                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k], Th)
                 PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
 
 
@@ -763,7 +763,7 @@ def InitIsdac(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 def thetal_mpace(p_, t_, ql_):
     return t_*(p_tilde/p_)**(Rd/cpd)*np.exp(-(2.26e6*ql_)/(cpd*263.0))
 
-def sat_adjst(p_, thetal_, qt_):
+def sat_adjst(p_, thetal_, qt_, Th):
 
     """
     Use saturation adjustment scheme to compute temperature and ql given thetal and qt.
