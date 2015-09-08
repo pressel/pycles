@@ -124,7 +124,7 @@ void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double*
             const size_t jshift = j * jstride;
             for (k=kmin+1;k<kmax-2;k++){
                 const size_t ijk = ishift + jshift + k;
-                wt[ijk] = wt[ijk] + interp_4(buoyancy[ijk-1],buoyancy[ijk],buoyancy[ijk+1],buoyancy[ijk+2]);
+                wt[ijk] = wt[ijk] + interp_2(buoyancy[ijk],buoyancy[ijk+1]);
             } // End k loop
         } // End j loop
     } // End i loop
