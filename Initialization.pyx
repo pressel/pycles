@@ -251,6 +251,7 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t ishift, jshift
         Py_ssize_t ijk, e_varshift
         double temp
+        double qt_
         double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
@@ -308,12 +309,13 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[u_varshift + ijk] = u[k] - RS.u0
                 PV.values[v_varshift + ijk] = 0.0 - RS.v0
                 PV.values[w_varshift + ijk] = 0.0
-                if Gr.z_half[k] <= 800.0:
+                if Gr.zl_half[k] <= 1600.0:
                     temp = (thetal[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
+                    qt_ = qt[k]+qt_pert[count]
                 else:
                     temp = (thetal[k]) * exner_c(RS.p0_half[k])
-                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt[k]+qt_pert[count],0.0,0.0)
-                PV.values[qt_varshift + ijk] = qt[k] + qt_pert[count]
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)
+                PV.values[qt_varshift + ijk] = qt_ + qt_pert[count]
                 count += 1
 
     if 'e' in PV.name_index:
