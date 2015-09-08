@@ -109,7 +109,7 @@ cdef class NetCDFIO_Stats:
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             reference_grp = root_grp.groups['reference']
-            new_var = reference_grp.createVariable(var_name, 'f8', ('t', 'z'))
+            new_var = reference_grp.createVariable(var_name, 'f8', ('z',))
 
             root_grp.close()
 
@@ -146,7 +146,7 @@ cdef class NetCDFIO_Stats:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             reference_grp = root_grp.groups['reference']
             var = reference_grp.variables[var_name]
-            var[-1, :] = np.array(data)
+            var[:] = np.array(data)
             root_grp.close()
         return
 

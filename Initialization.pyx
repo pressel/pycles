@@ -7,6 +7,7 @@
 import numpy as np
 cimport numpy as np
 cimport ParallelMPI
+from NetCDFIO cimport NetCDFIO_Stats
 cimport Grid
 cimport PrognosticVariables
 from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
@@ -35,7 +36,7 @@ def InitializationFactory(namelist):
             pass
 
 def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate reference profiles
     RS.Pg = 1.0e5
@@ -45,7 +46,7 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.u0 = 0.0
     RS.v0 = 0.0
 
-    RS.initialize(Gr,Th)
+    RS.initialize(Gr, Th, NS, Pa)
 
     #Get the variable number for each of the velocity components
     cdef:
@@ -77,7 +78,7 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate reference profiles
     RS.Pg = 1.0e5
@@ -126,7 +127,7 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
          return T2, ql2
 
     RS.Tg, ql = theta_to_T(RS.Pg,thetas_sfc,qt_sfc)
-    RS.initialize(Gr,Th)
+    RS.initialize(Gr, Th, NS, Pa)
 
     #Get the variable number for each of the velocity components
     cdef:
@@ -161,7 +162,7 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate the reference profiles
     RS.Pg = 1.0e5  #Pressure at ground
@@ -170,7 +171,7 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.u0 = 1.0  # velocities removed in Galilean transformation
     RS.v0 = 0.0
 
-    RS.initialize(Gr, Th)
+    RS.initialize(Gr, Th, NS, Pa)
 
     #Get the variable number for each of the velocity components
     cdef:
@@ -220,14 +221,14 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #First generate the reference profiles
     RS.Pg = 1.015e5  #Pressure at ground
     RS.Tg = 300.4  #Temperature at ground
     RS.qtg = 0.002245   #Total water mixing ratio at surface
 
-    RS.initialize(Gr, Th)
+    RS.initialize(Gr, Th, NS, Pa)
 
     #Get the variable number for each of the velocity components
     cdef:
@@ -306,8 +307,8 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitGabls(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th):
+def InitGabls(Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate the reference profiles
     RS.Pg = 1.0e5  #Pressure at ground
@@ -316,7 +317,7 @@ def InitGabls(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.u0 = 8.0  # velocities removed in Galilean transformation
     RS.v0 = 0.0
 
-    RS.initialize(Gr, Th)
+    RS.initialize(Gr, Th, NS, Pa)
 
     #Get the variable number for each of the velocity components
     cdef:
@@ -366,7 +367,7 @@ def InitGabls(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     '''
     Initialize the DYCOMS_RF01 case described in
@@ -393,7 +394,7 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     # Use an exner function with values for Rd, and cp given in Stevens 2004 to compute temperature given $\theta_l$
     RS.Tg = 289.0 * (RS.Pg/p_tilde)**(287.0/1015.0)
 
-    RS.initialize(Gr,Th)
+    RS.initialize(Gr ,Th, NS, Pa)
 
     #Set up $\tehta_l$ and $\qt$ profiles
     cdef:
