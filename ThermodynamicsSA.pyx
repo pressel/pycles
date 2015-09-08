@@ -280,7 +280,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 1e-5:
+                    if ql_pencils[pi, k] > 0.0:
                         cf_profile[k] += 1.0 / mean_divisor
 
         cf_profile = Pa.domain_vector_sum(cf_profile, Gr.dims.n[2])
@@ -291,7 +291,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 1e-5:
+                    if ql_pencils[pi, k] > 0.0:
                         ci[pi] = 1.0
                         break
                     else:
@@ -309,7 +309,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 1e-5:
+                    if ql_pencils[pi, k] > 0.0:
                         cb = fmin(cb, Gr.z_half[gw + k])
                         ct = fmax(ct, Gr.z_half[gw + k])
 

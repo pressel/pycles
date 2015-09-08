@@ -16,7 +16,7 @@ cdef extern from "thermodynamic_functions.h":
     inline double qt_from_pv(double p0, double pv)
 
 cdef class ReferenceState:
-    def __init__(self, Grid.Grid Gr, ):
+    def __init__(self, Grid.Grid Gr ):
 
         self.p0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.p0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
