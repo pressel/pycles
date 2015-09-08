@@ -199,7 +199,6 @@ cdef class ParallelMPI:
         for i in xrange(Gr.dims.nlg[2]):
             mean[i] = mean[i]*n_horizontal_i
 
-
         return mean
 
     cdef double [:] HorizontalMeanofSquares(self,Grid.Grid Gr,const double *values1,const double *values2):

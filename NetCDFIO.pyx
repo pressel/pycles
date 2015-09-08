@@ -98,6 +98,23 @@ cdef class NetCDFIO_Stats:
 
         return
 
+    cpdef add_reference_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+        '''
+        Adds a profile to the reference group NetCDF Stats file.
+        :param var_name: name of variable
+        :param Gr: Grid class
+        :param Pa: ParallelMPI class
+        :return:
+        '''
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            reference_grp = root_grp.groups['reference']
+            new_var = reference_grp.createVariable(var_name, 'f8', ('t', 'z'))
+
+            root_grp.close()
+
+        return
+
     cpdef add_ts(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
@@ -113,7 +130,23 @@ cdef class NetCDFIO_Stats:
             profile_grp = root_grp.groups['profiles']
             var = profile_grp.variables[var_name]
             var[-1, :] = np.array(data)
+            root_grp.close()
+        return
 
+    cpdef write_reference_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa):
+        '''
+        Writes a profile to the reference group NetCDF Stats file. The variable must have already been
+        added to the NetCDF file using add_reference_profile
+        :param var_name: name of variables
+        :param data: data to be written to file
+        :param Pa: ParallelMPI class
+        :return:
+        '''
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            reference_grp = root_grp.groups['reference']
+            var = reference_grp.variables[var_name]
+            var[-1, :] = np.array(data)
             root_grp.close()
         return
 
