@@ -16,7 +16,7 @@ cdef extern from "thermodynamic_functions.h":
     inline double qt_from_pv(double p0, double pv)
 
 cdef class ReferenceState:
-    def __init__(self, Grid.Grid Gr, ):
+    def __init__(self, Grid.Grid Gr ):
 
         self.p0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.p0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
@@ -36,7 +36,7 @@ cdef class ReferenceState:
         # determine the reference pressure
         def rhs(p, z):
             T, ql, qi = Thermodynamics.eos(np.exp(p), self.sg, self.qtg)
-            return -g / (Rd * T * (1.0 + self.qtg + eps_vi * (self.qtg - ql - qi)))
+            return -g / (Rd * T * (1.0 - self.qtg + eps_vi * (self.qtg - ql - qi)))
 
         # Construct arrays for integration points
         z = np.array(Gr.z[Gr.dims.gw - 1:-Gr.dims.gw + 1])

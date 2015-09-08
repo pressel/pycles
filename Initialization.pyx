@@ -763,6 +763,10 @@ def InitIsdac(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 def thetal_mpace(p_, t_, ql_):
     return t_*(p_tilde/p_)**(Rd/cpd)*np.exp(-(2.26e6*ql_)/(cpd*263.0))
 
+def thetal_isdac(p_, t_, ql_):
+    rl_ = ql_ / (1 - ql_)
+    return (p_tilde/p_)**(Rd/cpd)*(t_ - 2.26e6 * rl_ / cpd)
+
 def sat_adjst(p_, thetal_, qt_, Th):
 
     """
@@ -785,7 +789,8 @@ def sat_adjst(p_, thetal_, qt_, Th):
         return t_1, 0.0
     else:
         ql_1 = qt_ - qs_1
-        f_1 = thetal_ - thetal_mpace(p_,t_1,ql_1)
+        # f_1 = thetal_ - thetal_mpace(p_,t_1,ql_1)
+        f_1 = thetal_ - thetal_isdac(p_,t_1,ql_1)
         t_2 = t_1 + 2.26e6*ql_1/cpd
         pv_star_2 = Th.get_pv_star(t_2)
         qs_2 = qv_star_c(p_,qt_,pv_star_2)
@@ -795,7 +800,8 @@ def sat_adjst(p_, thetal_, qt_, Th):
             pv_star_2 = Th.get_pv_star(t_2)
             qs_2 = qv_star_c(p_,qt_,pv_star_2)
             ql_2 = qt_ - qs_2
-            f_2 = thetal_ - thetal_mpace(p_, t_2, ql_2)
+            # f_2 = thetal_ - thetal_mpace(p_, t_2, ql_2)
+            f_2 = thetal_ - thetal_isdac(p_, t_2, ql_2)
             t_n = t_2 - f_2 * (t_2 - t_1)/(f_2 - f_1)
             t_1 = t_2
             t_2 = t_n

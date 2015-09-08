@@ -553,7 +553,7 @@ cdef class ForcingIsdac:
                 if Gr.zl[k] < 825.0:
                     self.w_half[k] = -Gr.zl[k] * self.divergence
                 else:
-                    self.w_half[k] = 0.4125e-2
+                    self.w_half[k] = -0.4125e-2
 
         #Get profiles for nudging
         for k in xrange(Gr.dims.nlg[2]):
@@ -597,6 +597,16 @@ cdef class ForcingIsdac:
             if Gr.zl_half[k] > 825.0:
                 self.nudge_coeff_velocities[k] = 1/7200.0
 
+       #Initialize Statistical Output
+        NS.add_profile('s_subsidence_tendency', Gr, Pa)
+        NS.add_profile('qt_subsidence_tendency', Gr, Pa)
+        NS.add_profile('u_subsidence_tendency', Gr, Pa)
+        NS.add_profile('v_subsidence_tendency', Gr, Pa)
+        NS.add_profile('u_nudging_tendency', Gr, Pa)
+        NS.add_profile('v_nudging_tendency',Gr, Pa)
+        NS.add_profile('s_nudging_tendency',Gr, Pa)
+        NS.add_profile('qt_nudging_tendency',Gr, Pa)
+
         return
 
     @cython.boundscheck(False)
@@ -626,6 +636,63 @@ cdef class ForcingIsdac:
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
+
+
+        #Output subsidence tendencies
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[s_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[qt_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[u_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('u_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[v_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('v_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_entropy[0],&PV.values[s_shift],
+                      &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('s_nudging_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_qt[0],&PV.values[s_shift],
+                      &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('s_nudging_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_nudging(&Gr.dims,&self.nudge_coeff_velocities[0],&self.initial_u[0],&PV.values[s_shift],
+                      &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('u_nudging_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_nudging(&Gr.dims,&self.nudge_coeff_velocities[0],&self.initial_v[0],&PV.values[s_shift],
+                      &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('v_nudging_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         return
 
@@ -680,13 +747,14 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    phip = values[ijk]
-                    phim = values[ijk+1]
-                    fluxp = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
-                    phip = values[ijk-1]
-                    phim = values[ijk]
-                    fluxm = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
-                    tendencies[ijk] = tendencies[ijk] - (fluxp - fluxm)*dxi/rho0_half[k]
+                    tendencies[ijk] = tendencies[ijk] - subsidence[k]*(values[ijk+1]-values[ijk])*dxi
+                    # phip = values[ijk]
+                    # phim = values[ijk+1]
+                    # fluxp = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
+                    # phip = values[ijk-1]
+                    # phim = values[ijk]
+                    # fluxm = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
+                    # tendencies[ijk] = tendencies[ijk] - (fluxp - fluxm)*dxi/rho0_half[k]
     return
 
 cdef apply_nudging(Grid.DimStruct *dims, double *coefficient, double *mean, double *values, double *tendencies):
