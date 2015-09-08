@@ -40,6 +40,9 @@ cdef class ThermodynamicsSA:
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
+
+
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -70,6 +73,7 @@ cdef class ThermodynamicsSA:
         NS.add_ts('cloud_top', Gr, Pa)
         NS.add_ts('cloud_base', Gr, Pa)
         NS.add_ts('lwp', Gr, Pa)
+
 
         return
 
@@ -276,7 +280,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 1e-5:
+                    if ql_pencils[pi, k] > 0.0:
                         cf_profile[k] += 1.0 / mean_divisor
 
         cf_profile = Pa.domain_vector_sum(cf_profile, Gr.dims.n[2])
@@ -287,7 +291,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 1e-5:
+                    if ql_pencils[pi, k] > 0.0:
                         ci[pi] = 1.0
                         break
                     else:
@@ -305,7 +309,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 1e-5:
+                    if ql_pencils[pi, k] > 0.0:
                         cb = fmin(cb, Gr.z_half[gw + k])
                         ct = fmax(ct, Gr.z_half[gw + k])
 
