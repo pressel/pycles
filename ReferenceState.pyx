@@ -22,6 +22,9 @@ cdef class ReferenceState:
         self.p0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.alpha0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.alpha0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+        self.rho0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+        self.rho0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+
 
         return
 
