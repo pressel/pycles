@@ -51,9 +51,9 @@ cdef class ReferenceState:
 
         # Perform the integration
         p[Gr.dims.gw - 1:-Gr.dims.gw +
-            1] = odeint(rhs, p0, z, hmax=100.0)[:, 0]
+            1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
         p_half[
-            Gr.dims.gw:-Gr.dims.gw] = odeint(rhs, p0, z_half, hmax=100.0)[1:, 0]
+            Gr.dims.gw:-Gr.dims.gw] = odeint(rhs, p0, z_half, hmax=1.0)[1:, 0]
 
         # Set boundary conditions
         p[:Gr.dims.gw - 1] = p[2 * Gr.dims.gw - 2:Gr.dims.gw - 1:-1]
