@@ -55,6 +55,8 @@ cdef class Surface:
             self.scheme = SurfaceGabls(namelist,LH, Par)
         elif casename == 'DYCOMS_RF01':
             self.scheme = SurfaceDYCOMS_RF01(namelist, LH)
+        elif casename == 'Isdac':
+            self.scheme = SurfaceIsdac(namelist,LH)
         else:
             self.scheme= SurfaceNone()
 
@@ -483,6 +485,121 @@ cdef class SurfaceDYCOMS_RF01:
         NS.write_ts('vw_surface_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
         NS.write_ts('s_flux_surface_mean', tmp, Pa)
+
+        return
+
+cdef class SurfaceIsdac:
+    def __init__(self,namelist, LatentHeat LH):
+        # self.ft = 15.0
+        # self.fq = 115.0
+        self.gustiness = 0.0
+        # self.L_fp = LH.L_fp
+        # self.Lambda_fp = LH.Lambda_fp
+        self.z0 = 4.0e-4
+
+
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        # self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        # self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.ustar = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+
+        NS.add_ts('friction_velocity_mean', Gr, Pa)
+        NS.add_ts('uw_surface_mean',Gr, Pa)
+        NS.add_ts('vw_surface_mean',Gr, Pa)
+        # NS.add_ts('s_flux_surface_mean', Gr, Pa)
+
+        return
+
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+
+        if Pa.sub_z_rank != 0:
+            return
+
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
+            # Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+            # Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
+            # Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
+            # Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
+            Py_ssize_t th_shift = DV.get_varshift(Gr,'theta')
+
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.windspeed[0],Ref.u0, Ref.v0,self.gustiness)
+
+        cdef:
+            Py_ssize_t i,j, ijk, ij
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t istride_2d = Gr.dims.nlg[1]
+
+            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]/Gr.dims.dx[2]
+            double cm = 0.0
+            double ch = 0.0
+            # double sst = Ref.Tg
+            double theta_rho_b, Nb2, Ri
+            double zb = Gr.dims.dx[2] * 0.5
+            double theta_rho_g = theta_rho_c(Ref.Pg,Ref.Tg,0.0,0.0)
+            # double lam
+            # double lv
+            # double pv
+            # double pd
+            # double sv
+            # double sd
+
+            double [:] windspeed = self.windspeed
+
+        with nogil:
+            for i in xrange(gw-1,imax-gw+1):
+                for j in xrange(gw-1,jmax-gw+1):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+
+                    theta_rho_b = DV.values[th_shift + ijk]
+                    Nb2 = g/theta_rho_g*(theta_rho_b - theta_rho_g) / zb
+                    Ri = Nb2 * zb * zb / (windspeed[ij] * windspeed[ij])
+                    exchange_coefficients_byun(Ri,zb,self.z0, &cm, &ch)
+                    self.ustar[ij] = sqrt(cm) * windspeed[ij]
+                    # lam = self.Lambda_fp(DV.values[t_shift+ij])
+                    # lv = self.L_fp(lam,DV.values[t_shift+ij])
+                    # pv = pv_c(Ref.p0_half[gw],PV.values[ij + qt_shift],PV.values[ij + qt_shift] - DV.values[ij + ql_shift])
+                    # pd = pd_c(Ref.p0_half[gw],PV.values[ij + qt_shift],PV.values[ij + qt_shift] - DV.values[ij + ql_shift])
+                    # sv = sv_c(pv,DV.values[t_shift+ij])
+                    # sd = sd_c(pd,DV.values[t_shift+ij])
+                    # self.qt_flux[ij] = self.fq / lv
+                    # self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ij] + self.qt_flux[ij]*(sv - sd))
+            for i in xrange(gw,imax-gw):
+                for j in xrange(gw,jmax-gw):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    PV.tendencies[u_shift  + ijk] = PV.tendencies[u_shift  + ijk] + self.u_flux[ij] * tendency_factor
+                    PV.tendencies[v_shift  + ijk] = PV.tendencies[v_shift  + ijk] + self.v_flux[ij] * tendency_factor
+                    # PV.tendencies[s_shift  + ijk] = PV.tendencies[s_shift  + ijk] + self.s_flux[ij] * tendency_factor
+                    # PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux[ij]* tendency_factor
+
+        return
+
+
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef double tmp
+
+        tmp = Pa.HorizontalMeanSurface(Gr, &self.ustar[0])
+        NS.write_ts('friction_velocity_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
+        NS.write_ts('uw_surface_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
+        NS.write_ts('vw_surface_mean', tmp, Pa)
+        # tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
+        # NS.write_ts('s_flux_surface_mean', tmp, Pa)
 
         return
 
