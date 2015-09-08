@@ -40,6 +40,9 @@ cdef class ThermodynamicsSA:
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
+
+
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -70,6 +73,7 @@ cdef class ThermodynamicsSA:
         NS.add_ts('cloud_top', Gr, Pa)
         NS.add_ts('cloud_base', Gr, Pa)
         NS.add_ts('lwp', Gr, Pa)
+
 
         return
 
