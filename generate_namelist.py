@@ -95,6 +95,7 @@ def SullivanPatton():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'SullivanPatton'
@@ -163,6 +164,7 @@ def SaturatedBubble():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 100.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
     namelist['meta']['casename'] = 'SaturatedBubble'
@@ -231,6 +233,7 @@ def StableBubble():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 100.0
+    namelist['fields_io']['diagnostic_fields'] = ['temperature','buoyancy_frequency']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'StableBubble'
@@ -263,7 +266,7 @@ def Bomex():
     namelist['time_stepping']['cfl_limit'] = 0.7
     namelist['time_stepping']['dt_initial'] = 10.0
     namelist['time_stepping']['dt_max'] = 10.0
-    namelist['time_stepping']['t_max'] = 7200.0
+    namelist['time_stepping']['t_max'] = 21600.0
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
@@ -299,6 +302,7 @@ def Bomex():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Bomex'
@@ -367,6 +371,7 @@ def Gabls():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Gabls'
@@ -434,6 +439,7 @@ def DYCOMS_RF01():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'DYCOMS_RF01'

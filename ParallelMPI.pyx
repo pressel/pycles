@@ -105,6 +105,64 @@ cdef class ParallelMPI:
 
         return
 
+    cdef double domain_scalar_sum(self, double local_value):
+        '''
+        Compute the sum over all mpi ranks of a single scalar of type double.
+        :param local_value: the value to be summed over the ranks
+        :return: sum of local values on all processes
+        '''
+
+        cdef:
+            double global_sum
+
+        mpi.MPI_Allreduce(&local_value, &global_sum,1,mpi.MPI_DOUBLE,mpi.MPI_SUM,self.comm_world)
+
+        return global_sum
+
+
+
+    cdef double domain_scalar_max(self, double local_value):
+        '''
+        Compute the maximum over all mpi ranks of a single scalar of type double.
+        :param local_value: the value to be maxed over the ranks
+        :return: maximum of local values on all processes
+        '''
+
+        cdef:
+            double global_max
+
+        mpi.MPI_Allreduce(&local_value, &global_max,1,mpi.MPI_DOUBLE,mpi.MPI_MAX,self.comm_world)
+
+        return global_max
+
+    cdef double domain_scalar_min(self, double local_value):
+        '''
+        Compute the minimum over all mpi ranks of a single scalar of type double.
+        :param local_value: the value to be min-ed over the ranks
+        :return: sum of local values on all processes
+        '''
+
+        cdef:
+            double  global_min
+
+        mpi.MPI_Allreduce(&local_value, &global_min,1,mpi.MPI_DOUBLE,mpi.MPI_MIN,self.comm_world)
+
+        return global_min
+
+    cdef double [:] domain_vector_sum(self, double [:] local_vector, Py_ssize_t n):
+        '''
+        Compute the sum over all mpi ranks of a vector of type double.
+        :param local_vector: the value to be summed over the ranks
+        :return: sum of local vectors on all processes
+        '''
+
+        cdef:
+            double [:] global_sum = np.empty((n,),dtype=np.double,order='c')
+
+        mpi.MPI_Allreduce(&local_vector[0], &global_sum[0],n,mpi.MPI_DOUBLE,mpi.MPI_SUM,self.comm_world)
+
+        return global_sum
+
     cdef double [:] HorizontalMean(self,Grid.Grid Gr,double *values):
 
         cdef:
@@ -141,9 +199,7 @@ cdef class ParallelMPI:
         for i in xrange(Gr.dims.nlg[2]):
             mean[i] = mean[i]*n_horizontal_i
 
-
         return mean
-
 
     cdef double [:] HorizontalMeanofSquares(self,Grid.Grid Gr,const double *values1,const double *values2):
 

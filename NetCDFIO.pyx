@@ -98,6 +98,23 @@ cdef class NetCDFIO_Stats:
 
         return
 
+    cpdef add_reference_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+        '''
+        Adds a profile to the reference group NetCDF Stats file.
+        :param var_name: name of variable
+        :param Gr: Grid class
+        :param Pa: ParallelMPI class
+        :return:
+        '''
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            reference_grp = root_grp.groups['reference']
+            new_var = reference_grp.createVariable(var_name, 'f8', ('z',))
+
+            root_grp.close()
+
+        return
+
     cpdef add_ts(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
@@ -113,7 +130,23 @@ cdef class NetCDFIO_Stats:
             profile_grp = root_grp.groups['profiles']
             var = profile_grp.variables[var_name]
             var[-1, :] = np.array(data)
+            root_grp.close()
+        return
 
+    cpdef write_reference_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa):
+        '''
+        Writes a profile to the reference group NetCDF Stats file. The variable must have already been
+        added to the NetCDF file using add_reference_profile
+        :param var_name: name of variables
+        :param data: data to be written to file
+        :param Pa: ParallelMPI class
+        :return:
+        '''
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            reference_grp = root_grp.groups['reference']
+            var = reference_grp.variables[var_name]
+            var[:] = np.array(data)
             root_grp.close()
         return
 
@@ -154,6 +187,8 @@ cdef class NetCDFIO_Fields:
         self.last_output_time = 0.0
         self.uuid = str(namelist['meta']['uuid'])
         self.frequency = namelist['fields_io']['frequency']
+
+        self.diagnostic_fields = namelist['fields_io']['diagnostic_fields']
 
         # Setup the statistics output path
         outpath = str(os.path.join(namelist['output'][
@@ -201,7 +236,6 @@ cdef class NetCDFIO_Fields:
                 self.output_path, str(
                     Pa.rank) + '.nc'))
         self.create_fields_file(Gr, Pa)
-        Pa.root_print('Now doing 3D IO')
         self.do_output = True
         return
 
@@ -277,7 +311,7 @@ cdef class NetCDFIO_Fields:
         return
 
 
-    cpdef dump_diagnostic_variables(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV):
+    cpdef dump_diagnostic_variables(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t i, j, k, ijk, ishift, jshift
@@ -292,20 +326,23 @@ cdef class NetCDFIO_Fields:
             Py_ssize_t var_shift
             double[:] data = np.empty((Gr.dims.npl,), dtype=np.double, order='c')
             Py_ssize_t count
-        for name in DV.name_index.keys():
-            self.add_field(name)
-            var_shift = DV.get_varshift(Gr, name)
-            count = 0
-            with nogil:
-                for i in range(imin, imax):
-                    ishift = i * istride
-                    for j in range(jmin, jmax):
-                        jshift = j * jstride
-                        for k in range(kmin, kmax):
-                            ijk = ishift + jshift + k
-                            data[count] = DV.values[var_shift + ijk]
-                            count += 1
-            self.write_field(name, data)
+        for name in self.diagnostic_fields:
+            try:
+                self.add_field(name)
+                var_shift = DV.get_varshift(Gr, str(name))
+                count = 0
+                with nogil:
+                    for i in range(imin, imax):
+                        ishift = i * istride
+                        for j in range(jmin, jmax):
+                            jshift = j * jstride
+                            for k in range(kmin, kmax):
+                                ijk = ishift + jshift + k
+                                data[count] = DV.values[var_shift + ijk]
+                                count += 1
+                self.write_field(str(name), data)
+            except:
+                Pa.root_print('Could not output DiagnosticVariable Field: ' + name )
         return
 
     cpdef add_field(self, name):
