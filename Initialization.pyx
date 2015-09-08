@@ -314,6 +314,7 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     qt_ = qt[k]+qt_pert[count]
                 else:
                     temp = (thetal[k]) * exner_c(RS.p0_half[k])
+                    qt_ = qt[k]
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)
                 PV.values[qt_varshift + ijk] = qt_ + qt_pert[count]
                 count += 1
