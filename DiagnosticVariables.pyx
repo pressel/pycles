@@ -157,6 +157,7 @@ cdef class DiagnosticVariables:
             #Compute and write mean of squres
             tmp = Pa.HorizontalMeanofSquares(Gr,&self.values[var_shift],&self.values[var_shift])
             NS.write_profile(var_name + '_mean2',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
             #Compute and write mean of cubes
             tmp = Pa.HorizontalMeanofCubes(Gr,&self.values[var_shift],&self.values[var_shift],&self.values[var_shift])
             NS.write_profile(var_name + '_mean3',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)

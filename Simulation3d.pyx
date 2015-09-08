@@ -74,8 +74,9 @@ class Simulation3d:
         self.TS.initialize(namelist,self.PV,self.Pa)
 
         SetInitialConditions = InitializationFactory(namelist)
-        SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th)
+        SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa)
         self.Sur.initialize(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
+
         self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr,self.StatsIO,self.Pa)
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
