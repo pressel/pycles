@@ -120,4 +120,7 @@ cdef class ReferenceState:
         NS.add_reference_profile('qi0', Gr, Pa)
         NS.write_reference_profile('qi0', qi_half[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+
+        print np.array(ql_half)
+
         return
