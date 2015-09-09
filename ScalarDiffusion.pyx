@@ -35,6 +35,11 @@ cdef class ScalarDiffusion:
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.flux = np.zeros((PV.nv_scalars*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')
+
+        #Initialize output fields
+        for name in PV.name_index:
+            NS.add_profile(name + '_sgs_flux_z',Gr,Pa)
+
         return
 
     cpdef update(self, Grid.Grid Gr,  ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
@@ -92,5 +97,17 @@ cdef class ScalarDiffusion:
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t d
+            Py_ssize_t i
+            double[:] tmp
+
+        d = 3
+        for name in PV.index_name:
+            i = PV.name_index[name]
+            flux_shift = i * Gr.dims.npg + d * Gr.dims.npg
+            tmp = Pa.HorizontalMean(Gr, &self.flux[flux_shift])
+            NS.write_profile(name + '_sgs_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
