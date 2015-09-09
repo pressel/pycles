@@ -11,7 +11,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 from scipy.integrate import odeint
 include 'parameters.pxi'
-
+from thermodynamic_functions cimport alpha_c
 cdef extern from "thermodynamic_functions.h":
     inline double qt_from_pv(double p0, double pv)
 
@@ -41,7 +41,8 @@ cdef class ReferenceState:
         self.sg = Thermodynamics.entropy(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
 
         # Form a right hand side for integrating the hydrostatic equation to
-        # determine the reference pressure
+        # determine the reference pressure. Note that here we are integrating the log pressure so that we remove
+        # so that p does not appear explicitly on the RHS.
         def rhs(p, z):
             T, ql, qi = Thermodynamics.eos(np.exp(p), self.sg, self.qtg)
             return -g / (Rd * T * (1.0 - self.qtg + eps_vi * (self.qtg - ql - qi)))
@@ -94,6 +95,19 @@ cdef class ReferenceState:
             temperature_half[k], ql_half[k], qi_half[k] = Thermodynamics.eos(p_half_[k], self.sg, self.qtg)
             qv_half[k] = self.qtg - (ql_half[k] + qi_half[k])
             alpha_half[k] = Thermodynamics.alpha(p_half_[k], temperature_half[k], self.qtg, qv_half[k])
+
+        #Now do a sanity check to make sure that the Reference State entropy profile is uniform following
+        #saturation adjustment
+        cdef double s
+        for k in xrange(Gr.dims.ng[2]):
+            s = Thermodynamics.entropy(p_half[k],temperature_half[k],self.qtg,ql_half[k],qi_half[k])
+            if np.abs(s - self.sg)/self.sg > 0.01:
+                Pa.root_print('Error in reference profiles entropy not constant !')
+                Pa.root_print('Likely error in saturation adjustment')
+                Pa.root_print('Kill Simulation Now!')
+                Pa.kill()
+
+
 
         # print(np.array(Gr.extract_local_ghosted(alpha_half,2)))
         self.alpha0_half = Gr.extract_local_ghosted(alpha_half, 2)
