@@ -39,6 +39,8 @@ cdef class ScalarDiffusion:
         #Initialize output fields
         for name in PV.name_index:
             NS.add_profile(name + '_sgs_flux_z',Gr,Pa)
+        NS.add_profile('sgs_qt_s_source',Gr,Pa)
+
 
         return
 
@@ -101,13 +103,42 @@ cdef class ScalarDiffusion:
         cdef:
             Py_ssize_t d
             Py_ssize_t i
+            double[:] data = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] tmp
 
+            Py_ssize_t s_shift
+            Py_ssize_t qt_shift
+            Py_ssize_t t_shift
+            Py_ssize_t qv_shift
+
+        if 'qt' in PV.name_index:
+            s_shift = PV.get_varshift(Gr,'s')
+            qt_shift = PV.get_varshift(Gr,'qt')
+            t_shift = DV.get_varshift(Gr,'temperature')
+            qv_shift = DV.get_varshift(Gr,'qv')
+
+        #Output vertical component of SGS scalar fluxes
         d = 3
-        for name in PV.index_name:
-            i = PV.name_index[name]
+        for i in xrange(PV.nv):
             flux_shift = i * Gr.dims.npg + d * Gr.dims.npg
             tmp = Pa.HorizontalMean(Gr, &self.flux[flux_shift])
-            NS.write_profile(name + '_sgs_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            NS.write_profile(PV.index_name[i] + '_sgs_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        #Ouput entropy source term from qt diffusion
+        if 'qt' in PV.name_index:
+            i = PV.name_index['qt']
+            for d in xrange(Gr.dims.dims):
+                flux_shift = i * Gr.dims.npg + d * Gr.dims.npg
+
+                compute_qt_diffusion_s_source(&Gr.dims, &RS.p0_half[0], &RS.alpha0[0],&RS.alpha0_half[0],
+                                              &self.flux[flux_shift],&PV.values[qt_shift], &DV.values[qv_shift],
+                                              &DV.values[t_shift],&data[0],self.Lambda_fp,
+                                              self.L_fp,Gr.dims.dx[d],d)
+
+                tmp = Pa.HorizontalMean(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        else:
+                tmp = Pa.HorizontalMean(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
