@@ -94,7 +94,7 @@ void compute_qt_diffusion_s_source(const struct DimStruct *dims, double *p0_half
                 double L = L_fp(lam,T[ijk]);
                 double sw = sv - (((qt[ijk] - qv[ijk])/qt[ijk])*L/T[ijk]);
 
-                tendency[ijk] += (sw - sd) * alpha0_half[k] * (flux[ijk] - flux[ijk + stencil[d]])*dxi;
+                tendency[ijk] -= (sw - sd) * alpha0_half[k] * (flux[ijk + stencil[d]] - flux[ijk])*dxi;
             }  // End k loop
         } // End j loop
     } // End i loop
