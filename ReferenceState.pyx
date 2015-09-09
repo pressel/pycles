@@ -86,6 +86,8 @@ cdef class ReferenceState:
         cdef double[:] qi_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         cdef double[:] qv_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
 
+
+        # Compute reference state thermodynamic profiles
         for k in xrange(Gr.dims.ng[2]):
             temperature[k], ql[k], qi[k] = Thermodynamics.eos(p_[k], self.sg, self.qtg)
             qv[k] = self.qtg - (ql[k] + qi[k])
@@ -94,6 +96,18 @@ cdef class ReferenceState:
             temperature_half[k], ql_half[k], qi_half[k] = Thermodynamics.eos(p_half_[k], self.sg, self.qtg)
             qv_half[k] = self.qtg - (ql_half[k] + qi_half[k])
             alpha_half[k] = Thermodynamics.alpha(p_half_[k], temperature_half[k], self.qtg, qv_half[k])
+
+        # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
+        # saturation adjustment
+        cdef double s
+        for k in xrange(Gr.dims.ng[2]):
+            s = Thermodynamics.entropy(p_half[k],temperature_half[k],self.qtg,ql_half[k],qi_half[k])
+            if np.abs(s - self.sg)/self.sg > 0.01:
+                Pa.root_print('Error in reference profiles entropy not constant !')
+                Pa.root_print('Likely error in saturation adjustment')
+                Pa.root_print('Kill Simulation Now!')
+                Pa.kill()
+
 
         # print(np.array(Gr.extract_local_ghosted(alpha_half,2)))
         self.alpha0_half = Gr.extract_local_ghosted(alpha_half, 2)
