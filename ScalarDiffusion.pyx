@@ -157,7 +157,6 @@ cdef class ScalarDiffusion:
 
                     tmp = Pa.HorizontalMaximum(Gr, &data[0])
             NS.write_profile('sgs_qt_s_source', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-            print np.amax(tmp)
         else:
                 tmp = Pa.HorizontalMean(Gr, &data[0])
                 NS.write_profile('sgs_qt_s_source', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
