@@ -310,13 +310,14 @@ cdef class SurfaceGabls:
 
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
-        # self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        self.b_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
 
 
         NS.add_ts('uw_surface_mean',Gr, Pa)
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        NS.add_ts('b_flux_surface_mean', Gr, Pa)
 
 
         return
@@ -353,7 +354,8 @@ cdef class SurfaceGabls:
             double cm=0.0
             double ch=0.0
 
-            double sst = 265.0 - 0.25 * TS.t/3600.0
+            double sst = 265.0 - 0.25 * TS.t/3600.0 # sst = theta_surface also
+
 
             # double pv_star = self.CC.LT.fast_lookup(sst)
             # double qv_star = eps_v*pv_star/((eps_v-1)*pv_star-Ref.Pg)
@@ -381,6 +383,7 @@ cdef class SurfaceGabls:
                     exchange_coefficients_byun(Ri,zb,self.z0, &cm, &ch, &DV.values_2d[lmo_shift + ij])
                     # self.qt_flux[ij] = -ch * self.windspeed[ij] * (PV.values[qt_shift+ijk] - qv_star)
                     self.s_flux[ij] = -ch * windspeed[ij] * (PV.values[s_shift+ijk] - s_star)
+                    self.b_flux[ij] = -ch * windspeed[ij] * (DV.values[th_shift+ijk] - sst)*9.81/263.5
                     DV.values_2d[ustar_shift + ij] = sqrt(cm) * windspeed[ij]
             for i in xrange(gw,imax-gw):
                 for j in xrange(gw,jmax-gw):
@@ -405,6 +408,8 @@ cdef class SurfaceGabls:
         NS.write_ts('vw_surface_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
         NS.write_ts('s_flux_surface_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.b_flux[0])
+        NS.write_ts('b_flux_surface_mean', tmp, Pa)
 
 
         return

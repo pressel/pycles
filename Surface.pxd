@@ -65,7 +65,7 @@ cdef class SurfaceGabls:
         ClausiusClapeyron CC
         double [:] u_flux
         double [:] v_flux
-        # double [:] qt_flux
+        double [:] b_flux
         double [:] s_flux
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
