@@ -11,7 +11,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 from scipy.integrate import odeint
 include 'parameters.pxi'
-from thermodynamic_functions cimport alpha_c
+
 cdef extern from "thermodynamic_functions.h":
     inline double qt_from_pv(double p0, double pv)
 
@@ -41,8 +41,7 @@ cdef class ReferenceState:
         self.sg = Thermodynamics.entropy(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
 
         # Form a right hand side for integrating the hydrostatic equation to
-        # determine the reference pressure. Note that here we are integrating the log pressure so that we remove
-        # so that p does not appear explicitly on the RHS.
+        # determine the reference pressure
         def rhs(p, z):
             T, ql, qi = Thermodynamics.eos(np.exp(p), self.sg, self.qtg)
             return -g / (Rd * T * (1.0 - self.qtg + eps_vi * (self.qtg - ql - qi)))
