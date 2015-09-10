@@ -36,7 +36,8 @@ cdef extern from "surface.h":
     inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0, double z1) nogil
     inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0_b, double T_b, double qt_b, double qv_b) nogil
     void compute_windspeed(Grid.DimStruct *dims, double* u, double*  v, double*  speed, double u0, double v0, double gustiness ) nogil
-    void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch) nogil
+    void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch, double* lmo) nogil
+
 
 
 cdef extern from "entropies.h":
@@ -59,8 +60,11 @@ cdef class Surface:
             self.scheme = SurfaceIsdac(namelist,LH)
         else:
             self.scheme= SurfaceNone()
+        return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        DV.add_variables_2d('obukhov_length', 'm')
+        DV.add_variables_2d('friction_velocity', 'm/s')
         self.scheme.initialize(Gr, Ref, NS, Pa)
         return
 
@@ -69,7 +73,6 @@ cdef class Surface:
         return
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.scheme.stats_io(Gr, NS, Pa)
-
         return
 
 
@@ -97,15 +100,16 @@ cdef class SurfaceSullivanPatton:
 
         T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
         self.buoyancy_flux = self.theta_flux * exner(Ref.p0[Gr.dims.gw-1]) * g /T0
-        self.ustar = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
 
-        NS.add_ts('friction_velocity_mean', Gr, Pa)
+
+
         NS.add_ts('uw_surface_mean',Gr, Pa)
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
+
 
         return
 
@@ -151,18 +155,23 @@ cdef class SurfaceSullivanPatton:
 
         compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0],Ref.u0, Ref.v0,self.gustiness)
 
+        cdef :
+            Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
+            Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
+
         # Get the shear stresses
         with nogil:
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
-                    self.ustar[ij] = compute_ustar_c(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    DV.values_2d[ustar_shift + ij] = compute_ustar_c(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    DV.values_2d[lmo_shift + ij] = -DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]/self.buoyancy_flux/vkb
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    self.u_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
                     PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij] * tendency_factor
 
@@ -171,8 +180,6 @@ cdef class SurfaceSullivanPatton:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef double tmp
 
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.ustar[0])
-        NS.write_ts('friction_velocity_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
         NS.write_ts('uw_surface_mean',tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
@@ -188,10 +195,18 @@ cdef class SurfaceBomex:
     def __init__(self):
         self.theta_flux = 8.0e-3 # K m/s
         self.qt_flux = 5.2e-5 # m/s
-        self.ustar = 0.28 #m/s
+        self.ustar_ = 0.28 #m/s
+        self.theta_surface = 299.1 #K
+        self.qt_surface = 22.45e-3 # kg/kg
+        self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux + self.qt_surface *self.theta_flux))
+                              /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))
+
 
         pass
 
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
 
@@ -200,9 +215,11 @@ cdef class SurfaceBomex:
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
 
 
+
         NS.add_ts('uw_surface_mean',Gr, Pa)
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
+
 
         return
 
@@ -211,7 +228,13 @@ cdef class SurfaceBomex:
         if Pa.sub_z_rank != 0:
             return
 
-        cdef:
+
+        cdef :
+            Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
+            Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
+
+
+
             Py_ssize_t i
             Py_ssize_t j
             Py_ssize_t gw = Gr.dims.gw
@@ -228,13 +251,15 @@ cdef class SurfaceBomex:
             double dzi = 1.0/Gr.dims.dx[2]
             double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
+
         # Get the scalar flux
         with nogil:
             for i in xrange(imax):
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-
+                    DV.values_2d[ustar_shift + ij] = self.ustar_
+                    DV.values_2d[lmo_shift + ij] = -self.ustar_*self.ustar_*self.ustar_/self.buoyancy_flux/vkb
                     self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
                     PV.tendencies[s_shift + ijk] = PV.tendencies[s_shift + ijk] + self.s_flux[ij] * tendency_factor
                     PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux * tendency_factor
@@ -252,8 +277,8 @@ cdef class SurfaceBomex:
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -self.ustar**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -self.ustar**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    self.u_flux[ij] = -self.ustar_**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -self.ustar_**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
                     PV.tendencies[u_shift + ijk] = PV.tendencies[u_shift + ijk] + self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift + ijk] = PV.tendencies[v_shift + ijk] + self.v_flux[ij] * tendency_factor
 
@@ -284,16 +309,17 @@ cdef class SurfaceGabls:
         return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.ustar = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         # self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
 
-        NS.add_ts('friction_velocity_mean', Gr, Pa)
+
         NS.add_ts('uw_surface_mean',Gr, Pa)
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
+
 
         return
 
@@ -340,6 +366,11 @@ cdef class SurfaceGabls:
             double s_star = sd_c(Ref.Pg,sst)
             double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]/Gr.dims.dx[2]
 
+
+        cdef :
+            Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
+            Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
+
         with nogil:
             for i in xrange(gw-1,imax-gw+1):
                 for j in xrange(gw-1,jmax-gw+1):
@@ -349,16 +380,16 @@ cdef class SurfaceGabls:
                     theta_rho_b=DV.values[th_shift + ijk]
                     Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
                     Ri = Nb2 * zb* zb/(windspeed[ij] * windspeed[ij])
-                    exchange_coefficients_byun(Ri,zb,self.z0, &cm, &ch)
+                    exchange_coefficients_byun(Ri,zb,self.z0, &cm, &ch, &DV.values_2d[lmo_shift + ij])
                     # self.qt_flux[ij] = -ch * self.windspeed[ij] * (PV.values[qt_shift+ijk] - qv_star)
                     self.s_flux[ij] = -ch * windspeed[ij] * (PV.values[s_shift+ijk] - s_star)
-                    self.ustar[ij] = sqrt(cm) * windspeed[ij]
+                    DV.values_2d[ustar_shift + ij] = sqrt(cm) * windspeed[ij]
             for i in xrange(gw,imax-gw):
                 for j in xrange(gw,jmax-gw):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    self.u_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
                     PV.tendencies[u_shift  + ijk] = PV.tendencies[u_shift  + ijk] + self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift  + ijk] = PV.tendencies[v_shift  + ijk] + self.v_flux[ij] * tendency_factor
                     PV.tendencies[s_shift  + ijk] = PV.tendencies[s_shift  + ijk] + self.s_flux[ij] * tendency_factor
@@ -369,8 +400,7 @@ cdef class SurfaceGabls:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef double tmp
 
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.ustar[0])
-        NS.write_ts('friction_velocity_mean', tmp, Pa)
+
         tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
         NS.write_ts('uw_surface_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])

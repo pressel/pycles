@@ -72,6 +72,7 @@ def SullivanPatton():
     namelist['sgs']['scheme'] = 'Smagorinsky'
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
@@ -144,6 +145,7 @@ def SaturatedBubble():
     namelist['sgs']['UniformViscosity']['diffusivity'] = 0.0
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
@@ -213,6 +215,7 @@ def StableBubble():
     namelist['sgs']['UniformViscosity']['diffusivity'] = 75.0
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
@@ -279,6 +282,7 @@ def Bomex():
     namelist['sgs']['scheme'] = 'Smagorinsky'
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
@@ -333,8 +337,8 @@ def Gabls():
     namelist['time_stepping'] = {}
     namelist['time_stepping']['ts_type'] = 3
     namelist['time_stepping']['cfl_limit'] = 0.7
-    namelist['time_stepping']['dt_initial'] = 10.0
-    namelist['time_stepping']['dt_max'] = 30.0
+    namelist['time_stepping']['dt_initial'] =1.0
+    namelist['time_stepping']['dt_max'] = 2.0
     namelist['time_stepping']['t_max'] = 43200.0
 
     namelist['thermodynamics'] = {}
@@ -348,6 +352,7 @@ def Gabls():
     namelist['sgs']['scheme'] = 'Smagorinsky'
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
@@ -359,7 +364,7 @@ def Gabls():
     namelist['damping']['scheme'] = 'Rayleigh'
     namelist['damping']['Rayleigh'] = {}
     namelist['damping']['Rayleigh']['gamma_r'] = 0.02
-    namelist['damping']['Rayleigh']['z_d'] = 300.0
+    namelist['damping']['Rayleigh']['z_d'] = 100.0
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -416,6 +421,7 @@ def DYCOMS_RF01():
     namelist['sgs']['scheme'] = 'Smagorinsky'
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7

@@ -25,10 +25,18 @@ cdef class ReferenceState:
         self.rho0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.rho0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
 
-
         return
 
     def initialize(self, Grid.Grid Gr, Thermodynamics, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        '''
+        Initilize the reference profiles. The function is typically called from the case specific initialization
+        fucntion defined in Initialization.pyx
+        :param Gr: Grid class
+        :param Thermodynamics: Thermodynamics class
+        :param NS: StatsIO class
+        :param Pa:  ParallelMPI class
+        :return:
+        '''
 
         self.sg = Thermodynamics.entropy(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
 
@@ -50,10 +58,8 @@ cdef class ReferenceState:
         p_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
 
         # Perform the integration
-        p[Gr.dims.gw - 1:-Gr.dims.gw +
-            1] = odeint(rhs, p0, z, hmax=100.0)[:, 0]
-        p_half[
-            Gr.dims.gw:-Gr.dims.gw] = odeint(rhs, p0, z_half, hmax=100.0)[1:, 0]
+        p[Gr.dims.gw - 1:-Gr.dims.gw +1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
+        p_half[Gr.dims.gw:-Gr.dims.gw] = odeint(rhs, p0, z_half, hmax=1.0)[1:, 0]
 
         # Set boundary conditions
         p[:Gr.dims.gw - 1] = p[2 * Gr.dims.gw - 2:Gr.dims.gw - 1:-1]
@@ -80,18 +86,28 @@ cdef class ReferenceState:
         cdef double[:] qi_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         cdef double[:] qv_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
 
-        for k in xrange(Gr.dims.ng[2]):
-            temperature[k], ql[k], qi[k] = Thermodynamics.eos(
-                p_[k], self.sg, self.qtg)
-            qv[k] = self.qtg - (ql[k] + qi[k])
-            alpha[k] = Thermodynamics.alpha(
-                p_[k], temperature[k], self.qtg, qv[k])
 
-            temperature_half[k], ql_half[k], qi_half[
-                k] = Thermodynamics.eos(p_half_[k], self.sg, self.qtg)
+        # Compute reference state thermodynamic profiles
+        for k in xrange(Gr.dims.ng[2]):
+            temperature[k], ql[k], qi[k] = Thermodynamics.eos(p_[k], self.sg, self.qtg)
+            qv[k] = self.qtg - (ql[k] + qi[k])
+            alpha[k] = Thermodynamics.alpha(p_[k], temperature[k], self.qtg, qv[k])
+
+            temperature_half[k], ql_half[k], qi_half[k] = Thermodynamics.eos(p_half_[k], self.sg, self.qtg)
             qv_half[k] = self.qtg - (ql_half[k] + qi_half[k])
-            alpha_half[k] = Thermodynamics.alpha(
-                p_half_[k], temperature_half[k], self.qtg, qv_half[k])
+            alpha_half[k] = Thermodynamics.alpha(p_half_[k], temperature_half[k], self.qtg, qv_half[k])
+
+        # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
+        # saturation adjustment
+        cdef double s
+        for k in xrange(Gr.dims.ng[2]):
+            s = Thermodynamics.entropy(p_half[k],temperature_half[k],self.qtg,ql_half[k],qi_half[k])
+            if np.abs(s - self.sg)/self.sg > 0.01:
+                Pa.root_print('Error in reference profiles entropy not constant !')
+                Pa.root_print('Likely error in saturation adjustment')
+                Pa.root_print('Kill Simulation Now!')
+                Pa.kill()
+
 
         # print(np.array(Gr.extract_local_ghosted(alpha_half,2)))
         self.alpha0_half = Gr.extract_local_ghosted(alpha_half, 2)
@@ -103,24 +119,18 @@ cdef class ReferenceState:
 
         # Write reference profiles to StatsIO
         NS.add_reference_profile('alpha0', Gr, Pa)
-        NS.write_reference_profile(
-            'alpha0', alpha_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_reference_profile('alpha0', alpha_half[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.add_reference_profile('p0', Gr, Pa)
         NS.write_reference_profile('p0', p_half[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.add_reference_profile('rho0', Gr, Pa)
-        NS.write_reference_profile(
-            'rho0', 1.0 / np.array(alpha_half[Gr.dims.gw:-Gr.dims.gw]), Pa)
+        NS.write_reference_profile('rho0', 1.0 / np.array(alpha_half[Gr.dims.gw:-Gr.dims.gw]), Pa)
         NS.add_reference_profile('temperature0', Gr, Pa)
-        NS.write_reference_profile(
-            'temperature0', temperature_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_reference_profile('temperature0', temperature_half[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.add_reference_profile('ql0', Gr, Pa)
         NS.write_reference_profile('ql0', ql_half[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.add_reference_profile('qv0', Gr, Pa)
         NS.write_reference_profile('qv0', qv_half[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.add_reference_profile('qi0', Gr, Pa)
         NS.write_reference_profile('qi0', qi_half[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-
-        print np.array(ql_half)
 
         return

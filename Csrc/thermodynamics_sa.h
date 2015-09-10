@@ -15,9 +15,11 @@ inline double temperature_no_ql(double pd, double pv, double s, double qt){
 }
 
 void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
-                    const double p0, const double s, const double qt, double* T, double* qv, double* qc){
-    *qc = 0.0;
+                    const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
+//    *qc = 0.0;
     *qv = qt;
+    *ql = 0.0;
+    *qi = 0.0;
     double pd_1 = pd_c(p0,qt,qt);
     double pv_1 = pv_c(p0,qt,qt );
     double T_1 = temperature_no_ql(pd_1,pv_1,s,qt);
@@ -57,7 +59,9 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         } while(delta_T >= 1.0e-3);
         *T  = T_2;
         *qv = qv_star_2;
-        *qc = (qt - qv_star_2);
+        *ql = lam_2 * (qt - qv_star_2);
+        *qi = (1.0 - lam_2) * (qt - qv_star_2);
+//        *qc = (qt - qv_star_2);
         return;
     }
 }
@@ -82,12 +86,7 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
             const size_t jshift = j * jstride;
                 for (k=kmin;k<kmax;k++){
                     const size_t ijk = ishift + jshift + k;
-                    double qc;
-                    ///printf("%f\n",s[ijk]);
-                    eos_c(LT, lam_fp, L_fp, p0[k], s[ijk],qt[ijk],&T[ijk],&qv[ijk],&qc);
-                    const double lam = lam_fp(T[ijk]);
-                    ql[ijk] = lam * qc;
-                    qi[ijk] = (1.0 - lam) * qc;
+                    eos_c(LT, lam_fp, L_fp, p0[k], s[ijk],qt[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk],qt[ijk],qv[ijk]);
                 } // End k loop
             } // End j loop
@@ -124,7 +123,7 @@ void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double*
             const size_t jshift = j * jstride;
             for (k=kmin+1;k<kmax-2;k++){
                 const size_t ijk = ishift + jshift + k;
-                wt[ijk] = wt[ijk] + interp_4(buoyancy[ijk-1],buoyancy[ijk],buoyancy[ijk+1],buoyancy[ijk+2]);
+                wt[ijk] = wt[ijk] + interp_2(buoyancy[ijk],buoyancy[ijk+1]);
             } // End k loop
         } // End j loop
     } // End i loop

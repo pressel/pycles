@@ -35,6 +35,7 @@ cdef class ParallelMPI:
         double [:] HorizontalMinimum(self, Grid.Grid Gr, double* values)
         double HorizontalMeanSurface(self, Grid.Grid Gr, double* values)
 
+
     cpdef root_print(self, txt_output)
 
 cdef class Pencil:

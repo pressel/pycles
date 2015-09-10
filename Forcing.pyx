@@ -103,10 +103,10 @@ cdef class ForcingBomex:
                     self.dqtdt[k] = -1.2e-8 + (Gr.zl_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
 
                 #Set large scale subsidence
-                if Gr.zl[k] <= 1500.0:
-                    self.subsidence[k] = 0.0 + Gr.zl[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
-                if Gr.zl[k] > 1500.0 and Gr.zl[k] <= 2100.0:
-                    self.subsidence[k] = -0.65/100 + (Gr.zl[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
+                if Gr.zl_half[k] <= 1500.0:
+                    self.subsidence[k] = 0.0 + Gr.zl_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
+                if Gr.zl_half[k] > 1500.0 and Gr.zl_half[k] <= 2100.0:
+                    self.subsidence[k] = -0.65/100 + (Gr.zl_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
 
 
         #Initialize Statistical Output
@@ -188,7 +188,7 @@ cdef class ForcingBomex:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
             double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
 
 
@@ -259,8 +259,8 @@ cdef class ForcingSullivanPatton:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
-            double [:] mean_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
+            double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
 
         #Only need to output coriolis_forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
@@ -740,6 +740,7 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                     # phim = values[ijk]
                     # fluxm = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
                     # tendencies[ijk] = tendencies[ijk] - (fluxp - fluxm)*dxi/rho0_half[k]
+
     return
 
 cdef apply_nudging(Grid.DimStruct *dims, double *coefficient, double *mean, double *values, double *tendencies):

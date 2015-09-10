@@ -13,14 +13,14 @@ cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
-from thermodynamic_functions cimport thetas_c
+from thermodynamic_functions cimport thetas_c, theta_c, thetali_c
 import cython
 from NetCDFIO cimport NetCDFIO_Stats, NetCDFIO_Fields
 from libc.math cimport fmax, fmin
 
 cdef extern from "thermodynamics_sa.h":
     inline double alpha_c(double p0, double T, double qt, double qv) nogil
-    void eos_c(Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double * T, double * qv, double * qc) nogil
+    void eos_c(Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double * T, double * qv, double * ql, double * qi) nogil
     void eos_update(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double * p0, double * s, double * qt, double * T,
                     double * qv, double * ql, double * qi, double * alpha)
     void buoyancy_update_sa(Grid.DimStruct * dims, double * alpha0, double * alpha, double * buoyancy, double * wt)
@@ -40,6 +40,9 @@ cdef class ThermodynamicsSA:
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
+
+
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -63,13 +66,31 @@ cdef class ThermodynamicsSA:
         NS.add_profile('thetas_mean3', Gr, Pa)
         NS.add_profile('thetas_max', Gr, Pa)
         NS.add_profile('thetas_min', Gr, Pa)
-        NS.add_profile('cloud_fraction', Gr, Pa)
         NS.add_ts('thetas_max', Gr, Pa)
         NS.add_ts('thetas_min', Gr, Pa)
+
+        NS.add_profile('theta_mean', Gr, Pa)
+        NS.add_profile('theta_mean2', Gr, Pa)
+        NS.add_profile('theta_mean3', Gr, Pa)
+        NS.add_profile('theta_max', Gr, Pa)
+        NS.add_profile('theta_min', Gr, Pa)
+        NS.add_ts('theta_max', Gr, Pa)
+        NS.add_ts('theta_min', Gr, Pa)
+
+        NS.add_profile('thetal_mean', Gr, Pa)
+        NS.add_profile('thetal_mean2', Gr, Pa)
+        NS.add_profile('thetal_mean3', Gr, Pa)
+        NS.add_profile('thetal_max', Gr, Pa)
+        NS.add_profile('thetal_min', Gr, Pa)
+        NS.add_ts('thetal_max', Gr, Pa)
+        NS.add_ts('thetal_min', Gr, Pa)
+
+        NS.add_profile('cloud_fraction', Gr, Pa)
         NS.add_ts('cloud_fraction', Gr, Pa)
         NS.add_ts('cloud_top', Gr, Pa)
         NS.add_ts('cloud_base', Gr, Pa)
         NS.add_ts('lwp', Gr, Pa)
+
 
         return
 
@@ -110,10 +131,7 @@ cdef class ThermodynamicsSA:
     cpdef eos(self, double p0, double s, double qt):
         cdef:
             double T, qv, qc, ql, qi, lam
-        eos_c( & self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, & T, & qv, & qc)
-        lam = self.Lambda_fp(T)
-        ql = qc * lam
-        qi = qc * (1.0 - lam)
+        eos_c( & self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, & T, & qv, & ql, & qi)
         return T, ql, qi
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
@@ -238,6 +256,92 @@ cdef class ThermodynamicsSA:
         NS.write_profile('thetas_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('thetas_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
+
+        #Output profiles of theta (dry potential temperature)
+        cdef:
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        data[count] = theta_c(RS.p0_half[k], DV.values[t_shift + ijk])
+                        count += 1
+
+        # Compute and write mean
+        tmp = Pa.HorizontalMean(Gr, & data[0])
+        NS.write_profile('theta_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write mean of squres
+        tmp = Pa.HorizontalMeanofSquares(Gr, & data[0], & data[0])
+        NS.write_profile('theta_mean2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write mean of cubes
+        tmp = Pa.HorizontalMeanofCubes(Gr, & data[0], & data[0], & data[0])
+        NS.write_profile('theta_mean3', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write maxes
+        tmp = Pa.HorizontalMaximum(Gr, & data[0])
+        NS.write_profile('theta_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('theta_max', np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+        # Compute and write mins
+        tmp = Pa.HorizontalMinimum(Gr, & data[0])
+        NS.write_profile('theta_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('theta_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+        #Output profiles of thetali  (liquid-ice potential temperature)
+        cdef:
+            double lam
+            double L
+            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
+            Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
+
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+
+                        #Get phase partitioning function and latent heat
+                        lam = self.Lambda_fp(DV.values[t_shift + ijk])
+                        L = self.L_fp(lam,DV.values[t_shift + ijk])
+
+                        #compute liquid-ice potential temperature
+                        data[count] = thetali_c(RS.p0_half[k], DV.values[t_shift + ijk], PV.values[qt_shift + ijk],
+                                                DV.values[ql_shift], DV.values[qi_shift], L)
+                        count += 1
+
+        # Compute and write mean
+        tmp = Pa.HorizontalMean(Gr, & data[0])
+        NS.write_profile('thetal_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write mean of squres
+        tmp = Pa.HorizontalMeanofSquares(Gr, & data[0], & data[0])
+        NS.write_profile('thetal_mean2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write mean of cubes
+        tmp = Pa.HorizontalMeanofCubes(Gr, & data[0], & data[0], & data[0])
+        NS.write_profile('thetal_mean3', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write maxes
+        tmp = Pa.HorizontalMaximum(Gr, & data[0])
+        NS.write_profile('thetal_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('thetal_max', np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+        # Compute and write mins
+        tmp = Pa.HorizontalMinimum(Gr, & data[0])
+        NS.write_profile('thetal_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('thetal_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+
         # Compute additional stats
         self.liquid_stats(Gr, RS, PV, DV, NS, Pa)
 
@@ -276,7 +380,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 1e-5:
+                    if ql_pencils[pi, k] > 0.0:
                         cf_profile[k] += 1.0 / mean_divisor
 
         cf_profile = Pa.domain_vector_sum(cf_profile, Gr.dims.n[2])
@@ -287,7 +391,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 1e-5:
+                    if ql_pencils[pi, k] > 0.0:
                         ci[pi] = 1.0
                         break
                     else:
@@ -305,7 +409,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 1e-5:
+                    if ql_pencils[pi, k] > 0.0:
                         cb = fmin(cb, Gr.z_half[gw + k])
                         ct = fmax(ct, Gr.z_half[gw + k])
 
