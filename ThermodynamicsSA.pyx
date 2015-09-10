@@ -77,6 +77,14 @@ cdef class ThermodynamicsSA:
         NS.add_ts('theta_max', Gr, Pa)
         NS.add_ts('theta_min', Gr, Pa)
 
+        NS.add_profile('thetal_mean', Gr, Pa)
+        NS.add_profile('thetal_mean2', Gr, Pa)
+        NS.add_profile('thetal_mean3', Gr, Pa)
+        NS.add_profile('thetal_max', Gr, Pa)
+        NS.add_profile('thetal_min', Gr, Pa)
+        NS.add_ts('thetal_max', Gr, Pa)
+        NS.add_ts('thetal_min', Gr, Pa)
+
         NS.add_profile('cloud_fraction', Gr, Pa)
         NS.add_ts('cloud_fraction', Gr, Pa)
         NS.add_ts('cloud_top', Gr, Pa)
@@ -310,6 +318,29 @@ cdef class ThermodynamicsSA:
                         data[count] = thetali_c(DV.values[t_shift + ijk],RS.p0_half[k], PV.values[qt_shift + ijk],
                                                 DV.values[ql_shift],DV.values[qi_shift],L)
                         count += 1
+
+        # Compute and write mean
+        tmp = Pa.HorizontalMean(Gr, & data[0])
+        NS.write_profile('thetal_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write mean of squres
+        tmp = Pa.HorizontalMeanofSquares(Gr, & data[0], & data[0])
+        NS.write_profile('thetal_mean2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write mean of cubes
+        tmp = Pa.HorizontalMeanofCubes(Gr, & data[0], & data[0], & data[0])
+        NS.write_profile('thetal_mean3', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write maxes
+        tmp = Pa.HorizontalMaximum(Gr, & data[0])
+        NS.write_profile('thetal_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('thetal_max', np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+        # Compute and write mins
+        tmp = Pa.HorizontalMinimum(Gr, & data[0])
+        NS.write_profile('thetal_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('thetal_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
 
         # Compute additional stats
         self.liquid_stats(Gr, RS, PV, DV, NS, Pa)
