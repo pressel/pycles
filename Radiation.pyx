@@ -185,6 +185,9 @@ cdef class RadiationIsdac:
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.z_pencil.initialize(Gr, Pa, 2)
+
+        self.heating_rate = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+        NS.add_profile('radiative_heating_rate',Gr, Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -212,7 +215,7 @@ cdef class RadiationIsdac:
             double [:, :] qt_pencils =  self.z_pencil.forward_double(& Gr.dims, Pa, & PV.values[qt_shift])
             double[:, :] f_rad = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
             double[:, :] f_heat = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
-            double[:] heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] heating_rate = self.heating_rate[:]
             double q_0
             double q_1
 
@@ -267,4 +270,9 @@ cdef class RadiationIsdac:
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                    PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef double [:] tmp
+
+        tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
+        NS.write_profile('radiative_heating_rate',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
         return
