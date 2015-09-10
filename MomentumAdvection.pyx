@@ -81,9 +81,6 @@ cdef class MomentumAdvection:
                                           & PV.tendencies[shift_advected], i_advected, i_advecting)
         return
 
-    @cython.boundscheck(False)  # Turn off numpy array index bounds checking
-    @cython.wraparound(False)  # Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef double[:, :, :] get_flux(self, Py_ssize_t i_advected, Py_ssize_t i_advecting, Grid.Grid Gr):
         cdef:
             Py_ssize_t shift_flux = i_advected * Gr.dims.dims * Gr.dims.npg + i_advecting * Gr.dims.npg
