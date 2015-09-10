@@ -34,6 +34,16 @@ cdef class ScalarDiffusion:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        '''
+        Initialization method for the scalar diffusion class. Initializes the flux array to zero and adds output profiles
+        to the Statistics output profile.
+        :param Gr: Grid class
+        :param PV: PrognosticVariables class
+        :param DV: DiagnosticVariables class
+        :param NS: NetCDFIO_Stats class
+        :param Pa: ParallelMPI class
+        :return:
+        '''
         self.flux = np.zeros((PV.nv_scalars*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')
 
         #Initialize output fields
@@ -47,6 +57,15 @@ cdef class ScalarDiffusion:
 
     cpdef update(self, Grid.Grid Gr,  ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV):
+        '''
+        Update method for scalar diffusion class, based on a second order finite difference scheme. The method should
+        only be called following a call to update method for the SGS class.
+        :param Gr: Grid class
+        :param RS: ReferenceState class
+        :param PV: PrognosticVariables class
+        :param DV: DiagnosticVariables class
+        :return:
+        '''
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
