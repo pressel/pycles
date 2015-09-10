@@ -59,7 +59,7 @@ cdef class Forcing:
 cdef class ForcingNone:
     def __init__(self):
         pass
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -75,7 +75,7 @@ cdef class ForcingBomex:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
