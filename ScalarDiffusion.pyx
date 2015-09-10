@@ -50,8 +50,10 @@ cdef class ScalarDiffusion:
         for i in xrange(PV.nv):
             if PV.var_type[i] == 1:
                 NS.add_profile(PV.index_name[i] + '_sgs_flux_z',Gr,Pa)
-        NS.add_profile('sgs_qt_s_source',Gr,Pa)
 
+        NS.add_profile('sgs_qt_s_source_mean',Gr,Pa)
+        NS.add_profile('sgs_qt_s_source_min',Gr,Pa)
+        NS.add_profile('sgs_qt_s_source_max',Gr,Pa)
 
         return
 
@@ -174,11 +176,19 @@ cdef class ScalarDiffusion:
                                                   &DV.values[t_shift],&data[0],self.Lambda_fp,
                                                   self.L_fp,Gr.dims.dx[d],d)
 
-                    tmp = Pa.HorizontalMaximum(Gr, &data[0])
-            NS.write_profile('sgs_qt_s_source', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        else:
-                tmp = Pa.HorizontalMean(Gr, &data[0])
-                NS.write_profile('sgs_qt_s_source', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMean(Gr, &data[0])
+            NS.write_profile('sgs_qt_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMaximum(Gr, &data[0])
+            NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMinimum(Gr, &data[0])
+            NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+        else:
+            tmp = Pa.HorizontalMean(Gr, &data[0])
+            NS.write_profile('sgs_qt_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMaximum(Gr, &data[0])
+            NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMinimum(Gr, &data[0])
+            NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
