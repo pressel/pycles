@@ -26,10 +26,17 @@ cdef extern from "scalar_diffusion.h":
                                        double (*L_fp)(double, double), double dx, Py_ssize_t d )
 
 cdef class ScalarDiffusion:
-    def __init__(self, LatentHeat LH, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+    def __init__(self, namelist, LatentHeat LH, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
         DV.add_variables('diffusivity','--','sym',Pa)
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
+
+        try:
+            self.qt_entropy_source = namelist['diffusion']['qt_entropy_source']
+        except:
+            self.qt_entropy_source = False
+            Pa.root_print('By default not including entropy source resulting from diffusion of qt!')
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
@@ -51,9 +58,10 @@ cdef class ScalarDiffusion:
             if PV.var_type[i] == 1:
                 NS.add_profile(PV.index_name[i] + '_sgs_flux_z',Gr,Pa)
 
-        NS.add_profile('sgs_qt_s_source_mean',Gr,Pa)
-        NS.add_profile('sgs_qt_s_source_min',Gr,Pa)
-        NS.add_profile('sgs_qt_s_source_max',Gr,Pa)
+        if self.qt_entropy_source:
+            NS.add_profile('sgs_qt_s_source_mean',Gr,Pa)
+            NS.add_profile('sgs_qt_s_source_min',Gr,Pa)
+            NS.add_profile('sgs_qt_s_source_max',Gr,Pa)
 
         return
 
@@ -111,7 +119,7 @@ cdef class ScalarDiffusion:
                     scalar_flux_divergence(&Gr.dims,&RS.alpha0[0],&RS.alpha0_half[0],
                                            &self.flux[flux_shift],&PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
 
-                    if i == n_qt:
+                    if i == n_qt and self.qt_entropy_source:
                         compute_qt_diffusion_s_source(&Gr.dims, &RS.p0_half[0], &RS.alpha0[0],&RS.alpha0_half[0],
                                                       &self.flux[flux_shift],&PV.values[qt_shift], &DV.values[qv_shift],
                                                       &DV.values[t_shift],&PV.tendencies[s_shift],self.Lambda_fp,
@@ -160,38 +168,39 @@ cdef class ScalarDiffusion:
                 NS.write_profile(PV.index_name[i] + '_sgs_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
                 scalar_count += 1
 
-        #Ouput entropy source term from qt diffusion
-        scalar_count = 0
-        if 'qt' in PV.name_index:
-            for i in xrange(PV.nv):
-                if PV.var_type[i] == 1:
-                    if PV.index_name[i] == 'qt':
-                        break
-                    scalar_count += 1
+        if self.qt_entropy_source:
+            #Ouput entropy source term from qt diffusion
+            scalar_count = 0
+            if 'qt' in PV.name_index:
+                for i in xrange(PV.nv):
+                    if PV.var_type[i] == 1:
+                        if PV.index_name[i] == 'qt':
+                            break
+                        scalar_count += 1
 
-            for d in xrange(Gr.dims.dims):
-                flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
+                for d in xrange(Gr.dims.dims):
+                    flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
 
-                compute_qt_diffusion_s_source(&Gr.dims, &RS.p0_half[0], &RS.alpha0[0],&RS.alpha0_half[0],
-                                              &self.flux[flux_shift],&PV.values[qt_shift], &DV.values[qv_shift],
-                                              &DV.values[t_shift],&data[0],self.Lambda_fp,
-                                                  self.L_fp,Gr.dims.dx[d],d)
+                    compute_qt_diffusion_s_source(&Gr.dims, &RS.p0_half[0], &RS.alpha0[0],&RS.alpha0_half[0],
+                                                  &self.flux[flux_shift],&PV.values[qt_shift], &DV.values[qv_shift],
+                                                  &DV.values[t_shift],&data[0],self.Lambda_fp,
+                                                      self.L_fp,Gr.dims.dx[d],d)
 
-            tmp = Pa.HorizontalMean(Gr, &data[0])
-            NS.write_profile('sgs_qt_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-            tmp = Pa.HorizontalMaximum(Gr, &data[0])
-            NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-            tmp = Pa.HorizontalMinimum(Gr, &data[0])
-            NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                tmp = Pa.HorizontalMean(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                tmp = Pa.HorizontalMaximum(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                tmp = Pa.HorizontalMinimum(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
 
-        else:
-            tmp = Pa.HorizontalMean(Gr, &data[0])
-            NS.write_profile('sgs_qt_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-            tmp = Pa.HorizontalMaximum(Gr, &data[0])
-            NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-            tmp = Pa.HorizontalMinimum(Gr, &data[0])
-            NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            else:
+                tmp = Pa.HorizontalMean(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                tmp = Pa.HorizontalMaximum(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                tmp = Pa.HorizontalMinimum(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return

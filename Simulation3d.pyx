@@ -40,7 +40,7 @@ class Simulation3d:
         self.SA = ScalarAdvection.ScalarAdvection(namelist, self.Pa)
         self.MA = MomentumAdvection.MomentumAdvection(namelist, self.Pa)
         self.SGS = SGS.SGS(namelist)
-        self.SD = ScalarDiffusion.ScalarDiffusion(self.LH, self.DV, self.Pa)
+        self.SD = ScalarDiffusion.ScalarDiffusion(namelist, self.LH, self.DV, self.Pa)
         self.MD = MomentumDiffusion.MomentumDiffusion(self.DV, self.Pa)
         self.Th = ThermodynamicsFactory(namelist, self.Micro, self.LH, self.Pa)
         self.Ref = ReferenceState.ReferenceState(self.Gr)
