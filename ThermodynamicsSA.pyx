@@ -269,7 +269,7 @@ cdef class ThermodynamicsSA:
                     jshift = j * jstride
                     for k in range(kmin, kmax):
                         ijk = ishift + jshift + k
-                        data[count] = theta_c(DV.values[t_shift + ijk],RS.p0_half[k])
+                        data[count] = theta_c(RS.p0_half[k], DV.values[t_shift + ijk])
                         count += 1
 
         # Compute and write mean
@@ -315,8 +315,8 @@ cdef class ThermodynamicsSA:
                         L = self.L_fp(lam,DV.values[t_shift + ijk])
 
                         #compute liquid-ice potential temperature
-                        data[count] = thetali_c(DV.values[t_shift + ijk],RS.p0_half[k], PV.values[qt_shift + ijk],
-                                                DV.values[ql_shift],DV.values[qi_shift],L)
+                        data[count] = thetali_c(RS.p0_half[k], DV.values[t_shift + ijk], PV.values[qt_shift + ijk],
+                                                DV.values[ql_shift], DV.values[qi_shift], L)
                         count += 1
 
         # Compute and write mean
