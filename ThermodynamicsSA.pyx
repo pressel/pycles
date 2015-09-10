@@ -13,7 +13,7 @@ cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
-from thermodynamic_functions cimport thetas_c
+from thermodynamic_functions cimport thetas_c, theta_c
 import cython
 from NetCDFIO cimport NetCDFIO_Stats, NetCDFIO_Fields
 from libc.math cimport fmax, fmin
@@ -66,9 +66,18 @@ cdef class ThermodynamicsSA:
         NS.add_profile('thetas_mean3', Gr, Pa)
         NS.add_profile('thetas_max', Gr, Pa)
         NS.add_profile('thetas_min', Gr, Pa)
-        NS.add_profile('cloud_fraction', Gr, Pa)
         NS.add_ts('thetas_max', Gr, Pa)
         NS.add_ts('thetas_min', Gr, Pa)
+
+        NS.add_profile('theta_mean', Gr, Pa)
+        NS.add_profile('theta_mean2', Gr, Pa)
+        NS.add_profile('theta_mean3', Gr, Pa)
+        NS.add_profile('theta_max', Gr, Pa)
+        NS.add_profile('theta_min', Gr, Pa)
+        NS.add_ts('theta_max', Gr, Pa)
+        NS.add_ts('theta_min', Gr, Pa)
+
+        NS.add_profile('cloud_fraction', Gr, Pa)
         NS.add_ts('cloud_fraction', Gr, Pa)
         NS.add_ts('cloud_top', Gr, Pa)
         NS.add_ts('cloud_base', Gr, Pa)
@@ -238,6 +247,46 @@ cdef class ThermodynamicsSA:
         tmp = Pa.HorizontalMinimum(Gr, & data[0])
         NS.write_profile('thetas_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('thetas_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+
+        #Output profiles of theta
+        cdef:
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        data[count] = theta_c(DV.values[t_shift + ijk],RS.p0_half[k])
+                        count += 1
+
+        # Compute and write mean
+        tmp = Pa.HorizontalMean(Gr, & data[0])
+        NS.write_profile('theta_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write mean of squres
+        tmp = Pa.HorizontalMeanofSquares(Gr, & data[0], & data[0])
+        NS.write_profile('theta_mean2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write mean of cubes
+        tmp = Pa.HorizontalMeanofCubes(Gr, & data[0], & data[0], & data[0])
+        NS.write_profile('theta_mean3', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write maxes
+        tmp = Pa.HorizontalMaximum(Gr, & data[0])
+        NS.write_profile('theta_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('theta_max', np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+        # Compute and write mins
+        tmp = Pa.HorizontalMinimum(Gr, & data[0])
+        NS.write_profile('theta_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('theta_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+
 
         # Compute additional stats
         self.liquid_stats(Gr, RS, PV, DV, NS, Pa)

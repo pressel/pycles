@@ -192,9 +192,6 @@ cdef class ScalarDiffusion:
                 NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
                 tmp = Pa.HorizontalMinimum(Gr, &data[0])
                 NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-
-
             else:
                 tmp = Pa.HorizontalMean(Gr, &data[0])
                 NS.write_profile('sgs_qt_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
