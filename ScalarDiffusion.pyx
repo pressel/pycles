@@ -26,19 +26,56 @@ cdef extern from "scalar_diffusion.h":
                                        double (*L_fp)(double, double), double dx, Py_ssize_t d )
 
 cdef class ScalarDiffusion:
-    def __init__(self, LatentHeat LH, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+    def __init__(self, namelist, LatentHeat LH, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
         DV.add_variables('diffusivity','--','sym',Pa)
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
+
+        try:
+            self.qt_entropy_source = namelist['diffusion']['qt_entropy_source']
+        except:
+            self.qt_entropy_source = False
+            Pa.root_print('By default not including entropy source resulting from diffusion of qt!')
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        '''
+        Initialization method for the scalar diffusion class. Initializes the flux array to zero and adds output profiles
+        to the Statistics output profile.
+        :param Gr: Grid class
+        :param PV: PrognosticVariables class
+        :param DV: DiagnosticVariables class
+        :param NS: NetCDFIO_Stats class
+        :param Pa: ParallelMPI class
+        :return:
+        '''
         self.flux = np.zeros((PV.nv_scalars*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')
+
+        #Initialize output fields
+        for i in xrange(PV.nv):
+            if PV.var_type[i] == 1:
+                NS.add_profile(PV.index_name[i] + '_sgs_flux_z',Gr,Pa)
+
+        if self.qt_entropy_source:
+            NS.add_profile('sgs_qt_s_source_mean',Gr,Pa)
+            NS.add_profile('sgs_qt_s_source_min',Gr,Pa)
+            NS.add_profile('sgs_qt_s_source_max',Gr,Pa)
+
         return
 
     cpdef update(self, Grid.Grid Gr,  ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV):
+        '''
+        Update method for scalar diffusion class, based on a second order finite difference scheme. The method should
+        only be called following a call to update method for the SGS class.
+        :param Gr: Grid class
+        :param RS: ReferenceState class
+        :param PV: PrognosticVariables class
+        :param DV: DiagnosticVariables class
+        :return:
+        '''
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -63,6 +100,7 @@ cdef class ScalarDiffusion:
 
 
         for i in xrange(PV.nv):
+            #Only compute fluxes for prognostic variables here
             if PV.var_type[i] == 1:
                 scalar_shift = i * Gr.dims.npg
                 if i == n_e:
@@ -81,7 +119,7 @@ cdef class ScalarDiffusion:
                     scalar_flux_divergence(&Gr.dims,&RS.alpha0[0],&RS.alpha0_half[0],
                                            &self.flux[flux_shift],&PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
 
-                    if i == n_qt:
+                    if i == n_qt and self.qt_entropy_source:
                         compute_qt_diffusion_s_source(&Gr.dims, &RS.p0_half[0], &RS.alpha0[0],&RS.alpha0_half[0],
                                                       &self.flux[flux_shift],&PV.values[qt_shift], &DV.values[qv_shift],
                                                       &DV.values[t_shift],&PV.tendencies[s_shift],self.Lambda_fp,
@@ -92,5 +130,77 @@ cdef class ScalarDiffusion:
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        '''
+        Statistical output for ScalarDiffusion class.
+        :param Gr: Grid class
+        :param RS: ReferenceState class
+        :param PV: PrognosticVariables class
+        :param DV: DiagnosticVariables class
+        :param NS: NetCDFIO_Stats class
+        :param Pa: ParallelMPI class
+        :return:
+        '''
+
+        cdef:
+            Py_ssize_t d
+            Py_ssize_t i
+            double[:] data = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] tmp
+
+            Py_ssize_t s_shift
+            Py_ssize_t qt_shift
+            Py_ssize_t t_shift
+            Py_ssize_t qv_shift
+            Py_ssize_t scalar_count = 0
+
+        if 'qt' in PV.name_index:
+            s_shift = PV.get_varshift(Gr,'s')
+            qt_shift = PV.get_varshift(Gr,'qt')
+            t_shift = DV.get_varshift(Gr,'temperature')
+            qv_shift = DV.get_varshift(Gr,'qv')
+
+        #Output vertical component of SGS scalar fluxes
+        d = 2
+        for i in xrange(PV.nv):
+            if PV.var_type[i] == 1:
+                flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
+                tmp = Pa.HorizontalMean(Gr, &self.flux[flux_shift])
+                NS.write_profile(PV.index_name[i] + '_sgs_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                scalar_count += 1
+
+        if self.qt_entropy_source:
+            #Ouput entropy source term from qt diffusion
+            scalar_count = 0
+            if 'qt' in PV.name_index:
+                for i in xrange(PV.nv):
+                    if PV.var_type[i] == 1:
+                        if PV.index_name[i] == 'qt':
+                            break
+                        scalar_count += 1
+
+                for d in xrange(Gr.dims.dims):
+                    flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
+
+                    compute_qt_diffusion_s_source(&Gr.dims, &RS.p0_half[0], &RS.alpha0[0],&RS.alpha0_half[0],
+                                                  &self.flux[flux_shift],&PV.values[qt_shift], &DV.values[qv_shift],
+                                                  &DV.values[t_shift],&data[0],self.Lambda_fp,
+                                                      self.L_fp,Gr.dims.dx[d],d)
+
+                tmp = Pa.HorizontalMean(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                tmp = Pa.HorizontalMaximum(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                tmp = Pa.HorizontalMinimum(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
+
+            else:
+                tmp = Pa.HorizontalMean(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                tmp = Pa.HorizontalMaximum(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                tmp = Pa.HorizontalMinimum(Gr, &data[0])
+                NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return

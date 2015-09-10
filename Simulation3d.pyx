@@ -40,7 +40,7 @@ class Simulation3d:
         self.SA = ScalarAdvection.ScalarAdvection(namelist, self.Pa)
         self.MA = MomentumAdvection.MomentumAdvection(namelist, self.Pa)
         self.SGS = SGS.SGS(namelist)
-        self.SD = ScalarDiffusion.ScalarDiffusion(self.LH, self.DV, self.Pa)
+        self.SD = ScalarDiffusion.ScalarDiffusion(namelist, self.LH, self.DV, self.Pa)
         self.MD = MomentumDiffusion.MomentumDiffusion(self.DV, self.Pa)
         self.Th = ThermodynamicsFactory(namelist, self.Micro, self.LH, self.Pa)
         self.Ref = ReferenceState.ReferenceState(self.Gr)
@@ -164,6 +164,7 @@ class Simulation3d:
                 self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
+                self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
 
                 self.Pa.root_print('Finished Doing StatsIO')
@@ -179,6 +180,7 @@ class Simulation3d:
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
+        self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
         self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
         return
 
