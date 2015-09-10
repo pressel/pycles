@@ -13,7 +13,7 @@ cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
-from thermodynamic_functions cimport thetas_c, theta_c
+from thermodynamic_functions cimport thetas_c, theta_c, thetali_c
 import cython
 from NetCDFIO cimport NetCDFIO_Stats, NetCDFIO_Fields
 from libc.math cimport fmax, fmin
@@ -249,7 +249,7 @@ cdef class ThermodynamicsSA:
         NS.write_ts('thetas_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
 
-        #Output profiles of theta
+        #Output profiles of theta (dry potential temperature)
         cdef:
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
 
@@ -286,7 +286,30 @@ cdef class ThermodynamicsSA:
         NS.write_profile('theta_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('theta_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
+        #Output profiles of thetali  (liquid-ice potential temperature)
+        cdef:
+            double lam
+            double L
+            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
+            Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
 
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+
+                        #Get phase partitioning function and latent heat
+                        lam = self.Lambda_fp(DV.values[t_shift + ijk])
+                        L = self.L_fp(lam,DV.values[t_shift + ijk])
+
+                        #compute liquid-ice potential temperature
+                        data[count] = thetali_c(DV.values[t_shift + ijk],RS.p0_half[k], PV.values[qt_shift + ijk],
+                                                DV.values[ql_shift],DV.values[qi_shift],L)
+                        count += 1
 
         # Compute additional stats
         self.liquid_stats(Gr, RS, PV, DV, NS, Pa)
