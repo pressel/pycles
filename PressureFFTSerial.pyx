@@ -1,5 +1,5 @@
 #!python
-#cython: boundscheck=False
+#cython: boundscheck=True
 #cython: wraparound=False
 #cython: initializedcheck=False
 #cython: cdivision=True
