@@ -625,6 +625,7 @@ def Isdac():
     namelist["sgs"]['scheme'] = 'Smagorinsky'
 
     namelist["diffusion"] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
