@@ -164,16 +164,17 @@ cdef class ScalarDiffusion:
         scalar_count = 0
         if 'qt' in PV.name_index:
             for i in xrange(PV.nv):
-                if PV.index_name[i] == 'qt':
-                    break
-                scalar_count += 1
+                if PV.var_type[i] == 1:
+                    if PV.index_name[i] == 'qt':
+                        break
+                    scalar_count += 1
 
-                for d in xrange(Gr.dims.dims):
-                    flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
+            for d in xrange(Gr.dims.dims):
+                flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
 
-                    compute_qt_diffusion_s_source(&Gr.dims, &RS.p0_half[0], &RS.alpha0[0],&RS.alpha0_half[0],
-                                                  &self.flux[flux_shift],&PV.values[qt_shift], &DV.values[qv_shift],
-                                                  &DV.values[t_shift],&data[0],self.Lambda_fp,
+                compute_qt_diffusion_s_source(&Gr.dims, &RS.p0_half[0], &RS.alpha0[0],&RS.alpha0_half[0],
+                                              &self.flux[flux_shift],&PV.values[qt_shift], &DV.values[qv_shift],
+                                              &DV.values[t_shift],&data[0],self.Lambda_fp,
                                                   self.L_fp,Gr.dims.dx[d],d)
 
             tmp = Pa.HorizontalMean(Gr, &data[0])
@@ -182,6 +183,8 @@ cdef class ScalarDiffusion:
             NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
             tmp = Pa.HorizontalMinimum(Gr, &data[0])
             NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
 
         else:
             tmp = Pa.HorizontalMean(Gr, &data[0])
