@@ -1,5 +1,6 @@
 cdef extern from "thermodynamic_functions.h":
     inline double theta_c(const double p0, const double T) nogil
+    inline double thetali_c(const double p0, const double T, const double qt, const double ql, const double qi, const double L) nogil
     inline double exner_c(const double p0) nogil
     inline double pd_c(const double p0, const double qt, const double qv) nogil
     inline double pv_c(const double p0, const double qt, const double qv) nogil
