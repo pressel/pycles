@@ -68,6 +68,7 @@ def SullivanPatton():
     namelist['sgs']['scheme'] = 'Smagorinsky'
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
@@ -140,6 +141,7 @@ def SaturatedBubble():
     namelist['sgs']['UniformViscosity']['diffusivity'] = 0.0
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
@@ -209,6 +211,7 @@ def StableBubble():
     namelist['sgs']['UniformViscosity']['diffusivity'] = 75.0
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
@@ -275,6 +278,7 @@ def Bomex():
     namelist['sgs']['scheme'] = 'Smagorinsky'
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
@@ -344,6 +348,7 @@ def Gabls():
     namelist['sgs']['scheme'] = 'Smagorinsky'
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
@@ -412,6 +417,7 @@ def DYCOMS_RF01():
     namelist['sgs']['scheme'] = 'Smagorinsky'
 
     namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
     namelist['momentum_transport']['order'] = 7
