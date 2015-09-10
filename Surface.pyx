@@ -510,6 +510,7 @@ cdef class SurfaceIsdac:
         NS.add_ts('friction_velocity_mean', Gr, Pa)
         NS.add_ts('uw_surface_mean',Gr, Pa)
         NS.add_ts('vw_surface_mean',Gr, Pa)
+        NS.add_ts('surface_windspeed',Gr, Pa)
         # NS.add_ts('s_flux_surface_mean', Gr, Pa)
 
         return
@@ -541,8 +542,7 @@ cdef class SurfaceIsdac:
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
 
             double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]/Gr.dims.dx[2]
-            double cm = 0.0
-            double ch = 0.0
+            double cm, ch
             # double sst = Ref.Tg
             double theta_rho_b, Nb2, Ri
             double zb = Gr.dims.dx[2] * 0.5
@@ -598,6 +598,8 @@ cdef class SurfaceIsdac:
         NS.write_ts('uw_surface_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
         NS.write_ts('vw_surface_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.windspeed[0])
+        NS.write_ts('surface_windspeed', tmp, Pa)
         # tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
         # NS.write_ts('s_flux_surface_mean', tmp, Pa)
 
