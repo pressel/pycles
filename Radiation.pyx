@@ -43,7 +43,7 @@ cdef class Radiation:
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                    PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.scheme.stats_io(Gr, PV, DV, NS, Pa)
+        self.scheme.stats_io(Gr, Ref, PV, DV, NS, Pa)
         return
 
 
