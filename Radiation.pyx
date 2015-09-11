@@ -247,7 +247,7 @@ cdef class RadiationIsdac:
 
                 for k in xrange(Gr.dims.n[2]):
                     f_heat[pi, k] = - \
-                        (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k] / cpd
+                        (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
         self.z_pencil.reverse_double(& Gr.dims, Pa, f_heat, & heating_rate[0])
