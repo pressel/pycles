@@ -188,6 +188,9 @@ cdef class RadiationIsdac:
 
         self.heating_rate = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         NS.add_profile('radiative_heating_rate',Gr, Pa)
+
+        self.radiative_flux = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+        NS.add_profile('radiative_flux',Gr, Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -213,9 +216,10 @@ cdef class RadiationIsdac:
             Py_ssize_t gw = Gr.dims.gw
             double [:, :] ql_pencils =  self.z_pencil.forward_double(& Gr.dims, Pa, & DV.values[ql_shift])
             double [:, :] qt_pencils =  self.z_pencil.forward_double(& Gr.dims, Pa, & PV.values[qt_shift])
-            double[:, :] f_rad = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
-            double[:, :] f_heat = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
-            double[:] heating_rate = self.heating_rate[:]
+            double [:, :] f_rad = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
+            double [:, :] f_heat = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
+            double [:] heating_rate = self.heating_rate[:]
+            double [:] radiative_flux = self.radiative_flux[:]
             double q_0
             double q_1
 
@@ -251,6 +255,7 @@ cdef class RadiationIsdac:
 
         # Now transpose the flux pencils
         self.z_pencil.reverse_double(& Gr.dims, Pa, f_heat, & heating_rate[0])
+        self.z_pencil.reverse_double(& Gr.dims, Pa, f_rad[:,:-1], & radiative_flux[0])
 
 
 
@@ -274,5 +279,10 @@ cdef class RadiationIsdac:
 
         tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
         NS.write_profile('radiative_heating_rate',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp[:] = 0.0
+        tmp = Pa.HorizontalMean(Gr, &self.radiative_flux[0])
+        NS.write_profile('radiative_flux',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
 
         return

@@ -531,7 +531,7 @@ cdef class ForcingIsdac:
 
         cdef:
             Py_ssize_t k
-            double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+            double [:] thetal = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
             #double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
             double T, ql
 

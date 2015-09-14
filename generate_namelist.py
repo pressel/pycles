@@ -596,7 +596,7 @@ def Isdac():
     namelist['grid']['dims'] = 3
     namelist['grid']['nx'] = 64
     namelist['grid']['ny'] = 64
-    namelist['grid']['nz'] = 256
+    namelist['grid']['nz'] = 250
     namelist['grid']['gw'] = 7
     namelist['grid']['dx'] = 50.0
     namelist['grid']['dy'] = 50.0
@@ -609,8 +609,8 @@ def Isdac():
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['ts_type'] = 3
-    namelist['time_stepping']['cfl_limit'] = 0.7
-    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['cfl_limit'] = 0.5
+    namelist['time_stepping']['dt_initial'] = 1.0
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 3600.0 * 8.0
 
@@ -648,7 +648,7 @@ def Isdac():
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = "fields"
-    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['frequency'] = 36000.0
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}

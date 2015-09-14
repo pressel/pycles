@@ -48,6 +48,7 @@ cdef class RadiationIsdac:
         double f0
         double f1
         double [:] heating_rate
+        double [:] radiative_flux
         ParallelMPI.Pencil z_pencil
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
