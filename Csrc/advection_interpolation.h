@@ -24,17 +24,22 @@ double interp_10(double phim4, double phim3, double phim2, double phim1, double 
 };
 
 double interp_weno3(double phim1, double phi, double phip1){
-    const double a1 = (2.0/3.0) /(1e-10 + (phim1 - phi) * (phim1 - phi))/(1e-10 + (phim1 - phi) * (phim1 - phi));
-    const double a2 = (1.0/3.0) /(1e-10 + (phi - phip1) * (phi - phip1))/(1e-10 + (phi - phip1) * (phi - phip1));
+    const double p0 = (-1.0/2.0) * phim1 + (3.0/2.0) * phi;
+    const double p1 = (1.0/2.0) * phi + (1.0/2.0) * phip1;
 
-    const double w1 = a1/(a1 + a2);
-    const double w2 = a2/(a1 + a2);
+    const double beta1 = (phip1 - phi) * (phip1 - phi);
+    const double beta0 = (phi - phim1) * (phi - phim1);
 
-    const double alpha0 = 0.5 * w1;
-    const double alpha1 = 0.5 * w1 + 1.5 * w2;
-    const double alpha2 = -0.5 * w2;
+    const double alpha0 = (1.0/3.0) /(beta0 + 1e-10)/(beta0 + 1.0e-10);
+    const double alpha1 = (2.0/3.0)/(beta1 + 1e-10)/(beta1 + 1.0e-10);
 
-    return alpha0 * phim1 + alpha1 * phi + alpha2 * phip1;
+    const double alpha_sum = alpha0 + alpha1;
+
+    const double w0 = alpha0/alpha_sum;
+    const double w1 = alpha1/alpha_sum;
+
+
+    return w0 * p0 + w1 * p1;
 };
 
 double interp_weno5(double phim2, double phim1, double phi, double phip1, double phip2){
