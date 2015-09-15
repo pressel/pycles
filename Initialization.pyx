@@ -805,7 +805,7 @@ def thetal_mpace(p_, t_, ql_):
     return t_*(p_tilde/p_)**(Rd/cpd)*np.exp(-(2.26e6*ql_)/(cpd*263.0))
 
 def thetal_isdac(p_, t_, ql_, qt_):
-    rl_ = ql_ * (1 - qt_) / qt_
+    rl_ = ql_ / (1 - qt_)
     #return (p_tilde/p_)**(Rd/cpd)*(t_ - 2.26e6 * rl_ / cpd)
     return t_*(p_tilde/p_)**(Rd/cpd)*np.exp(-(rl_*2.26e6) / (t_*cpd))
 
