@@ -17,7 +17,7 @@ from libc.math cimport fabs, cos, fmin, fmax
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 include 'parameters.pxi'
-from Initialization import thetal_mpace, sat_adjst
+from Initialization import sat_adjst
 
 cdef class Forcing:
     def __init__(self, namelist):
