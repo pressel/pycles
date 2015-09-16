@@ -56,7 +56,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             T_2 = T_n;
             f_1 = f_2;
             delta_T  = fabs(T_2 - T_1);
-        } while(delta_T >= 1.0e-3);
+        } while(delta_T >= 1.0e-3 || qt - qv_star_2 < 0.0 );
         *T  = T_2;
         *qv = qv_star_2;
         *ql = lam_2 * (qt - qv_star_2);
