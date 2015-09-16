@@ -28,6 +28,9 @@ class CumulusStatistics:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
 
+        NS.add_profile('ql_flux_mean',Gr,Pa)
+        NS.add_profile('theta_rho_flux_mean',Gr,Pa)
+
     def stats_io(self, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -122,6 +125,10 @@ class CumulusStatistics:
         # NS.write_profile('thetas_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
         # tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[ths_shift],&DV.values[ths_shift],&coremask[0])
         # NS.write_profile('thetas2_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        cdef double [:] data = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
+
+
 
         return
 
