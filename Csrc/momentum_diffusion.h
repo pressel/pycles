@@ -1,7 +1,7 @@
 #pragma once
 #include "grid.h"
 
-void compute_diffusive_flux(const struct DimStruct *dims, double* restrict strain_rate,  double* restrict viscosity , double* restrict flux, double* restrict rho0, double* restrict rho0_half, size_t i1, size_t i2){
+void compute_diffusive_flux_m(const struct DimStruct *dims, double* restrict strain_rate,  double* restrict viscosity , double* restrict flux, double* restrict rho0, double* restrict rho0_half, size_t i1, size_t i2){
 
     const size_t istride = dims->nlg[1] * dims->nlg[2];
     const size_t jstride = dims->nlg[2];
