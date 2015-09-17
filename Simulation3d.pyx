@@ -2,7 +2,7 @@ import time
 from Initialization import InitializationFactory
 from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
-from Statistics import CumulusStatistics
+from AuxiliaryStatistics import AuxiliaryStatisticsFactory
 from libc.math cimport fmin
 from Thermodynamics cimport LatentHeat
 cimport ParallelMPI
@@ -64,7 +64,7 @@ class Simulation3d:
 
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist, self.Pa)
-        self.CS = CumulusStatistics(self.Gr, self.StatsIO, self.Pa)
+        self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.StatsIO, self.Pa)
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
         self.PV.initialize(self.Gr, self.StatsIO, self.Pa)
@@ -169,7 +169,7 @@ class Simulation3d:
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
                 self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
-                self.CS.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+                self.Aux.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
 
                 self.Pa.root_print('Finished Doing StatsIO')
         return
@@ -186,6 +186,6 @@ class Simulation3d:
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
         self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
-        self.CS.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Aux.stats_io(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         return
 
