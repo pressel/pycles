@@ -83,7 +83,7 @@ cdef class ScalarDiffusion:
             Py_ssize_t qt_shift
             Py_ssize_t t_shift
             Py_ssize_t qv_shift
-            Py_ssize_t n_qt
+            Py_ssize_t n_qt = -9999
             Py_ssize_t n_e
             Py_ssize_t d, i ,scalar_shift, scalar_count = 0, flux_shift
             Py_ssize_t diff_shift_n = DV.get_varshift(Gr,'diffusivity')
