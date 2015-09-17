@@ -187,7 +187,7 @@ _ext = Extension('Radiation', ['Radiation.pyx'], include_dirs=include_path,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-_ext = Extension('Statistics', ['Statistics.pyx'], include_dirs=include_path,
+_ext = Extension('AuxiliaryStatistics', ['AuxiliaryStatistics.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)

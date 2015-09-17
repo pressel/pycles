@@ -16,6 +16,30 @@ cimport numpy as np
 import numpy as np
 include "parameters.pxi"
 
+
+def AuxiliaryStatisticsFactory(namelist, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    try:
+        auxiliary_statistics = namelist['stats_io']['auxiliary']
+    except:
+        auxiliary_statistics = 'None'
+
+    if(auxiliary_statistics == 'Cumulus'):
+        return CumulusStatistics(Gr, NS, Pa)
+    elif(auxiliary_statistics == 'None'):
+        return AuxiliaryStatisticsNone()
+    else:
+        if Pa.rank == 0:
+            print('Auxiliary statistics class provided by namelist is not recognized.')
+        return AuxiliaryStatisticsNone()
+
+
+
+class AuxiliaryStatisticsNone:
+    def __init__(self):
+        return
+    def stats_io(self, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
 class CumulusStatistics:
     def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         conditions = ['cloud','core']
