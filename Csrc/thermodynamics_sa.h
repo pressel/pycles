@@ -40,13 +40,14 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         double T_2 = T_1 + sigma_1 * L_1 /((1.0 - qt)*cpd + qv_star_1 * cpv);
         double delta_T  = fabs(T_2 - T_1);
         double qv_star_2;
+        double sigma_2;
         double lam_2;
         do{
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
             double pd_2 = pd_c(p0,qt,qv_star_2);
             double pv_2 = pv_c(p0,qt,qv_star_2);
-            double sigma_2 = qt - qv_star_2;
+            sigma_2 = qt - qv_star_2;
             lam_2 = lam_fp(T_2);
             double L_2 = L_fp(lam_2,T_2);
             double s_2 = sd_c(pd_2,T_2) * (1.0 - qt) + sv_c(pv_2,T_2) * qt + sc_c(L_2,T_2)*sigma_2;
