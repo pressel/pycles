@@ -24,9 +24,8 @@ def main():
     parameters['T_tilde'] = 298.15
     parameters['p_tilde'] = 10.0**5
     parameters['pv_star_t'] = 611.7
-    parameters['sd_tilde'] = 6695.4
+    parameters['sd_tilde'] = 6864.8
     parameters['sv_tilde'] = 10513.6
-
     parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
 
     #############################
