@@ -10,8 +10,6 @@ cimport PrognosticVariables
 cimport ParallelMPI
 from NetCDFIO cimport NetCDFIO_Stats
 import cython
-from thermodynamic_functions import exner, theta_rho
-from libc.math cimport sqrt, log, fabs,atan, exp, fmax
 cimport numpy as np
 import numpy as np
 include "parameters.pxi"
