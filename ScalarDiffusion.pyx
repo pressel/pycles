@@ -83,7 +83,7 @@ cdef class ScalarDiffusion:
             Py_ssize_t qt_shift
             Py_ssize_t t_shift
             Py_ssize_t qv_shift
-            Py_ssize_t n_qt
+            Py_ssize_t n_qt = -9999
             Py_ssize_t n_e
             Py_ssize_t d, i ,scalar_shift, scalar_count = 0, flux_shift
             Py_ssize_t diff_shift_n = DV.get_varshift(Gr,'diffusivity')
@@ -192,9 +192,6 @@ cdef class ScalarDiffusion:
                 NS.write_profile('sgs_qt_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
                 tmp = Pa.HorizontalMinimum(Gr, &data[0])
                 NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-
-
             else:
                 tmp = Pa.HorizontalMean(Gr, &data[0])
                 NS.write_profile('sgs_qt_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
