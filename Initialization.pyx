@@ -807,7 +807,7 @@ def thetal_mpace(p_, t_, ql_):
 def thetal_isdac(p_, t_, ql_, qt_):
     rl_ = ql_ / (1 - qt_)
     #return (p_tilde/p_)**(Rd/cpd)*(t_ - 2.26e6 * rl_ / cpd)
-    return t_*(p_tilde/p_)**(Rd/cpd)*np.exp(-(rl_*2.26e6) / (t_*cpd))
+    return t_*(p_tilde/p_)**(Rd/cpd)*np.exp(-(rl_*2.501e6) / (t_*cpd))
 
 def sat_adjst(p_, thetal_, qt_, Th):
 
@@ -833,7 +833,7 @@ def sat_adjst(p_, thetal_, qt_, Th):
         ql_1 = qt_ - qs_1
         # f_1 = thetal_ - thetal_mpace(p_,t_1,ql_1)
         f_1 = thetal_ - thetal_isdac(p_,t_1,ql_1,qt_)
-        t_2 = t_1 + 2.26e6*ql_1/cpd
+        t_2 = t_1 + 2.501e6*ql_1/cpd
         pv_star_2 = Th.get_pv_star(t_2)
         qs_2 = qv_star_c(p_,qt_,pv_star_2)
         ql_2 = qt_ - qs_2
