@@ -343,7 +343,7 @@ cdef class ThermodynamicsSA:
 
                         #compute liquid-ice potential temperature
                         data[count] = thetali_c(RS.p0_half[k], DV.values[t_shift + ijk], PV.values[qt_shift + ijk],
-                                                DV.values[ql_shift], DV.values[qi_shift], L)
+                                                DV.values[ql_shift + ijk ], DV.values[qi_shift + ijk], L)
                         count += 1
 
         # Compute and write mean
