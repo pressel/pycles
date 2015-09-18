@@ -193,7 +193,7 @@ cdef class ThermodynamicsSA:
 
     cpdef get_lh(self, t):
         cdef double lam = self.Lambda_fp(t)
-        return self.L_fp(lam, t)
+        return self.L_fp(t, lam)
 
     cpdef write_fields(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                        PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Fields NF, ParallelMPI.ParallelMPI Pa):
@@ -339,7 +339,7 @@ cdef class ThermodynamicsSA:
 
                         #Get phase partitioning function and latent heat
                         lam = self.Lambda_fp(DV.values[t_shift + ijk])
-                        L = self.L_fp(lam,DV.values[t_shift + ijk])
+                        L = self.L_fp(DV.values[t_shift + ijk],lam)
 
                         #compute liquid-ice potential temperature
                         data[count] = thetali_c(RS.p0_half[k], DV.values[t_shift + ijk], PV.values[qt_shift + ijk],
