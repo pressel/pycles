@@ -91,6 +91,7 @@ def SullivanPatton():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = 'None'
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -161,6 +162,7 @@ def SaturatedBubble():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = 'None'
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -231,6 +233,7 @@ def StableBubble():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = 'None'
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -301,6 +304,7 @@ def Bomex():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = 'Cumulus'
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -371,6 +375,7 @@ def Gabls():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = 'None'
     namelist['stats_io']['frequency'] = 300.0
 
     namelist['fields_io'] = {}
@@ -440,6 +445,7 @@ def DYCOMS_RF01():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = 'None'
     namelist['stats_io']['frequency'] = 300.0
 
     namelist['fields_io'] = {}
@@ -509,6 +515,7 @@ def Mpace():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['auxiliary'] = 'None'
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -576,6 +583,7 @@ def Sheba():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['auxiliary'] = 'None'
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -644,6 +652,7 @@ def Isdac():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['auxiliary'] = 'None'
     namelist['stats_io']['frequency'] = 30.0
 
     namelist['fields_io'] = {}

@@ -5,7 +5,7 @@
 *.o
 *.c
 parameters.pxi
-/Csrc/parameters.h
+Csrc/parameters.h
 *.idea
 *.in
 build/

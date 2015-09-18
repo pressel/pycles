@@ -27,25 +27,52 @@ cdef extern from "thermodynamics_sa.h":
     void bvf_sa(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double * p0, double * T, double * qt, double * qv, double * theta_rho, double * bvf)
 
 cdef extern from "thermodynamic_functions.h":
+    # Dry air partial pressure
     inline double pd_c(double p0, double qt, double qv) nogil
+    # Water vapor partial pressure
     inline double pv_c(double p0, double qt, double qv) nogil
 
+
 cdef extern from "entropies.h":
+    # Specific entropy of dry air
     inline double sd_c(double pd, double T) nogil
+    # Specific entropy of water vapor
     inline double sv_c(double pv, double T) nogil
+    # Specific entropy of condensed water
     inline double sc_c(double L, double T) nogil
+
+
 cdef class ThermodynamicsSA:
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
+        '''
+        Init method saturation adjsutment thermodynamics.
+
+        :param namelist: dictionary
+        :param LH: LatentHeat class instance
+        :param Par: ParallelMPI class instance
+        :return:
+        '''
+
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 
-
-
         return
 
+
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        '''
+        Initialize ThermodynamicsSA class. Adds variables to PrognocitVariables and DiagnosticVariables classes. Add
+        output fields to NetCDFIO_Stats.
+
+        :param Gr: Grid class instance
+        :param PV: PrognosticVariables class instance
+        :param DV: DiagnsoticVariables class instance
+        :param NS: NetCDFIO_Stats class instance
+        :param Pa: ParallelMPI class instance
+        :return:
+        '''
 
         PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
         PV.add_variable('qt', 'kg/kg', "sym", "scalar", Pa)
@@ -131,7 +158,7 @@ cdef class ThermodynamicsSA:
     cpdef eos(self, double p0, double s, double qt):
         cdef:
             double T, qv, qc, ql, qi, lam
-        eos_c( & self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, & T, & qv, & ql, & qi)
+        eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
         return T, ql, qi
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
@@ -151,13 +178,13 @@ cdef class ThermodynamicsSA:
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
 
-        eos_update(& Gr.dims, & self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, & RS.p0_half[0],
-                    & PV.values[s_shift], & PV.values[qt_shift], & DV.values[t_shift], & DV.values[qv_shift], & DV.values[ql_shift],
-                    & DV.values[qi_shift], & DV.values[alpha_shift])
+        eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
+                    &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
+                    &DV.values[qi_shift], &DV.values[alpha_shift])
 
-        buoyancy_update_sa(& Gr.dims, & RS.alpha0_half[0], & DV.values[alpha_shift], & DV.values[buoyancy_shift], & PV.tendencies[w_shift])
+        buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
 
-        bvf_sa( & Gr.dims, & self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, & RS.p0_half[0], & DV.values[t_shift], & PV.values[qt_shift], & DV.values[qv_shift], & DV.values[thr_shift], & DV.values[bvf_shift])
+        bvf_sa( &Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[thr_shift], &DV.values[bvf_shift])
 
         return
 
@@ -235,24 +262,24 @@ cdef class ThermodynamicsSA:
                         count += 1
 
         # Compute and write mean
-        tmp = Pa.HorizontalMean(Gr, & data[0])
+        tmp = Pa.HorizontalMean(Gr, &data[0])
         NS.write_profile('thetas_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Compute and write mean of squres
-        tmp = Pa.HorizontalMeanofSquares(Gr, & data[0], & data[0])
+        tmp = Pa.HorizontalMeanofSquares(Gr, &data[0], &data[0])
         NS.write_profile('thetas_mean2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Compute and write mean of cubes
-        tmp = Pa.HorizontalMeanofCubes(Gr, & data[0], & data[0], & data[0])
+        tmp = Pa.HorizontalMeanofCubes(Gr, &data[0], &data[0], &data[0])
         NS.write_profile('thetas_mean3', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Compute and write maxes
-        tmp = Pa.HorizontalMaximum(Gr, & data[0])
+        tmp = Pa.HorizontalMaximum(Gr, &data[0])
         NS.write_profile('thetas_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('thetas_max', np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
         # Compute and write mins
-        tmp = Pa.HorizontalMinimum(Gr, & data[0])
+        tmp = Pa.HorizontalMinimum(Gr, &data[0])
         NS.write_profile('thetas_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('thetas_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
@@ -273,24 +300,24 @@ cdef class ThermodynamicsSA:
                         count += 1
 
         # Compute and write mean
-        tmp = Pa.HorizontalMean(Gr, & data[0])
+        tmp = Pa.HorizontalMean(Gr, &data[0])
         NS.write_profile('theta_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Compute and write mean of squres
-        tmp = Pa.HorizontalMeanofSquares(Gr, & data[0], & data[0])
+        tmp = Pa.HorizontalMeanofSquares(Gr, &data[0], &data[0])
         NS.write_profile('theta_mean2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Compute and write mean of cubes
-        tmp = Pa.HorizontalMeanofCubes(Gr, & data[0], & data[0], & data[0])
+        tmp = Pa.HorizontalMeanofCubes(Gr, &data[0], &data[0], &data[0])
         NS.write_profile('theta_mean3', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Compute and write maxes
-        tmp = Pa.HorizontalMaximum(Gr, & data[0])
+        tmp = Pa.HorizontalMaximum(Gr, &data[0])
         NS.write_profile('theta_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('theta_max', np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
         # Compute and write mins
-        tmp = Pa.HorizontalMinimum(Gr, & data[0])
+        tmp = Pa.HorizontalMinimum(Gr, &data[0])
         NS.write_profile('theta_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('theta_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
@@ -320,24 +347,24 @@ cdef class ThermodynamicsSA:
                         count += 1
 
         # Compute and write mean
-        tmp = Pa.HorizontalMean(Gr, & data[0])
+        tmp = Pa.HorizontalMean(Gr, &data[0])
         NS.write_profile('thetal_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Compute and write mean of squres
-        tmp = Pa.HorizontalMeanofSquares(Gr, & data[0], & data[0])
+        tmp = Pa.HorizontalMeanofSquares(Gr, &data[0], &data[0])
         NS.write_profile('thetal_mean2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Compute and write mean of cubes
-        tmp = Pa.HorizontalMeanofCubes(Gr, & data[0], & data[0], & data[0])
+        tmp = Pa.HorizontalMeanofCubes(Gr, &data[0], &data[0], &data[0])
         NS.write_profile('thetal_mean3', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Compute and write maxes
-        tmp = Pa.HorizontalMaximum(Gr, & data[0])
+        tmp = Pa.HorizontalMaximum(Gr, &data[0])
         NS.write_profile('thetal_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('thetal_max', np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
         # Compute and write mins
-        tmp = Pa.HorizontalMinimum(Gr, & data[0])
+        tmp = Pa.HorizontalMinimum(Gr, &data[0])
         NS.write_profile('thetal_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('thetal_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
@@ -374,7 +401,7 @@ cdef class ThermodynamicsSA:
 
         # Initialize the z-pencil
         z_pencil.initialize(Gr, Pa, 2)
-        ql_pencils =  z_pencil.forward_double( & Gr.dims, Pa, & DV.values[ql_shift])
+        ql_pencils =  z_pencil.forward_double( &Gr.dims, Pa, &DV.values[ql_shift])
 
         # Compute cloud fraction profile
         with nogil:

@@ -43,8 +43,8 @@ cdef class Forcing:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
-        self.scheme.update(Gr, Ref, PV, DV)
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+        self.scheme.update(Gr, Ref, PV, DV, Pa)
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -63,7 +63,7 @@ cdef class ForcingNone:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -121,7 +121,7 @@ cdef class ForcingBomex:
 
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -146,10 +146,15 @@ cdef class ForcingBomex:
             double p0
             double rho0
             double t
+            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+
+
+
 
         #Apply Coriolis Forcing
-        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
+        large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &PV.tendencies[u_shift],
+                       &PV.tendencies[v_shift], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
 
         #Apply large scale source terms
         with nogil:
@@ -171,10 +176,10 @@ cdef class ForcingBomex:
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
+        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+        # apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
+        # apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -241,7 +246,7 @@ cdef class ForcingSullivanPatton:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -285,7 +290,7 @@ cdef class ForcingGabls:
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -335,7 +340,7 @@ cdef class ForcingDyCOMS_RF01:
 
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -404,7 +409,7 @@ cdef class ForcingMpace:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -598,7 +603,7 @@ cdef class ForcingIsdac:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -709,6 +714,37 @@ cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, doub
                     vt[ijk] = vt[ijk] + coriolis_param * (ug[k] - u_at_v)
     return
 
+
+cdef large_scale_p_gradient(Grid.DimStruct *dims, double *umean, double *vmean, double *ut, double *vt, double *ug, double *vg,
+                          double coriolis_param, double u0, double v0 ):
+
+    cdef:
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] -dims.gw
+        Py_ssize_t jmax = dims.nlg[1] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k
+        double u_at_v, v_at_u
+
+
+    with nogil:
+        for i in xrange(imin,imax):
+            ishift = i*istride
+            for j in xrange(jmin,jmax):
+                jshift = j*jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    u_at_v = umean[k] + u0
+                    v_at_u = vmean[k] + v0
+                    ut[ijk] = ut[ijk] - coriolis_param * (vg[k] - v_at_u)
+                    vt[ijk] = vt[ijk] + coriolis_param * (ug[k] - u_at_v)
+
+
+    return
 
 cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double* values,  double *tendencies):
 

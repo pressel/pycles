@@ -34,7 +34,8 @@ cdef class ParallelMPI:
         double [:] HorizontalMaximum(self, Grid.Grid Gr, double* values)
         double [:] HorizontalMinimum(self, Grid.Grid Gr, double* values)
         double HorizontalMeanSurface(self, Grid.Grid Gr, double* values)
-
+        double [:] HorizontalMeanConditional(self,Grid.Grid Gr, double* values, double* mask)
+        double [:] HorizontalMeanofSquaresConditional(self,Grid.Grid Gr, double* values1, double* values2, double* mask)
 
     cpdef root_print(self, txt_output)
 

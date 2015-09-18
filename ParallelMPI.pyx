@@ -228,6 +228,7 @@ cdef class ParallelMPI:
                         mean_local[k] += values1[ijk]*values2[ijk]
 
 
+
         #Here we call MPI_Allreduce on the sub_xy communicator as we only need communication among
         #processes with the the same vertical rank
 
@@ -371,6 +372,121 @@ cdef class ParallelMPI:
 
         mean = mean*n_horizontal_i
 
+
+        return mean
+
+
+
+
+    cdef double [:] HorizontalMeanConditional(self,Grid.Grid Gr,double *values, double *mask):
+        '''
+        This function computes horizontal means given a binary conditional. For example, it can be used to compute
+        mean profiles within cloudy air. The mask must be pre-computed.
+        :param Gr: Grid class
+        :param values: variable array to be averaged. Contains ghost points
+        :param mask: array of 1's (condition=true) and 0's (condition = false). Contains ghost points, but mask values
+                        of ghost points do not have to be correct (they are not used in this routine).
+        :return: vertical profile of the conditional average of array values
+        '''
+
+        cdef:
+            double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] sum_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] sum = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+            int i,j,k,ijk
+            int imin = Gr.dims.gw
+            int jmin = Gr.dims.gw
+            int kmin = 0
+            int imax = Gr.dims.nlg[0] - Gr.dims.gw
+            int jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            int kmax = Gr.dims.nlg[2]
+            int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            int jstride = Gr.dims.nlg[2]
+            int ishift, jshift
+
+
+        with nogil:
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        mean_local[k] += values[ijk]*mask[ijk]
+                        sum_local[k] += mask[ijk]
+
+
+        #Here we call MPI_Allreduce on the sub_xy communicator as we only need communication among
+        #processes with the the same vertical rank
+
+        mpi.MPI_Allreduce(&mean_local[0],&mean[0],Gr.dims.nlg[2],
+                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+
+        mpi.MPI_Allreduce(&sum_local[0],&sum[0],Gr.dims.nlg[2],
+                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+
+        for i in xrange(Gr.dims.nlg[2]):
+            mean[i] = mean[i]/np.maximum(sum[i], 1.0)
+
+        return mean
+
+
+    cdef double [:] HorizontalMeanofSquaresConditional(self,Grid.Grid Gr,double *values1,double *values2, double *mask):
+        '''
+        This function computes horizontal means of the product of two array given a binary conditional.
+        For example, it can be used to compute mean-square profiles within cloudy air. The mask must be pre-computed.
+        :param Gr: Grid class
+        :param values1: 1st of the variable arrays to be multiplied. Contains ghost points
+        :param values2: 2nd of the variable arrays to be multiplied. Contains ghost points
+        :param mask: array of 1's (condition=true) and 0's (condition = false). Contains ghost points, but mask values
+                        of ghost points do not have to be correct (they are not used in this routine).
+        :return: vertical profile of the conditional average of array values
+        '''
+
+
+
+        cdef:
+            double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] sum_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] sum = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+            int i,j,k,ijk
+            int imin = Gr.dims.gw
+            int jmin = Gr.dims.gw
+            int kmin = 0
+            int imax = Gr.dims.nlg[0] - Gr.dims.gw
+            int jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            int kmax = Gr.dims.nlg[2]
+            int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            int jstride = Gr.dims.nlg[2]
+            int ishift, jshift
+
+
+        with nogil:
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        mean_local[k] += values1[ijk]*values2[ijk]*mask[ijk]
+                        sum_local[k] += mask[ijk]
+
+
+        #Here we call MPI_Allreduce on the sub_xy communicator as we only need communication among
+        #processes with the the same vertical rank
+
+        mpi.MPI_Allreduce(&mean_local[0],&mean[0],Gr.dims.nlg[2],
+                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+
+        mpi.MPI_Allreduce(&sum_local[0],&sum[0],Gr.dims.nlg[2],
+                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+
+        for i in xrange(Gr.dims.nlg[2]):
+            mean[i] = mean[i]/np.maximum(sum[i], 1.0)
 
         return mean
 
