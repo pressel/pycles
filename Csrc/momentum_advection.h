@@ -774,5 +774,10 @@ void compute_advective_fluxes_m(struct DimStruct *dims, double* restrict rho0, d
             weno_eleventh_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
                 flux, d_advected, d_advecting);
             break;
+        default:
+            // Default to second order scheme.
+            second_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
+                flux, d_advected, d_advecting);
+            break;
     };
 }
