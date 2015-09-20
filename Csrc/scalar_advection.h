@@ -93,6 +93,8 @@ void fourth_order_a(const struct DimStruct *dims, double* restrict rho0, double*
     return;
 }
 
+
+
 void sixth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
     const size_t istride = dims->nlg[1] * dims->nlg[2];
