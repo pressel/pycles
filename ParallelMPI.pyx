@@ -172,7 +172,16 @@ cdef class ParallelMPI:
 
         return global_sum
 
-    cdef double [:] HorizontalMean(self,Grid.Grid Gr,double *values):
+    cdef double [:] HorizontalMean(self, Grid.Grid Gr, double *values):
+        '''
+        Compute the horizontal mean of the array pointed to by values.
+        values should have dimension of Gr.dims.nlg[0] * Gr.dims.nlg[1]
+        * Gr.dims.nlg[1].
+
+        :param Gr: Grid class
+        :param values1: pointer to array of type double containing first value in product
+        :return: memoryview type double with dimension Gr.dims.nlg[2]
+        '''
 
         cdef:
             double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -210,7 +219,17 @@ cdef class ParallelMPI:
 
         return mean
 
-    cdef double [:] HorizontalMeanofSquares(self,Grid.Grid Gr,const double *values1,const double *values2):
+    cdef double [:] HorizontalMeanofSquares(self, Grid.Grid Gr, const double *values1, const double *values2):
+        '''
+        Compute the horizontal mean of the product of two variables (values1 and values2). values1 and values2 are
+        passed in as pointers of type double. These should have dimension of Gr.dims.nlg[0] * Gr.dims.nlg[1]
+        * Gr.dims.nlg[1].
+
+        :param Gr: Grid class
+        :param values1: pointer to array of type double containing first value in product
+        :param values2: pointer to array of type double containing second value in product
+        :return: memoryview type double with dimension Gr.dims.nlg[2]
+        '''
 
         cdef:
             double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
