@@ -1,6 +1,7 @@
 from NetCDFIO cimport NetCDFIO_Stats
 cimport Grid
 cimport ParallelMPI
+cimport ReferenceState
 
 cdef extern from "prognostic_variables.h":
     struct VelocityDofs:
@@ -27,6 +28,7 @@ cdef class PrognosticVariables:
         cdef double [:] values
         cdef double [:] tendencies
         cdef long [:] velocity_directions
+        list velocity_names_directional
 
     cpdef add_variable(self,name,units,bc_type,var_type,ParallelMPI.ParallelMPI Pa)
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -43,4 +45,4 @@ cdef class PrognosticVariables:
     cpdef tend_nan(self,PA,message)
     cpdef val_nan(self,PA,message)
     cpdef val_bounds(self,var_name,Grid.Grid Gr)
-    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

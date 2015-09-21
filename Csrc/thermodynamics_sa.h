@@ -34,21 +34,22 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     else{
         double sigma_1 = qt - qv_star_1;
         double lam_1 = lam_fp(T_1);
-        double L_1 = L_fp(lam_1,T_1);
+        double L_1 = L_fp(T_1,lam_1);
         double s_1 = sd_c(pd_1,T_1) * (1.0 - qt) + sv_c(pv_1,T_1) * qt + sc_c(L_1,T_1)*sigma_1;
         double f_1 = s - s_1;
         double T_2 = T_1 + sigma_1 * L_1 /((1.0 - qt)*cpd + qv_star_1 * cpv);
         double delta_T  = fabs(T_2 - T_1);
         double qv_star_2;
+        double sigma_2;
         double lam_2;
         do{
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
             double pd_2 = pd_c(p0,qt,qv_star_2);
             double pv_2 = pv_c(p0,qt,qv_star_2);
-            double sigma_2 = qt - qv_star_2;
+            sigma_2 = qt - qv_star_2;
             lam_2 = lam_fp(T_2);
-            double L_2 = L_fp(lam_2,T_2);
+            double L_2 = L_fp(T_2,lam_2);
             double s_2 = sd_c(pd_2,T_2) * (1.0 - qt) + sv_c(pv_2,T_2) * qt + sc_c(L_2,T_2)*sigma_2;
             double f_2 = s - s_2;
             double T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1);
@@ -56,11 +57,11 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             T_2 = T_n;
             f_1 = f_2;
             delta_T  = fabs(T_2 - T_1);
-        } while(delta_T >= 1.0e-3 || qt - qv_star_2 < 0.0 );
+        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
         *T  = T_2;
         *qv = qv_star_2;
-        *ql = lam_2 * (qt - qv_star_2);
-        *qi = (1.0 - lam_2) * (qt - qv_star_2);
+        *ql = lam_2 * sigma_2;
+        *qi = (1.0 - lam_2) * sigma_2;
 //        *qc = (qt - qv_star_2);
         return;
     }
@@ -164,7 +165,7 @@ void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(do
                 const size_t ijk = ishift + jshift + k;
                 if(qv[ijk]<qt[ijk]){
                     //moist saturated
-                    double Lv=L_fp(lam_fp(T[ijk]),T[ijk]);
+                    double Lv=L_fp(T[ijk],lam_fp(T[ijk]));
                     double pv_star = lookup(LT,T[ijk]);
                     double rsl = eps_v*pv_star/(p0[k]-pv_star);
                     double gamma_w = g/cpd*(1.0/(1.0-qt[ijk]))*(1.0+Lv*rsl/(Rd*T[ijk]))/(cpm_c(qt[ijk])/cpd + Lv*Lv*(eps_v+rsl)*rsl/(cpd*Rd*T[ijk]*T[ijk]));
@@ -181,3 +182,4 @@ void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(do
     } // End i loop
     return;
 }
+

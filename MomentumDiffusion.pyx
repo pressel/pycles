@@ -10,6 +10,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport Kinematics
 cimport ParallelMPI
+from NetCDFIO cimport NetCDFIO_Stats
 
 import numpy as np
 cimport numpy as np
@@ -29,7 +30,7 @@ cdef class MomentumDiffusion:
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
-                     DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         self.flux = np.zeros(
             (Gr.dims.dims *
@@ -38,6 +39,16 @@ cdef class MomentumDiffusion:
              ),
             dtype=np.double,
             order='c')
+
+
+        #Initialize output fields
+        for i in xrange(Gr.dims.dims):
+            NS.add_profile(PV.velocity_names_directional[i] + '_sgs_flux_z',Gr,Pa)
+
+        NS.add_profile('sgs_visc_s_source_mean',Gr,Pa)
+        NS.add_profile('sgs_visc_s_source_min',Gr,Pa)
+        NS.add_profile('sgs_visc_s_source_max',Gr,Pa)
+
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs, PrognosticVariables.PrognosticVariables PV,
@@ -68,3 +79,50 @@ cdef class MomentumDiffusion:
 
         compute_entropy_source(& Gr.dims, & DV.values[visc_shift], & Ke.strain_rate_mag[0], & DV.values[temp_shift], & PV.tendencies[s_shift])
         return
+
+    cpdef stats_io(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        '''
+        Statistical output for MomentumDiffusion Class.
+        :param Gr: Grid class
+        :param PV: PrognosticVariables class
+        :param DV: DiagnosticVariables class
+        :param Ke: Kinematics class
+        :param NS: NetCDFIO_Stats class
+        :param Pa: ParallelMPI class
+        :return:
+        '''
+        cdef:
+            Py_ssize_t i,k, d = 2
+            Py_ssize_t shift_flux
+            double[:] tmp
+            double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+        # Output vertical fluxes
+        for i in xrange(Gr.dims.dims):
+            shift_flux = (i*Gr.dims.dims + d) * Gr.dims.npg
+            tmp = Pa.HorizontalMean(Gr,&self.flux[shift_flux])
+            if i<2:
+                for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
+                    tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])
+            else:
+                tmp_interp[:] = tmp[:]
+            NS.write_profile(PV.velocity_names_directional[i] + '_sgs_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Output entropy source from resolved TKE dissipation
+        cdef:
+            double[:] data = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
+            Py_ssize_t temp_shift = DV.get_varshift(Gr, 'temperature')
+
+        compute_entropy_source(&Gr.dims, &DV.values[visc_shift], &Ke.strain_rate_mag[0], &DV.values[temp_shift], &data[0])
+        tmp = Pa.HorizontalMean(Gr, &data[0])
+        NS.write_profile('sgs_visc_s_source_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMaximum(Gr, &data[0])
+        NS.write_profile('sgs_visc_s_source_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMinimum(Gr, &data[0])
+        NS.write_profile('sgs_visc_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        return
+
+
+
+

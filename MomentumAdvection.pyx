@@ -9,6 +9,8 @@ cimport PrognosticVariables
 cimport ParallelMPI
 cimport ReferenceState
 from FluxDivergence cimport momentum_flux_divergence
+from NetCDFIO cimport NetCDFIO_Stats
+
 
 import numpy as np
 cimport numpy as np
@@ -31,7 +33,7 @@ cdef class MomentumAdvection:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.flux = np.zeros(
             (PV.nv_velocities *
              Gr.dims.npg *
@@ -39,6 +41,10 @@ cdef class MomentumAdvection:
              ),
             dtype=np.double,
             order='c')
+
+        for i in xrange(Gr.dims.dims):
+            NS.add_profile(PV.velocity_names_directional[i] + '_flux_z',Gr,Pa)
+
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
@@ -79,6 +85,27 @@ cdef class MomentumAdvection:
                 # Compute flux divergence
                 momentum_flux_divergence(& Gr.dims, & Rs.alpha0[0], & Rs.alpha0_half[0], & self.flux[shift_flux],
                                           & PV.tendencies[shift_advected], i_advected, i_advecting)
+        return
+
+
+    cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            Py_ssize_t i_advected, i_advecting = 2, shift_flux, k
+            double[:] tmp
+            double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+
+        for i_advected in xrange(Gr.dims.dims):
+            shift_flux = i_advected * Gr.dims.dims* Gr.dims.npg + i_advecting * Gr.dims.npg
+            tmp = Pa.HorizontalMean(Gr, &self.flux[shift_flux])
+            if i_advected < 2:
+                for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
+                    tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])
+            else:
+                tmp_interp[:] = tmp[:]
+            NS.write_profile(PV.velocity_names_directional[i_advected] + '_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
         return
 
     @cython.boundscheck(False)  # Turn off numpy array index bounds checking

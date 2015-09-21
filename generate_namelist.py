@@ -371,7 +371,7 @@ def Gabls():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['auxiliary'] = 'StableBL'
     namelist['stats_io']['frequency'] = 300.0
 
     namelist['fields_io'] = {}

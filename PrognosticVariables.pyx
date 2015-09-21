@@ -12,7 +12,8 @@ from NetCDFIO cimport NetCDFIO_Stats
 
 cimport Grid
 cimport ParallelMPI
-import cython
+cimport ReferenceState
+
 
 cdef class PrognosticVariables:
     def __init__(self, Grid.Grid Gr):
@@ -25,6 +26,7 @@ cdef class PrognosticVariables:
         self.bc_type = np.array([],dtype=np.double,order='c')
         self.var_type = np.array([],dtype=np.int,order='c')
         self.velocity_directions = np.zeros((Gr.dims.dims,),dtype=np.int,order='c')
+        self.velocity_names_directional = ["" for dim in range(Gr.dims.dims)]
         return
 
     cpdef add_variable(self,name,units,bc_type,var_type,ParallelMPI.ParallelMPI Pa):
@@ -52,7 +54,7 @@ cdef class PrognosticVariables:
             self.var_type = np.append(self.var_type,1)
             self.nv_scalars += 1
         else:
-            Pa.root_print("Not a vaild var_type. Killing simulation now!")
+            Pa.root_print("Not a valid var_type. Killing simulation now!")
             Pa.kill()
 
         return
@@ -64,6 +66,8 @@ cdef class PrognosticVariables:
             Pa.root_print('problem setting velocity '+ name+' to direction '+ str(direction))
             Pa.root_print('Killing simulation now!')
             Pa.kill()
+
+        self.velocity_names_directional[direction] = name
         return
 
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -75,6 +79,10 @@ cdef class PrognosticVariables:
         for var_name in self.name_index.keys():
             #Add mean profile
             NS.add_profile(var_name+'_mean',Gr,Pa)
+
+            if var_name == 'u' or var_name == 'v':
+                NS.add_profile(var_name+'_translational_mean',Gr,Pa)
+
             #Add mean of squares profile
             NS.add_profile(var_name+'_mean2',Gr,Pa)
             #Add mean of cubes profile
@@ -89,7 +97,7 @@ cdef class PrognosticVariables:
             NS.add_ts(var_name+'_min',Gr,Pa)
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS ,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t var_shift
             double [:] tmp
@@ -101,6 +109,13 @@ cdef class PrognosticVariables:
             #Compute and write mean
             tmp = Pa.HorizontalMean(Gr,&self.values[var_shift])
             NS.write_profile(var_name + '_mean',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+            # Also output the velocities with the translational velocity included
+            if var_name == 'u':
+                NS.write_profile(var_name + '_translational_mean',np.array(tmp[Gr.dims.gw:-Gr.dims.gw]) + RS.u0,Pa)
+            elif var_name == 'v':
+                NS.write_profile(var_name + '_translational_mean',np.array(tmp[Gr.dims.gw:-Gr.dims.gw]) + RS.v0,Pa)
+
 
             #Compute and write mean of squres
             tmp = Pa.HorizontalMeanofSquares(Gr,&self.values[var_shift],&self.values[var_shift])

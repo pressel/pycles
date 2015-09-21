@@ -3,34 +3,34 @@ from Cython.Build import cythonize
 from distutils.extension import Extension
 import numpy as np
 import mpi4py as mpi4py
-#import petsc4py
+import sys
+import platform
+
 
 # Now get include paths from relevant python modules
 include_path = [mpi4py.get_include()]
 include_path += [np.get_include()]
-#include_path += [petsc4py.get_include()]
 include_path += ['./Csrc']
-#include_path += ['/opt/local/lib/petsc/include']
 
-
-#library_dirs =['/opt/local/lib/petsc/lib/']
-library_dirs = []
-libraries = []
-extensions = []
-extra_compile_args = []
-# ,'-Rpass=loop-vectorize']
-extra_compile_args += ['-O3', '-march=native', '-Wno-unused', '-Wno-#warnings']
-
-# libraries.append('petsc')
-
-
-# Library dirs for euler
-#library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
-#libraries = []
-# libraries.append('mpi')
-#extensions = []
-# extra_compile_args=[]
-# extra_compile_args+=['-std=c99','-O3','-march=native','-Wno-unused','-Wno-#warnings']#,'-Rpass=loop-vectorize']
+if sys.platform == 'darwin':
+    #Compile flags for MacOSX
+    library_dirs = []
+    libraries = []
+    extensions = []
+    extra_compile_args = []
+    extra_compile_args += ['-O3', '-march=native', '-Wno-unused', '-Wno-#warnings']
+elif 'euler' in platform.node():
+    #Compile flags for euler @ ETHZ
+    library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
+    libraries = []
+    libraries.append('mpi')
+    extensions = []
+    extra_compile_args=[]
+    extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
+                         '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds']
+else:
+    print(Unknown system platform: ' + sys.platform  + 'or unknown system name: ' + platform.node())
+    sys.exit()
 
 _ext = Extension('Grid', ['Grid.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
