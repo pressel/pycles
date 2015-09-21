@@ -27,6 +27,7 @@ cdef class ParallelMPI:
         self.comm_world =  mpi.MPI_COMM_WORLD
         ierr = mpi.MPI_Comm_rank(mpi.MPI_COMM_WORLD, &self.rank)
         ierr = mpi.MPI_Comm_size(mpi.MPI_COMM_WORLD, &self.size)
+
         cdef:
             int [3] cart_dims
             int [3] cyclic
@@ -36,6 +37,14 @@ cdef class ParallelMPI:
         cart_dims[0] = namelist['mpi']['nprocx']
         cart_dims[1] = namelist['mpi']['nprocy']
         cart_dims[2] = namelist['mpi']['nprocz']
+
+        #Check to make sure that cart dimensions are consistent with MPI global size
+        if cart_dims[0] * cart_dims[1] * cart_dims[2] != self.size:
+            self.root_print('MPI global size: ' + str(self.size) +
+                            'does not equal nprocx * nprocy * nprocz: '
+                            + str(cart_dims[0] * cart_dims[1] * cart_dims[2]))
+            self.root_print('Killing simulation NOW!')
+            self.kill()
 
         cyclic[0] = 1
         cyclic[1] = 1
@@ -163,7 +172,16 @@ cdef class ParallelMPI:
 
         return global_sum
 
-    cdef double [:] HorizontalMean(self,Grid.Grid Gr,double *values):
+    cdef double [:] HorizontalMean(self, Grid.Grid Gr, double *values):
+        '''
+        Compute the horizontal mean of the array pointed to by values.
+        values should have dimension of Gr.dims.nlg[0] * Gr.dims.nlg[1]
+        * Gr.dims.nlg[1].
+
+        :param Gr: Grid class
+        :param values1: pointer to array of type double containing first value in product
+        :return: memoryview type double with dimension Gr.dims.nlg[2]
+        '''
 
         cdef:
             double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -201,7 +219,17 @@ cdef class ParallelMPI:
 
         return mean
 
-    cdef double [:] HorizontalMeanofSquares(self,Grid.Grid Gr,const double *values1,const double *values2):
+    cdef double [:] HorizontalMeanofSquares(self, Grid.Grid Gr, const double *values1, const double *values2):
+        '''
+        Compute the horizontal mean of the product of two variables (values1 and values2). values1 and values2 are
+        passed in as pointers of type double. These should have dimension of Gr.dims.nlg[0] * Gr.dims.nlg[1]
+        * Gr.dims.nlg[1].
+
+        :param Gr: Grid class
+        :param values1: pointer to array of type double containing first value in product
+        :param values2: pointer to array of type double containing second value in product
+        :return: memoryview type double with dimension Gr.dims.nlg[2]
+        '''
 
         cdef:
             double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')

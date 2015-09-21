@@ -93,6 +93,8 @@ void fourth_order_a(const struct DimStruct *dims, double* restrict rho0, double*
     return;
 }
 
+
+
 void sixth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
     const size_t istride = dims->nlg[1] * dims->nlg[2];
@@ -582,6 +584,10 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
             break;
         case 11:
             weno_eleventh_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            break;
+        default:
+            // Make WENO5 default case. The central schemes may not be necessarily stable, however WENO5 should be.
+            weno_fifth_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
     };
 };

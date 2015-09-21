@@ -111,7 +111,7 @@ class Simulation3d:
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
 
-                self.Fo.update(self.Gr, self.Ref, self.PV, self.DV)
+                self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
@@ -160,7 +160,7 @@ class Simulation3d:
                 self.Pa.root_print('Doing StatsIO')
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
-                self.PV.stats_io(self.Gr, self.StatsIO, self.Pa)
+                self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.Fo.stats_io(
                     self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
@@ -180,7 +180,7 @@ class Simulation3d:
     def force_io(self):
         # output stats here
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
-        self.PV.stats_io(self.Gr, self.StatsIO, self.Pa)
+        self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
