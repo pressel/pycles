@@ -25,6 +25,7 @@ cdef class PrognosticVariables:
         self.bc_type = np.array([],dtype=np.double,order='c')
         self.var_type = np.array([],dtype=np.int,order='c')
         self.velocity_directions = np.zeros((Gr.dims.dims,),dtype=np.int,order='c')
+        self.velocity_names_directional = ["" for dim in range(Gr.dims.dims)]
         return
 
     cpdef add_variable(self,name,units,bc_type,var_type,ParallelMPI.ParallelMPI Pa):
@@ -52,7 +53,7 @@ cdef class PrognosticVariables:
             self.var_type = np.append(self.var_type,1)
             self.nv_scalars += 1
         else:
-            Pa.root_print("Not a vaild var_type. Killing simulation now!")
+            Pa.root_print("Not a valid var_type. Killing simulation now!")
             Pa.kill()
 
         return
@@ -64,6 +65,8 @@ cdef class PrognosticVariables:
             Pa.root_print('problem setting velocity '+ name+' to direction '+ str(direction))
             Pa.root_print('Killing simulation now!')
             Pa.kill()
+
+        self.velocity_names_directional[direction] = name
         return
 
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):

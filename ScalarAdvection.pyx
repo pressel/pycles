@@ -8,6 +8,7 @@ cimport Grid
 cimport PrognosticVariables
 cimport ParallelMPI
 cimport ReferenceState
+from NetCDFIO cimport NetCDFIO_Stats
 
 from FluxDivergence cimport scalar_flux_divergence
 
@@ -30,11 +31,18 @@ cdef class ScalarAdvection:
 
         return
 
-    cpdef initialize(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV):
+    cpdef initialize(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.flux = np.zeros((PV.nv_scalars*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')
+
+        #Initialize output fields
+        for i in xrange(PV.nv):
+            if PV.var_type[i] == 1:
+                NS.add_profile(PV.index_name[i] + '_flux_z',Gr,Pa)
+
+
         return
 
-    cpdef update_cython(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs,PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs,PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t d, i, vel_shift,scalar_shift, scalar_count = 0, flux_shift
@@ -56,4 +64,24 @@ cdef class ScalarAdvection:
                                             &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
                 scalar_count += 1
 
+        return
+    
+    cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        
+        cdef:
+            Py_ssize_t scalar_count =  0, i, d = 2, flux_shift, k
+            double[:] tmp
+            double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+        for i in xrange(PV.nv):
+            if PV.var_type[i] == 1:
+                flux_shift = scalar_count * Gr.dims.npg + d* Gr.dims.npg
+                tmp = Pa.HorizontalMean(Gr, &self.flux[flux_shift])
+                for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
+                    tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])
+                NS.write_profile(PV.index_name[i] + '_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                scalar_count += 1
+
+
+        
         return
