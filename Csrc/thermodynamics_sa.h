@@ -183,3 +183,33 @@ void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(do
     return;
 }
 
+
+
+void thetali_update(struct DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double* restrict p0, double* restrict T, double* restrict qt, double* restrict ql, double* restrict qi, double* restrict thetali){
+
+    size_t i,j,k;
+    const size_t istride = dims->nlg[1] * dims->nlg[2];
+    const size_t jstride = dims->nlg[2];
+    const size_t imin = 0;
+    const size_t jmin = 0;
+    const size_t kmin = 0;
+    const size_t imax = dims->nlg[0];
+    const size_t jmax = dims->nlg[1];
+    const size_t kmax = dims->nlg[2];
+    const double dzi = 1.0/dims->dx[2];
+
+    for (i=imin; i<imax; i++){
+       const size_t ishift = i * istride;
+        for (j=jmin;j<jmax;j++){
+            const size_t jshift = j * jstride;
+            for (k=kmin;k<kmax;k++){
+                const size_t ijk = ishift + jshift + k;
+                double Lv=L_fp(T[ijk],lam_fp(T[ijk]));
+                thetali[ijk] =  thetali_c(p0[k], T[ijk], qt[ijk], ql[ijk], qi[ijk], Lv);
+            } // End k loop
+        } // End j loop
+    } // End i loop
+
+    return;
+}
+
