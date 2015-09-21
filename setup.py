@@ -30,7 +30,7 @@ elif 'euler' in platform.node():
                          '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds']
 else:
     print 'Unknown system platform: ' + sys.platform  + 'or unknown system name: ' + platform.node()
-
+    sys.exit()
 
 _ext = Extension('Grid', ['Grid.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
