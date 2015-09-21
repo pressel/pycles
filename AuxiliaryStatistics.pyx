@@ -15,6 +15,7 @@ import cython
 cimport numpy as np
 import numpy as np
 from libc.math cimport sqrt
+from thermodynamic_functions cimport thetas_c
 include "parameters.pxi"
 
 
@@ -75,6 +76,7 @@ class CumulusStatistics:
             Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t count
             double [:] mean_buoyancy
 
         mean_buoyancy = Pa.HorizontalMean(Gr, &DV.values[b_shift])
@@ -102,83 +104,101 @@ class CumulusStatistics:
         NS.write_profile('fraction_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         #-w
-        cdef Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
-        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[w_shift],&cloudmask[0])
+        cdef Py_ssize_t shift = PV.get_varshift(Gr,'w')
+        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[shift],&cloudmask[0])
         NS.write_profile('w_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[w_shift],&PV.values[w_shift],&cloudmask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift],&PV.values[shift],&cloudmask[0])
         NS.write_profile('w2_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[w_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[shift],&coremask[0])
         NS.write_profile('w_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[w_shift],&PV.values[w_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift],&PV.values[shift],&coremask[0])
         NS.write_profile('w2_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         #-qt
-        cdef Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
-        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[qt_shift],&cloudmask[0])
+        shift = PV.get_varshift(Gr,'qt')
+        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[shift],&cloudmask[0])
         NS.write_profile('qt_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[qt_shift],&PV.values[qt_shift],&cloudmask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift],&PV.values[shift],&cloudmask[0])
         NS.write_profile('qt2_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[qt_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[shift],&coremask[0])
         NS.write_profile('qt_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[qt_shift],&PV.values[qt_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift],&PV.values[shift],&coremask[0])
         NS.write_profile('qt2_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         #-ql
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[ql_shift],&cloudmask[0])
+        shift = DV.get_varshift(Gr,'ql')
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift],&cloudmask[0])
         NS.write_profile('ql_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[ql_shift],&DV.values[ql_shift],&cloudmask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift],&DV.values[shift],&cloudmask[0])
         NS.write_profile('ql2_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[ql_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift],&coremask[0])
         NS.write_profile('ql_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[ql_shift],&DV.values[ql_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift],&DV.values[shift],&coremask[0])
         NS.write_profile('ql2_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         #--theta_rho
-        cdef Py_ssize_t thr_shift = DV.get_varshift(Gr,'theta_rho')
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[thr_shift],&cloudmask[0])
+        shift = DV.get_varshift(Gr,'theta_rho')
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift],&cloudmask[0])
         NS.write_profile('theta_rho_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[thr_shift],&DV.values[thr_shift],&cloudmask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift],&DV.values[shift],&cloudmask[0])
         NS.write_profile('theta_rho2_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[thr_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift],&coremask[0])
         NS.write_profile('theta_rho_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[thr_shift],&DV.values[thr_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift],&DV.values[shift],&coremask[0])
         NS.write_profile('theta_rho2_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        #--theta_s
-        cdef Py_ssize_t ths_shift = DV.get_varshift(Gr,'thetas')
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[ths_shift],&cloudmask[0])
-        NS.write_profile('thetas_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[ths_shift],&DV.values[ths_shift],&cloudmask[0])
-        NS.write_profile('thetas2_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[ths_shift],&coremask[0])
-        NS.write_profile('thetas_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[ths_shift],&DV.values[ths_shift],&coremask[0])
-        NS.write_profile('thetas2_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         #-s
-        cdef Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
-        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[s_shift],&cloudmask[0])
+        shift = PV.get_varshift(Gr,'s')
+        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[shift],&cloudmask[0])
         NS.write_profile('s_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[s_shift],&PV.values[s_shift],&cloudmask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift],&PV.values[shift],&cloudmask[0])
         NS.write_profile('s2_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[s_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[shift],&coremask[0])
         NS.write_profile('s_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[s_shift],&PV.values[s_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift],&PV.values[shift],&coremask[0])
         NS.write_profile('s2_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         #--theta_s
-        cdef Py_ssize_t thl_shift = DV.get_varshift(Gr,'thetali')
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[thl_shift],&cloudmask[0])
+        shift = DV.get_varshift(Gr,'thetali')
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift],&cloudmask[0])
         NS.write_profile('thetali_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[thl_shift],&DV.values[thl_shift],&cloudmask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift],&DV.values[shift],&cloudmask[0])
         NS.write_profile('thetali2_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[thl_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift],&coremask[0])
         NS.write_profile('thetali_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[thl_shift],&DV.values[thl_shift],&coremask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift],&DV.values[shift],&coremask[0])
         NS.write_profile('thetali2_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
 
 
+
+        #--theta_s
+        cdef:
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+
+
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
+
+                        count += 1
+        tmp = Pa.HorizontalMeanConditional(Gr, &data[0],&cloudmask[0])
+        NS.write_profile('thetas_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &data[0],&data[0],&cloudmask[0])
+        NS.write_profile('thetas2_cloud',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+        tmp = Pa.HorizontalMeanConditional(Gr, &data[0],&coremask[0])
+        NS.write_profile('thetas_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &data[0],&data[0],&coremask[0])
+        NS.write_profile('thetas2_core',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         return
 
