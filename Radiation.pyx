@@ -14,7 +14,7 @@ cimport ParallelMPI
 
 import numpy as np
 cimport numpy as np
-from libc.math cimport pow, cbrt, exp, fabs, copysign
+from libc.math cimport pow, cbrt, exp
 import cython
 from thermodynamic_functions cimport cpm_c
 include 'parameters.pxi'
@@ -112,7 +112,6 @@ cdef class RadiationDyCOMS_RF01:
             double[:] rho = Ref.rho0
             double[:] rho_half = Ref.rho0_half
             double cbrt_z = 0
-            double cbrt_sign = 0
 
         with nogil:
             for pi in xrange(self.z_pencil.n_local_pencils):
@@ -125,16 +124,15 @@ cdef class RadiationDyCOMS_RF01:
 
                 # Now compute the third term on RHS of Stevens et al 2005
                 # (equation 3)
-                cbrt_z = cbrt(z[gw - 1] - zi)
-                cbrt_sign = copysign(1.0,cbrt_z)
-
-                f_rad[pi, 0] = rhoi * cpd * self.divergence * self.alpha_z * (cbrt_sign * pow(cbrt_z,4) / 4.0
-                                                                              + zi * cbrt_z)
+                f_rad[pi, 0] = 0.0
                 for k in xrange(Gr.dims.n[2]):
-                    cbrt_z = cbrt(z[gw + k - 1] - zi)
-                    cbrt_sign = copysign(1.0,cbrt_z)
-                    f_rad[pi, k + 1] = rhoi * cpd * self.divergence * self.alpha_z * (cbrt_sign * pow(cbrt_z,4)  / 4.0
-                                                                                      + zi * cbrt_z)
+                    if z[gw + k -1] >= zi:
+                        cbrt_z = cbrt(z[gw + k - 1] - zi)
+                        f_rad[pi, k + 1] = rhoi * cpd * self.divergence * self.alpha_z * (pow(cbrt_z,4)  / 4.0
+                                                                                     + zi * cbrt_z)
+                    else:
+                        f_rad[pi, k + 1] = 0.0
+
                 # Compute the second term on RHS of Stevens et al. 2005
                 # (equation 3)
                 q_1 = 0.0
@@ -157,13 +155,7 @@ cdef class RadiationDyCOMS_RF01:
                        (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
-        self.z_pencil.reverse_double(& Gr.dims, Pa, f_heat, & heating_rate[0])
-
-
-        import pylab as plt
-        plt.plot(np.array(f_rad[0,:]))
-        plt.show()
-        import sys; sys.exit()
+        self.z_pencil.reverse_double(& Gr.dims, Pa, f_heat, &heating_rate[0])
 
 
         # Now update entropy tendencies
