@@ -144,6 +144,7 @@ cdef class ScalarDiffusion:
         cdef:
             Py_ssize_t d
             Py_ssize_t i
+            Py_ssize_t k
             double[:] data = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] tmp
             double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
