@@ -25,6 +25,7 @@ cdef extern from "thermodynamics_sa.h":
                     double * qv, double * ql, double * qi, double * alpha)
     void buoyancy_update_sa(Grid.DimStruct * dims, double * alpha0, double * alpha, double * buoyancy, double * wt)
     void bvf_sa(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double * p0, double * T, double * qt, double * qv, double * theta_rho, double * bvf)
+    void thetali_update(Grid.DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double*  p0, double*  T, double*  qt, double*  ql, double*  qi, double*  thetali)
 
 cdef extern from "thermodynamic_functions.h":
     # Dry air partial pressure
@@ -86,6 +87,8 @@ cdef class ThermodynamicsSA:
         DV.add_variables('ql', 'kg/kg', 'sym', Pa)
         DV.add_variables('qi', 'kg/kg', 'sym', Pa)
         DV.add_variables('theta_rho', 'K', 'sym', Pa)
+        DV.add_variables('thetali', 'K', 'sym', Pa)
+
 
         # Add statistical output
         NS.add_profile('thetas_mean', Gr, Pa)
@@ -104,13 +107,6 @@ cdef class ThermodynamicsSA:
         NS.add_ts('theta_max', Gr, Pa)
         NS.add_ts('theta_min', Gr, Pa)
 
-        NS.add_profile('thetal_mean', Gr, Pa)
-        NS.add_profile('thetal_mean2', Gr, Pa)
-        NS.add_profile('thetal_mean3', Gr, Pa)
-        NS.add_profile('thetal_max', Gr, Pa)
-        NS.add_profile('thetal_min', Gr, Pa)
-        NS.add_ts('thetal_max', Gr, Pa)
-        NS.add_ts('thetal_min', Gr, Pa)
 
         NS.add_profile('cloud_fraction', Gr, Pa)
         NS.add_ts('cloud_fraction', Gr, Pa)
@@ -177,6 +173,8 @@ cdef class ThermodynamicsSA:
             Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
+            Py_ssize_t thl_shift = DV.get_varshift(Gr, 'thetali')
+
 
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                     &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
@@ -185,6 +183,8 @@ cdef class ThermodynamicsSA:
         buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
 
         bvf_sa( &Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[thr_shift], &DV.values[bvf_shift])
+
+        thetali_update(&Gr.dims,self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift],&DV.values[qi_shift],&DV.values[thl_shift])
 
         return
 
@@ -213,6 +213,7 @@ cdef class ThermodynamicsSA:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             double[:] data = np.empty((Gr.dims.npl,), dtype=np.double, order='c')
 
+
         # Add entropy potential temperature to 3d fields
         with nogil:
             count = 0
@@ -222,8 +223,7 @@ cdef class ThermodynamicsSA:
                     jshift = j * jstride
                     for k in range(kmin, kmax):
                         ijk = ishift + jshift + k
-                        data[count] = thetas_c(
-                            PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
+                        data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
                         count += 1
         NF.add_field('thetas')
         NF.write_field('thetas', data)
@@ -248,6 +248,8 @@ cdef class ThermodynamicsSA:
             double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] tmp
 
+
+
         # Ouput profiles of thetas
         with nogil:
             count = 0
@@ -257,11 +259,14 @@ cdef class ThermodynamicsSA:
                     jshift = j * jstride
                     for k in range(kmin, kmax):
                         ijk = ishift + jshift + k
-                        data[count] = thetas_c(
-                            PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
+                        data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
+
                         count += 1
 
+
+
         # Compute and write mean
+
         tmp = Pa.HorizontalMean(Gr, &data[0])
         NS.write_profile('thetas_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
@@ -322,53 +327,6 @@ cdef class ThermodynamicsSA:
         NS.write_ts('theta_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
         #Output profiles of thetali  (liquid-ice potential temperature)
-        cdef:
-            double lam
-            double L
-            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
-            Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
-
-        with nogil:
-            count = 0
-            for i in range(imin, imax):
-                ishift = i * istride
-                for j in range(jmin, jmax):
-                    jshift = j * jstride
-                    for k in range(kmin, kmax):
-                        ijk = ishift + jshift + k
-
-                        #Get phase partitioning function and latent heat
-                        lam = self.Lambda_fp(DV.values[t_shift + ijk])
-                        L = self.L_fp(DV.values[t_shift + ijk],lam)
-
-                        #compute liquid-ice potential temperature
-                        data[count] = thetali_c(RS.p0_half[k], DV.values[t_shift + ijk], PV.values[qt_shift + ijk],
-                                                DV.values[ql_shift + ijk ], DV.values[qi_shift + ijk], L)
-                        count += 1
-
-        # Compute and write mean
-        tmp = Pa.HorizontalMean(Gr, &data[0])
-        NS.write_profile('thetal_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        # Compute and write mean of squres
-        tmp = Pa.HorizontalMeanofSquares(Gr, &data[0], &data[0])
-        NS.write_profile('thetal_mean2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        # Compute and write mean of cubes
-        tmp = Pa.HorizontalMeanofCubes(Gr, &data[0], &data[0], &data[0])
-        NS.write_profile('thetal_mean3', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        # Compute and write maxes
-        tmp = Pa.HorizontalMaximum(Gr, &data[0])
-        NS.write_profile('thetal_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        NS.write_ts('thetal_max', np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
-
-        # Compute and write mins
-        tmp = Pa.HorizontalMinimum(Gr, &data[0])
-        NS.write_profile('thetal_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        NS.write_ts('thetal_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
-
-
         # Compute additional stats
         self.liquid_stats(Gr, RS, PV, DV, NS, Pa)
 

@@ -113,6 +113,7 @@ cdef class RadiationDyCOMS_RF01:
             double[:] z = Gr.z
             double[:] rho = Ref.rho0
             double[:] rho_half = Ref.rho0_half
+            double cbrt_z = 0
 
         with nogil:
             for pi in xrange(self.z_pencil.n_local_pencils):
@@ -125,11 +126,15 @@ cdef class RadiationDyCOMS_RF01:
 
                 # Now compute the third term on RHS of Stevens et al 2005
                 # (equation 3)
-                f_rad[pi, 0] = rhoi * cpd * self.divergence * self.alpha_z * (cbrt(pow(z[gw - 1] - zi, 4)) / 4.0
-                                                                              + zi * cbrt(z[gw - 1] - zi))
+                f_rad[pi, 0] = 0.0
                 for k in xrange(Gr.dims.n[2]):
-                    f_rad[pi, k + 1] = rhoi * cpd * self.divergence * self.alpha_z * (cbrt(pow(z[gw + k] - zi, 4)) / 4.0
-                                                                                      + zi * cbrt(z[gw + k] - zi))
+                    if z[gw + k -1] >= zi:
+                        cbrt_z = cbrt(z[gw + k - 1] - zi)
+                        f_rad[pi, k + 1] = rhoi * cpd * self.divergence * self.alpha_z * (pow(cbrt_z,4)  / 4.0
+                                                                                     + zi * cbrt_z)
+                    else:
+                        f_rad[pi, k + 1] = 0.0
+
                 # Compute the second term on RHS of Stevens et al. 2005
                 # (equation 3)
                 q_1 = 0.0
@@ -149,11 +154,10 @@ cdef class RadiationDyCOMS_RF01:
 
                 for k in xrange(Gr.dims.n[2]):
                     f_heat[pi, k] = - \
-                        (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
+                       (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
-        self.z_pencil.reverse_double(& Gr.dims, Pa, f_heat, & heating_rate[0])
-
+        self.z_pencil.reverse_double(& Gr.dims, Pa, f_heat, &heating_rate[0])
 
 
         # Now update entropy tendencies

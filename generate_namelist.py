@@ -375,7 +375,7 @@ def Gabls():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['auxiliary'] = 'StableBL'
     namelist['stats_io']['frequency'] = 300.0
 
     namelist['fields_io'] = {}
@@ -411,8 +411,8 @@ def DYCOMS_RF01():
     namelist['time_stepping'] = {}
     namelist['time_stepping']['ts_type'] = 3
     namelist['time_stepping']['cfl_limit'] = 0.7
-    namelist['time_stepping']['dt_initial'] = 10.0
-    namelist['time_stepping']['dt_max'] = 30.0
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 4.0 * 3600.0
 
     namelist['thermodynamics'] = {}
@@ -437,8 +437,8 @@ def DYCOMS_RF01():
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
     namelist['damping']['Rayleigh'] = {}
-    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
-    namelist['damping']['Rayleigh']['z_d'] = 300.0
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.002
+    namelist['damping']['Rayleigh']['z_d'] = 500.0
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -446,7 +446,7 @@ def DYCOMS_RF01():
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = 'None'
-    namelist['stats_io']['frequency'] = 300.0
+    namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'

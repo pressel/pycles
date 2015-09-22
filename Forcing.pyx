@@ -13,7 +13,7 @@ from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c
 import numpy as np
 import cython
-from libc.math cimport fabs, cos, fmin, fmax
+from libc.math cimport fabs, sin, cos, fmin, fmax
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 include 'parameters.pxi'
@@ -178,8 +178,8 @@ cdef class ForcingBomex:
 
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
-        # apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
-        # apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
+        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -195,7 +195,8 @@ cdef class ForcingBomex:
             double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
             double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
-
+            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
@@ -223,8 +224,8 @@ cdef class ForcingBomex:
 
         #Output Coriolis tendencies
         tmp_tendency[:] = 0.0
-        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
-                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
+        large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &tmp_tendency[0],
+                       &tmp_tendency_2[0], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -324,6 +325,7 @@ cdef class ForcingGabls:
 cdef class ForcingDyCOMS_RF01:
     def __init__(self):
         self.divergence = 3.75e-6
+        self.coriolis_param = 2.0 * omega * sin(31.5 * pi / 180.0 )
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -331,10 +333,14 @@ cdef class ForcingDyCOMS_RF01:
         cdef:
             Py_ssize_t k
 
-        self.w = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
+        self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
+        self.ug = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
+        self.vg = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
         with nogil:
             for k in range(Gr.dims.nlg[2]):
-                self.w_half[k] = -Gr.zl[k] * self.divergence
+                self.subsidence[k] = -Gr.zl[k] * self.divergence
+                self.ug[k] = 7.0
+                self.vg[k] = -5.5
 
         return
 
@@ -347,18 +353,67 @@ cdef class ForcingDyCOMS_RF01:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
 
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[s_shift],&PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[u_shift],&PV.tendencies[u_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[v_shift],&PV.tendencies[v_shift])
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
 
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
 
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
+            double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
+            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+
+        #Output subsidence tendencies
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('u_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('v_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        #Output Coriolis tendencies
+        tmp_tendency[:] = 0.0
+        large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &tmp_tendency[0],
+                       &tmp_tendency_2[0], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
+        NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_profile('v_coriolis_tendency',mean_tendency_2[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         return
 

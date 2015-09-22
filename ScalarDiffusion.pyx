@@ -144,8 +144,10 @@ cdef class ScalarDiffusion:
         cdef:
             Py_ssize_t d
             Py_ssize_t i
+            Py_ssize_t k
             double[:] data = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] tmp
+            double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
             Py_ssize_t s_shift
             Py_ssize_t qt_shift
@@ -165,7 +167,9 @@ cdef class ScalarDiffusion:
             if PV.var_type[i] == 1:
                 flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
                 tmp = Pa.HorizontalMean(Gr, &self.flux[flux_shift])
-                NS.write_profile(PV.index_name[i] + '_sgs_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+                for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
+                    tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])
+                NS.write_profile(PV.index_name[i] + '_sgs_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
                 scalar_count += 1
 
         if self.qt_entropy_source:
