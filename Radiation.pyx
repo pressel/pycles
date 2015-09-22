@@ -15,8 +15,6 @@ cimport ParallelMPI
 import numpy as np
 cimport numpy as np
 from libc.math cimport pow, cbrt, exp
-import cython
-from thermodynamic_functions cimport cpm_c
 include 'parameters.pxi'
 
 cdef class Radiation:
@@ -127,7 +125,7 @@ cdef class RadiationDyCOMS_RF01:
                 f_rad[pi, 0] = 0.0
                 for k in xrange(Gr.dims.n[2]):
                     if z[gw + k -1] >= zi:
-                        cbrt_z = cbrt(z[gw + k - 1] - zi)
+                        cbrt_z = cbrt(z[gw + k ] - zi)
                         f_rad[pi, k + 1] = rhoi * cpd * self.divergence * self.alpha_z * (pow(cbrt_z,4)  / 4.0
                                                                                      + zi * cbrt_z)
                     else:
@@ -157,7 +155,6 @@ cdef class RadiationDyCOMS_RF01:
         # Now transpose the flux pencils
         self.z_pencil.reverse_double(& Gr.dims, Pa, f_heat, &heating_rate[0])
 
-
         # Now update entropy tendencies
         with nogil:
             for i in xrange(imin, imax):
@@ -167,7 +164,7 @@ cdef class RadiationDyCOMS_RF01:
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
                         PV.tendencies[
-                            s_shift + ijk] += cpm_c(PV.values[ijk + qt_shift]) * heating_rate[ijk] / DV.values[ijk + t_shift]
+                            s_shift + ijk] +=  heating_rate[ijk] / DV.values[ijk + t_shift]
 
         return
 
