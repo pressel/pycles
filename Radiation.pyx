@@ -124,8 +124,8 @@ cdef class RadiationDyCOMS_RF01:
                 # (equation 3)
                 f_rad[pi, 0] = 0.0
                 for k in xrange(Gr.dims.n[2]):
-                    if z[gw + k -1] >= zi:
-                        cbrt_z = cbrt(z[gw + k ] - zi)
+                    if z[gw + k] >= zi:
+                        cbrt_z = cbrt(z[gw + k] - zi)
                         f_rad[pi, k + 1] = rhoi * cpd * self.divergence * self.alpha_z * (pow(cbrt_z,4)  / 4.0
                                                                                      + zi * cbrt_z)
                     else:
