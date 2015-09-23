@@ -492,8 +492,8 @@ cdef class SurfaceDYCOMS_RF01:
                 for j in xrange(gw,jmax-gw):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -interp_2(self.ustar[ij], self.ustar[ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    self.u_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
                     PV.tendencies[u_shift  + ijk] = PV.tendencies[u_shift  + ijk] + self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift  + ijk] = PV.tendencies[v_shift  + ijk] + self.v_flux[ij] * tendency_factor
                     PV.tendencies[s_shift  + ijk] = PV.tendencies[s_shift  + ijk] + self.s_flux[ij] * tendency_factor
