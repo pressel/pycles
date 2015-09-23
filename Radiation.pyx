@@ -94,8 +94,8 @@ cdef class RadiationDyCOMS_RF01:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t gw = Gr.dims.gw
-            double [:, :] ql_pencils =  self.z_pencil.forward_double(& Gr.dims, Pa, & DV.values[ql_shift])
-            double [:, :] qt_pencils =  self.z_pencil.forward_double(& Gr.dims, Pa, & PV.values[qt_shift])
+            double [:, :] ql_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[ql_shift])
+            double [:, :] qt_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[qt_shift])
             double[:, :] f_rad = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
             double[:, :] f_heat = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
             double[:] heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
@@ -153,7 +153,7 @@ cdef class RadiationDyCOMS_RF01:
                        (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
-        self.z_pencil.reverse_double(& Gr.dims, Pa, f_heat, &heating_rate[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, f_heat, &heating_rate[0])
 
         # Now update entropy tendencies
         with nogil:
