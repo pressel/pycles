@@ -485,8 +485,6 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
         Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
         Py_ssize_t jstride = dims.nlg[2]
         Py_ssize_t ishift, jshift, ijk, i,j,k
-        double phim, fluxm
-        double phip, fluxp
         double dxi = dims.dxi[2]
     with nogil:
         for i in xrange(imin,imax):
