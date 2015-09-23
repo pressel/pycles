@@ -13,7 +13,7 @@ cimport TimeStepping
 from Thermodynamics cimport LatentHeat,ClausiusClapeyron
 from NetCDFIO cimport NetCDFIO_Stats
 import cython
-from thermodynamic_functions import exner, theta_rho
+from thermodynamic_functions import exner, cpm
 from libc.math cimport sqrt, log, fabs,atan, exp, fmax
 cimport numpy as np
 import numpy as np
@@ -418,6 +418,17 @@ cdef class SurfaceDYCOMS_RF01:
         self.cm = 0.0011
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
+        sst = 292.5 # K
+        psurface = 1017.8e2 # Pa
+        theta_surface = sst/exner(psurface)
+        qt_surface = 13.84e-3 # qs(sst) using Teten's formula
+        density_surface = 1.22 #kg/m^3
+        theta_flux = self.ft/(density_surface*cpm(qt_surface)*exner(psurface))
+        qt_flux_ = self.fq/self.L_fp(sst,self.Lambda_fp(sst))
+        self.buoyancy_flux = g * ((theta_flux + (eps_vi-1.0)*(theta_surface*qt_flux_ + qt_surface * theta_flux))
+                              /(theta_surface*(1.0 + (eps_vi-1)*qt_surface)))
+
+
 
 
 
@@ -427,7 +438,7 @@ cdef class SurfaceDYCOMS_RF01:
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
-        self.ustar = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+
 
         #NS.add_ts('friction_velocity_mean', Gr, Pa)
         #NS.add_ts('uw_surface_mean',Gr, Pa)
@@ -472,6 +483,9 @@ cdef class SurfaceDYCOMS_RF01:
             double sd
 
             double [:] windspeed = self.windspeed
+            Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
+            Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
+
 
         with nogil:
             for i in xrange(gw-1,imax-gw+1):
@@ -479,7 +493,8 @@ cdef class SurfaceDYCOMS_RF01:
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
 
-                    self.ustar[ij] = sqrt(self.cm) * self.windspeed[ij]
+                    DV.values_2d[ustar_shift + ij] = sqrt(self.cm) * self.windspeed[ij]
+                    DV.values_2d[lmo_shift + ij] = -DV.values_2d[ustar_shift + ij]**3.0/self.buoyancy_flux/vkb
                     lam = self.Lambda_fp(DV.values[t_shift+ijk])
                     lv = self.L_fp(DV.values[t_shift+ijk],lam)
                     pv = pv_c(Ref.p0_half[gw],PV.values[ijk + qt_shift],PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])

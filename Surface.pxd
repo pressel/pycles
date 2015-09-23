@@ -79,6 +79,7 @@ cdef class SurfaceDYCOMS_RF01:
         double ft
         double fq
         double cm
+        double buoyancy_flux
         double gustiness
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
@@ -87,7 +88,7 @@ cdef class SurfaceDYCOMS_RF01:
         double [:] qt_flux
         double [:] v_flux
         double [:] s_flux
-        double [:] ustar
+
 
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
