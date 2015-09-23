@@ -480,14 +480,14 @@ cdef class SurfaceDYCOMS_RF01:
                     ij = i * istride_2d + j
 
                     self.ustar[ij] = sqrt(self.cm) * self.windspeed[ij]
-                    lam = self.Lambda_fp(DV.values[t_shift+ij])
-                    lv = self.L_fp(DV.values[t_shift+ij],lam)
-                    pv = pv_c(Ref.p0_half[gw],PV.values[ij + qt_shift],PV.values[ij + qt_shift] - DV.values[ij + ql_shift])
-                    pd = pd_c(Ref.p0_half[gw],PV.values[ij + qt_shift],PV.values[ij + qt_shift] - DV.values[ij + ql_shift])
-                    sv = sv_c(pv,DV.values[t_shift+ij])
-                    sd = sd_c(pd,DV.values[t_shift+ij])
+                    lam = self.Lambda_fp(DV.values[t_shift+ijk])
+                    lv = self.L_fp(DV.values[t_shift+ijk],lam)
+                    pv = pv_c(Ref.p0_half[gw],PV.values[ijk + qt_shift],PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                    pd = pd_c(Ref.p0_half[gw],PV.values[ijk + qt_shift],PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                    sv = sv_c(pv,DV.values[t_shift+ijk])
+                    sd = sd_c(pd,DV.values[t_shift+ijk])
                     self.qt_flux[ij] = self.fq / lv
-                    self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ij] + self.qt_flux[ij]*(sv - sd))
+                    self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ijk] + self.qt_flux[ij]*(sv - sd))
             for i in xrange(gw,imax-gw):
                 for j in xrange(gw,jmax-gw):
                     ijk = i * istride + j * jstride + gw
