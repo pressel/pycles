@@ -16,12 +16,11 @@ inline double temperature_no_ql(double pd, double pv, double s, double qt){
 
 void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                     const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
-//    *qc = 0.0;
     *qv = qt;
     *ql = 0.0;
     *qi = 0.0;
-    double pd_1 = pd_c(p0,qt,qt);
     double pv_1 = pv_c(p0,qt,qt );
+    double pd_1 = p0 - pv_1;
     double T_1 = temperature_no_ql(pd_1,pv_1,s,qt);
     double pv_star_1 = lookup(LT, T_1);
     double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
@@ -45,8 +44,8 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         do{
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
-            double pd_2 = pd_c(p0,qt,qv_star_2);
             double pv_2 = pv_c(p0,qt,qv_star_2);
+            double pd_2 = p0 - pv_2;
             sigma_2 = qt - qv_star_2;
             lam_2 = lam_fp(T_2);
             double L_2 = L_fp(T_2,lam_2);
@@ -62,7 +61,6 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         *qv = qv_star_2;
         *ql = lam_2 * sigma_2;
         *qi = (1.0 - lam_2) * sigma_2;
-//        *qc = (qt - qv_star_2);
         return;
     }
 }
