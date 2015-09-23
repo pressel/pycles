@@ -246,7 +246,7 @@ class StableBLStatistics:
         while k < Gr.dims.nlg[2]-Gr.dims.gw and flux_profile[k] > 0.05 * flux_surface:
             k += 1
 
-        h05 = flux_surface * 0.05 *Gr.dims.dx[2]/ (flux_profile[k]-flux_profile[k-1]) + Gr.z[k-1]
+        h05 = Gr.zl_half[k]
         h0 = h05/0.95
 
         if np.isnan(h0):
