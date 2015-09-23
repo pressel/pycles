@@ -1,6 +1,19 @@
 #pragma once
 #include <stdio.h>
 
+
+/// Need to define integer maximum and minimum as these are not intrinsic in C
+#define MAX(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
+
+#define MIN(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a < _b ? _a : _b; })
+
+
 struct LookupStruct{
     size_t n_table;
     double y_max;
@@ -46,7 +59,9 @@ void free_table(struct LookupStruct *LT){
 };
 
 inline double lookup(struct LookupStruct *LT, double x){
-    const int indx = floor((x - LT->x_min)*LT->dxi);
+    int indx = floor((x - LT->x_min)*LT->dxi);
+    indx = MIN(indx,LT->n_table - 1);
+    indx = MAX(indx,0);
     const double y1 = LT->y[indx] ;
     const double y2 = LT->y[indx + 1];
     const double x1 = LT->x_min + LT-> dx * indx ;
