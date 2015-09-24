@@ -335,7 +335,7 @@ cdef class ForcingDyCOMS_RF01:
         self.vg = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
         with nogil:
             for k in range(Gr.dims.nlg[2]):
-                self.subsidence[k] = -Gr.zl[k] * self.divergence
+                self.subsidence[k] = -Gr.zl_half[k] * self.divergence
                 self.ug[k] = 7.0
                 self.vg[k] = -5.5
 
@@ -346,6 +346,8 @@ cdef class ForcingDyCOMS_RF01:
         NS.add_profile('v_subsidence_tendency', Gr, Pa)
         NS.add_profile('u_coriolis_tendency', Gr, Pa)
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
+
+        print np.array(self.subsidence)
 
         return
 
@@ -503,8 +505,7 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    tendencies[ijk] = tendencies[ijk] - ((subsidence[k] * values[ijk+1]*rho0[k]
-                                                         -subsidence[k-1] *values[ijk]*rho0[k-1])*dxi/rho0_half[k])
+                    tendencies[ijk] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k]
 
     return
 
