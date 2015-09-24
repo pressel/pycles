@@ -1,12 +1,12 @@
 #pragma once
 struct DimStruct {
 
-        long dims;
+        long dims; /// number of physical dimensions
 
-        long  n[3];
-        long  ng[3];
-        long  nl[3];
-        long  nlg[3];
+        long  n[3];  /// Total number of grid points in grid direction
+        long  ng[3];  /// ""           ""           ""    Including ghost points
+        long  nl[3];  /// number of local grid points owned by local MPI rank
+        long  nlg[3]; /// ""           ""           ""    Including ghost points
 
         long npd;
         long npl;
