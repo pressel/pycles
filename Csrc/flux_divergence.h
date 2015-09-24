@@ -14,7 +14,7 @@ void scalar_flux_divergence(struct DimStruct *dims, double *alpha0, double *alph
 
     const size_t istride = dims->nlg[1] * dims->nlg[2];
     const size_t jstride = dims->nlg[2];
-    const double dxi = 1.0/dx;
+    const double dxi = dims->dxi[d_advecting];
 
     const size_t stencil[3] = {istride,jstride,1};
     const size_t sm1 = -stencil[d];
