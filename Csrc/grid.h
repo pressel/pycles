@@ -4,20 +4,21 @@ struct DimStruct {
         long dims; /// number of physical dimensions
 
         long  n[3];  /// Total number of grid points in grid direction
-        long  ng[3];  /// ""           ""           ""    Including ghost points
-        long  nl[3];  /// number of local grid points owned by local MPI rank
-        long  nlg[3]; /// ""           ""           ""    Including ghost points
+        long  ng[3];  /// ""           ""           ""    including ghost points
+        long  nl[3];  /// Total number of local grid points in grid direction  owned by local MPI rank
+        long  nlg[3]; /// ""           ""           ""    including ghost points
 
-        long npd;
-        long npl;
-        long npg;
-        long gw;
+        long npd;  /// Total grid points in domain not including ghost points
+        long npl;  /// Number of grid points not including ghost points owned by local MPI rank
+        long npg;  /// Number of grid points including ghost point owned by local MPI rank
+        long gw;  /// Number of ghost/halo points
 
-        long  indx_lo[3];
-        long  indx_lo_g[3];
+        long  indx_lo[3]; /// Lower left hand point (globally numbered) of subgrid owned by local MPI rank
+        long  indx_lo_g[3];/// Lower left hand point (globally numbered ) of subgrid owned by local MPI rank including ghostpoints
 
-        long nbuffer[3];
+        long nbuffer[3]; /// Number of points in buffer for ghostpoint update
         long ghosted_stride[3];
 
-        double dx[3];
-        double dxi[3];};
+        double dx[3]; /// Grid spacing in grid direction
+        double dxi[3]; // Inverse gird spacing in grid direction
+        };
