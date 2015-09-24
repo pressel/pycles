@@ -155,6 +155,7 @@ cdef class RadiationDyCOMS_RF01:
         # Now transpose the flux pencils
         self.z_pencil.reverse_double(&Gr.dims, Pa, f_heat, &heating_rate[0])
 
+
         # Now update entropy tendencies
         with nogil:
             for i in xrange(imin, imax):
@@ -167,6 +168,7 @@ cdef class RadiationDyCOMS_RF01:
                             s_shift + ijk] +=  heating_rate[ijk] / DV.values[ijk + t_shift]
 
         return
+
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                    PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,

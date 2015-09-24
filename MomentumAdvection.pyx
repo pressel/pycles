@@ -25,9 +25,9 @@ cdef class MomentumAdvection:
         try:
             self.order = namelist['momentum_transport']['order']
         except:
-            Pa.root_prPy_ssize_t(
+            Pa.root_print(
                 'momentum_transport order not given in namelist')
-            Pa.root_prPy_ssize_t('Killing simulation now!')
+            Pa.root_print('Killing simulation now!')
             Pa.kill()
             Pa.kill()
 
