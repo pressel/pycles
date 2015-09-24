@@ -439,6 +439,7 @@ cdef class SurfaceDYCOMS_RF01:
         NS.add_ts('uw_surface_mean',Gr, Pa)
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        NS.add_ts('qt_flux_surface_mean', Gr, Pa)
 
         return
 
@@ -521,6 +522,8 @@ cdef class SurfaceDYCOMS_RF01:
         NS.write_ts('vw_surface_mean', tmp, Pa)
         tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
         NS.write_ts('s_flux_surface_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.qt_flux[0])
+        NS.write_ts('qt_flux_surface_mean', tmp, Pa)
 
         return
 
