@@ -79,12 +79,12 @@ cdef class MomentumAdvection:
                     Gr.dims.npg + i_advecting * Gr.dims.npg
 
                 # Compute the fluxes
-                compute_advective_fluxes_m(& Gr.dims, & Rs.rho0[0], & Rs.rho0_half[0],
-                                            & PV.values[shift_advected], & PV.values[shift_advecting], & self.flux[shift_flux],
+                compute_advective_fluxes_m(&Gr.dims, &Rs.rho0[0], &Rs.rho0_half[0],
+                                            &PV.values[shift_advected], &PV.values[shift_advecting], &self.flux[shift_flux],
                                             i_advected, i_advecting, self.order)
                 # Compute flux divergence
-                momentum_flux_divergence(& Gr.dims, & Rs.alpha0[0], & Rs.alpha0_half[0], & self.flux[shift_flux],
-                                          & PV.tendencies[shift_advected], i_advected, i_advecting)
+                momentum_flux_divergence(&Gr.dims, &Rs.alpha0[0], &Rs.alpha0_half[0], &self.flux[shift_flux],
+                                          &PV.tendencies[shift_advected], i_advected, i_advecting)
         return
 
 
