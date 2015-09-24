@@ -44,6 +44,20 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
         } // End i loop
     } // End else
 
+    // If this is the surface set the flux to be exactly zero (This may not be necessary)
+    if(dims->indx_lo[2] == 0){
+        for(size_t i=imin; i<imax; i++){
+            const size_t ishift = i * istride;
+            for(size_t j=jmin; j<jmax; j++){
+                const size_t jshift = j * jstride;
+                const size_t ijk = ishift + jshift + dims->gw;
+                flux[ijk] = 0.0;
+
+            }
+         }
+    }
+
+
     return;
 }
 

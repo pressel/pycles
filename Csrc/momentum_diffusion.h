@@ -1,5 +1,6 @@
 #pragma once
 #include "grid.h"
+#include <stdio.h>
 
 void compute_diffusive_flux_m(const struct DimStruct *dims, double* restrict strain_rate,  double* restrict viscosity , double* restrict flux, double* restrict rho0, double* restrict rho0_half, size_t i1, size_t i2){
 
@@ -8,13 +9,15 @@ void compute_diffusive_flux_m(const struct DimStruct *dims, double* restrict str
 
     const size_t imin = dims->gw-1;
     const size_t jmin = dims->gw-1;
-    const size_t kmin = dims->gw-1;
+    size_t kmin = dims->gw-1;
 
     const size_t imax = dims->nlg[0]-dims->gw;
     const size_t jmax = dims->nlg[1]-dims->gw;
     const size_t kmax = dims->nlg[2]-dims->gw;
 
     const size_t stencil[3] = {istride,jstride,1};
+
+
 
     if(i1 != 2 && i2 != 2){
         if(i1==i2){
@@ -73,6 +76,20 @@ void compute_diffusive_flux_m(const struct DimStruct *dims, double* restrict str
         }
 
     }
+
+    // If this is the surface set the flux to be exactly zero (This may not be necessary)
+    if(dims->indx_lo[2] == 0){
+        for(size_t i=imin; i<imax; i++){
+            const size_t ishift = i * istride;
+            for(size_t j=jmin; j<jmax; j++){
+                const size_t jshift = j * jstride;
+                const size_t ijk = ishift + jshift + dims->gw;
+                flux[ijk] = 0.0;
+
+            }
+         }
+    }
+
 
     return;
 }
