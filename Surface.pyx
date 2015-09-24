@@ -388,9 +388,9 @@ cdef class SurfaceGabls:
                     ij = i * istride_2d + j
                     self.u_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
                     self.v_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
-                    PV.tendencies[u_shift  + ijk] = PV.tendencies[u_shift  + ijk] + self.u_flux[ij] * tendency_factor
-                    PV.tendencies[v_shift  + ijk] = PV.tendencies[v_shift  + ijk] + self.v_flux[ij] * tendency_factor
-                    PV.tendencies[s_shift  + ijk] = PV.tendencies[s_shift  + ijk] + self.s_flux[ij] * tendency_factor
+                    PV.tendencies[u_shift  + ijk] += self.u_flux[ij] * tendency_factor
+                    PV.tendencies[v_shift  + ijk] += self.v_flux[ij] * tendency_factor
+                    PV.tendencies[s_shift  + ijk] += self.s_flux[ij] * tendency_factor
                     # PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux[ij]* tendency_factor
         return
 
@@ -429,9 +429,6 @@ cdef class SurfaceDYCOMS_RF01:
                               /(theta_surface*(1.0 + (eps_vi-1)*qt_surface)))
 
 
-
-
-
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
@@ -439,11 +436,9 @@ cdef class SurfaceDYCOMS_RF01:
         self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
 
-
-        #NS.add_ts('friction_velocity_mean', Gr, Pa)
-        #NS.add_ts('uw_surface_mean',Gr, Pa)
-        #NS.add_ts('vw_surface_mean',Gr, Pa)
-        #NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        NS.add_ts('uw_surface_mean',Gr, Pa)
+        NS.add_ts('vw_surface_mean',Gr, Pa)
+        NS.add_ts('s_flux_surface_mean', Gr, Pa)
 
         return
 
@@ -509,10 +504,10 @@ cdef class SurfaceDYCOMS_RF01:
                     ij = i * istride_2d + j
                     self.u_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
                     self.v_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
-                    PV.tendencies[u_shift  + ijk] = PV.tendencies[u_shift  + ijk] + self.u_flux[ij] * tendency_factor
-                    PV.tendencies[v_shift  + ijk] = PV.tendencies[v_shift  + ijk] + self.v_flux[ij] * tendency_factor
-                    PV.tendencies[s_shift  + ijk] = PV.tendencies[s_shift  + ijk] + self.s_flux[ij] * tendency_factor
-                    PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] + self.qt_flux[ij]* tendency_factor
+                    PV.tendencies[u_shift  + ijk] +=  self.u_flux[ij] * tendency_factor
+                    PV.tendencies[v_shift  + ijk] +=  self.v_flux[ij] * tendency_factor
+                    PV.tendencies[s_shift  + ijk] +=  self.s_flux[ij] * tendency_factor
+                    PV.tendencies[qt_shift + ijk] +=  self.qt_flux[ij] * tendency_factor
 
         return
 
@@ -520,14 +515,12 @@ cdef class SurfaceDYCOMS_RF01:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef double tmp
 
-        #tmp = Pa.HorizontalMeanSurface(Gr, &self.ustar[0])
-        #NS.write_ts('friction_velocity_mean', tmp, Pa)
-        #tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
-        #NS.write_ts('uw_surface_mean', tmp, Pa)
-        #tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
-        #NS.write_ts('vw_surface_mean', tmp, Pa)
-        #tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
-        #NS.write_ts('s_flux_surface_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
+        NS.write_ts('uw_surface_mean',tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
+        NS.write_ts('vw_surface_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
+        NS.write_ts('s_flux_surface_mean', tmp, Pa)
 
         return
 
