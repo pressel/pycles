@@ -18,7 +18,7 @@ cimport ParallelMPI
 include 'parameters.pxi'
 
 cdef class Forcing:
-    def __init__(self, namelist):
+    def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
             self.scheme = ForcingSullivanPatton()
@@ -26,10 +26,12 @@ cdef class Forcing:
             self.scheme = ForcingBomex()
         elif casename == 'Gabls':
             self.scheme = ForcingGabls()
-        elif casename == 'DyCOMS_RF01':
+        elif casename == 'DYCOMS_RF01':
             self.scheme = ForcingDyCOMS_RF01()
         else:
-            self.scheme= ForcingNone()
+            Pa.root_print('No focing for casename: ' +  casename)
+            Pa.root_print('Killing simulation now!!!')
+            Pa.kill()
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -336,6 +338,14 @@ cdef class ForcingDyCOMS_RF01:
                 self.subsidence[k] = -Gr.zl[k] * self.divergence
                 self.ug[k] = 7.0
                 self.vg[k] = -5.5
+
+        #Initialize Statistical Output
+        NS.add_profile('s_subsidence_tendency', Gr, Pa)
+        NS.add_profile('qt_subsidence_tendency', Gr, Pa)
+        NS.add_profile('u_subsidence_tendency', Gr, Pa)
+        NS.add_profile('v_subsidence_tendency', Gr, Pa)
+        NS.add_profile('u_coriolis_tendency', Gr, Pa)
+        NS.add_profile('v_coriolis_tendency',Gr, Pa)
 
         return
 
