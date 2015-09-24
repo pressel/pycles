@@ -493,8 +493,8 @@ cdef class SurfaceDYCOMS_RF01:
                     DV.values_2d[lmo_shift + ij] = -DV.values_2d[ustar_shift + ij]**3.0/self.buoyancy_flux/vkb
                     lam = self.Lambda_fp(DV.values[t_shift+ijk])
                     lv = self.L_fp(DV.values[t_shift+ijk],lam)
-                    pv = pv_c(Ref.p0_half[gw],PV.values[ijk + qt_shift],PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
-                    pd = pd_c(Ref.p0_half[gw],PV.values[ijk + qt_shift],PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                    pv = pv_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                    pd = pd_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
                     sv = sv_c(pv,DV.values[t_shift+ijk])
                     sd = sd_c(pd,DV.values[t_shift+ijk])
                     self.qt_flux[ij] = self.fq / lv
