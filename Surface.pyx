@@ -103,7 +103,6 @@ cdef class SurfaceSullivanPatton:
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
 
 
-
         NS.add_ts('uw_surface_mean',Gr, Pa)
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
@@ -509,13 +508,9 @@ cdef class SurfaceDYCOMS_RF01:
         return
 
 
-
 # Anderson, R. J., 1993: A Study of Wind Stress and Heat Flux over the Open
 # Ocean by the Inertial-Dissipation Method. J. Phys. Oceanogr., 23, 2153--“2161.
 # See also: ARPS documentation
 cdef inline double compute_z0(double z1, double windspeed) nogil:
     cdef double z0 =z1*exp(-kappa/sqrt((0.4 + 0.079*windspeed)*1e-3))
     return z0
-
-
-
