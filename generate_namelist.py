@@ -605,7 +605,7 @@ def Isdac():
     namelist['grid']['nx'] = 64
     namelist['grid']['ny'] = 64
     namelist['grid']['nz'] = 250
-    namelist['grid']['gw'] = 7
+    namelist['grid']['gw'] = 3
     namelist['grid']['dx'] = 50.0
     namelist['grid']['dy'] = 50.0
     namelist['grid']['dz'] = 10.0
@@ -626,7 +626,7 @@ def Isdac():
     namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'None_SA'
+    namelist['microphysics']['scheme'] = 'Arctic'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
 
     namelist["sgs"] = {}
@@ -636,10 +636,10 @@ def Isdac():
     namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 7
+    namelist['momentum_transport']['order'] = 5
 
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 7
+    namelist['scalar_transport']['order'] = 5
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'

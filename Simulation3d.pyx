@@ -67,6 +67,7 @@ class Simulation3d:
         self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.StatsIO, self.Pa)
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
+        self.Micro.initialize(self.Gr, self.PV, self.StatsIO, self.Pa)
         self.PV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ke.initialize(self.Gr, self.StatsIO, self.Pa)
 
@@ -102,6 +103,7 @@ class Simulation3d:
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
+                self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa)
                 self.SA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
@@ -165,6 +167,7 @@ class Simulation3d:
                     self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Ra.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+                self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
                 self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
@@ -186,6 +189,7 @@ class Simulation3d:
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Ra.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
         self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)

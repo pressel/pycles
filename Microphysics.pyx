@@ -6,6 +6,7 @@
 
 cimport ParallelMPI
 from Thermodynamics cimport LatentHeat
+from MicrophysicsArctic cimport MicrophysicsArctic
 
 cdef class No_Microphysics_Dry:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
@@ -27,3 +28,5 @@ def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         return No_Microphysics_Dry(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'None_SA'):
         return No_Microphysics_SA(Par, LH, namelist)
+    elif(namelist['microphysics']['scheme'] == 'Arctic'):
+        return MicrophysicsArctic(namelist, LH, Par)
