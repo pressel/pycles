@@ -347,8 +347,6 @@ cdef class ForcingDyCOMS_RF01:
         NS.add_profile('u_coriolis_tendency', Gr, Pa)
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
 
-        print np.array(self.subsidence)
-
         return
 
 
