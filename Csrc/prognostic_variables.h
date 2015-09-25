@@ -218,16 +218,20 @@ void set_bcs(long dim, long s, double bc_factor ,struct DimStruct *dims,
 
         if(dim==2){
             if(s==-1){
-                const long bc_start = dims->nlg[2] - dims->gw;  // This is the index of the frist boundary point
+                const long bc_start = dims->nlg[2] - dims->gw;  // This is the index of the first boundary point
                 for (i=0; i<dims->nlg[0]; i++){
                     const long ishift = i * istride;
                     for(j=0;j<dims->nlg[1];j++){
                         const long jshift = j * jstride;
                         if(bc_factor == 1.0){
                             for(k=0;k<dims->gw;k++){
-//                                values[ishift + jshift + bc_start +k  ] = bc_factor * values[ishift + jshift + bc_start  - k  -1 ];
-                                values[ishift + jshift + bc_start +k  ] = bc_factor * values[ishift + jshift + bc_start -1 ];
+                                values[ishift + jshift + bc_start +k  ] = bc_factor * values[ishift + jshift + bc_start  - k  -1 ];
                                 }
+                        }
+                        else if(bc_factor == 2.0){
+                            for(k=0;k<dims->gw;k++){
+                                values[ishift + jshift + bc_start +k  ] = bc_factor * values[ishift + jshift + bc_start -1 ];
+                             }
                         }
                         else{
                             values[ishift + jshift + bc_start ] = 0.0;
