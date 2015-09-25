@@ -3,7 +3,7 @@ cimport numpy as np
 
 #Below are microphysical parameters corresponding to Grabowski, JAS, 1998 microphysics scheme
 
-include 'Parameters.pxi'
+include 'parameters.pxi'
 
 
 '''some parameters held in common by microphysics schemes'''
