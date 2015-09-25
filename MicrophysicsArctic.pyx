@@ -270,7 +270,7 @@ cdef class MicrophysicsArctic:
         NS.write_profile('rain_evap_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMean(Gr, &self.evaporation[Gr.dims.npg])
-        NS.write_profile('snow_evap_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('snow_depo_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMean(Gr, &self.accretion[0])
         NS.write_profile('rain_accr_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
