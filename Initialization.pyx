@@ -12,8 +12,6 @@ cimport Grid
 cimport PrognosticVariables
 from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
 cimport ReferenceState
-import time
-import cython
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
 
