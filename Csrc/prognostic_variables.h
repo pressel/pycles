@@ -225,12 +225,12 @@ void set_bcs(size_t dim, size_t s, double bc_factor ,struct DimStruct *dims,
                         const size_t jshift = j * jstride;
                         if(bc_factor == 1.0){
                             for(k=0;k<dims->gw;k++){
-                                values[ishift + jshift + bc_start +k  ] = bc_factor * values[ishift + jshift + bc_start  - k  -1 ];
+                                values[ishift + jshift + bc_start +k  ] = values[ishift + jshift + bc_start  - k  -1 ];
                                 }
                         }
                         else if(bc_factor == 2.0){
                             for(k=0;k<dims->gw;k++){
-                                values[ishift + jshift + bc_start +k  ] = bc_factor * values[ishift + jshift + bc_start -1 ];
+                                values[ishift + jshift + bc_start +k  ] = values[ishift + jshift + bc_start -1 ];
                              }
                         }
                         else{
@@ -252,12 +252,12 @@ void set_bcs(size_t dim, size_t s, double bc_factor ,struct DimStruct *dims,
                         const size_t jshift = j * jstride;
                         if(bc_factor == 1.0){
                             for(k=0;k<dims->gw;k++){
-                                values[ishift + jshift + bc_start -k ] = bc_factor * values[ishift + jshift + bc_start  + k + 1];
+                                values[ishift + jshift + bc_start -k ] = values[ishift + jshift + bc_start  + k + 1];
                              }
                         }
                         else if(bc_factor == 2.0){
                             for(k=0;k<dims->gw;k++){
-                                values[ishift + jshift + bc_start -k ] = bc_factor * values[ishift + jshift + bc_start + 1];
+                                values[ishift + jshift + bc_start -k ] = values[ishift + jshift + bc_start + 1];
                             }
                         }
                         else{
