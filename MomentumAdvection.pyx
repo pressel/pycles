@@ -105,7 +105,14 @@ cdef class MomentumAdvection:
 
         return
 
-    cpdef double[:, :, :] get_flux(self, Py_ssize_t i_advected, Py_ssize_t i_advecting, Grid.Grid Gr):
+    cpdef double [:, :, :] get_flux(self, Py_ssize_t i_advected, Py_ssize_t i_advecting, Grid.Grid Gr):
+        '''
+        Returns momentum flux tensor component.
+        :param i_advected: direction of advection velocity
+        :param i_advecting:  direction of advecting velocity
+        :param Gr: Grid class
+        :return: memory view type double rank-3
+        '''
         cdef:
             Py_ssize_t shift_flux = i_advected * Gr.dims.dims * Gr.dims.npg + i_advecting * Gr.dims.npg
             Py_ssize_t i, j, k, ijk, ishift, jshift
