@@ -18,7 +18,7 @@ cimport numpy as np
 import cython
 
 cdef extern from "momentum_advection.h":
-    void compute_advective_fluxes_m(Grid.DimStruct * dims, double * rho0, double * rho0_half, double * vel_advected, double * vel_advecting,
+    void compute_advective_fluxes_m(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *vel_advected, double *vel_advecting,
                                     double * flux, Py_ssize_t d_advected, Py_ssize_t d_advecting, Py_ssize_t scheme) nogil
 cdef class MomentumAdvection:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
