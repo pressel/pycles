@@ -102,7 +102,6 @@ cdef class MomentumAdvection:
                 tmp_interp[:] = tmp[:]
             NS.write_profile(PV.velocity_names_directional[i_advected] + '_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-
         return
 
     cpdef double [:, :, :] get_flux(self, Py_ssize_t i_advected, Py_ssize_t i_advecting, Grid.Grid Gr):
