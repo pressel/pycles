@@ -222,7 +222,7 @@ void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double*
                     const double phip = scalar[ijk];
                     // Up wind for negative velocity
                     const double phim =scalar[ijk+sp1];
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -238,7 +238,7 @@ void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double*
                     const double phip = scalar[ijk];
                     // Up wind for negative velocity
                     const double phim =scalar[ijk+sp1];
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -277,7 +277,7 @@ void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     // Up wind for negative velocity
                     const double phim = interp_weno3(scalar[ijk+sp2],scalar[ijk+sp1],
                                             scalar[ijk]);
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -295,7 +295,7 @@ void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     // Up wind for negative velocity
                     const double phim = interp_weno3(scalar[ijk+sp2],scalar[ijk+sp1],
                                             scalar[ijk]);
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -337,7 +337,7 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     // Up wind for negative velocity
                     const double phim = interp_weno5(scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
                                             scalar[ijk],scalar[ijk+sm1]);
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -355,7 +355,7 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     // Up wind for negative velocity
                     const double phim = interp_weno5(scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
                                             scalar[ijk],scalar[ijk+sm1]);
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -398,7 +398,7 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
                     // Up wind for negative velocity
                     const double phim = interp_weno7(scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
                                             scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2]);
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -416,7 +416,7 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
                     // Up wind for negative velocity
                     const double phim = interp_weno7(scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
                                             scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2]);
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -461,7 +461,7 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     // Up wind for negative velocity
                     const double phim = interp_weno9(scalar[ijk+sp5],scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
                                             scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2],scalar[ijk+sm3]);
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -479,7 +479,7 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     // Up wind for negative velocity
                     const double phim = interp_weno9(scalar[ijk+sp5],scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
                                             scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2],scalar[ijk+sm3]);
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -526,7 +526,7 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
                     // Up wind for negative velocity
                     const double phim = interp_weno11(scalar[ijk+sp6],scalar[ijk+sp5],scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
                                             scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2],scalar[ijk+sm3],scalar[ijk+sm4]);
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -544,7 +544,7 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
                     // Up wind for negative velocity
                     const double phim = interp_weno11(scalar[ijk+sp6],scalar[ijk+sp5],scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
                                             scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2],scalar[ijk+sm3],scalar[ijk+sm4]);
-                    flux[ijk] =  (0.5*(velocity[ijk]+fabs(velocity[ijk]))*phip + 0.5*(velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
