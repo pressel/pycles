@@ -71,7 +71,6 @@ void compute_strain_rate(const struct DimStruct *dims, double* restrict vgrad, d
 }
 
 
-
 void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict strain_rate, double* restrict strain_rate_mag){
 
     const size_t istride = dims->nlg[1] * dims->nlg[2];
@@ -137,7 +136,6 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
     for(size_t i=0; i<dims->npg; i++){
         strain_rate_mag[i] = sqrt(2.0*strain_rate_mag[i]);
     }
-
     return;
 }
 
