@@ -441,7 +441,7 @@ void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                             vel_advected[ijk]);
                         const double vel_adv = interp_2(vel_advecting[ijk],vel_advecting[ijk + sp1_ing]);
 
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
                     }
                 }
             }
@@ -461,7 +461,7 @@ void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                             vel_advected[ijk]);
                         const double vel_adv = interp_2(vel_advecting[ijk],vel_advecting[ijk + sp1_ing]);
 
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
                     }
                 }
             }
@@ -481,7 +481,7 @@ void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                             vel_advected[ijk]);
                         const double vel_adv = interp_2(vel_advecting[ijk],vel_advecting[ijk + sp1_ing]);
 
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
                     }
                 }
             }
@@ -531,7 +531,7 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed]);
                         const double vel_adv = interp_4(vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing]);
 
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
                     }
                 }
             }
@@ -550,7 +550,7 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                         const double phim = interp_weno5(vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed]);
                         const double vel_adv = interp_4(vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing]);
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
                     }
                 }
             }
@@ -569,7 +569,7 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                         const double phim = interp_weno5(vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed]);
                         const double vel_adv = interp_4(vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing]);
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
                     }
                 }
             }
@@ -622,7 +622,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed]);
                         const double vel_adv = interp_6(vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing]);
 
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
                     }
                 }
             }
@@ -641,7 +641,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                         const double phim = interp_weno7(vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed]);
                         const double vel_adv = interp_6(vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing]);
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
                     }
                 }
             }
@@ -660,7 +660,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                         const double phim = interp_weno7(vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed]);
                         const double vel_adv = interp_6(vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing]);
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
                     }
                 }
             }
@@ -718,7 +718,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed]);
                         const double vel_adv = interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing]);
 
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
 
 
                     }
@@ -739,7 +739,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                         const double phim = interp_weno9(vel_advected[ijk+sp5_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed]);
                         const double vel_adv = interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing]);
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
 
                     }
                 }
@@ -759,7 +759,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                         const double phim = interp_weno9(vel_advected[ijk+sp5_ed],vel_advected[ijk+sp4_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp1_ed],
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed]);
                         const double vel_adv = interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing]);
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
 
                     }
                 }
@@ -821,7 +821,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm4_ed]);
                         const double vel_adv = interp_10(vel_advecting[ijk+sm4_ing],vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing],vel_advecting[ijk + sp5_ing]);
 
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
                     }
                 }
             }
@@ -841,7 +841,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm4_ed]);
                         const double vel_adv = interp_10(vel_advecting[ijk+sm4_ing],vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing],vel_advecting[ijk + sp5_ing]);
 
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
                     }
                 }
             }
@@ -861,7 +861,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                                             vel_advected[ijk],vel_advected[ijk+sm1_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm3_ed],vel_advected[ijk+sm4_ed]);
                         const double vel_adv = interp_10(vel_advecting[ijk+sm4_ing],vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk + sp1_ing],vel_advecting[ijk + sp2_ing],vel_advecting[ijk + sp3_ing],vel_advecting[ijk + sp4_ing],vel_advecting[ijk + sp5_ing]);
 
-                        flux[ijk] = (0.5*(vel_adv+fabs(vel_adv))*phip + 0.5*(vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
                     }
                 }
             }
