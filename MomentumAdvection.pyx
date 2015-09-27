@@ -27,7 +27,6 @@ cdef class MomentumAdvection:
                 'momentum_transport order not given in namelist')
             Pa.root_print('Killing simulation now!')
             Pa.kill()
-            Pa.kill()
 
         return
 
