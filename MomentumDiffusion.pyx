@@ -15,8 +15,6 @@ from NetCDFIO cimport NetCDFIO_Stats
 import numpy as np
 cimport numpy as np
 
-import cython
-
 from FluxDivergence cimport momentum_flux_divergence
 
 cdef extern from 'momentum_diffusion.h':

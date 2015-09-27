@@ -15,8 +15,6 @@ from NetCDFIO cimport NetCDFIO_Stats
 import numpy as np
 cimport numpy as np
 
-import cython
-
 cdef extern from "momentum_advection.h":
     void compute_advective_fluxes_m(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *vel_advected, double *vel_advecting,
                                     double * flux, Py_ssize_t d_advected, Py_ssize_t d_advecting, Py_ssize_t scheme) nogil
@@ -108,9 +106,6 @@ cdef class MomentumAdvection:
 
         return
 
-    @cython.boundscheck(False)  # Turn off numpy array index bounds checking
-    @cython.wraparound(False)  # Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
     cpdef double[:, :, :] get_flux(self, Py_ssize_t i_advected, Py_ssize_t i_advecting, Grid.Grid Gr):
         cdef:
             Py_ssize_t shift_flux = i_advected * Gr.dims.dims * Gr.dims.npg + i_advecting * Gr.dims.npg
