@@ -477,8 +477,8 @@ cdef class SurfaceDYCOMS_RF01:
                     pd = pd_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
                     sv = sv_c(pv,DV.values[t_shift+ijk])
                     sd = sd_c(pd,DV.values[t_shift+ijk])
-                    self.qt_flux[ij] = self.fq / lv
-                    self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ijk] + self.qt_flux[ij]*(sv - sd))
+                    self.qt_flux[ij] = self.fq / lv / 1.22
+                    self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ijk] + self.fq*(sv - sd))
             for i in xrange(gw, imax-gw):
                 for j in xrange(gw, jmax-gw):
                     ijk = i * istride + j * jstride + gw
