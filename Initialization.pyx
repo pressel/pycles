@@ -12,8 +12,6 @@ cimport Grid
 cimport PrognosticVariables
 from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
 cimport ReferenceState
-import time
-import cython
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
 
@@ -520,7 +518,7 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[ijk + qt_varshift]  = qt[k]
 
                 #Now set the entropy prognostic variable including a potential temperature perturbation
-                if Gr.zl_half[k] < 200.0:
+                if Gr.zl_half[k] < 840.0:
                     theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
                 else:
                     theta_pert_ = 0.0

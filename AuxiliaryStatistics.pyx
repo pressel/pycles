@@ -41,7 +41,8 @@ def AuxiliaryStatisticsFactory(namelist, Grid.Grid Gr, NetCDFIO_Stats NS, Parall
 class AuxiliaryStatisticsNone:
     def __init__(self):
         return
-    def stats_io(self, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
 class CumulusStatistics:

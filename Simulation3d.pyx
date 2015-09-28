@@ -47,7 +47,7 @@ class Simulation3d:
         self.Th = ThermodynamicsFactory(namelist, self.Micro, self.LH, self.Pa)
         self.Ref = ReferenceState.ReferenceState(self.Gr)
         self.Sur = Surface.Surface(namelist, self.LH, self.Pa)
-        self.Fo = Forcing.Forcing(namelist)
+        self.Fo = Forcing.Forcing(namelist, self.Pa)
         self.Ra = Radiation.Radiation(namelist, self.Pa)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()

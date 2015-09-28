@@ -16,12 +16,11 @@ inline double temperature_no_ql(double pd, double pv, double s, double qt){
 
 void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                     const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
-//    *qc = 0.0;
     *qv = qt;
     *ql = 0.0;
     *qi = 0.0;
-    double pd_1 = pd_c(p0,qt,qt);
     double pv_1 = pv_c(p0,qt,qt );
+    double pd_1 = p0 - pv_1;
     double T_1 = temperature_no_ql(pd_1,pv_1,s,qt);
     double pv_star_1 = lookup(LT, T_1);
     double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
@@ -45,8 +44,8 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         do{
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
-            double pd_2 = pd_c(p0,qt,qv_star_2);
             double pv_2 = pv_c(p0,qt,qv_star_2);
+            double pd_2 = p0 - pv_2;
             sigma_2 = qt - qv_star_2;
             lam_2 = lam_fp(T_2);
             double L_2 = L_fp(T_2,lam_2);
@@ -62,7 +61,6 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         *qv = qv_star_2;
         *ql = lam_2 * sigma_2;
         *qi = (1.0 - lam_2) * sigma_2;
-//        *qc = (qt - qv_star_2);
         return;
     }
 }
@@ -71,23 +69,23 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
     double* restrict p0, double* restrict s, double* restrict qt, double* restrict T,
     double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){
 
-    size_t i,j,k;
-    const size_t istride = dims->nlg[1] * dims->nlg[2];
-    const size_t jstride = dims->nlg[2];
-    const size_t imin = 0;
-    const size_t jmin = 0;
-    const size_t kmin = 0;
-    const size_t imax = dims->nlg[0];
-    const size_t jmax = dims->nlg[1];
-    const size_t kmax = dims->nlg[2];
+    ssize_t i,j,k;
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
 
 
     for (i=imin; i<imax; i++){
-       const size_t ishift = i * istride;
+       const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
-            const size_t jshift = j * jstride;
+            const ssize_t jshift = j * jstride;
                 for (k=kmin;k<kmax;k++){
-                    const size_t ijk = ishift + jshift + k;
+                    const ssize_t ijk = ishift + jshift + k;
                     eos_c(LT, lam_fp, L_fp, p0[k], s[ijk],qt[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk],qt[ijk],qv[ijk]);
 
@@ -99,33 +97,33 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
 
 void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double* restrict alpha, double* restrict buoyancy, double* restrict wt){
 
-    size_t i,j,k;
-    const size_t istride = dims->nlg[1] * dims->nlg[2];
-    const size_t jstride = dims->nlg[2];
-    const size_t imin = 0;
-    const size_t jmin = 0;
-    const size_t kmin = 0;
-    const size_t imax = dims->nlg[0];
-    const size_t jmax = dims->nlg[1];
-    const size_t kmax = dims->nlg[2];
+    ssize_t i,j,k;
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
 
     for (i=imin; i<imax; i++){
-       const size_t ishift = i * istride;
+       const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
-            const size_t jshift = j * jstride;
+            const ssize_t jshift = j * jstride;
             for (k=kmin;k<kmax;k++){
-                const size_t ijk = ishift + jshift + k;
+                const ssize_t ijk = ishift + jshift + k;
                 buoyancy[ijk] = buoyancy_c(alpha0[k],alpha[ijk]);
             } // End k loop
         } // End j loop
     } // End i loop
 
     for (i=imin; i<imax; i++){
-       const size_t ishift = i * istride;
+       const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
-            const size_t jshift = j * jstride;
+            const ssize_t jshift = j * jstride;
             for (k=kmin+1;k<kmax-2;k++){
-                const size_t ijk = ishift + jshift + k;
+                const ssize_t ijk = ishift + jshift + k;
                 wt[ijk] = wt[ijk] + interp_2(buoyancy[ijk],buoyancy[ijk+1]);
             } // End k loop
         } // End j loop
@@ -135,34 +133,34 @@ void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double*
 
 void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double), double* restrict p0, double* restrict T, double* restrict qt, double* restrict qv, double* restrict theta_rho,double* restrict bvf){
 
-    size_t i,j,k;
-    const size_t istride = dims->nlg[1] * dims->nlg[2];
-    const size_t jstride = dims->nlg[2];
-    const size_t imin = 0;
-    const size_t jmin = 0;
-    const size_t kmin = 0;
-    const size_t imax = dims->nlg[0];
-    const size_t jmax = dims->nlg[1];
-    const size_t kmax = dims->nlg[2];
+    ssize_t i,j,k;
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
     const double dzi = 1.0/dims->dx[2];
 
     for (i=imin; i<imax; i++){
-       const size_t ishift = i * istride;
+       const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
-            const size_t jshift = j * jstride;
+            const ssize_t jshift = j * jstride;
             for (k=kmin;k<kmax;k++){
-                const size_t ijk = ishift + jshift + k;
+                const ssize_t ijk = ishift + jshift + k;
                 theta_rho[ijk] = theta_rho_c(p0[k],T[ijk],qt[ijk],qv[ijk]);
             } // End k loop
         } // End j loop
     } // End i loop
 
     for(i=imin; i<imax; i++){
-        const size_t ishift = i * istride;
+        const ssize_t ishift = i * istride;
         for(j=jmin; j<jmax; j++){
-            const size_t jshift = j * jstride;
+            const ssize_t jshift = j * jstride;
             for(k=kmin+1; k<kmax-1; k++){
-                const size_t ijk = ishift + jshift + k;
+                const ssize_t ijk = ishift + jshift + k;
                 if(qv[ijk]<qt[ijk]){
                     //moist saturated
                     double Lv=L_fp(T[ijk],lam_fp(T[ijk]));
@@ -187,23 +185,23 @@ void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(do
 
 void thetali_update(struct DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double* restrict p0, double* restrict T, double* restrict qt, double* restrict ql, double* restrict qi, double* restrict thetali){
 
-    size_t i,j,k;
-    const size_t istride = dims->nlg[1] * dims->nlg[2];
-    const size_t jstride = dims->nlg[2];
-    const size_t imin = 0;
-    const size_t jmin = 0;
-    const size_t kmin = 0;
-    const size_t imax = dims->nlg[0];
-    const size_t jmax = dims->nlg[1];
-    const size_t kmax = dims->nlg[2];
+    ssize_t i,j,k;
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
     const double dzi = 1.0/dims->dx[2];
 
     for (i=imin; i<imax; i++){
-       const size_t ishift = i * istride;
+       const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
-            const size_t jshift = j * jstride;
+            const ssize_t jshift = j * jstride;
             for (k=kmin;k<kmax;k++){
-                const size_t ijk = ishift + jshift + k;
+                const ssize_t ijk = ishift + jshift + k;
                 double Lv=L_fp(T[ijk],lam_fp(T[ijk]));
                 thetali[ijk] =  thetali_c(p0[k], T[ijk], qt[ijk], ql[ijk], qi[ijk], Lv);
             } // End k loop

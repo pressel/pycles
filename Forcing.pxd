@@ -64,8 +64,11 @@ cdef class ForcingGabls:
 
 cdef class ForcingDyCOMS_RF01:
     cdef:
+        double [:] ug
+        double [:] vg
         double divergence
-        double [:] w_half
+        double [:] subsidence
+        double coriolis_param
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)

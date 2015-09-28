@@ -114,15 +114,15 @@ void build_buffer(long nv, long dim, long s ,struct DimStruct *dims,
 
 }
 
-void buffer_to_values(long dim, long s, struct DimStruct *dims,
+void buffer_to_values(ssize_t dim, ssize_t s, struct DimStruct *dims,
     double* restrict values, double* restrict buffer){
 
-    long i,j,k;
+    ssize_t i,j,k;
 
-    long istride = dims->nlg[1] * dims->nlg[2];
-    long jstride = dims->nlg[2];
-    long buffer_var_shift ;
-    long shift_offset;
+    ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    ssize_t jstride = dims->nlg[2];
+    ssize_t buffer_var_shift ;
+    ssize_t shift_offset;
 
     if (dim == 0){
         if( s == -1){
@@ -134,15 +134,15 @@ void buffer_to_values(long dim, long s, struct DimStruct *dims,
            shift_offset = 0;
         }
 
-        const long b_istride = dims->nlg[1] * dims->nlg[2];
-        const long b_jstride = dims->nlg[2];
+        const ssize_t b_istride = dims->nlg[1] * dims->nlg[2];
+        const ssize_t b_jstride = dims->nlg[2];
 
         for (i=0; i<dims->gw; i++){
-            const long ishift =(i+shift_offset)*istride;
-            const long b_ishift = i*b_istride;
+            const ssize_t ishift =(i+shift_offset)*istride;
+            const ssize_t b_ishift = i*b_istride;
             for (j=0; j<dims->nlg[1]; j++){
-                const long jshift = j*jstride ;
-                const long b_jshift = j*b_jstride;
+                const ssize_t jshift = j*jstride ;
+                const ssize_t b_jshift = j*b_jstride;
                 for (k=0; k<dims->nlg[2]; k++){
                     values[ishift + jshift + k] =  buffer[b_ishift + b_jshift +k];
                 }
@@ -162,14 +162,14 @@ void buffer_to_values(long dim, long s, struct DimStruct *dims,
             shift_offset = 0;
         }
 
-        const long b_istride = dims->gw * dims->nlg[2];
-        const long b_jstride = dims->nlg[2];
+        const ssize_t b_istride = dims->gw * dims->nlg[2];
+        const ssize_t b_jstride = dims->nlg[2];
         for (i=0; i<dims->nlg[0]; i++){
-            const long ishift = i * istride;
-            const long b_ishift = i * b_istride;
+            const ssize_t ishift = i * istride;
+            const ssize_t b_ishift = i * b_istride;
             for (j=0; j<dims->gw;j++){
-                const long jshift = (j + shift_offset) * jstride;
-                const long b_jshift = j * b_jstride;
+                const ssize_t jshift = (j + shift_offset) * jstride;
+                const ssize_t b_jshift = j * b_jstride;
                 for (k=0;k<dims->nlg[2];k++){
                      values[ishift + jshift + k] =  buffer[b_ishift + b_jshift + k] ;
                 };
@@ -187,14 +187,14 @@ void buffer_to_values(long dim, long s, struct DimStruct *dims,
         else{
            shift_offset = 0;
         }
-        const long b_istride = dims->gw * dims->nlg[1];
-        const long b_jstride = dims->gw;
+        const ssize_t b_istride = dims->gw * dims->nlg[1];
+        const ssize_t b_jstride = dims->gw;
         for (i=0; i<dims->nlg[0]; i++){
-            const long ishift = i * istride;
-            const long b_ishift = i * b_istride;
+            const ssize_t ishift = i * istride;
+            const ssize_t b_ishift = i * b_istride;
             for (j=0; j<dims->nlg[1];j++){
-                const long jshift = j * jstride;
-                const long b_jshift = j * b_jstride;
+                const ssize_t jshift = j * jstride;
+                const ssize_t b_jshift = j * b_jstride;
                 for (k=0;k<dims->gw;k++){
                     values[ishift + jshift + k + shift_offset] = buffer[b_ishift + b_jshift + k ];
                 };
@@ -208,77 +208,77 @@ void buffer_to_values(long dim, long s, struct DimStruct *dims,
     return;
 }
 
-void set_bcs(long dim, long s, double bc_factor ,struct DimStruct *dims,
+void set_bcs(ssize_t dim, ssize_t s, double bc_factor ,struct DimStruct *dims,
     double* restrict values){
 
-        long i,j,k;
+        ssize_t i,j,k;
 
-        const long istride = dims->nlg[1] * dims->nlg[2];
-        const long jstride = dims->nlg[2];
+        const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+        const ssize_t jstride = dims->nlg[2];
 
         if(dim==2){
             if(s==-1){
-                const long bc_start = dims->nlg[2] - dims->gw;  // This is the index of the frist boundary point
+                const ssize_t bc_start = dims->nlg[2] - dims->gw;  // This is the index of the first boundary point
                 for (i=0; i<dims->nlg[0]; i++){
-                    const long ishift = i * istride;
+                    const ssize_t ishift = i * istride;
                     for(j=0;j<dims->nlg[1];j++){
-                        const long jshift = j * jstride;
-                        if(bc_factor == 1.0){
+                        const ssize_t jshift = j * jstride;
+                        if(bc_factor == 2.0){
                             for(k=0;k<dims->gw;k++){
-                                values[ishift + jshift + bc_start +k  ] = bc_factor * values[ishift + jshift + bc_start  - k  -1 ];
-//                                values[ishift + jshift + bc_start +k  ] = bc_factor * values[ishift + jshift + bc_start -1 ];
+                                values[ishift + jshift + bc_start +k  ] = values[ishift + jshift + bc_start  - k  -1 ];
                                 }
+                        }
+                        else if(bc_factor == 1.0){
+                            for(k=0;k<dims->gw;k++){
+                                values[ishift + jshift + bc_start +k  ] = values[ishift + jshift + bc_start -1 ];
+                             }
                         }
                         else{
                             values[ishift + jshift + bc_start ] = 0.0;
                             for(k=1;k<dims->gw;k++){
                                 values[ishift + jshift + bc_start + k] = bc_factor * values[ishift + jshift +  bc_start - k ];
                             }
-                        };
-
+                        }
                     }
                 }
 
             }
             else{
-                const long bc_start = dims->gw-1;
+                const ssize_t bc_start = dims->gw-1;
                 for (i=0; i<dims->nlg[0]; i++){
-                    const long ishift = i * istride;
+                    const ssize_t ishift = i * istride;
                     for(j=0;j<dims->nlg[1];j++){
-                        const long jshift = j * jstride;
-                        if(bc_factor == 1.0){
+                        const ssize_t jshift = j * jstride;
+                        if(bc_factor == 2.0){
                             for(k=0;k<dims->gw;k++){
-                                values[ishift + jshift + bc_start -k ] = bc_factor * values[ishift + jshift + bc_start  + k + 1];
-//                                values[ishift + jshift + bc_start -k ] = bc_factor * values[ishift + jshift + bc_start + 1];
-                                }
+                                values[ishift + jshift + bc_start -k ] = values[ishift + jshift + bc_start  + k + 1];
+                             }
+                        }
+                        else if(bc_factor == 1.0){
+                            for(k=0;k<dims->gw;k++){
+                                values[ishift + jshift + bc_start -k ] = values[ishift + jshift + bc_start + 1];
+                            }
                         }
                         else{
                             values[ishift + jshift + bc_start ] = 0.0;
                             for(k=1;k<dims->gw;k++){
                                 values[ishift + jshift + bc_start - k] = bc_factor * values[ishift + jshift + bc_start +k ];
                             }
-                        };
-
-
+                        }
                     }
                 }
-
-
             }
         }
         else{
             printf("%s\n","PrognocitVariables.set_bcs only implemented for dim=2");
         }
-
-
-
     return;
 }
 
 
-void set_to_zero(long nv, struct DimStruct *dims, double* restrict array){
+void set_to_zero(ssize_t nv, struct DimStruct *dims, double* restrict array){
 
-    int i;
+    ssize_t i;
     for (i = 0; i<dims->npg*nv; i++){
         array[i] = 0;
     };

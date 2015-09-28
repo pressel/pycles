@@ -15,20 +15,17 @@ from NetCDFIO cimport NetCDFIO_Stats
 import numpy as np
 cimport numpy as np
 
-import cython
-
 cdef extern from "momentum_advection.h":
-    void compute_advective_fluxes_m(Grid.DimStruct * dims, double * rho0, double * rho0_half, double * vel_advected, double * vel_advecting,
-                                    double * flux, Py_ssize_t d_advected, Py_ssize_t d_advecting, Py_ssize_t scheme) nogil
+    void compute_advective_fluxes_m(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *vel_advected, double *vel_advecting,
+                                    double *flux, Py_ssize_t d_advected, Py_ssize_t d_advecting, Py_ssize_t scheme) nogil
 cdef class MomentumAdvection:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         try:
             self.order = namelist['momentum_transport']['order']
         except:
-            Pa.root_prPy_ssize_t(
+            Pa.root_print(
                 'momentum_transport order not given in namelist')
-            Pa.root_prPy_ssize_t('Killing simulation now!')
-            Pa.kill()
+            Pa.root_print('Killing simulation now!')
             Pa.kill()
 
         return
@@ -79,12 +76,12 @@ cdef class MomentumAdvection:
                     Gr.dims.npg + i_advecting * Gr.dims.npg
 
                 # Compute the fluxes
-                compute_advective_fluxes_m(& Gr.dims, & Rs.rho0[0], & Rs.rho0_half[0],
-                                            & PV.values[shift_advected], & PV.values[shift_advecting], & self.flux[shift_flux],
+                compute_advective_fluxes_m(&Gr.dims, &Rs.rho0[0], &Rs.rho0_half[0],
+                                            &PV.values[shift_advected], &PV.values[shift_advecting], &self.flux[shift_flux],
                                             i_advected, i_advecting, self.order)
                 # Compute flux divergence
-                momentum_flux_divergence(& Gr.dims, & Rs.alpha0[0], & Rs.alpha0_half[0], & self.flux[shift_flux],
-                                          & PV.tendencies[shift_advected], i_advected, i_advecting)
+                momentum_flux_divergence(&Gr.dims, &Rs.alpha0[0], &Rs.alpha0_half[0], &self.flux[shift_flux],
+                                          &PV.tendencies[shift_advected], i_advected, i_advecting)
         return
 
 
@@ -105,13 +102,16 @@ cdef class MomentumAdvection:
                 tmp_interp[:] = tmp[:]
             NS.write_profile(PV.velocity_names_directional[i_advected] + '_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-
         return
 
-    @cython.boundscheck(False)  # Turn off numpy array index bounds checking
-    @cython.wraparound(False)  # Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
-    cpdef double[:, :, :] get_flux(self, Py_ssize_t i_advected, Py_ssize_t i_advecting, Grid.Grid Gr):
+    cpdef double [:, :, :] get_flux(self, Py_ssize_t i_advected, Py_ssize_t i_advecting, Grid.Grid Gr):
+        '''
+        Returns momentum flux tensor component.
+        :param i_advected: direction of advection velocity
+        :param i_advecting:  direction of advecting velocity
+        :param Gr: Grid class
+        :return: memory view type double rank-3
+        '''
         cdef:
             Py_ssize_t shift_flux = i_advected * Gr.dims.dims * Gr.dims.npg + i_advecting * Gr.dims.npg
             Py_ssize_t i, j, k, ijk, ishift, jshift

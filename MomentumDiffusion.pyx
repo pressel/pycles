@@ -15,13 +15,14 @@ from NetCDFIO cimport NetCDFIO_Stats
 import numpy as np
 cimport numpy as np
 
-import cython
-
 from FluxDivergence cimport momentum_flux_divergence
 
 cdef extern from 'momentum_diffusion.h':
-    cdef void compute_diffusive_flux_m(Grid.DimStruct * dims, double * strain_rate, double * viscosity, double * flux, double* rho0, double* rho0_half, Py_ssize_t i1, Py_ssize_t i2)
-    cdef void compute_entropy_source(Grid.DimStruct * dims, double * viscosity, double * strain_rate_mag, double * temperature, double * entropy_tendency)
+    cdef void compute_diffusive_flux_m(Grid.DimStruct *dims, double *strain_rate,
+                                       double *viscosity, double *flux, double *rho0,
+                                       double *rho0_half, Py_ssize_t i1, Py_ssize_t i2)
+    cdef void compute_entropy_source(Grid.DimStruct *dims, double *viscosity,
+                                     double *strain_rate_mag, double *temperature, double *entropy_tendency)
 
 cdef class MomentumDiffusion:
 
@@ -72,12 +73,12 @@ cdef class MomentumDiffusion:
                 shift_flux = count * Gr.dims.npg
 
                 # First we compute the flux
-                compute_diffusive_flux_m( & Gr.dims, & Ke.strain_rate[shift_flux], & DV.values[visc_shift], & self.flux[shift_flux], &Rs.rho0[0], &Rs.rho0_half[0], i1, i2)
-                momentum_flux_divergence( & Gr.dims, & Rs.alpha0[0], & Rs.alpha0_half[0], & self.flux[shift_flux], & PV.tendencies[shift_v1], i1, i2)
+                compute_diffusive_flux_m(&Gr.dims, &Ke.strain_rate[shift_flux], &DV.values[visc_shift], &self.flux[shift_flux], &Rs.rho0[0], &Rs.rho0_half[0], i1, i2)
+                momentum_flux_divergence(&Gr.dims, &Rs.alpha0[0], &Rs.alpha0_half[0], &self.flux[shift_flux], &PV.tendencies[shift_v1], i1, i2)
 
                 count += 1
 
-        compute_entropy_source(& Gr.dims, & DV.values[visc_shift], & Ke.strain_rate_mag[0], & DV.values[temp_shift], & PV.tendencies[s_shift])
+        compute_entropy_source(&Gr.dims, &DV.values[visc_shift], &Ke.strain_rate_mag[0], &DV.values[temp_shift], &PV.tendencies[s_shift])
         return
 
     cpdef stats_io(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
