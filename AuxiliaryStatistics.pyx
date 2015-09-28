@@ -240,9 +240,7 @@ class StableBLStatistics:
                 ustar2[i] = DV.values_2d[ustar_shift + i] * DV.values_2d[ustar_shift + i]
 
         flux_surface = Pa.HorizontalMeanSurface(Gr,&ustar2[0])
-
         k=Gr.dims.gw
-
         while k < Gr.dims.nlg[2]-Gr.dims.gw and flux_profile[k] > 0.05 * flux_surface:
             k += 1
 
