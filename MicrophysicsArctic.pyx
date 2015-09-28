@@ -41,7 +41,6 @@ cdef class MicrophysicsArctic:
         LH.L_fp = latent_heat_Arctic
 
         self.thermodynamics_type = 'SA'
-        print(self.thermodynamics_type)
 
         #Get namelist variables
         try:

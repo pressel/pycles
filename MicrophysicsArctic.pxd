@@ -30,7 +30,7 @@ cdef inline double lambda_Arctic(double T) nogil:
         double Lambda = 0.0
 
     if T >= Tcold and T <= Twarm:
-        Lambda = pow((T - Tcold)/(Twarm - T), pow_n)
+        Lambda = pow((T - Tcold)/(Twarm - Tcold), pow_n)
     elif T > Twarm:
         Lambda = 1.0
     else:
