@@ -84,7 +84,7 @@ void compute_diffusive_flux_m(const struct DimStruct *dims, double* restrict str
             const ssize_t ishift = i * istride;
             for(ssize_t j=jmin; j<jmax; j++){
                 const ssize_t jshift = j * jstride;
-                const ssize_t ijk = ishift + jshift + dims->gw;
+                const ssize_t ijk = ishift + jshift + dims->gw - 1;
                 flux[ijk] = 0.0;
             }
          }
