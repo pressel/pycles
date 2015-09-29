@@ -99,12 +99,12 @@ cdef class MicrophysicsArctic:
         #Get parameters
         cdef:
             #struct pointers???
-            # hm_properties rain_prop
-            # hm_properties snow_prop
-            # hm_properties ice_prop
-            # hm_properties liquid_prop
-            #
-            # ret_acc src_acc
+            hm_properties rain_prop
+            hm_properties snow_prop
+            hm_properties ice_prop
+            hm_properties liquid_prop
+
+            ret_acc src_acc
 
             Py_ssize_t imin = Gr.dims.gw
             Py_ssize_t jmin = Gr.dims.gw
@@ -137,7 +137,7 @@ cdef class MicrophysicsArctic:
             double aut_rain, aut_snow, evp_rain, evp_snow, melt_snow
             double vapor_star
 
-            # double iter_count, time_added, dt_, rate
+            double iter_count, time_added, dt_, rate, rate1, rate2, rate3, rate4
             double machine_eps = np.finfo(np.float64).eps
 
 
@@ -163,65 +163,66 @@ cdef class MicrophysicsArctic:
                         #Get liquid fraction ???
                         # lf[ijk] = Th.compute_liquid_fraction_c()
                         #Assign mass fraction of each species to property structs
-                        self.rain_prop.mf = PV.values[qrain_shift + ijk]
-                        self.snow_prop.mf = PV.values[qsnow_shift + ijk]
-                        self.liquid_prop.mf = DV.values[ql_shift + ijk]
-                        self.ice_prop.mf = DV.values[qi_shift + ijk]
+                        rain_prop.mf = PV.values[qrain_shift + ijk]
+                        snow_prop.mf = PV.values[qsnow_shift + ijk]
+                        liquid_prop.mf = DV.values[ql_shift + ijk]
+                        ice_prop.mf = DV.values[qi_shift + ijk]
                         vapor_star = DV.values[qv_shift + ijk]
 
-                        # #Do substepping (iterations < 20)
-                        #
-                        # iter_count = 0
-                        # time_added = 0.0
-                        #
-                        # while time_added < TS.dt and iter_count < 20:
-                        #     if (liquid_prop.mf+ice_prop.mf) < small and (rain_prop.mf+snow_prop.mf) < small:
-                        #         break
+                        #Do substepping (iterations < 20)
 
-                        micro_substep_c(&self.CC.LT.LookupStructC, DV.values[alpha_shift + ijk], DV.values[qv_shift + ijk], DV.values[t_shift + ijk],
-                                        self.ccn, self.n0_ice, &rain_param, &snow_param, &liquid_param, &ice_param,
-                                        &self.rain_prop, &self.snow_prop, &self.liquid_prop, &self.ice_prop, &aut_rain, &aut_snow,
-                                        &self.src_acc, &evp_rain, &evp_snow, &melt_snow)
+                        iter_count = 0
+                        time_added = 0.0
 
-                        # dt_ = TS.dt - time_added
-                        # rate1 = 1.05 * (aut_rain + src_acc.dyr +  evp_rain - melt_snow)/(-(rain_prop.mf+machine_eps)/dt_)
-                        # rate2 = 1.05 * (aut_snow + src_acc.dys +  evp_snow + melt_snow)/(-(snow_prop.mf+machine_eps)/dt_)
-                        # rate3 = 1.05 * (-aut_rain + src_acc.dyl)/(-(liquid_prop.mf+machine_eps)/dt_)
-                        # rate4 = 1.05 * (-aut_snow + src_acc.dyi)/(-(ice_prop.mf+machine_eps)/dt_)
-                        #
-                        # rate = fmax(fmax(fmax(rate1,rate2),rate3),rate4)
-                        # if rate > 1.0:
-                        #     # Limit the timestep, but don't let it get too small
-                        #     dt_ = fmax(dt_/rate,1e-10)
+                        while time_added < TS.dt and iter_count < 1:
+                            if (liquid_prop.mf+ice_prop.mf) < small and (rain_prop.mf+snow_prop.mf) < small:
+                                break
 
+                            micro_substep_c(&self.CC.LT.LookupStructC, DV.values[alpha_shift + ijk], vapor_star, DV.values[t_shift + ijk],
+                                            self.ccn, self.n0_ice, &rain_param, &snow_param, &liquid_param, &ice_param,
+                                            &rain_prop, &snow_prop, &liquid_prop, &ice_prop, &aut_rain, &aut_snow,
+                                            &src_acc, &evp_rain, &evp_snow, &melt_snow)
 
-                        # Integrate forward in time
-                        self.rain_prop.mf = fmax(self.rain_prop.mf + (aut_rain + self.src_acc.dyr + evp_rain - melt_snow)* TS.dt,0.0)
-                        self.snow_prop.mf = fmax(self.snow_prop.mf + (aut_snow + self.src_acc.dys + evp_snow + melt_snow)* TS.dt,0.0)
-                        self.liquid_prop.mf = fmax(self.liquid_prop.mf + (-aut_rain + self.src_acc.dyl) * TS.dt,0.0)
-                        self.ice_prop.mf = fmax(self.ice_prop.mf + (-aut_snow + self.src_acc.dyi) * TS.dt,0.0)
-                        vapor_star = fmax(vapor_star + (-evp_rain - evp_snow) * TS.dt,0.0)
+                            dt_ = TS.dt - time_added
+                            rate1 = 1.05 * (aut_rain + src_acc.dyr +  evp_rain - melt_snow)/(-(rain_prop.mf+machine_eps)/dt_)
+                            rate2 = 1.05 * (aut_snow + src_acc.dys +  evp_snow + melt_snow)/(-(snow_prop.mf+machine_eps)/dt_)
+                            rate3 = 1.05 * (-aut_rain + src_acc.dyl)/(-(liquid_prop.mf+machine_eps)/dt_)
+                            rate4 = 1.05 * (-aut_snow + src_acc.dyi)/(-(ice_prop.mf+machine_eps)/dt_)
+
+                            rate = fmax(fmax(fmax(rate1,rate2),rate3),rate4)
+                            if rate > 1.0:
+                                # Limit the timestep, but don't let it get too small
+                                dt_ = fmax(dt_/rate,1e-10)
 
 
-                        # Update the contributions of each source term
-                        aut[ijk] = aut[ijk] + aut_rain
-                        acc[ijk] = acc[ijk] + self.src_acc.dyr
-                        evp[ijk] = evp[ijk] + evp_rain
-                        aut[ijk+allshift] = aut[ijk+allshift] + aut_snow
-                        acc[ijk+allshift] = acc[ijk+allshift] + self.src_acc.dys
-                        evp[ijk+allshift] = evp[ijk+allshift] + evp_snow
-                        melt[ijk] = melt[ijk] + melt_snow
-                        # # Increment the local time variables
-                        # time_added = time_added + dt_
-                        # iter_count = iter_count + 1
+                            # Integrate forward in time
+                            rain_prop.mf = fmax(rain_prop.mf + (aut_rain + src_acc.dyr + evp_rain - melt_snow)* dt_,0.0)
+                            snow_prop.mf = fmax(snow_prop.mf + (aut_snow + src_acc.dys + evp_snow + melt_snow)* dt_,0.0)
+                            liquid_prop.mf = fmax(liquid_prop.mf + (-aut_rain + src_acc.dyl) * dt_,0.0)
+                            ice_prop.mf = fmax(ice_prop.mf + (-aut_snow + src_acc.dyi) * dt_,0.0)
+                            vapor_star = fmax(vapor_star + (-evp_rain - evp_snow) * dt_,0.0)
 
-                        # if iter_count > 19:
-                        #     with gil:
-                        #         print " ******  "
-                        #         print "Substeps: ", iter_count, dt_, rain_prop.mf, snow_prop.mf
 
-                        PV.tendencies[qrain_shift + ijk] = PV.tendencies[qrain_shift + ijk] + (self.rain_prop.mf - PV.values[qrain_shift + ijk])/TS.dt
-                        PV.tendencies[qsnow_shift + ijk] = PV.tendencies[qsnow_shift + ijk] + (self.snow_prop.mf - PV.values[qsnow_shift + ijk])/TS.dt
+                            # Update the contributions of each source term
+                            aut[ijk] = aut[ijk] + aut_rain * dt_/TS.dt
+                            acc[ijk] = acc[ijk] + src_acc.dyr * dt_/TS.dt
+                            evp[ijk] = evp[ijk] + evp_rain * dt_/TS.dt
+                            aut[ijk+allshift] = aut[ijk+allshift] + aut_snow * dt_/TS.dt
+                            acc[ijk+allshift] = acc[ijk+allshift] + src_acc.dys * dt_/TS.dt
+                            evp[ijk+allshift] = evp[ijk+allshift] + evp_snow * dt_/TS.dt
+                            melt[ijk] = melt[ijk] + melt_snow * dt_/TS.dt
+
+                            # Increment the local time variables
+                            time_added = time_added + dt_
+                            iter_count = iter_count + 1
+
+                        if iter_count > 19:
+                            with gil:
+                                print " ******  "
+                                print "Substeps: ", iter_count, dt_, rain_prop.mf, snow_prop.mf
+
+                        PV.tendencies[qrain_shift + ijk] = PV.tendencies[qrain_shift + ijk] + (rain_prop.mf - PV.values[qrain_shift + ijk])/TS.dt
+                        PV.tendencies[qsnow_shift + ijk] = PV.tendencies[qsnow_shift + ijk] + (snow_prop.mf - PV.values[qsnow_shift + ijk])/TS.dt
 
                         #Get rain properties
 

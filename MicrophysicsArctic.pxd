@@ -94,11 +94,11 @@ cdef class MicrophysicsArctic:
 
         ClausiusClapeyron CC
 
-        hm_properties rain_prop
-        hm_properties snow_prop
-        hm_properties ice_prop
-        hm_properties liquid_prop
-        ret_acc src_acc
+        # hm_properties rain_prop
+        # hm_properties snow_prop
+        # hm_properties ice_prop
+        # hm_properties liquid_prop
+        # ret_acc src_acc
 
         double [:] autoconversion
         double [:] evaporation
