@@ -350,6 +350,9 @@ def Gabls():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['cs'] = 0.17
+    namelist['sgs']['Smagorinsky']['prt'] = 1.0/3.0
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False

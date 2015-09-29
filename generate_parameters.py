@@ -26,8 +26,23 @@ def main():
     parameters['pv_star_t'] = 611.7
     parameters['sd_tilde'] = 6864.8
     parameters['sv_tilde'] = 10513.6
-    parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
     parameters['omega'] = 7.2921151467064e-5  # Earth's rotational rate (http://hpiers.obspm.fr/eop-pc/models/constants.html)
+
+    # Surface Monin-Obukhov related parameters
+    # parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
+    # parameters['Pr0'] = 0.74 # 1.0 for Gabls1
+    # parameters['beta_m'] = 4.7 # 4.8 for Gabls1
+    # parameters['beta_h'] = parameters['beta_m']/parameters['Pr0'] # 7.8 for gabls
+    # parameters['gamma_m'] = 15.0
+    # parameters['gamma_h'] = 9.0
+
+    # if Gabls use:
+    parameters['vkb'] = 0.4    # Von Karman constant from Businger 1971 used by Byun surface formulation
+    parameters['Pr0'] = 1.0 # 1.0 for Gabls1
+    parameters['beta_m'] = 4.8 # 4.8 for Gabls1
+    parameters['beta_h'] = 7.8# for gabls
+    parameters['gamma_m'] = 15.0
+    parameters['gamma_h'] = 9.0
 
     #############################
     # Users shouldn't modify below
