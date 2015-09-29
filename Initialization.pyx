@@ -186,7 +186,6 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double t
 
         #Generate initial perturbations (here we are generating more than we need)
-        #np.random.seed(Pa.rank)
         cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
         cdef double theta_pert_
 
@@ -258,7 +257,6 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         Py_ssize_t count
 
-        #np.random.seed(Pa.rank)
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
         qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
 
