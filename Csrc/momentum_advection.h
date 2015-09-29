@@ -817,6 +817,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
+
                         //Upwind for positive velocity
                         const double phip = interp_weno9(vel_advected[ijk + sm4_ed],
                                                         vel_advected[ijk + sm3_ed],
@@ -862,6 +863,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
+
                         //Upwind for positive velocity
                         const double phip = interp_weno9(vel_advected[ijk + sm4_ed],
                                                         vel_advected[ijk + sm3_ed],
@@ -906,6 +908,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
+
                         //Upwind for positive velocity
                         const double phip = interp_weno9(vel_advected[ijk + sm4_ed],
                                                         vel_advected[ijk + sm3_ed],
@@ -991,6 +994,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
+
                         //Upwind for positive velocity
                         const double phip = interp_weno11(vel_advected[ij + sm5_ed],
                                                           vel_advected[ijk + sm4_ed],
@@ -1040,6 +1044,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
+
                         //Upwind for positive velocity
                         const double phip = interp_weno11(vel_advected[ij + sm5_ed],
                                                           vel_advected[ijk + sm4_ed],
@@ -1089,6 +1094,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
+
                         //Upwind for positive velocity
                         const double phip = interp_weno11(vel_advected[ij + sm5_ed],
                                                           vel_advected[ijk + sm4_ed],
