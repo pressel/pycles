@@ -48,15 +48,9 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
     //Daewon W. Byun, 1990: On the Analytical Solutions of Flux-Profile Relationships for the Atmospheric Surface Layer. J. Appl. Meteor., 29, 652–657.
     //doi: http://dx.doi.org/10.1175/1520-0450(1990)029<0652:OTASOF>2.0.CO;2
 
-    const double Pr0 = 0.74;
-    const double beta_m = 4.7;
-    const double beta_h = beta_m/Pr0;
-    const double gamma_m = 15.0;
-    const double gamma_h = 9.0;
-    const double Ri_crit = 0.25;
+
     const double logz = log(zb/z0);
     const double zfactor = zb/(zb-z0)*logz;
-    const double C_neu = vkb/logz;
     double zeta, zeta0, psi_m, psi_h, lmo_;
 
     double sb = Ri/Pr0;
@@ -67,11 +61,11 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
         const double pb = 1.0/54.0 * (-2.0/(gamma_m*gamma_m*gamma_m) + 9.0/gamma_m * (-gamma_h/gamma_m + 3.0)*sb * sb);
         const double crit = qb * qb *qb - pb * pb;
         if(crit >=0.0){
-            const double angle = acos(pb/pow(qb,1.5));
+            const double angle = acos(pb/sqrt(qb * qb * qb));
             zeta = zfactor * (-2.0 * sqrt(qb) * cos(angle/3.0)+1.0/(3.0*gamma_m));
         }
         else{
-            const double tb = pow((sqrt(-crit) + fabs(pb)),0.3333);
+            const double tb = cbrt(sqrt(-crit) + fabs(pb));
             zeta = zfactor * (1.0/(3.0*gamma_m)-(tb + qb/tb));
         }
         lmo_ = zb/zeta;
@@ -84,35 +78,20 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
         psi_h = 2.0 * log((1.0 + y)/(1.0+y0));
     }
     else{
-        //Stable case
-        const double Ri_cut = 1.0/(logz+1.0/Ri_crit);
-        //distinguish between stable and very stable cases
-        if(Ri > Ri_cut){
-            zeta = logz * Ri/(1.0 - Ri_cut/Ri_crit);
-        }
-        else{
-            zeta = zfactor/(2.0*beta_h*(beta_m*Ri -1.0))*((1.0-2.0*beta_h*Ri)-sqrt(1.0+4.0*(beta_h - beta_m)*sb));
-        }
+        zeta = zfactor/(2.0*beta_h*(beta_m*Ri -1.0))*((1.0-2.0*beta_h*Ri)-sqrt(1.0+4.0*(beta_h - beta_m)*sb));
         lmo_ = zb/zeta;
         zeta0 = z0/lmo_;
-        if(zeta > 1.0){
-            psi_m = 1.0 - beta_m - zeta;
-            psi_h = 1.0 - beta_h - zeta;
-        }
-        else{
-            psi_m = 1.0 - beta_m - zeta;
-            psi_h = 1.0 - beta_h - zeta;
-        }
+        psi_m = -beta_m * (zeta - zeta0);
+        psi_h = -beta_h * (zeta - zeta0);
     }
-    const double cu = fmin(vkb/(logz-psi_m),2.0*C_neu);
-    const double cth = fmin(vkb/(logz-psi_h)/Pr0,4.5*C_neu);
+    const double cu = vkb/(logz-psi_m);
+    const double cth = vkb/(logz-psi_h)/Pr0;
     *cm = cu * cu;
     *ch = cu * cth;
     *lmo = lmo_;
 
     return;
 }
-
 
 void compute_windspeed(const struct DimStruct *dims, double* restrict u, double* restrict v, double* restrict speed, double u0, double v0, double gustiness ){
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
