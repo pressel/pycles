@@ -311,6 +311,7 @@ cdef class SurfaceGabls:
         return
 
 
+
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         if Pa.sub_z_rank != 0:
@@ -337,10 +338,12 @@ cdef class SurfaceGabls:
 
             double theta_rho_b, Nb2, Ri
             double zb = Gr.dims.dx[2] * 0.5
-            double cm=0.0
+            double [:] cm= np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
             double ch=0.0
 
-            double sst = 265.0 - 0.25 * TS.t/3600.0
+
+            double sst = 265.0 - 0.25 * TS.t/3600.0 # sst = theta_surface also
+
 
             double theta_rho_g = theta_rho_c(Ref.Pg, sst, 0.0, 0.0)
             double s_star = sd_c(Ref.Pg,sst)
@@ -356,24 +359,24 @@ cdef class SurfaceGabls:
                 for j in xrange(gw-1,jmax-gw+1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    theta_rho_b=DV.values[th_shift + ijk]
+                    theta_rho_b = DV.values[th_shift + ijk]
                     Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
                     Ri = Nb2 * zb* zb/(windspeed[ij] * windspeed[ij])
-                    exchange_coefficients_byun(Ri,zb,self.z0, &cm, &ch, &DV.values_2d[lmo_shift + ij])
+                    exchange_coefficients_byun(Ri,zb,self.z0, &cm[ij], &ch, &DV.values_2d[lmo_shift + ij])
                     self.s_flux[ij] = -ch * windspeed[ij] * (PV.values[s_shift+ijk] - s_star)
-                    DV.values_2d[ustar_shift + ij] = sqrt(cm) * windspeed[ij]
+                    self.b_flux[ij] = -ch * windspeed[ij] * (DV.values[th_shift+ijk] - sst)*9.81/263.5
+                    DV.values_2d[ustar_shift + ij] = sqrt(cm[ij]) * windspeed[ij]
             for i in xrange(gw, imax-gw):
                 for j in xrange(gw, jmax-gw):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    self.u_flux[ij] = -interp_2(cm[ij], cm[ij+istride_2d])*interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(cm[ij], cm[ij+1])*interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
                     PV.tendencies[u_shift  + ijk] += self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift  + ijk] += self.v_flux[ij] * tendency_factor
                     PV.tendencies[s_shift  + ijk] += self.s_flux[ij] * tendency_factor
 
         return
-
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef double tmp
