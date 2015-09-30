@@ -304,3 +304,23 @@ void micro_substep_c(struct LookupStruct *LT, const double alpha, const double v
 
     return;
 };
+
+inline double get_rain_vel_c(const double alpha_, const double qrain_, struct hm_parameters *rain_param,
+                             struct hm_properties *rain_prop){
+    rain_prop->n0 = get_n0_rain_c(alpha_, qrain_, rain_param);
+    rain_prop->lam = get_lambda_c(alpha_, rain_prop, rain_param);
+
+    double vel_rain = rain_param->c*rain_param->gbd1/rain_param->gb1/pow(rain_prop->lam, rain_param->d);
+
+    return vel_rain;
+};
+
+inline double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm_parameters *snow_param,
+                             struct hm_properties *snow_prop){
+    snow_prop->n0 = get_n0_snow_c(alpha_, qsnow_, snow_param);
+    snow_prop->lam = get_lambda_c(alpha_, snow_prop, snow_param);
+
+    double vel_snow = snow_param->c*snow_param->gbd1/snow_param->gb1/pow(snow_prop->lam, snow_param->d);
+
+    return vel_snow;
+};

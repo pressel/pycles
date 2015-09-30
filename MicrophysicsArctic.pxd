@@ -93,6 +93,7 @@ cdef class MicrophysicsArctic:
         double (*Lambda_fp)(double T) nogil
 
         ClausiusClapeyron CC
+        ParallelMPI.Pencil z_pencil
 
         # hm_properties rain_prop
         # hm_properties snow_prop
@@ -104,7 +105,13 @@ cdef class MicrophysicsArctic:
         double [:] evaporation
         double [:] accretion
         double [:] melting
-        double [:] liquid_fraction
+
+        double [:] qrain_flux
+        double [:] qsnow_flux
+        double [:] qrain_tendency
+        double [:] qsnow_tendency
+        double [:] qrain_vel
+        double [:] qsnow_vel
 
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
