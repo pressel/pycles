@@ -253,9 +253,10 @@ cdef class MicrophysicsArctic:
             Py_ssize_t nlz = Gr.dims.nl[2]
             double [:, :] qrain_pencils = self.z_pencil.forward_double(& Gr.dims, Pa, & PV.values[qrain_shift])
             double [:, :] qsnow_pencils = self.z_pencil.forward_double(& Gr.dims, Pa, & PV.values[qsnow_shift])
-            double [:, :] qrain_pencils_ghosted = np.empty((self.z_pencil.n_local_pencils, nz + 2*kmin), dtype=np.double, order='c')
-            double [:, :] qsnow_pencils_ghosted = np.empty((self.z_pencil.n_local_pencils, nz + 2*kmin), dtype=np.double, order='c')
+            double [:, :] qrain_pencils_ghosted = np.zeros((self.z_pencil.n_local_pencils, nz + 2*kmin), dtype=np.double, order='c')
+            double [:, :] qsnow_pencils_ghosted = np.zeros((self.z_pencil.n_local_pencils, nz + 2*kmin), dtype=np.double, order='c')
 
+        #Fill the ghost points
         with nogil:
             for pi in xrange(self.z_pencil.n_local_pencils):
                 for k in xrange(nz):
@@ -269,8 +270,8 @@ cdef class MicrophysicsArctic:
                     qsnow_pencils_ghosted[pi, nlz-kmin+k] = qsnow_pencils_ghosted[pi, nlz-kmin-k-1]
 
         cdef:
-            double [:] vel_cols_r = np.empty((nz + 2*kmin), dtype=np.double, order='c')
-            double [:] vel_cols_s = np.empty((nz + 2*kmin), dtype=np.double, order='c')
+            double [:] vel_cols_r = np.zeros((nz + 2*kmin), dtype=np.double, order='c')
+            double [:] vel_cols_s = np.zeros((nz + 2*kmin), dtype=np.double, order='c')
 
             double [:,:] qrain_flux_pencils = np.zeros((self.z_pencil.n_local_pencils, nz),dtype=np.double, order='c')
             double [:,:] qsnow_flux_pencils = np.zeros((self.z_pencil.n_local_pencils, nz),dtype=np.double, order='c')
