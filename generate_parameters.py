@@ -29,20 +29,19 @@ def main():
     parameters['omega'] = 7.2921151467064e-5  # Earth's rotational rate (http://hpiers.obspm.fr/eop-pc/models/constants.html)
 
     # Surface Monin-Obukhov related parameters
-    # parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
-    # parameters['Pr0'] = 0.74 # 1.0 for Gabls1
-    # parameters['beta_m'] = 4.7 # 4.8 for Gabls1
-    # parameters['beta_h'] = parameters['beta_m']/parameters['Pr0'] # 7.8 for gabls
-    # parameters['gamma_m'] = 15.0
-    # parameters['gamma_h'] = 9.0
-
-    # if Gabls use:
-    parameters['vkb'] = 0.4    # Von Karman constant from Businger 1971 used by Byun surface formulation
-    parameters['Pr0'] = 1.0 # 1.0 for Gabls1
-    parameters['beta_m'] = 4.8 # 4.8 for Gabls1
-    parameters['beta_h'] = 7.8# for gabls
+    parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
+    parameters['Pr0'] = 0.74
+    parameters['beta_m'] = 4.7
+    parameters['beta_h'] = parameters['beta_m']/parameters['Pr0']
     parameters['gamma_m'] = 15.0
     parameters['gamma_h'] = 9.0
+
+    # if GABLS use these values:
+    # parameters['vkb'] = 0.4
+    # parameters['Pr0'] = 1.0
+    # parameters['beta_m'] = 4.8
+    # parameters['beta_h'] = 7.8
+
 
     #############################
     # Users shouldn't modify below

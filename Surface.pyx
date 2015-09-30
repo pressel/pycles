@@ -33,7 +33,7 @@ cdef extern from "thermodynamic_functions.h":
 
 
 cdef extern from "surface.h":
-    inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0, double z1) nogil
+    double compute_ustar(double windspeed, double buoyancy_flux, double z0, double z1) nogil
     inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0_b, double T_b, double qt_b, double qv_b) nogil
     void compute_windspeed(Grid.DimStruct *dims, double* u, double*  v, double*  speed, double u0, double v0, double gustiness ) nogil
     void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch, double* lmo) nogil
@@ -161,7 +161,7 @@ cdef class SurfaceSullivanPatton:
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
-                    DV.values_2d[ustar_shift + ij] = compute_ustar_c(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    DV.values_2d[ustar_shift + ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
                     DV.values_2d[lmo_shift + ij] = -DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]/self.buoyancy_flux/vkb
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
@@ -366,7 +366,6 @@ cdef class SurfaceGabls:
                     Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
                     Ri = Nb2 * zb* zb/(windspeed[ij] * windspeed[ij])
                     exchange_coefficients_byun(Ri,zb,self.z0, &cm[ij], &ch, &DV.values_2d[lmo_shift + ij])
-                    # self.s_flux[ij] = -ch * windspeed[ij] * (DV.values[th_shift+ijk] - sst) * cpd /DV.values[t_shift + ijk]
                     self.s_flux[ij] = -ch * windspeed[ij] * (PV.values[s_shift+ijk] - s_star)
                     self.b_flux[ij] = -ch * windspeed[ij] * (DV.values[th_shift+ijk] - sst)*9.81/263.5
                     DV.values_2d[ustar_shift + ij] = sqrt(cm[ij]) * windspeed[ij]
@@ -524,3 +523,96 @@ cdef class SurfaceDYCOMS_RF01:
 cdef inline double compute_z0(double z1, double windspeed) nogil:
     cdef double z0 =z1*exp(-kappa/sqrt((0.4 + 0.079*windspeed)*1e-3))
     return z0
+
+#
+# cdef inline double compute_ustar_cython(double windspeed, double buoyancy_flux, double z0, double zb) nogil:
+#     cdef:
+#         double lmo, zeta, zeta0, psi_m, ustar
+#         double ustar0, ustar1, ustar_new, f0, f1, delta_ustar
+#         double logz = log(zb/z0)
+#         ssize_t count = 0
+#
+#     ustar0 = windspeed * vkb/logz  #use neutral condition as first guess
+#     if fabs(buoyancy_flux) > 1.0e-20 :
+#         lmo = -ustar0 * ustar0 * ustar0/(buoyancy_flux * vkb)
+#         zeta = zb/lmo
+#         zeta0 = z0/lmo
+#         if zeta >= 0.0:
+#             f0 = windspeed - ustar0/vkb*(logz - psi_m_stable_cython(zeta,zeta0))
+#             ustar1 = windspeed*vkb/(logz - psi_m_stable_cython(zeta,zeta0))
+#             lmo = -ustar1 * ustar1 * ustar1/(buoyancy_flux * vkb)
+#             zeta = zb/lmo
+#             zeta0 = z0/lmo
+#             f1 = windspeed - ustar1/vkb*(logz - psi_m_stable_cython(zeta,zeta0))
+#             ustar = ustar1
+#             delta_ustar = ustar1 -ustar0
+#             while fabs(delta_ustar) > 1e-10:
+#                 ustar_new = ustar1 - f1 * delta_ustar/(f1-f0)
+#                 f0 = f1
+#                 ustar0 = ustar1
+#                 ustar1 = ustar_new
+#                 lmo = -ustar1 * ustar1 * ustar1/(buoyancy_flux * vkb)
+#                 zeta = zb/lmo
+#                 zeta0 = z0/lmo
+#                 f1 = windspeed - ustar1/vkb*(logz - psi_m_stable_cython(zeta,zeta0))
+#                 delta_ustar = ustar1 -ustar0
+#                 count += 1
+#                 if (count > 10):
+#                     with gil:
+#                         print("stable ", count, ustar1, ustar0, windspeed, buoyancy_flux)
+#
+#
+#         else:
+#             f0 = windspeed - ustar0/vkb*(logz - psi_m_unstable_cython(zeta,zeta0))
+#             ustar1 = windspeed*vkb/(logz - psi_m_unstable_cython(zeta,zeta0))
+#             lmo = -ustar1 * ustar1 * ustar1/(buoyancy_flux * vkb)
+#             zeta = zb/lmo
+#             zeta0 = z0/lmo
+#             f1 = windspeed - ustar1/vkb*(logz - psi_m_unstable_cython(zeta,zeta0))
+#             ustar = ustar1
+#             delta_ustar = ustar1 -ustar0
+#             while fabs(delta_ustar) > 1e-10:
+#                 ustar_new = ustar1 - f1 * delta_ustar/(f1-f0)
+#                 f0 = f1
+#                 ustar0 = ustar1
+#                 ustar1 = ustar_new
+#                 lmo = -ustar1 * ustar1 * ustar1/(buoyancy_flux * vkb)
+#                 zeta = zb/lmo
+#                 zeta0 = z0/lmo
+#                 f1 = windspeed - ustar1/vkb*(logz - psi_m_unstable_cython(zeta,zeta0))
+#                 delta_ustar = ustar1 -ustar0
+#                 count +=1
+#                 if (count > 10):
+#                     with gil:
+#                         print("unstable ", count, ustar1, ustar0, windspeed, buoyancy_flux)
+#
+#     else:
+#         ustar = ustar0
+#     return ustar
+#
+#
+#
+#
+#
+# cdef inline double psi_m_unstable_cython(double zeta, double zeta0) nogil:
+#     cdef double x = (1.0 - gamma_m * zeta)**0.25
+#     cdef double x0 = (1.0 - gamma_m * zeta0)** 0.25
+#     cdef double psi_m = 2.0 * log((1.0 + x)/(1.0 + x0)) + log((1.0 + x*x)/(1.0 + x0 * x0))-2.0*atan(x)+2.0*atan(x0)
+#     return psi_m
+#
+#
+# cdef inline double psi_h_unstable_cython(double zeta, double zeta0) nogil:
+#     cdef double y = sqrt(1.0 - gamma_h * zeta )
+#     cdef double y0 = sqrt(1.0 - gamma_h * zeta0 )
+#     cdef double psi_h = 2.0 * log((1.0 + y)/(1.0+y0))
+#     return psi_h
+#
+# cdef inline double psi_m_stable_cython(double zeta, double zeta0) nogil:
+#     cdef double psi_m = -beta_m * (zeta - zeta0)
+#     return psi_m
+#
+#
+# cdef inline double psi_h_stable_cython(double zeta, double zeta0) nogil:
+#     cdef double psi_h = -beta_h * (zeta - zeta0)
+#     return psi_h
+#
