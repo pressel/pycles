@@ -86,7 +86,7 @@ double interp_weno7(double phim3, double phim2, double phim1, double phi, double
                         + phi*(3443.0*phi - 2522.0*phip1)
                         + 547.0*phip1*phip1);
     const double beta2 = (phim1*(547.0*phim1 - 2522.0*phi + 1922.0*phip1 - 494.0*phip2)
-                         + phi*(3433.0*phi -5966.0*phip1 + 1602.0*phip2)
+                         + phi*(3443.0*phi -5966.0*phip1 + 1602.0*phip2)
                          + phip1*(2843.0*phip1 - 1642.0*phip2)
                          + 267.0*phip2* phip2);
     const double beta3 = (phi*(2107.0*phi - 9402.0*phip1 + 7042.0*phip2 - 1854.0*phip3)
@@ -128,7 +128,7 @@ double interp_weno9(double phim4, double phim3, double phim2, double phim1, doub
                          + phim1 * (406293.0 * phim1 - 611976.0 * phi + 165153.0 * phip1)
                          + phi * (242723.0 * phi - 140251.0 * phip1)
                          +22658.0 * phip1 * phip1);
-    const double beta2 = (phim2 * (6098.0 * phim2 - 51001.0 * phim1 + 67923.0 * phi - 38947.0 * phip1 + 8209.0 * phip2)
+    const double beta2 = (phim2 * (6908.0 * phim2 - 51001.0 * phim1 + 67923.0 * phi - 38947.0 * phip1 + 8209.0 * phip2)
                          +phim1 * (104963.0 * phim1 - 299076.0 * phi + 179098.0 * phip1 - 38947.0 * phip2)
                          +phi * (231153.0 * phi - 299076.0 * phip1 + 67923.0*phip2)
                          +phip1 * (104963.0 * phip1 - 51001.0 * phip2)
@@ -138,19 +138,18 @@ double interp_weno9(double phim4, double phim3, double phim2, double phim1, doub
                          +phip1 * (406293.0 * phip1 - 464976.0 * phip2 + 99213.0 * phip3 )
                          +phip2 * (138563.0 * phip2 - 60871.0 * phip3)
                          + 6908.0 * phip3 * phip3);
-    const double beta4 = (phi * (107818.0 * phi - 649501.0 * phip1 + 758823.0 * phip2 - 411487.0 * phip3 + 86329.0 * phip4)
-                         +phip1 * (1020563.0 * phip1 - 2462076.0 * phip2 + 1358458.0 * phip3 + 288007.0 * phip4)
-                         +phip2 * (1521393.0 * phip2 - 1704396.0 * phip3 + 365863.0*phip4)
+    const double beta4 = (phi * (107918.0 * phi - 649501.0 * phip1 + 758823.0 * phip2 - 411487.0 * phip3 + 86329.0 * phip4)
+                         +phip1 * (1020563.0 * phip1 - 2462076.0 * phip2 + 1358458.0 * phip3 - 288007.0 * phip4)
+                         +phip2 * (1521393.0 * phip2 - 1704396.0 * phip3 + 364863.0*phip4)
                          +phip3 * (482963.0 * phip3 - 208501.0 * phip4)
                          + 22658.0 * phip4 * phip4 );
 
 
-    const double alpha0 = (1.0/126.0)/(beta0 + 1e-10)/(beta0 + 1e-10);
-    const double alpha1 = (10.0/63.0)/(beta1 + 1e-10)/(beta1 + 1e-10);
-    const double alpha2 = (10.0/21.0)/(beta2 + 1e-10)/(beta2 + 1e-10);
-    const double alpha3 = (20.0/63.0)/(beta3 + 1e-10)/(beta3 + 1e-10);
-    const double alpha4 = (5.0/126.0)/(beta4 + 1e-10)/(beta4 + 1e-10);
-
+    const double alpha0 = (1.0/126.0)/pow(beta0 + 1e-10,2.0);
+    const double alpha1 = (10.0/63.0)/pow(beta1 + 1e-10,2.0);
+    const double alpha2 = (10.0/21.0)/pow(beta2 + 1e-10,2.0);
+    const double alpha3 = (20.0/63.0)/pow(beta3 + 1e-10,2.0);
+    const double alpha4 = (5.0/126.0)/pow(beta4 + 1e-10,2.0);
 
 
     const double alpha_sum_inv = 1.0/(alpha0 + alpha1 + alpha2 + alpha3 + alpha4 );

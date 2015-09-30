@@ -1,7 +1,7 @@
 #pragma once
 #include "grid.h"
 #include "advection_interpolation.h"
-
+#include<stdio.h>
 
 void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict flux, ssize_t d_advected, ssize_t d_advecting){
@@ -810,6 +810,12 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
         const ssize_t sp3_ing = 3*stencil[d_advected];
         const ssize_t sp4_ing = 4*stencil[d_advected];
 
+        double test0 = interp_weno5( 1.0, 2.0, 1.0, 1.0, 1.0);
+        double test = interp_weno7( 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0);
+        double test1 = interp_weno9( 1.0,1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+        double test2 = interp_weno11( 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+        printf("%f,\t,%f,\t,%f,\t,%f,\n",test0,test,test1,test2);
+
         if (d_advected != 2 && d_advecting !=2){
             for(ssize_t i=imin;i<imax;i++){
                 const ssize_t ishift = i*istride;
@@ -1141,6 +1147,8 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
 
 void compute_advective_fluxes_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
                                 double* restrict flux, ssize_t d_advected, ssize_t d_advecting, int scheme){
+
+
 
     switch(scheme){
         case 2:
