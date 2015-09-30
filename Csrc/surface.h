@@ -3,28 +3,99 @@
 #include "thermodynamic_functions.h"
 #include "entropies.h"
 
-inline double compute_ustar_c(double windspeed, double buoyancy_flux, double z0, double z1){
 
-    const double am = 4.8;
-    const double bm = 19.3;
-    const double c1 = -0.50864521488493919; // = pi/2 - 3*log(2)
-    const double lnz = log(z1/fabs(z0));
-    double ustar = windspeed * kappa / lnz;
 
-    if(fabs(buoyancy_flux)>1.0e-10){
-        for (ssize_t i=0; i<6; i++){
-            double lmo = -pow(ustar,3.0)/(buoyancy_flux * kappa);
-            double zeta = z1/lmo;
-            if(zeta > 0.0){
-                ustar = kappa * windspeed/(lnz + am*zeta);
-            }
-            else{
-                double x = pow(1.0 - bm * zeta, 0.25);
-                double psi1 = 2.0 * log(1.0+x) + log(1.0 + x*x) -2.0*atan(x) + c1;
-                ustar = windspeed * kappa/(lnz - psi1);
-            }
-        }
+
+inline double psi_m_unstable(double zeta, double zeta0){
+    const double x = pow((1.0 - gamma_m * zeta),0.25);
+    const double x0 = pow((1.0 - gamma_m * zeta0), 0.25);
+    double psi_m = 2.0 * log((1.0 + x)/(1.0 + x0)) + log((1.0 + x*x)/(1.0 + x0 * x0))-2.0*atan(x)+2.0*atan(x0);
+
+    return psi_m;
+}
+
+
+inline double psi_h_unstable(double zeta, double zeta0){
+    const double y = sqrt(1.0 - gamma_h * zeta );
+    const double y0 = sqrt(1.0 - gamma_h * zeta0 );
+
+    double psi_h = 2.0 * log((1.0 + y)/(1.0+y0));
+
+    return psi_h;
+}
+
+inline double psi_m_stable(double zeta, double zeta0){
+    double psi_m = -beta_m * (zeta - zeta0);
+    return psi_m;
+}
+
+
+inline double psi_h_stable(double zeta, double zeta0){
+    double psi_h = -beta_h * (zeta - zeta0);
+    return psi_h;
+}
+
+
+
+double compute_ustar(double windspeed, double buoyancy_flux, double z0, double zb){
+    double lmo, zeta, zeta0, psi_m, ustar;
+    double ustar0, ustar1, ustar_new, f0, f1, delta_ustar;
+    double logz = log(zb/z0);
+
+    //use neutral condition as first guess
+    ustar0 = windspeed * vkb/logz  ;
+    if(fabs(buoyancy_flux) > 1.0e-20){
+        lmo = -ustar0 * ustar0 * ustar0/(buoyancy_flux * vkb);
+        zeta = zb/lmo;
+        zeta0 = z0/lmo;
+        if(zeta >= 0.0){
+            f0 = windspeed - ustar0/vkb*(logz - psi_m_stable(zeta,zeta0));
+            ustar1 = windspeed*vkb/(logz - psi_m_stable(zeta,zeta0));
+            lmo = -ustar1 * ustar1 * ustar1/(buoyancy_flux * vkb);
+            zeta = zb/lmo;
+            zeta0 = z0/lmo;
+            f1 = windspeed - ustar1/vkb*(logz - psi_m_stable(zeta,zeta0));
+            ustar = ustar1;
+            delta_ustar = ustar1 -ustar0;
+            do{
+                ustar_new = ustar1 - f1 * delta_ustar/(f1-f0);
+                f0 = f1;
+                ustar0 = ustar1;
+                ustar1 = ustar_new;
+                lmo = -ustar1 * ustar1 * ustar1/(buoyancy_flux * vkb);
+                zeta = zb/lmo;
+                zeta0 = z0/lmo;
+                f1 = windspeed - ustar1/vkb*(logz - psi_m_stable(zeta,zeta0));
+                delta_ustar = ustar1 -ustar0;
+            }while(fabs(delta_ustar) > 1e-10);
+         }
+        else{
+            f0 = windspeed - ustar0/vkb*(logz - psi_m_unstable(zeta,zeta0));
+            ustar1 = windspeed*vkb/(logz - psi_m_unstable(zeta,zeta0));
+            lmo = -ustar1 * ustar1 * ustar1/(buoyancy_flux * vkb);
+            zeta = zb/lmo;
+            zeta0 = z0/lmo;
+            f1 = windspeed - ustar1/vkb*(logz - psi_m_unstable(zeta,zeta0));
+            ustar = ustar1;
+            delta_ustar = ustar1 -ustar0;
+            do{
+                ustar_new = ustar1 - f1 * delta_ustar/(f1-f0);
+                f0 = f1;
+                ustar0 = ustar1;
+                ustar1 = ustar_new;
+                lmo = -ustar1 * ustar1 * ustar1/(buoyancy_flux * vkb);
+                zeta = zb/lmo;
+                zeta0 = z0/lmo;
+                f1 = windspeed - ustar1/vkb*(logz - psi_m_unstable(zeta,zeta0));
+                delta_ustar = ustar1 -ustar0;
+            }while(fabs(delta_ustar) > 1e-10);
+         }
     }
+    else{
+        ustar = ustar0;
+    }
+
+
     return ustar;
 }
 
@@ -52,6 +123,7 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
     const double logz = log(zb/z0);
     const double zfactor = zb/(zb-z0)*logz;
     double zeta, zeta0, psi_m, psi_h, lmo_;
+//    double psi_h_stable, psi_m_stable, psi_h_unstable, psi_m_unstable;
 
     double sb = Ri/Pr0;
 
@@ -70,19 +142,15 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
         }
         lmo_ = zb/zeta;
         zeta0 = z0/lmo_;
-        const double x = pow((1.0 - gamma_m * zeta),0.25);
-        const double x0 = pow((1.0 - gamma_m * zeta0), 0.25);
-        const double y = sqrt(1.0 - gamma_h * zeta );
-        const double y0 = sqrt(1.0 - gamma_h * zeta0 );
-        psi_m = 2.0 * log((1.0 + x)/(1.0 + x0)) + log((1.0 + x*x)/(1.0 + x0 * x0))-2.0*atan(x)+2.0*atan(x0);
-        psi_h = 2.0 * log((1.0 + y)/(1.0+y0));
+        psi_m = psi_m_unstable(zeta, zeta0);
+        psi_h = psi_h_unstable(zeta,zeta0);
     }
     else{
         zeta = zfactor/(2.0*beta_h*(beta_m*Ri -1.0))*((1.0-2.0*beta_h*Ri)-sqrt(1.0+4.0*(beta_h - beta_m)*sb));
         lmo_ = zb/zeta;
         zeta0 = z0/lmo_;
-        psi_m = -beta_m * (zeta - zeta0);
-        psi_h = -beta_h * (zeta - zeta0);
+        psi_m = psi_m_stable(zeta, zeta0);
+        psi_h = psi_h_stable(zeta,zeta0);
     }
     const double cu = vkb/(logz-psi_m);
     const double cth = vkb/(logz-psi_h)/Pr0;
@@ -92,6 +160,8 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
 
     return;
 }
+
+
 
 void compute_windspeed(const struct DimStruct *dims, double* restrict u, double* restrict v, double* restrict speed, double u0, double v0, double gustiness ){
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
