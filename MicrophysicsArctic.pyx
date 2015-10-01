@@ -21,7 +21,7 @@ from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 
-from libc.math cimport fmax, fmin
+from libc.math cimport fmax, fmin, fabs
 
 include 'micro_parameters.pxi'
 
@@ -235,17 +235,18 @@ cdef class MicrophysicsArctic:
                             time_added = time_added + dt_
                             iter_count += 1
 
-                        if iter_count > 19:
-                            with gil:
-                                print " ******  "
-                                print "Substeps: ", iter_count, dt_, rain_prop.mf, snow_prop.mf
+                            if iter_count > 19:
+                                with gil:
+                                    print " ******  "
+                                    print "Substeps: ", iter_count, dt_, rain_prop.mf, snow_prop.mf
 
                         PV.tendencies[qrain_shift + ijk] = PV.tendencies[qrain_shift + ijk] + (rain_prop.mf - PV.values[qrain_shift + ijk])/TS.dt
                         PV.tendencies[qsnow_shift + ijk] = PV.tendencies[qsnow_shift + ijk] + (snow_prop.mf - PV.values[qsnow_shift + ijk])/TS.dt
 
-        #---------------------------------------------------------------------
-        #---------------------------------------------------------------------
-        # Now add sedimentation
+                        #The formation of precipitation should also affect qt
+
+
+        #*************************** Now add sedimentation **************************
 
         #Initialize pencils
         cdef:
@@ -315,8 +316,8 @@ cdef class MicrophysicsArctic:
                         a[k] = qrain_pencils_ghosted[pi, k]
                         vel_cols_r[k] = -vel_cols_r[k]
 
-                    for k in xrange(2, nz+2*kmin-2):
-                        a_bar_i[k] = a[k+1]
+                    # for k in xrange(2, nz+2*kmin-2):
+                    #     a_bar_i[k] = a[k+1]
 
                     for k in xrange(kmin, kmax):
                         vel_i_m = 0.5*(vel_cols_r[k-1] + vel_cols_r[k])
@@ -332,13 +333,14 @@ cdef class MicrophysicsArctic:
 
                         qrain_vel_pencils[pi, k-kmin] = -vel_cols_r[k]
 
+
                     #Then for SNOW
                     for k in xrange(nz+2*kmin):
                         a[k] = qsnow_pencils_ghosted[pi, k]
                         vel_cols_s[k] = -vel_cols_s[k]
 
-                    for k in xrange(2, nz+2*kmin-2):
-                        a_bar_i[k] = a[k+1]
+                    # for k in xrange(2, nz+2*kmin-2):
+                    #     a_bar_i[k] = a[k+1]
 
                     for k in xrange(kmin, kmax):
                         vel_i_m = 0.5*(vel_cols_s[k-1] + vel_cols_s[k])
@@ -379,6 +381,12 @@ cdef class MicrophysicsArctic:
                         PV.tendencies[qsnow_shift + ijk] += snow_dt
 
                         #Now get the entropy tendency due to precip
+
+                        #For DEBUG: 07/27/2015
+                        # if fabs(snow_dt) > 1.0e-3:
+                        #     with gil:
+                        #         print(i, j, k, TS.dt, qsnow_tmp[ijk], rain_dt, PV.tendencies[qsnow_shift+ijk])
+                        #
 
         #Now prepare for output
 
