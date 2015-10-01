@@ -34,7 +34,9 @@ cdef extern from "microphysics_functions.h":
 
     inline double get_rain_vel_c(double alpha, double qrain, hm_parameters *rain_param, hm_properties *rain_prop) nogil
     inline double get_snow_vel_c(double alpha, double qsnow, hm_parameters *snow_param, hm_properties *snow_prop) nogil
-
+    inline double get_n0_snow_c(double alpha, double qsnow, hm_parameters *snow_param) nogil
+    inline double get_n0_ice_c(double alpha, double qi, double ice_n0, hm_parameters *ice_param) nogil
+    inline double get_lambda_c(double alpha, hm_properties *_prop, hm_parameters *_param) nogil
 
 cdef class MicrophysicsArctic:
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
@@ -81,17 +83,21 @@ cdef class MicrophysicsArctic:
         self.qrain_vel = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         self.qsnow_vel = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
 
+        self.rain_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+        self.snow_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+        self.ice_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+
         #Add precipitation variables
         PV.add_variable('qrain', 'kg kg^-1', "sym", "scalar", Pa)
         PV.add_variable('qsnow', 'kg kg^-1', "sym", "scalar", Pa)
 
         #Initialize Statistical Output
         NS.add_profile('n_rain_mean', Gr, Pa)
-        NS.add_profile('n_rain_mean2', Gr, Pa)
+        # NS.add_profile('n_rain_mean2', Gr, Pa)
         NS.add_profile('n_snow_mean', Gr, Pa)
-        NS.add_profile('n_snow_mean2', Gr, Pa)
+        # NS.add_profile('n_snow_mean2', Gr, Pa)
         NS.add_profile('n_ice_mean', Gr, Pa)
-        NS.add_profile('n_ice_mean2', Gr, Pa)
+        # NS.add_profile('n_ice_mean2', Gr, Pa)
 
         NS.add_profile('rain_auto_mass', Gr, Pa)
         NS.add_profile('snow_auto_mass', Gr, Pa)
@@ -197,7 +203,7 @@ cdef class MicrophysicsArctic:
                             if (liquid_prop.mf+ice_prop.mf) < small and (rain_prop.mf+snow_prop.mf) < small:
                                 break
 
-                            micro_substep_c(&self.CC.LT.LookupStructC, DV.values[alpha_shift + ijk], vapor_star, DV.values[t_shift + ijk],
+                            micro_substep_c(&self.CC.LT.LookupStructC, Ref.alpha0_half[k], vapor_star, DV.values[t_shift + ijk],
                                             self.ccn, self.n0_ice, &rain_param, &snow_param, &liquid_param, &ice_param,
                                             &rain_prop, &snow_prop, &liquid_prop, &ice_prop, &aut_rain, &aut_snow,
                                             &src_acc, &evp_rain, &evp_snow, &melt_snow)
@@ -360,6 +366,12 @@ cdef class MicrophysicsArctic:
                     time_added += dt_
                     iter_count += 1
 
+                    if iter_count > 4:
+                        with gil:
+                            print " ******  "
+                            print "Substeps: ", iter_count, (TS.dt - time_added), snow_prop.mf
+
+
         self.z_pencil.reverse_double(&Gr.dims, Pa, qrain_pencils, &qrain_tmp[0])
         self.z_pencil.reverse_double(&Gr.dims, Pa, qsnow_pencils, &qsnow_tmp[0])
 
@@ -397,6 +409,28 @@ cdef class MicrophysicsArctic:
         self.z_pencil.reverse_double(&Gr.dims, Pa, qrain_vel_pencils, &self.qrain_vel[0])
         self.z_pencil.reverse_double(&Gr.dims, Pa, qsnow_vel_pencils, &self.qsnow_vel[0])
 
+        #Get number density for output
+        cdef:
+            double [:] rain_number = self.rain_number_density
+            double [:] snow_number = self.snow_number_density
+            double [:] ice_number = self.ice_number_density
+
+        with nogil:
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        snow_prop.n0 = get_n0_snow_c(Ref.alpha0_half[k], PV.values[qsnow_shift+ijk], &snow_param)
+                        snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
+                        snow_number[ijk] = snow_prop.n0/snow_prop.lam
+
+                        ice_prop.n0 = get_n0_ice_c(Ref.alpha0_half[k], DV.values[qi_shift+ijk], self.n0_ice, &ice_param)
+                        ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
+                        ice_number[ijk] = ice_prop.n0/ice_prop.lam
+
+
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
@@ -425,6 +459,12 @@ cdef class MicrophysicsArctic:
 
         tmp = Pa.HorizontalMean(Gr, &self.melting[0])
         NS.write_profile('snow_melt_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.ice_number_density[0])
+        NS.write_profile('n_ice_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.snow_number_density[0])
+        NS.write_profile('n_snow_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMean(Gr, &self.qrain_flux[0])
         NS.write_profile('rain_sedimentation_flux', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)

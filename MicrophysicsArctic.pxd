@@ -113,6 +113,10 @@ cdef class MicrophysicsArctic:
         double [:] qrain_vel
         double [:] qsnow_vel
 
+        double [:] rain_number_density
+        double [:] snow_number_density
+        double [:] ice_number_density
+
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

@@ -253,8 +253,9 @@ inline double get_n0_snow_c(const double alpha_, const double mf, struct hm_para
     double n0_max = swc*_param->gamstar/_param->a/pow(_param->d_min, (_param->b+1.0));
     double n0_min = swc*_param->gamstar/_param->a/pow(_param->d_max, (_param->b+1.0));
 
-    n0_snow = fmax(fmin(n0_snow,n0_max),n0_min);
     n0_snow = 1.0e6;
+    n0_snow = fmax(fmin(n0_snow,n0_max),n0_min);
+
     return n0_snow;
 };
 
@@ -318,8 +319,8 @@ inline double get_rain_vel_c(const double alpha_, const double qrain_, struct hm
 inline double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm_parameters *snow_param,
                              struct hm_properties *snow_prop){
     snow_prop->n0 = get_n0_snow_c(alpha_, qsnow_, snow_param);
-    //snow_prop->lam = get_lambda_c(alpha_, snow_prop, snow_param);
-    snow_prop->lam = 3.81e3 * pow(fmax(qsnow_/alpha_, small), -0.147); //alternative from Morrison 2011
+    snow_prop->lam = get_lambda_c(alpha_, snow_prop, snow_param);
+    //snow_prop->lam = 3.81e3 * pow(fmax(qsnow_/alpha_, small), -0.147); //alternative from Morrison 2011
 
     double vel_snow = snow_param->c*snow_param->gbd1/snow_param->gb1/pow(snow_prop->lam, snow_param->d);
 
