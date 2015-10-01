@@ -366,7 +366,7 @@ cdef class MicrophysicsArctic:
                     time_added += dt_
                     iter_count += 1
 
-                    if iter_count > 4:
+                    if iter_count > 4 and (TS.dt - time_added) > 0.0:
                         with gil:
                             print " ******  "
                             print "Substeps: ", iter_count, (TS.dt - time_added), snow_prop.mf
