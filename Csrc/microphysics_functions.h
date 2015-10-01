@@ -225,7 +225,7 @@ inline double get_droplet_dmean_c(const double alpha_, const double liq_, const 
 };
 
 inline double get_velmean_c(const double dmean, struct hm_parameters *_param){
-    double val = pow(_param->c * dmean, _param->d);
+    double val = _param->c*pow(dmean, _param->d);
 
     return val;
 };
@@ -234,7 +234,7 @@ inline double get_n0_rain_c(const double alpha_, const double mf, struct hm_para
     double rwc = fmax(mf/alpha_, small);
     double b1 = 650.1466922699631;
     double b2 = -1.222222222222222;
-    double n0_rain = pow(b1*rwc, b2);
+    double n0_rain = b1*pow(rwc, b2);
 
     double n0_max = rwc*(_param->gamstar)/(_param->a)/pow(_param->d_min, (_param->b+1.0));
     double n0_min = rwc*(_param->gamstar)/(_param->a)/pow(_param->d_max, (_param->b+1.0));
@@ -249,7 +249,7 @@ inline double get_n0_snow_c(const double alpha_, const double mf, struct hm_para
     double swc = fmax(mf/alpha_, small);
     double y1 = 5.62e7;
     double y2 = 0.63;
-    double n0_snow = pow(y1*(swc*1000.0), y2);
+    double n0_snow = y1*pow((swc*1000.0), y2);
     double n0_max = swc*_param->gamstar/_param->a/pow(_param->d_min, (_param->b+1.0));
     double n0_min = swc*_param->gamstar/_param->a/pow(_param->d_max, (_param->b+1.0));
 

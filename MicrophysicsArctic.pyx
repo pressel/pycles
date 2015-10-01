@@ -299,7 +299,7 @@ cdef class MicrophysicsArctic:
             for pi in xrange(self.z_pencil.n_local_pencils):
                 time_added = 0.0
                 iter_count = 0
-                while time_added < TS.dt and iter_count < 5:
+                while time_added < TS.dt:
                     dt_ = TS.dt - time_added
                     #First fill/update ghost cells
                     for k in xrange(kmin):
@@ -366,10 +366,10 @@ cdef class MicrophysicsArctic:
                     time_added += dt_
                     iter_count += 1
 
-                    if iter_count > 4 and (TS.dt - time_added) > 0.0:
-                        with gil:
-                            print " ******  "
-                            print "Substeps: ", iter_count, (TS.dt - time_added), snow_prop.mf
+                    # if iter_count > 20 and (TS.dt - time_added) > 0.0:
+                    #     with gil:
+                    #         print " ******  "
+                    #         print "Substeps: ", iter_count, (TS.dt - time_added), snow_prop.mf, qsnow_pencils
 
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, qrain_pencils, &qrain_tmp[0])
@@ -423,12 +423,12 @@ cdef class MicrophysicsArctic:
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
                         snow_prop.n0 = get_n0_snow_c(Ref.alpha0_half[k], PV.values[qsnow_shift+ijk], &snow_param)
-                        snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
-                        snow_number[ijk] = snow_prop.n0/snow_prop.lam
+                        #snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
+                        snow_number[ijk] = snow_prop.n0#/snow_prop.lam
 
                         ice_prop.n0 = get_n0_ice_c(Ref.alpha0_half[k], DV.values[qi_shift+ijk], self.n0_ice, &ice_param)
-                        ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
-                        ice_number[ijk] = ice_prop.n0/ice_prop.lam
+                        #ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
+                        ice_number[ijk] = ice_prop.n0#/ice_prop.lam
 
 
         return
