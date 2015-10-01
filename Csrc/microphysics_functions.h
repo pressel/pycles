@@ -318,7 +318,8 @@ inline double get_rain_vel_c(const double alpha_, const double qrain_, struct hm
 inline double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm_parameters *snow_param,
                              struct hm_properties *snow_prop){
     snow_prop->n0 = get_n0_snow_c(alpha_, qsnow_, snow_param);
-    snow_prop->lam = get_lambda_c(alpha_, snow_prop, snow_param);
+    //snow_prop->lam = get_lambda_c(alpha_, snow_prop, snow_param);
+    snow_prop->lam = 3.81e3 * pow(fmax(qsnow_/alpha_, small), -0.147);
 
     double vel_snow = snow_param->c*snow_param->gbd1/snow_param->gb1/pow(snow_prop->lam, snow_param->d);
 
