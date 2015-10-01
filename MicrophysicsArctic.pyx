@@ -374,10 +374,10 @@ cdef class MicrophysicsArctic:
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
 
-                        rain_dt = (qrain_tmp[ijk] - PV.tendencies[qrain_shift + ijk])/TS.dt
+                        rain_dt = (qrain_tmp[ijk] - PV.values[qrain_shift + ijk])/TS.dt
                         PV.tendencies[qrain_shift + ijk] += rain_dt
 
-                        snow_dt = (qsnow_tmp[ijk] - PV.tendencies[qsnow_shift + ijk])/TS.dt
+                        snow_dt = (qsnow_tmp[ijk] - PV.values[qsnow_shift + ijk])/TS.dt
                         PV.tendencies[qsnow_shift + ijk] += snow_dt
 
                         #Now get the entropy tendency due to precip
@@ -385,8 +385,8 @@ cdef class MicrophysicsArctic:
                         #For DEBUG: 07/27/2015
                         # if fabs(snow_dt) > 1.0e-3:
                         #     with gil:
-                        #         print(i, j, k, TS.dt, qsnow_tmp[ijk], rain_dt, PV.tendencies[qsnow_shift+ijk])
-                        #
+                        #         print(i, j, k, TS.dt, qsnow_tmp[ijk], snow_dt, PV.tendencies[qsnow_shift+ijk])
+                        # #
 
         #Now prepare for output
 
