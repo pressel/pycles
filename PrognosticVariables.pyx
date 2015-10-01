@@ -155,11 +155,11 @@ cdef class PrognosticVariables:
         for var_name in self.name_index.keys():
             var_shift = self.get_varshift(Gr,var_name)
 
-            v_min = np.array(Pa.HorizontalMaximum(Gr,&self.values[var_shift]))[0]
-            v_max = np.array(Pa.HorizontalMinimum(Gr,&self.values[var_shift]))[0]
+            v_max = np.amax(Pa.HorizontalMaximum(Gr,&self.values[var_shift])[Gr.dims.gw:-Gr.dims.gw])
+            v_min = np.amin(Pa.HorizontalMinimum(Gr,&self.values[var_shift])[Gr.dims.gw:-Gr.dims.gw])
 
-            t_min = np.array(Pa.HorizontalMaximum(Gr,&self.tendencies[var_shift]))[0]
-            t_max = np.array(Pa.HorizontalMinimum(Gr,&self.tendencies[var_shift]))[0]
+            t_max = np.amax(Pa.HorizontalMaximum(Gr,&self.tendencies[var_shift])[Gr.dims.gw:-Gr.dims.gw])
+            t_min = np.amin(Pa.HorizontalMinimum(Gr,&self.tendencies[var_shift])[Gr.dims.gw:-Gr.dims.gw])
 
             message = var_name + ': ' + ' value min: ' + str(v_min) + ' value max: ' + str(v_max) + ' tend min: ' + str(t_min) + ' tend_max: ' + str(t_max)
             Pa.root_print(message)
