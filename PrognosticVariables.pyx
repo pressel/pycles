@@ -136,6 +136,37 @@ cdef class PrognosticVariables:
 
         return
 
+    cpdef debug(self, Grid.Grid Gr, ReferenceState.ReferenceState RS ,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        '''
+
+        This function is for debugging purpuses. It prints the maximum and minimum of each variable and their
+        tendencies stored in the PrognosticVariables class.
+
+        :param Gr:
+        :param RS:
+        :param NS:
+        :param Pa:
+        :return:
+        '''
+
+        cdef:
+            Py_ssize_t var_shift
+
+        for var_name in self.name_index.keys():
+            var_shift = self.get_varshift(Gr,var_name)
+
+            v_min = np.array(Pa.HorizontalMaximum(Gr,&self.values[var_shift]))[0]
+            v_max = np.array(Pa.HorizontalMinimum(Gr,&self.values[var_shift]))[0]
+
+            t_min = np.array(Pa.HorizontalMaximum(Gr,&self.tendencies[var_shift]))[0]
+            t_max = np.array(Pa.HorizontalMinimum(Gr,&self.tendencies[var_shift]))[0]
+
+            message = var_name + ': ' + ' value min: ' + str(v_min) + ' value max: ' + str(v_max) + ' tend min: ' + str(t_min) + ' tend_max: ' + str(t_max)
+            Pa.root_print(message)
+
+
+        return
+
     cdef void update_all_bcs(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
 
         cdef double* send_buffer
