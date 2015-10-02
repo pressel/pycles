@@ -25,18 +25,36 @@ cdef class PressureFFTParallel:
         pass
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, ParallelMPI.ParallelMPI Pa):
+        '''
+        Initiaization method for PressureFFTParallel class. Initializes data structures and communicators necessary
+        for the Poisson solver. This method side effects but so no return value.
 
+        :param Gr: Grid class
+        :param RS: ReferenceState class
+        :param Pa: ParallelMPI class
+        :return:
+        '''
+
+        #Initialize storage for RHS
         self.b = np.zeros(Gr.dims.nl[2],dtype=np.double,order='c')
+
+        #Compute the modified wave number representation of the horizontal derivatives in the divergence operators
         self.compute_modified_wave_numbers(Gr)
+
+        #Compute the off diagonal terms in TDM
         self.compute_off_diagonals(Gr,RS)
 
+        #Instantiate tridiagonal matrix solver
         self.TDMA_Solver = SparseSolvers.TDMA()
+        #Initialize memory in tridiagonal solver
         self.TDMA_Solver.initialize(Gr.dims.nl[2])
 
+        #Instantiate classes used for Pencil communication/transposes
         self.X_Pencil = ParallelMPI.Pencil()
         self.Y_Pencil = ParallelMPI.Pencil()
         self.Z_Pencil = ParallelMPI.Pencil()
 
+        #Initialize classes used for Pencil communication/tranposes (here dim corresponds to the pencil direction)
         self.X_Pencil.initialize(Gr,Pa,dim=0)
         self.Y_Pencil.initialize(Gr,Pa,dim=1)
         self.Z_Pencil.initialize(Gr,Pa,dim=2)
@@ -44,6 +62,12 @@ cdef class PressureFFTParallel:
         return
 
     cpdef compute_modified_wave_numbers(self,Grid.Grid Gr):
+        '''
+        Compute the modified wave numbers for the horizontal derivatives in the divergence operator
+        :param Gr: Grid class
+        :return:
+        '''
+
         self.kx2 = np.zeros(Gr.dims.nl[0],dtype=np.double,order='c')
         self.ky2 = np.zeros(Gr.dims.nl[1],dtype=np.double,order='c')
         cdef:
@@ -51,7 +75,7 @@ cdef class PressureFFTParallel:
             long i,j,ii,jj
         for ii in xrange(Gr.dims.nl[0]):
             i = Gr.dims.indx_lo[0] + ii
-            if i <= (Gr.dims.n[0] )/2:
+            if i <= (Gr.dims.n[0])/2:
                 xi = np.double(i)
             else:
                 xi = np.double(i - Gr.dims.n[0])
@@ -74,7 +98,12 @@ cdef class PressureFFTParallel:
         return
 
     cpdef compute_off_diagonals(self,Grid.Grid Gr, ReferenceState.ReferenceState RS):
+        '''
 
+        :param Gr:
+        :param RS:
+        :return:
+        '''
         cdef:
             Py_ssize_t  k
 
