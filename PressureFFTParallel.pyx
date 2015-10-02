@@ -16,7 +16,6 @@ import numpy as np
 cimport numpy as np
 from libc.math cimport cos
 
-import cython
 include 'parameters.pxi'
 
 
