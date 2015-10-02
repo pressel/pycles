@@ -26,7 +26,7 @@ from libc.math cimport fmax, fmin, fabs
 include 'micro_parameters.pxi'
 
 cdef extern from "microphysics_functions.h":
-    void micro_substep_c(Lookup.LookupStruct *LT, double alpha, double vapor_star, double T, double cnn, double n0_ice,
+    void micro_substep_c(Lookup.LookupStruct *LT, double alpha, double p0, double qt, double T, double cnn, double n0_ice,
                          hm_parameters *rain_param, hm_parameters *snow_param, hm_parameters *liquid_param, hm_parameters *ice_param,
                          hm_properties *rain_prop, hm_properties *snow_prop, hm_properties *liquid_prop, hm_properties *ice_prop,
                          double* aut_rain, double* aut_snow, ret_acc *src_acc, double* evp_rain,
@@ -35,6 +35,7 @@ cdef extern from "microphysics_functions.h":
     inline double get_rain_vel_c(double alpha, double qrain, hm_parameters *rain_param, hm_properties *rain_prop) nogil
     inline double get_snow_vel_c(double alpha, double qsnow, hm_parameters *snow_param, hm_properties *snow_prop) nogil
     inline double get_n0_snow_c(double alpha, double qsnow, hm_parameters *snow_param) nogil
+    inline double get_n0_rain_c(double alpha, double qrain, hm_parameters *rain_param) nogil
     inline double get_n0_ice_c(double alpha, double qi, double ice_n0, hm_parameters *ice_param) nogil
     inline double get_lambda_c(double alpha, hm_properties *_prop, hm_parameters *_param) nogil
 
@@ -160,7 +161,7 @@ cdef class MicrophysicsArctic:
             double [:] melt = self.melting
 
             double aut_rain, aut_snow, evp_rain, evp_snow, melt_snow
-            double vapor_star
+            double qt_micro
 
             double iter_count, time_added, dt_, rate, rate1, rate2, rate3, rate4
             double machine_eps = np.finfo(np.float64).eps
@@ -192,7 +193,7 @@ cdef class MicrophysicsArctic:
                         snow_prop.mf = PV.values[qsnow_shift + ijk]
                         liquid_prop.mf = DV.values[ql_shift + ijk]
                         ice_prop.mf = DV.values[qi_shift + ijk]
-                        vapor_star = DV.values[qv_shift + ijk]
+                        qt_micro = PV.values[qt_shift + ijk]
 
                         #Do substepping (iterations < 20)
 
@@ -203,7 +204,7 @@ cdef class MicrophysicsArctic:
                             if (liquid_prop.mf+ice_prop.mf) < small and (rain_prop.mf+snow_prop.mf) < small:
                                 break
 
-                            micro_substep_c(&self.CC.LT.LookupStructC, Ref.alpha0_half[k], vapor_star, DV.values[t_shift + ijk],
+                            micro_substep_c(&self.CC.LT.LookupStructC, Ref.alpha0_half[k], Ref.p0_half[k], qt_micro, DV.values[t_shift + ijk],
                                             self.ccn, self.n0_ice, &rain_param, &snow_param, &liquid_param, &ice_param,
                                             &rain_prop, &snow_prop, &liquid_prop, &ice_prop, &aut_rain, &aut_snow,
                                             &src_acc, &evp_rain, &evp_snow, &melt_snow)
@@ -225,8 +226,9 @@ cdef class MicrophysicsArctic:
                             snow_prop.mf = fmax(snow_prop.mf + (aut_snow + src_acc.dys + evp_snow + melt_snow)* dt_,0.0)
                             liquid_prop.mf = fmax(liquid_prop.mf + (-aut_rain + src_acc.dyl) * dt_,0.0)
                             ice_prop.mf = fmax(ice_prop.mf + (-aut_snow + src_acc.dyi) * dt_,0.0)
-                            vapor_star = fmax(vapor_star + (-evp_rain - evp_snow) * dt_,0.0)
+                            #vapor_star = fmax(vapor_star + (-evp_rain - evp_snow) * dt_,0.0)
 
+                            qt_micro = fmax(qt_micro + (-aut_rain + src_acc.dyl - aut_snow + src_acc.dyi - evp_rain - evp_snow)*dt_, 0.0)
 
                             # Update the contributions of each source term
                             aut[ijk] = aut[ijk] + aut_rain * dt_/TS.dt
@@ -241,16 +243,16 @@ cdef class MicrophysicsArctic:
                             time_added = time_added + dt_
                             iter_count += 1
 
-                            if iter_count > 19:
-                                with gil:
-                                    print " ******  "
-                                    print "Substeps: ", iter_count, dt_, rain_prop.mf, snow_prop.mf
+                            # if iter_count > 19:
+                            #     with gil:
+                            #         print " ******  "
+                            #         print "Substeps: ", iter_count, dt_, rain_prop.mf, snow_prop.mf
 
                         PV.tendencies[qrain_shift + ijk] = PV.tendencies[qrain_shift + ijk] + (rain_prop.mf - PV.values[qrain_shift + ijk])/TS.dt
                         PV.tendencies[qsnow_shift + ijk] = PV.tendencies[qsnow_shift + ijk] + (snow_prop.mf - PV.values[qsnow_shift + ijk])/TS.dt
 
-                        #The formation of precipitation should also affect qt
-
+                        #Add tendency of qt due to microphysics
+                        PV.tendencies[qt_shift + ijk] += (qt_micro - PV.values[qt_shift + ijk])/TS.dt
 
         #*************************** Now add sedimentation **************************
 
@@ -386,13 +388,12 @@ cdef class MicrophysicsArctic:
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
 
+                        #Sedimentation only affect precipitation tendencies
                         rain_dt = (qrain_tmp[ijk] - PV.values[qrain_shift + ijk])/TS.dt
                         PV.tendencies[qrain_shift + ijk] += rain_dt
 
                         snow_dt = (qsnow_tmp[ijk] - PV.values[qsnow_shift + ijk])/TS.dt
                         PV.tendencies[qsnow_shift + ijk] += snow_dt
-
-                        #Now get the entropy tendency due to precip
 
                         #For DEBUG: 07/27/2015
                         # if fabs(snow_dt) > 1.0e-3:
@@ -426,9 +427,15 @@ cdef class MicrophysicsArctic:
                         #snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
                         snow_number[ijk] = snow_prop.n0#/snow_prop.lam
 
+                        rain_prop.n0 = get_n0_rain_c(Ref.alpha0_half[k], PV.values[qrain_shift+ijk], &rain_param)
+                        #rain_prop.lam = get_lambda_c(Ref.alpha0_half[k], &rain_prop, &rain_param)
+                        rain_number[ijk] = rain_prop.n0#/rain_prop.lam
+
                         ice_prop.n0 = get_n0_ice_c(Ref.alpha0_half[k], DV.values[qi_shift+ijk], self.n0_ice, &ice_param)
                         #ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
                         ice_number[ijk] = ice_prop.n0#/ice_prop.lam
+                        
+
 
 
         return
