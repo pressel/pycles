@@ -269,14 +269,14 @@ cdef class MicrophysicsArctic:
         with nogil:
             for pi in xrange(self.z_pencil.n_local_pencils):
                 for k in xrange(nz):
-                    qrain_pencils_ghosted[pi, k] = qrain_pencils[pi, k]
-                    qsnow_pencils_ghosted[pi, k] = qsnow_pencils[pi, k]
+                    qrain_pencils_ghosted[pi, k+kmin] = qrain_pencils[pi, k]
+                    qsnow_pencils_ghosted[pi, k+kmin] = qsnow_pencils[pi, k]
 
                 for k in xrange(kmin):
                     qrain_pencils_ghosted[pi, kmin-1-k] = qrain_pencils_ghosted[pi, kmin+k]
                     qsnow_pencils_ghosted[pi, kmin-1-k] = qsnow_pencils_ghosted[pi, kmin+k]
-                    qrain_pencils_ghosted[pi, nlz-kmin+k] = qrain_pencils_ghosted[pi, nlz-kmin-k-1]
-                    qsnow_pencils_ghosted[pi, nlz-kmin+k] = qsnow_pencils_ghosted[pi, nlz-kmin-k-1]
+                    qrain_pencils_ghosted[pi, nz+kmin+k] = qrain_pencils_ghosted[pi, nz+kmin-k-1]
+                    qsnow_pencils_ghosted[pi, nz+kmin+k] = qsnow_pencils_ghosted[pi, nz+kmin-k-1]
 
         cdef:
             double [:] vel_cols_r = np.zeros((nz + 2*kmin), dtype=np.double, order='c')
@@ -307,8 +307,8 @@ cdef class MicrophysicsArctic:
                     for k in xrange(kmin):
                         qrain_pencils_ghosted[pi, kmin-1-k] = qrain_pencils_ghosted[pi, kmin+k]
                         qsnow_pencils_ghosted[pi, kmin-1-k] = qsnow_pencils_ghosted[pi, kmin+k]
-                        qrain_pencils_ghosted[pi, nlz-kmin+k] = qrain_pencils_ghosted[pi, nlz-kmin-k-1]
-                        qsnow_pencils_ghosted[pi, nlz-kmin+k] = qsnow_pencils_ghosted[pi, nlz-kmin-k-1]
+                        qrain_pencils_ghosted[pi, nz+kmin+k] = qrain_pencils_ghosted[pi, nz+kmin-k-1]
+                        qsnow_pencils_ghosted[pi, nz+kmin+k] = qsnow_pencils_ghosted[pi, nz+kmin-k-1]
                     #Then compute velocities
                     for k in xrange(nz+2*kmin):
                         rain_prop.mf = qrain_pencils_ghosted[pi, k]
@@ -434,7 +434,7 @@ cdef class MicrophysicsArctic:
                         ice_prop.n0 = get_n0_ice_c(Ref.alpha0_half[k], DV.values[qi_shift+ijk], self.n0_ice, &ice_param)
                         #ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
                         ice_number[ijk] = ice_prop.n0#/ice_prop.lam
-                        
+
 
 
 
