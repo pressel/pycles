@@ -41,12 +41,12 @@ void buoyancy_update(struct DimStruct *dims, double* restrict alpha0, double* re
     ssize_t i,j,k;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
-    const ssize_t imin = 1;
-    const ssize_t jmin = 1;
-    const ssize_t kmin = 1;
-    const ssize_t imax = dims->nlg[0]-2;
-    const ssize_t jmax = dims->nlg[1]-2;
-    const ssize_t kmax = dims->nlg[2]-2;
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0]-1;
+    const ssize_t jmax = dims->nlg[1]-1;
+    const ssize_t kmax = dims->nlg[2]-1;
 
     for (i=imin; i<imax; i++){
        const ssize_t ishift = i * istride;
@@ -65,7 +65,7 @@ void buoyancy_update(struct DimStruct *dims, double* restrict alpha0, double* re
             const ssize_t jshift = j * jstride;
             for (k=kmin;k<kmax;k++){
                 const ssize_t ijk = ishift + jshift + k;
-                wt[ijk] = wt[ijk] + interp_4(buoyancy[ijk-1],buoyancy[ijk],buoyancy[ijk+1],buoyancy[ijk+2]);
+                wt[ijk] = wt[ijk] + interp_2(buoyancy[ijk],buoyancy[ijk+1]);
             } // End k loop
         } // End j loop
     } // End i loop
