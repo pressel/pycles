@@ -43,8 +43,9 @@ inline double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const
     /* Harrington 1995 snow autoconversion model */
     /* Saturation vapor pressure over ICE??? */
     double pv_star = lookup(LT, temp_);
-    double y_sat_ice = pv_star/(p0_-pv_star)*eps_v*(1-qt_);
-    double satratio = qt_/y_sat_ice;
+    //double y_sat_ice = pv_star/(p0_-pv_star)*eps_v*(1.0-qt_);
+    double qv_star = qv_star_c(p0_, qt_, pv_star);
+    double satratio = qt_/qv_star;
     double db_ice = 125.0e-6;
     double val = 0.0;
     double gtherm, psi;
@@ -63,8 +64,9 @@ inline double get_evp_rain_c(struct LookupStruct *LT, const double alpha_, const
                              const double temp_, struct hm_properties *_prop){
     double beta = 2.0;
     double pv_star = lookup(LT, temp_);
-    double y_sat = pv_star/(p0_-pv_star)*eps_v*(1-qt_);
-    double satratio = qt_/y_sat;
+    //double y_sat = pv_star/(p0_-pv_star)*eps_v*(1-qt_);
+    double qv_star = qv_star_c(p0_, qt_, pv_star);
+    double satratio = qt_/qv_star;
 
     double re, vent, gtherm;
     double val = 0.0;
@@ -83,8 +85,9 @@ inline double get_evp_snow_c(struct LookupStruct *LT, const double alpha_, const
                            const double qt_, double const temp_, struct hm_properties *_prop){
     double beta = 3.0;
     double pv_star = lookup(LT, temp_);
-    double y_sat = pv_star/(p0_-pv_star)*eps_v*(1-qt_);
-    double satratio = qt_/y_sat;
+    //double y_sat = pv_star/(p0_-pv_star)*eps_v*(1-qt_);
+    double qv_star = qv_star_c(p0_, qt_, pv_star);
+    double satratio = qt_/qv_star;
 
     double re = _prop->diam*_prop->vel/visc_air;
     double vent = 0.65 + 0.39*(pow(re, 0.5));
@@ -329,7 +332,7 @@ inline double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm
     return vel_snow;
 };
 
-inline double get_wet_bulb(const double T){
+inline double get_wet_bulb_c(const double T){
     return T;
 };
 
