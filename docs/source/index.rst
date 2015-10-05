@@ -14,6 +14,8 @@ Contents:
    introduction
    install
    running
+   Grid
+   standards
 
 
 

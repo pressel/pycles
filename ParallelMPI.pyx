@@ -15,6 +15,11 @@ import cython
 from libc.math cimport fmin, fmax
 cdef class ParallelMPI:
     def __init__(self,namelist):
+        '''
+        Initializes the ParallelMPI class. Calls MPI init. Sets-up MPI cartesian topologies and sub-topologies.
+        :param namelist: Namelist dictionary.
+        :return:
+        '''
 
         cdef:
             int is_initialized
@@ -61,11 +66,20 @@ cdef class ParallelMPI:
         return
 
     cpdef root_print(self,txt_output):
+        '''
+        Print only from the root process.
+        :param txt_output: Output
+        :return:
+        '''
         if self.rank==0:
             print(txt_output)
         return
 
     cdef void kill(self):
+        '''
+        Call MPI_Abort.
+        :return:
+        '''
         cdef int ierr = 0
         self.root_print("Terminating MPI!")
         ierr = mpi.MPI_Abort(self.comm_world,1)
@@ -73,10 +87,17 @@ cdef class ParallelMPI:
         return
 
     cdef void barrier(self):
+        '''
+        Call MPI_Barrier on global MPI communicator.
+        :return:
+        '''
         mpi.MPI_Barrier(self.comm_world)
         return
 
     cdef void create_sub_communicators(self):
+        '''
+        :return: Sets up cartesian sub topologies from cart_comm_world.
+        '''
         cdef:
             int ierr = 0
             int [3] remains
