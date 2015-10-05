@@ -3,6 +3,8 @@
 #include "lookup.h"
 #include "parameters.h"
 #include "micro_parameters.h"
+#include "entropies.h"
+#include "thermodynamic_functions.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -325,4 +327,28 @@ inline double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm
     double vel_snow = snow_param->c*snow_param->gbd1/snow_param->gb1/pow(snow_prop->lam, snow_param->d);
 
     return vel_snow;
+};
+
+inline double get_wet_bulb(const double T){
+    return T;
+};
+
+inline double entropy_src_precipitation_c(const double p0, const double T, const double qt, const double qv, const double L, const double precip_rate){
+    double pd = pd_c(p0, qt, qv);
+    double pv = pv_c(p0, qt, qv);
+    double sd = sd_c(pd, T);
+    double sv = sv_c(pv, T);
+    double sc = sc_c(L, T);
+
+    return (sd - sv + sc) * precip_rate;
+};
+
+inline double entropy_src_evaporation_c(const double p0, const double T, const double Tw, const double qt, const double qv, const double L, const double evap_rate){
+    double pd = pd_c(p0, qt, qv);
+    double pv = pv_c(p0, qt, qv);
+    double sd = sd_c(pd, T);
+    double sv = sv_c(pv, Tw);
+    double sc = sc_c(L, Tw);
+
+    return (sv - sc - sd) * evap_rate;
 };
