@@ -330,14 +330,12 @@ cdef class MicrophysicsArctic:
                     for k in xrange(kmin, kmax):
                         vel_i_m = 0.5*(vel_cols_r[k-1] + vel_cols_r[k])
                         vel_i_p = 0.5*(vel_cols_r[k] + vel_cols_r[k+1])
-                        # xx = Gr.dims.dxi[2] * (vel_i_m*a[k]/Ref.alpha0[k-1] - vel_i_p*a[k+1]/Ref.alpha0[k]) * Ref.alpha0_half[k]
-                        xx = 0.5 * Gr.dims.dxi[2] * (vel_i_p*a[k+1]*Ref.rho0[k] - vel_i_m*a[k]*Ref.rho0[k-1]) * Ref.alpha0_half[k]
+                        xx = Gr.dims.dxi[2] * (vel_i_m*a[k]*Ref.rho0[k-1] - vel_i_p*a[k+1]*Ref.rho0[k]) * Ref.alpha0_half[k]
 
                         qrain_tendency_pencils[pi, k-kmin] += xx*dt_/TS.dt
-                        # qrain_flux_pencils[pi, k-kmin] += Ref.alpha0_half[k]*0.5\
-                        #                                 *(vel_i_m*a[k]/Ref.alpha0[k-1] +
-                        #                                   vel_i_p*a[k+1]/Ref.alpha0[k])*dt_/TS.dt
-                        qrain_flux_pencils[pi, k-kmin] += 0.5*vel_i_p*a[k+1]*Ref.rho0[k]*dt_/TS.dt
+                        qrain_flux_pencils[pi, k-kmin] += Ref.alpha0_half[k]*0.5\
+                                                        *(vel_i_m*a[k]*Ref.rho0[k-1] +
+                                                          vel_i_p*a[k+1]*Ref.rho0[k])*dt_/TS.dt
                         qrain_pencils_ghosted[pi, k] = fmax(qrain_pencils_ghosted[pi, k] + xx*dt_, 0.0)
                         qrain_pencils[pi, k-kmin] = qrain_pencils_ghosted[pi, k]
 
@@ -355,14 +353,12 @@ cdef class MicrophysicsArctic:
                     for k in xrange(kmin, kmax):
                         vel_i_m = 0.5*(vel_cols_s[k-1] + vel_cols_s[k])
                         vel_i_p = 0.5*(vel_cols_s[k] + vel_cols_s[k+1])
-                        # xx = Gr.dims.dxi[2] * (vel_i_m*a[k]/Ref.alpha0[k-1] - vel_i_p*a[k+1]/Ref.alpha0[k]) * Ref.alpha0_half[k]
-                        xx = 0.5 * Gr.dims.dxi[2] * (vel_i_p*a[k+1]*Ref.rho0[k] - vel_i_m*a[k]*Ref.rho0[k-1]) * Ref.alpha0_half[k]
+                        xx = Gr.dims.dxi[2] * (vel_i_m*a[k]*Ref.rho0[k-1] - vel_i_p*a[k+1]*Ref.rho0[k]) * Ref.alpha0_half[k]
 
                         qsnow_tendency_pencils[pi, k-kmin] += xx*dt_/TS.dt
-                        # qsnow_flux_pencils[pi, k-kmin] += Ref.alpha0_half[k]*0.5\
-                        #                                 *(vel_i_m*a[k]/Ref.alpha0[k-1] +
-                        #                                   vel_i_p*a[k+1]/Ref.alpha0[k])*dt_/TS.dt
-                        qsnow_flux_pencils[pi, k-kmin] += 0.5*vel_i_p*a[k+1]*Ref.rho0[k]*dt_/TS.dt
+                        qsnow_flux_pencils[pi, k-kmin] += Ref.alpha0_half[k]*0.5\
+                                                        *(vel_i_m*a[k]*Ref.rho0[k-1] +
+                                                          vel_i_p*a[k+1]*Ref.rho0[k])*dt_/TS.dt
                         qsnow_pencils_ghosted[pi, k] = fmax(qsnow_pencils_ghosted[pi, k] + xx*dt_, 0.0)
                         qsnow_pencils[pi, k-kmin] = qsnow_pencils_ghosted[pi, k]
 

@@ -31,7 +31,7 @@ inline double get_aut_rain_c(const double alpha_, const double ccn, struct hm_pr
     }
     else{
         l2 = 2.7e-2*(1.0e20/16.0*(db*db*db)*df - 0.4)*lwc;
-        t2 = 3.72/(5.0e5);
+        t2 = 3.72/(5.0e5*db - 7.5)/lwc;
         val = fmax(l2,0.0)/fmax(t2,1.0e-20)*alpha_;
     }
 
