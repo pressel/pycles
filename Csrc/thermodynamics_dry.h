@@ -77,12 +77,12 @@ void bvf_dry(struct DimStruct* dims,  double* restrict p0, double* restrict T,do
     ssize_t i,j,k;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
-    const ssize_t imin = 1;
-    const ssize_t jmin = 1;
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
     const ssize_t kmin = 1;
-    const ssize_t imax = dims->nlg[0]-2;
-    const ssize_t jmax = dims->nlg[1]-2;
-    const ssize_t kmax = dims->nlg[2]-2;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
     const double dzi = 1.0/dims->dx[2];
 
     for (i=imin; i<imax; i++){
