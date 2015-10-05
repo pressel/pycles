@@ -650,6 +650,15 @@ cdef class Pencil:
         return pencils
 
     cdef void build_buffer_double(self, Grid.DimStruct *dims, double *data, double *local_transpose ):
+        '''
+            A method to build a send buffer for Pencils of type double. The function has no return value but does
+            have side effects the memory pointed to by *local_transpose.
+
+        :param dims: pointer to dims structure
+        :param data: pointer to 1D array
+        :param local_transpose: pointer to the transposed data ready for Pencil communication.
+        :return:
+        '''
 
         cdef:
             long imin = dims.gw
@@ -664,6 +673,11 @@ cdef class Pencil:
             long ishift_nogw, jshift_nogw, kshift_nogw
             long i,j,k,ijk,ijk_no_gw
 
+        '''
+           Determine the strides, first for the un-transposed data (including ghost points), and then for the transposed
+                data. In the case of the transposed data, the strides are such that the fastest changing 3D index is in
+                then self.dim direction.
+        '''
         if self.dim == 0:
             istride = dims.nlg[1] * dims.nlg[2]
             jstride = dims.nlg[2]
@@ -678,7 +692,7 @@ cdef class Pencil:
             kstride = 1
 
             istride_nogw = dims.nl[1]
-            jstride_nogw = 1 #dims.nl[0]
+            jstride_nogw = 1
             kstride_nogw = dims.nl[0] * dims.nl[1]
         else:
             istride = dims.nlg[1] * dims.nlg[2]
@@ -689,7 +703,10 @@ cdef class Pencil:
             jstride_nogw = dims.nl[2]
             kstride_nogw = 1
 
-        #Build the local buffer
+        '''
+            Transpose the data given the strides above. The indicies i, j, k are for the un-transposed data including
+            ghost points. For the transposed data, excluding ghost points we must stubrtact gw.
+        '''
         with nogil:
             for i in xrange(imin,imax):
                 ishift = i*istride
