@@ -116,8 +116,8 @@ cdef class Grid:
                                                       self.dims.nlg[0], self.dims.nlg[1] ])
 
 
-        self.dims.ghosted_stride[0] = np.max([self.dims.nlg[1] * self.dims.nlg[2],self.dims.nlg[1],self.dims.nlg[2]])
-        self.dims.ghosted_stride[1] = np.max([1,self.dims.nlg[0]])
+        self.dims.ghosted_stride[0] = np.max([self.dims.nlg[1] * self.dims.nlg[2], self.dims.nlg[1], self.dims.nlg[2]])
+        self.dims.ghosted_stride[1] = np.max([1, self.dims.nlg[0]])
         self.dims.ghosted_stride[2] = 1
 
         return
