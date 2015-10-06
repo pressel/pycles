@@ -116,6 +116,8 @@ cdef class MicrophysicsArctic:
         double [:] rain_number_density
         double [:] snow_number_density
         double [:] ice_number_density
+        double [:] precip_rate
+        double [:] evap_rate
 
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
@@ -123,6 +125,6 @@ cdef class MicrophysicsArctic:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV,
                    DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 

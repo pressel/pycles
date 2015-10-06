@@ -346,7 +346,8 @@ inline double entropy_src_precipitation_c(const double p0, const double T, const
     return (sd - sv + sc) * precip_rate;
 };
 
-inline double entropy_src_evaporation_c(const double p0, const double T, const double Tw, const double qt, const double qv, const double L, const double evap_rate){
+inline double entropy_src_evaporation_c(const double p0, const double T, const double qt, const double qv, const double L, const double evap_rate){
+    double Tw = get_wet_bulb_c(T);
     double pd = pd_c(p0, qt, qv);
     double pv = pv_c(p0, qt, qv);
     double sd = sd_c(pd, T);
