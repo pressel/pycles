@@ -199,8 +199,6 @@ cdef class MicrophysicsArctic:
                         melt[ijk] = 0.0
 
                         #Prepare for substepping
-                        #Get liquid fraction ???
-                        # lf[ijk] = Th.compute_liquid_fraction_c()
                         #Assign mass fraction of each species to property structs
                         rain_prop.mf = PV.values[qrain_shift + ijk]
                         snow_prop.mf = PV.values[qsnow_shift + ijk]
@@ -270,25 +268,12 @@ cdef class MicrophysicsArctic:
                         #Add tendency of qt due to microphysics
                         PV.tendencies[qt_shift + ijk] += (qt_micro - PV.values[qt_shift + ijk])/TS.dt
 
+        #Add entropy tendency due to microphysics (precipitation and evaporation only)
+        # get_s_source_precip(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
+        #                     &precip_rate[0], &PV.tendencies[s_shift])
+        # get_s_source_evap(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
+        #                     &evap_rate[0], &PV.tendencies[s_shift])
 
-        get_s_source_precip(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
-                            &precip_rate[0], &PV.tendencies[s_shift])
-        get_s_source_evap(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
-                            &evap_rate[0], &PV.tendencies[s_shift])
-
-        # #Get entropy tendency
-        # for i in xrange(imin,imax):
-        #     ishift = i * istride
-        #     for j in xrange(jmin,jmax):
-        #         jshift = j * jstride
-        #         for k in xrange(kmin,kmax):
-        #             ijk = ishift + jshift + k
-        #             L = Th.get_lh(DV.values[t_shift + ijk])
-        #             Tw = get_wet_bulb_c(DV.values[t_shift + ijk])
-        #             PV.tendencies[s_shift + ijk] += entropy_src_precipitation_c(Ref.p0_half[k], DV.values[t_shift + ijk],
-        #                                             PV.values[qt_shift + ijk], DV.values[qv_shift + ijk], L, precip_rate[ijk]) + \
-        #                                             entropy_src_evaporation_c(Ref.p0_half[k], DV.values[t_shift + ijk], Tw,
-        #                                             PV.values[qt_shift + ijk], DV.values[qv_shift + ijk], L, evap_rate[ijk])
 
         #*************************** Now add sedimentation **************************
 
