@@ -262,14 +262,19 @@ cdef class MicrophysicsArctic:
                         #Add tendency of qt due to microphysics
                         PV.tendencies[qt_shift + ijk] += (qt_micro - PV.values[qt_shift + ijk])/TS.dt
 
-                        #Get entropy tendency
-                        with gil:
-                            L = Th.get_lh(DV.values[t_shift + ijk])
-                        Tw = get_wet_bulb_c(DV.values[t_shift + ijk])
-                        PV.tendencies[s_shift + ijk] += entropy_src_precipitation_c(Ref.p0_half[k], DV.values[t_shift + ijk],
-                                                        PV.values[qt_shift + ijk], DV.values[qv_shift + ijk], L, precip_rate) + \
-                                                        entropy_src_evaporation_c(Ref.p0_half[k], DV.values[t_shift + ijk], Tw,
-                                                        PV.values[qt_shift + ijk], DV.values[qv_shift + ijk], L, evap_rate)
+        #Get entropy tendency
+        for i in xrange(imin,imax):
+            ishift = i * istride
+            for j in xrange(jmin,jmax):
+                jshift = j * jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    L = Th.get_lh(DV.values[t_shift + ijk])
+                    Tw = get_wet_bulb_c(DV.values[t_shift + ijk])
+                    PV.tendencies[s_shift + ijk] += entropy_src_precipitation_c(Ref.p0_half[k], DV.values[t_shift + ijk],
+                                                    PV.values[qt_shift + ijk], DV.values[qv_shift + ijk], L, precip_rate) + \
+                                                    entropy_src_evaporation_c(Ref.p0_half[k], DV.values[t_shift + ijk], Tw,
+                                                    PV.values[qt_shift + ijk], DV.values[qv_shift + ijk], L, evap_rate)
 
         #*************************** Now add sedimentation **************************
 
