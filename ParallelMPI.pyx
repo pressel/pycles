@@ -761,7 +761,6 @@ cdef class Pencil:
             if self.dim == 0:
                 mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,
                             &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_x)
-
             elif self.dim==1:
                 mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,
                             &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_y)

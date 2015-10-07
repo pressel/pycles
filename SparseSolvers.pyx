@@ -37,7 +37,7 @@ cdef class TDMA:
                 x[i] = (x[i] - a[i] * x[i-1])*m
 
 
-            for i in xrange(self.n-1,-1,-1):
+            for i in xrange(self.n-2,-1,-1):
                 x[i] = x[i] - self.scratch[i] * x[i+1]
 
         return
