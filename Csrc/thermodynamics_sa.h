@@ -105,7 +105,7 @@ void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double*
     const ssize_t kmin = 0;
     const ssize_t imax = dims->nlg[0];
     const ssize_t jmax = dims->nlg[1];
-    const ssize_t kmax = dims->nlg[2];
+    const ssize_t kmax = dims->nlg[2]-1;
 
     for (i=imin; i<imax; i++){
        const ssize_t ishift = i * istride;
@@ -138,10 +138,10 @@ void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(do
     const ssize_t jstride = dims->nlg[2];
     const ssize_t imin = 0;
     const ssize_t jmin = 0;
-    const ssize_t kmin = 0;
+    const ssize_t kmin = 1;
     const ssize_t imax = dims->nlg[0];
     const ssize_t jmax = dims->nlg[1];
-    const ssize_t kmax = dims->nlg[2];
+    const ssize_t kmax = dims->nlg[2]-1;
     const double dzi = 1.0/dims->dx[2];
 
     for (i=imin; i<imax; i++){

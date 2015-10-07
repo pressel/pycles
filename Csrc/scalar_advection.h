@@ -271,12 +271,17 @@ void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
+
                     //Upwind for positive velocity
-                    const double phip = interp_weno3(scalar[ijk+sm1],scalar[ijk],
-                                            scalar[ijk+sp1]);
+                    const double phip = interp_weno3(scalar[ijk+sm1],
+                                                     scalar[ijk],
+                                                     scalar[ijk+sp1]);
+
                     // Up wind for negative velocity
-                    const double phim = interp_weno3(scalar[ijk+sp2],scalar[ijk+sp1],
-                                            scalar[ijk]);
+                    const double phim = interp_weno3(scalar[ijk+sp2],
+                                                     scalar[ijk+sp1],
+                                                     scalar[ijk]);
+
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
@@ -289,12 +294,17 @@ void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
+
                     //Upwind for positive velocity
-                    const double phip = interp_weno3(scalar[ijk+sm1],scalar[ijk],
-                                            scalar[ijk+sp1]);
+                    const double phip = interp_weno3(scalar[ijk+sm1],
+                                                     scalar[ijk],
+                                                     scalar[ijk+sp1]);
+
                     // Up wind for negative velocity
-                    const double phim = interp_weno3(scalar[ijk+sp2],scalar[ijk+sp1],
-                                            scalar[ijk]);
+                    const double phim = interp_weno3(scalar[ijk+sp2],
+                                                     scalar[ijk+sp1],
+                                                     scalar[ijk]);
+
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
@@ -331,12 +341,21 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
+
                     //Upwind for positive velocity
-                    const double phip = interp_weno5(scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
-                                            scalar[ijk+sp1],scalar[ijk+sp2]);
+                    const double phip = interp_weno5(scalar[ijk + sm2],
+                                                     scalar[ijk + sm1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk + sp2]);
+
                     // Up wind for negative velocity
-                    const double phim = interp_weno5(scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
-                                            scalar[ijk],scalar[ijk+sm1]);
+                    const double phim = interp_weno5(scalar[ijk + sp3],
+                                                     scalar[ijk + sp2],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sm1]);
+
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
@@ -349,12 +368,21 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
+
                     //Upwind for positive velocity
-                    const double phip = interp_weno5(scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
-                                            scalar[ijk+sp1],scalar[ijk+sp2]);
+                    const double phip = interp_weno5(scalar[ijk + sm2],
+                                                     scalar[ijk + sm1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk + sp2]);
+
                     // Up wind for negative velocity
-                    const double phim = interp_weno5(scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
-                                            scalar[ijk],scalar[ijk+sm1]);
+                    const double phim = interp_weno5(scalar[ijk + sp3],
+                                                     scalar[ijk + sp2],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sm1]);
+
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
@@ -392,12 +420,25 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
+
                     //Upwind for positive velocity
-                    const double phip = interp_weno7(scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
-                                            scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3]);
+                    const double phip = interp_weno7(scalar[ijk + sm3],
+                                                     scalar[ijk + sm2],
+                                                     scalar[ijk + sm1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk + sp2],
+                                                     scalar[ijk + sp3]);
+
                     // Up wind for negative velocity
-                    const double phim = interp_weno7(scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
-                                            scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2]);
+                    const double phim = interp_weno7(scalar[ijk + sp4],
+                                                     scalar[ijk + sp3],
+                                                     scalar[ijk + sp2],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sm1],
+                                                     scalar[ijk + sm2]);
+
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
@@ -410,12 +451,25 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
+
                      //Upwind for positive velocity
-                    const double phip = interp_weno7(scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
-                                            scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3]);
+                    const double phip = interp_weno7(scalar[ijk + sm3],
+                                                     scalar[ijk + sm2],
+                                                     scalar[ijk + sm1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk + sp2],
+                                                     scalar[ijk + sp3]);
+
                     // Up wind for negative velocity
-                    const double phim = interp_weno7(scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
-                                            scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2]);
+                    const double phim = interp_weno7(scalar[ijk + sp4],
+                                                     scalar[ijk + sp3],
+                                                     scalar[ijk + sp2],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sm1],
+                                                     scalar[ijk + sm2]);
+
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
@@ -455,12 +509,29 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
+
                     //Upwind for positive velocity
-                    const double phip = interp_weno9(scalar[ijk+sm4],scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
-                                            scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3],scalar[ijk+sp4]);
+                    const double phip = interp_weno9(scalar[ijk + sm4],
+                                                     scalar[ijk + sm3],
+                                                     scalar[ijk + sm2],
+                                                     scalar[ijk + sm1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk + sp2],
+                                                     scalar[ijk + sp3],
+                                                     scalar[ijk + sp4]);
+
                     // Up wind for negative velocity
-                    const double phim = interp_weno9(scalar[ijk+sp5],scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
-                                            scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2],scalar[ijk+sm3]);
+                    const double phim = interp_weno9(scalar[ijk + sp5],
+                                                     scalar[ijk + sp4],
+                                                     scalar[ijk + sp3],
+                                                     scalar[ijk + sp2],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sm1],
+                                                     scalar[ijk + sm2],
+                                                     scalar[ijk + sm3]);
+
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
@@ -473,12 +544,29 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
+
                     //Upwind for positive velocity
-                    const double phip = interp_weno9(scalar[ijk+sm4],scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
-                                            scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3],scalar[ijk+sp4]);
+                    const double phip = interp_weno9(scalar[ijk + sm4],
+                                                     scalar[ijk + sm3],
+                                                     scalar[ijk + sm2],
+                                                     scalar[ijk + sm1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk + sp2],
+                                                     scalar[ijk + sp3],
+                                                     scalar[ijk + sp4]);
+
                     // Up wind for negative velocity
-                    const double phim = interp_weno9(scalar[ijk+sp5],scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
-                                            scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2],scalar[ijk+sm3]);
+                    const double phim = interp_weno9(scalar[ijk + sp5],
+                                                     scalar[ijk + sp4],
+                                                     scalar[ijk + sp3],
+                                                     scalar[ijk + sp2],
+                                                     scalar[ijk + sp1],
+                                                     scalar[ijk],
+                                                     scalar[ijk + sm1],
+                                                     scalar[ijk + sm2],
+                                                     scalar[ijk + sm3]);
+
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
@@ -520,12 +608,33 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
+
                     //Upwind for positive velocity
-                    const double phip = interp_weno11(scalar[ijk+sm5],scalar[ijk+sm4],scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
-                                            scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3],scalar[ijk+sp4],scalar[ijk+sp5]);
+                    const double phip = interp_weno11(scalar[ijk + sm5],
+                                                      scalar[ijk + sm4],
+                                                      scalar[ijk + sm3],
+                                                      scalar[ijk + sm2],
+                                                      scalar[ijk + sm1],
+                                                      scalar[ijk],
+                                                      scalar[ijk + sp1],
+                                                      scalar[ijk + sp2],
+                                                      scalar[ijk + sp3],
+                                                      scalar[ijk + sp4],
+                                                      scalar[ijk + sp5]);
+
                     // Up wind for negative velocity
-                    const double phim = interp_weno11(scalar[ijk+sp6],scalar[ijk+sp5],scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
-                                            scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2],scalar[ijk+sm3],scalar[ijk+sm4]);
+                    const double phim = interp_weno11(scalar[ijk + sp6],
+                                                      scalar[ijk + sp5],
+                                                      scalar[ijk + sp4],
+                                                      scalar[ijk + sp3],
+                                                      scalar[ijk + sp2],
+                                                      scalar[ijk + sp1],
+                                                      scalar[ijk],
+                                                      scalar[ijk + sm1],
+                                                      scalar[ijk + sm2],
+                                                      scalar[ijk + sm3],
+                                                      scalar[ijk + sm4]);
+
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
@@ -538,12 +647,33 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
+
                     //Upwind for positive velocity
-                    const double phip = interp_weno11(scalar[ijk+sm5],scalar[ijk+sm4],scalar[ijk+sm3],scalar[ijk+sm2],scalar[ijk+sm1],scalar[ijk],
-                                            scalar[ijk+sp1],scalar[ijk+sp2],scalar[ijk+sp3],scalar[ijk+sp4],scalar[ijk+sp5]);
+                    const double phip = interp_weno11(scalar[ijk + sm5],
+                                                      scalar[ijk + sm4],
+                                                      scalar[ijk + sm3],
+                                                      scalar[ijk + sm2],
+                                                      scalar[ijk + sm1],
+                                                      scalar[ijk],
+                                                      scalar[ijk + sp1],
+                                                      scalar[ijk + sp2],
+                                                      scalar[ijk + sp3],
+                                                      scalar[ijk + sp4],
+                                                      scalar[ijk + sp5]);
+
                     // Up wind for negative velocity
-                    const double phim = interp_weno11(scalar[ijk+sp6],scalar[ijk+sp5],scalar[ijk+sp4],scalar[ijk+sp3],scalar[ijk+sp2],scalar[ijk+sp1],
-                                            scalar[ijk],scalar[ijk+sm1],scalar[ijk+sm2],scalar[ijk+sm3],scalar[ijk+sm4]);
+                    const double phim = interp_weno11(scalar[ijk + sp6],
+                                                      scalar[ijk + sp5],
+                                                      scalar[ijk + sp4],
+                                                      scalar[ijk + sp3],
+                                                      scalar[ijk + sp2],
+                                                      scalar[ijk + sp1],
+                                                      scalar[ijk],
+                                                      scalar[ijk + sm1],
+                                                      scalar[ijk + sm2],
+                                                      scalar[ijk + sm3],
+                                                      scalar[ijk + sm4]);
+
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
@@ -592,56 +722,3 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
     };
 };
 
-void compute_flux_divergence(const struct DimStruct *dims, double* restrict alpha0, double* restrict alpha0_half, const double* restrict flux, double* restrict tendency, const double dx, int d){
-
-    ssize_t i,j,k;
-    const ssize_t imin = 1;
-    const ssize_t jmin = 1;
-    const ssize_t kmin = 1;
-
-    const ssize_t imax = dims->nlg[0]-2;
-    const ssize_t jmax = dims->nlg[1]-2;
-    const ssize_t kmax = dims->nlg[2]-2;
-
-    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
-    const ssize_t jstride = dims->nlg[2];
-
-    ssize_t sm1 ;
-    switch(d){
-        case 0:
-            sm1 = -istride;
-        case 1:
-            sm1 = -jstride;
-        case 2:
-            sm1 = -1;
-    }
-
-    const double dxi = 1.0/dx ;
-
-    if(d==2){
-        for(i=imin;i<imax;i++){
-            const ssize_t ishift = i*istride ;
-            for(j=jmin;j<jmax;j++){
-                const ssize_t jshift = j*jstride;
-                for(k=kmin;k<kmax;k++){
-                    const ssize_t ijk = ishift + jshift + k;
-                    tendency[ijk] = tendency[ijk] - alpha0[k]*(flux[ijk+sm1] - flux[ijk])*dxi;
-                } // End k loop
-            } // End j loop
-         } // End i loop
-     } // End if
-     else{
-        for(i=imin;i<imax;i++){
-            const ssize_t ishift = i*istride ;
-            for(j=jmin;j<jmax;j++){
-                const ssize_t jshift = j*jstride;
-                for(k=kmin;k<kmax;k++){
-                    const ssize_t ijk = ishift + jshift + k;
-                    tendency[ijk] = tendency[ijk] - (flux[ijk+sm1] - flux[ijk])*dxi;
-                }// End k loop
-             } // End j loop
-         } // End i loop
-     }//end else
-
-    return;
-};

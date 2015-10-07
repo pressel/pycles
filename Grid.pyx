@@ -36,7 +36,7 @@ cdef class Grid:
         #Get the grid dimensions and ghost points
         self.dims.gw = namelist['grid']['gw']
         self.dims.n[0] = namelist['grid']['nx']
-        self.dims.n[1]= namelist['grid']['ny']
+        self.dims.n[1] = namelist['grid']['ny']
         self.dims.n[2] = namelist['grid']['nz']
 
         #Compute the global and local dims
@@ -73,7 +73,6 @@ cdef class Grid:
             int [3] mpi_dims
             int [3] mpi_periods
             int [3] mpi_coords
-
             int remainder = 0
 
         ierr = mpi.MPI_Cart_get(Parallel.cart_comm_world,maxdims,mpi_dims,mpi_periods,mpi_coords)
@@ -116,8 +115,8 @@ cdef class Grid:
                                                       self.dims.nlg[0], self.dims.nlg[1] ])
 
 
-        self.dims.ghosted_stride[0] = np.max([self.dims.nlg[1] * self.dims.nlg[2],self.dims.nlg[1],self.dims.nlg[2]])
-        self.dims.ghosted_stride[1] = np.max([1,self.dims.nlg[0]])
+        self.dims.ghosted_stride[0] = np.max([self.dims.nlg[1] * self.dims.nlg[2], self.dims.nlg[1], self.dims.nlg[2]])
+        self.dims.ghosted_stride[1] = np.max([1, self.dims.nlg[0]])
         self.dims.ghosted_stride[2] = 1
 
         return

@@ -15,6 +15,11 @@ import cython
 from libc.math cimport fmin, fmax
 cdef class ParallelMPI:
     def __init__(self,namelist):
+        '''
+        Initializes the ParallelMPI class. Calls MPI init. Sets-up MPI cartesian topologies and sub-topologies.
+        :param namelist: Namelist dictionary.
+        :return:
+        '''
 
         cdef:
             int is_initialized
@@ -61,11 +66,20 @@ cdef class ParallelMPI:
         return
 
     cpdef root_print(self,txt_output):
+        '''
+        Print only from the root process.
+        :param txt_output: Output
+        :return:
+        '''
         if self.rank==0:
             print(txt_output)
         return
 
     cdef void kill(self):
+        '''
+        Call MPI_Abort.
+        :return:
+        '''
         cdef int ierr = 0
         self.root_print("Terminating MPI!")
         ierr = mpi.MPI_Abort(self.comm_world,1)
@@ -73,10 +87,17 @@ cdef class ParallelMPI:
         return
 
     cdef void barrier(self):
+        '''
+        Call MPI_Barrier on global MPI communicator.
+        :return:
+        '''
         mpi.MPI_Barrier(self.comm_world)
         return
 
     cdef void create_sub_communicators(self):
+        '''
+        :return: Sets up cartesian sub topologies from cart_comm_world.
+        '''
         cdef:
             int ierr = 0
             int [3] remains
@@ -629,6 +650,15 @@ cdef class Pencil:
         return pencils
 
     cdef void build_buffer_double(self, Grid.DimStruct *dims, double *data, double *local_transpose ):
+        '''
+            A method to build a send buffer for Pencils of type double. The function has no return value but does
+            have side effects the memory pointed to by *local_transpose.
+
+        :param dims: pointer to dims structure
+        :param data: pointer to 1D array
+        :param local_transpose: pointer to the transposed data ready for Pencil communication.
+        :return:
+        '''
 
         cdef:
             long imin = dims.gw
@@ -643,6 +673,11 @@ cdef class Pencil:
             long ishift_nogw, jshift_nogw, kshift_nogw
             long i,j,k,ijk,ijk_no_gw
 
+        '''
+           Determine the strides, first for the un-transposed data (including ghost points), and then for the transposed
+                data. In the case of the transposed data, the strides are such that the fastest changing 3D index is in
+                then self.dim direction.
+        '''
         if self.dim == 0:
             istride = dims.nlg[1] * dims.nlg[2]
             jstride = dims.nlg[2]
@@ -657,7 +692,7 @@ cdef class Pencil:
             kstride = 1
 
             istride_nogw = dims.nl[1]
-            jstride_nogw = 1 #dims.nl[0]
+            jstride_nogw = 1
             kstride_nogw = dims.nl[0] * dims.nl[1]
         else:
             istride = dims.nlg[1] * dims.nlg[2]
@@ -668,7 +703,10 @@ cdef class Pencil:
             jstride_nogw = dims.nl[2]
             kstride_nogw = 1
 
-        #Build the local buffer
+        '''
+            Transpose the data given the strides above. The indicies i, j, k are for the un-transposed data including
+            ghost points. For the transposed data, excluding ghost points we must stubrtact gw.
+        '''
         with nogil:
             for i in xrange(imin,imax):
                 ishift = i*istride

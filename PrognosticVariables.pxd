@@ -35,6 +35,7 @@ cdef class PrognosticVariables:
     cdef:
         void update_all_bcs(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef Update_all_bcs(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
+    cpdef debug(self, Grid.Grid Gr, ReferenceState.ReferenceState RS ,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef set_velocity_direction(self,name,Py_ssize_t direction,ParallelMPI.ParallelMPI Pa)
     cdef inline Py_ssize_t get_nv(self, str variable_name):
         return self.name_index[variable_name]

@@ -8,11 +8,6 @@ long v;
 long w;
 };
 
-#pragma once
-#include "grid.h"
-#include<stdio.h>
-
-
 void build_buffer(long nv, long dim, long s ,struct DimStruct *dims,
     double* restrict values, double* restrict  buffer){
 

@@ -118,6 +118,7 @@ class Simulation3d:
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.Pa)
                 self.io()
+                #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))

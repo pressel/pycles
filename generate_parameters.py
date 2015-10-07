@@ -27,6 +27,15 @@ def main():
     parameters['sd_tilde'] = 6864.8
     parameters['sv_tilde'] = 10513.6
     parameters['omega'] = 7.2921151467064e-5  # Earth's rotational rate (http://hpiers.obspm.fr/eop-pc/models/constants.html)
+    
+    # Surface Monin-Obukhov related parameters
+    parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
+    parameters['Pr0'] = 0.74 
+    parameters['beta_m'] = 4.7 
+    parameters['beta_h'] = parameters['beta_m']/parameters['Pr0'] 
+    parameters['gamma_m'] = 15.0
+    parameters['gamma_h'] = 9.0
+
 
     # Surface Monin-Obukhov related parameters
     parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
