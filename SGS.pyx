@@ -241,13 +241,12 @@ cdef class TKE:
 
         cdef:
             Py_ssize_t i
-            Py_ssize_t npg = Gr.dims.npg
             double delta = (Gr.dims.dx[0] * Gr.dims.dx[1] * Gr.dims.dx[2])**(1.0/3.0)
             double [:] prt  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] mixing_length = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
 
         with nogil:
-            for i in xrange(npg):
+            for i in xrange(Gr.dims.npg):
                 mixing_length[i] = tke_ell(self.cn, PV.values[e_shift+i], DV.values[bf_shift+i], delta)
                 prt[i] = delta/(delta + 2.0*mixing_length[i])
 
