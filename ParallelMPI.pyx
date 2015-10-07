@@ -25,7 +25,7 @@ cdef class ParallelMPI:
             int is_initialized
             int ierr = 0
 
-        #Check to see if MPI_Init has been called if not do so 
+        #Check to see if MPI_Init has been called if not do so
         ierr = mpi.MPI_Initialized(&is_initialized)
         if not is_initialized:
             from mpi4py import MPI
