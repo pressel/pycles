@@ -572,7 +572,7 @@ cdef class SurfaceIsdac:
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
-                    DV.values_2d[ustar_shift + ij] = compute_ustar_c(windspeed[ij],0.0,self.z0, Gr.dims.dx[2]/2.0)
+                    DV.values_2d[ustar_shift + ij] = compute_ustar(windspeed[ij],0.0,self.z0, Gr.dims.dx[2]/2.0)
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
