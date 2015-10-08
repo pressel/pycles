@@ -269,10 +269,10 @@ cdef class MicrophysicsArctic:
                         PV.tendencies[qt_shift + ijk] += (qt_micro - PV.values[qt_shift + ijk])/TS.dt
 
         #Add entropy tendency due to microphysics (precipitation and evaporation only)
-        # get_s_source_precip(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
-        #                     &precip_rate[0], &PV.tendencies[s_shift])
-        # get_s_source_evap(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
-        #                     &evap_rate[0], &PV.tendencies[s_shift])
+        get_s_source_precip(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
+                            &precip_rate[0], &PV.tendencies[s_shift])
+        get_s_source_evap(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
+                            &evap_rate[0], &PV.tendencies[s_shift])
 
 
         #*************************** Now add sedimentation **************************

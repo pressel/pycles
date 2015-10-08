@@ -7,6 +7,12 @@
 cimport ParallelMPI
 from Thermodynamics cimport LatentHeat
 from MicrophysicsArctic cimport MicrophysicsArctic
+cimport Grid
+cimport ReferenceState
+cimport PrognosticVariables
+cimport DiagnosticVariables
+from NetCDFIO cimport NetCDFIO_Stats
+cimport TimeStepping
 
 cdef class No_Microphysics_Dry:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
@@ -21,6 +27,20 @@ cdef class No_Microphysics_SA:
         LH.L_fp = latent_heat_constant
         self.thermodynamics_type = 'SA'
         return
+
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV,
+                   DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
 
 
 def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
