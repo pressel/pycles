@@ -6,7 +6,7 @@ double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double 
 
     double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
 
-    for (size_t i=0; i<dims->npg; i++){
+    for (ssize_t i=0; i<dims->npg; i++){
         visc[i] = cs*cs*delta*delta*strain_rate_mag[i];
         if(buoy_freq[i] > 0.0){
             double fb = sqrt(fmax(1.0 - buoy_freq[i]/(prt*strain_rate_mag[i]*strain_rate_mag[i]),0.0));
@@ -34,7 +34,7 @@ double* restrict visc, double* restrict diff, double cn, double ck){
     double ell = delta;
 
 
-    for (size_t i=0; i<dims->npg; i++){
+    for (ssize_t i=0; i<dims->npg; i++){
         ell = tke_ell(cn, e[i], buoy_freq[i], delta);
         visc[i] = ck * ell * sqrt(fmax(e[i],0.0));
         const double prt = delta/(delta + 2.0 * ell);
@@ -51,7 +51,7 @@ double* restrict buoy_freq, double cn,  double ck){
     double ell = delta;
 
 
-    for (size_t i=0; i<dims->npg; i++){
+    for (ssize_t i=0; i<dims->npg; i++){
         ell = tke_ell(cn, e[i], buoy_freq[i], delta);
         const double ceps= 1.9 * ck + (0.93 - 1.9 * ck) * ell/delta;
         e_tendency[i] += -ceps * pow(fmax(e[i],0.0),1.5) /ell;
@@ -61,7 +61,7 @@ double* restrict buoy_freq, double cn,  double ck){
 }
 
 void tke_shear_production(const struct DimStruct *dims,  double* restrict e_tendency, double* restrict visc, double* restrict strain_rate_mag ){
-    for (size_t i=0; i<dims->npg; i++){
+    for (ssize_t i=0; i<dims->npg; i++){
         e_tendency[i] += visc[i] * strain_rate_mag[i] * strain_rate_mag[i];
     }
 
@@ -69,7 +69,7 @@ void tke_shear_production(const struct DimStruct *dims,  double* restrict e_tend
 }
 
 void tke_buoyant_production(const struct DimStruct *dims,  double* restrict e_tendency, double* restrict diff, double* restrict buoy_freq ){
-    for (size_t i=0; i<dims->npg; i++){
+    for (ssize_t i=0; i<dims->npg; i++){
         e_tendency[i] += -diff[i] * buoy_freq[i];
     }
 
@@ -81,27 +81,27 @@ void tke_buoyant_production(const struct DimStruct *dims,  double* restrict e_te
 //for Use with Numerical Weather Prediction Models. J. Atmos. Sci., 39, 2249–2266.
 //doi: http://dx.doi.org/10.1175/1520-0469(1982)039<2249:AFEMOT>2.0.CO;2
 void tke_surface(const struct DimStruct *dims, double* e, double* lmo, double* ustar, double h_bl, double zb){
-    const size_t istride = dims->nlg[1] * dims->nlg[2];
-    const size_t jstride = dims->nlg[2];
-    const size_t istride_2d = dims->nlg[1];
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t istride_2d = dims->nlg[1];
 
-    const size_t imin = 1;
-    const size_t jmin = 1;
-    const size_t kmin = 1;
+    const ssize_t imin = 1;
+    const ssize_t jmin = 1;
+    const ssize_t kmin = 1;
 
-    const size_t imax = dims->nlg[0]-1;
-    const size_t jmax = dims->nlg[1]-1;
-    const size_t kmax = dims->nlg[2]-1;
+    const ssize_t imax = dims->nlg[0]-1;
+    const ssize_t jmax = dims->nlg[1]-1;
+    const ssize_t kmax = dims->nlg[2]-1;
 
-    const size_t gw = dims->gw;
+    const ssize_t gw = dims->gw;
     const double onethird = 1.0/3.0;
 
-    for(size_t i=imin;i<imax;i++){
-        const size_t ishift = i*istride ;
-        for(size_t j=jmin;j<jmax;j++){
-            const size_t jshift = j*jstride;
-            const size_t ij = i * istride_2d + j;
-            const size_t ijk = ishift + jshift + gw ;
+    for(ssize_t i=imin;i<imax;i++){
+        const ssize_t ishift = i*istride ;
+        for(ssize_t j=jmin;j<jmax;j++){
+            const ssize_t jshift = j*jstride;
+            const ssize_t ij = i * istride_2d + j;
+            const ssize_t ijk = ishift + jshift + gw ;
             if(zb/lmo[ij] >= 0.0){
                 e[ijk] = 3.75 * ustar[ij] * ustar[ij];
             }

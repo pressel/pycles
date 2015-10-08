@@ -126,11 +126,11 @@ cdef class ThermodynamicsDry:
         #Add entropy potential temperature to 3d fields
         with nogil:
             count = 0
-            for i in range(imin,imax):
+            for i in xrange(imin,imax):
                 ishift = i * istride
-                for j in range(jmin,jmax):
+                for j in xrange(jmin,jmax):
                     jshift = j * jstride
-                    for k in range(kmin,kmax):
+                    for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
                         data[count] = thetas_c(PV.values[s_shift+ijk],0.0)
                         count += 1
@@ -160,11 +160,11 @@ cdef class ThermodynamicsDry:
         #Add entropy potential temperature to 3d fields
         with nogil:
             count = 0
-            for i in range(imin,imax):
+            for i in xrange(imin,imax):
                 ishift = i * istride
-                for j in range(jmin,jmax):
+                for j in xrange(jmin,jmax):
                     jshift = j * jstride
-                    for k in range(kmin,kmax):
+                    for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
                         data[count] = thetas_c(PV.values[s_shift+ijk],0.0)
                         count += 1

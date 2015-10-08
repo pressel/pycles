@@ -171,7 +171,7 @@ cdef class TimeStepping:
                     self.value_copies[2,i] = PV.values[i]
                     self.tendency_copies[0,i] = PV.tendencies[i]
                     PV.values[i] = (0.178079954393132*self.value_copies[0,i] + 0.821920045606868*PV.values[i]
-                                    +0.544974750228521*PV.tendencies[i]*self.dt)
+                                    + 0.544974750228521*PV.tendencies[i]*self.dt)
                     PV.tendencies[i] = 0.0
             else:
                 for i in xrange(Gr.dims.npg*PV.nv):

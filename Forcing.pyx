@@ -20,7 +20,7 @@ include 'parameters.pxi'
 from Initialization import sat_adjst
 
 cdef class Forcing:
-    def __init__(self, namelist):
+    def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
             self.scheme = ForcingSullivanPatton()
@@ -28,14 +28,16 @@ cdef class Forcing:
             self.scheme = ForcingBomex()
         elif casename == 'Gabls':
             self.scheme = ForcingGabls()
-        elif casename == 'DyCOMS_RF01':
+        elif casename == 'DYCOMS_RF01':
             self.scheme = ForcingDyCOMS_RF01()
         elif casename == 'Mpace':
             self.scheme = ForcingMpace()
         elif casename == 'Isdac':
             self.scheme = ForcingIsdac()
         else:
-            self.scheme= ForcingNone()
+            Pa.root_print('No focing for casename: ' +  casename)
+            Pa.root_print('Killing simulation now!!!')
+            Pa.kill()
         return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -338,9 +340,17 @@ cdef class ForcingDyCOMS_RF01:
         self.vg = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
         with nogil:
             for k in range(Gr.dims.nlg[2]):
-                self.subsidence[k] = -Gr.zl[k] * self.divergence
+                self.subsidence[k] = -Gr.zl_half[k] * self.divergence
                 self.ug[k] = 7.0
                 self.vg[k] = -5.5
+
+        #Initialize Statistical Output
+        NS.add_profile('s_subsidence_tendency', Gr, Pa)
+        NS.add_profile('qt_subsidence_tendency', Gr, Pa)
+        NS.add_profile('u_subsidence_tendency', Gr, Pa)
+        NS.add_profile('v_subsidence_tendency', Gr, Pa)
+        NS.add_profile('u_coriolis_tendency', Gr, Pa)
+        NS.add_profile('v_coriolis_tendency',Gr, Pa)
 
         return
 
@@ -813,8 +823,6 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
         Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
         Py_ssize_t jstride = dims.nlg[2]
         Py_ssize_t ishift, jshift, ijk, i,j,k
-        double phim, fluxm
-        double phip, fluxp
         double dxi = dims.dxi[2]
     with nogil:
         for i in xrange(imin,imax):
@@ -823,14 +831,7 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    tendencies[ijk] = tendencies[ijk] - subsidence[k]*(values[ijk+1]-values[ijk])*dxi
-                    # phip = values[ijk]
-                    # phim = values[ijk+1]
-                    # fluxp = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
-                    # phip = values[ijk-1]
-                    # phim = values[ijk]
-                    # fluxm = (0.5*(subsidence[k]+fabs(subsidence[k]))*phip + 0.5*(subsidence[k]-fabs(subsidence[k]))*phim)*rho0[k]
-                    # tendencies[ijk] = tendencies[ijk] - (fluxp - fluxm)*dxi/rho0_half[k]
+                    tendencies[ijk] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k]
 
     return
 

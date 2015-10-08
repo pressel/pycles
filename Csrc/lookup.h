@@ -46,7 +46,7 @@ void free_table(struct LookupStruct *LT){
 };
 
 inline double lookup(struct LookupStruct *LT, double x){
-    const int indx = floor((x - LT->x_min)*LT->dxi);
+    const size_t indx = floor((x - LT->x_min)*LT->dxi);
     const double y1 = LT->y[indx] ;
     const double y2 = LT->y[indx + 1];
     const double x1 = LT->x_min + LT-> dx * indx ;

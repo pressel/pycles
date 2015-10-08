@@ -12,9 +12,10 @@ cdef class ParallelMPI:
 
         public int rank
         int size
-        int sub_z_size
+
         int sub_x_size
         int sub_y_size
+        int sub_z_size
 
         int sub_x_rank
         int sub_y_rank

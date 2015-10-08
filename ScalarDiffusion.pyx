@@ -204,4 +204,5 @@ cdef class ScalarDiffusion:
                 tmp = Pa.HorizontalMinimum(Gr, &data[0])
                 NS.write_profile('sgs_qt_s_source_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+
         return

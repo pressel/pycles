@@ -13,8 +13,6 @@ cimport PrognosticVariables
 
 from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
 cimport ReferenceState
-import time
-import cython
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
 
@@ -180,6 +178,7 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.initialize(Gr, Th, NS, Pa)
 
     #Get the variable number for each of the velocity components
+    np.random.seed(Pa.rank)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -246,6 +245,7 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.initialize(Gr, Th, NS, Pa)
 
     #Get the variable number for each of the velocity components
+    np.random.seed(Pa.rank)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -350,6 +350,7 @@ def InitGabls(Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
     RS.initialize(Gr, Th, NS, Pa)
 
     #Get the variable number for each of the velocity components
+    np.random.seed(Pa.rank)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -362,6 +363,7 @@ def InitGabls(Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
         double t
 
         #Generate initial perturbations (here we are generating more than we need)
+
         cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
         cdef double theta_pert_
 
@@ -508,6 +510,7 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             return t_2, ql_2
 
     #Generate initial perturbations (here we are generating more than we need)
+    np.random.seed(Pa.rank)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
 
