@@ -258,7 +258,7 @@ inline double get_n0_snow_c(const double alpha_, const double mf, struct hm_para
     double n0_max = swc*_param->gamstar/_param->a/pow(_param->d_min, (_param->b+1.0));
     double n0_min = swc*_param->gamstar/_param->a/pow(_param->d_max, (_param->b+1.0));
 
-    n0_snow = 1.0e6;
+    //n0_snow = 1.0e6;
     n0_snow = fmax(fmin(n0_snow,n0_max),n0_min);
 
     return n0_snow;
