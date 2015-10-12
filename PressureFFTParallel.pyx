@@ -16,6 +16,7 @@ import numpy as np
 cimport numpy as np
 from libc.math cimport cos
 
+import cython
 include 'parameters.pxi'
 
 
@@ -67,7 +68,6 @@ cdef class PressureFFTParallel:
         :return:
         '''
 
-        #Initialize storage for x any y wavenumbers squared
         self.kx2 = np.zeros(Gr.dims.nl[0],dtype=np.double,order='c')
         self.ky2 = np.zeros(Gr.dims.nl[1],dtype=np.double,order='c')
         cdef:

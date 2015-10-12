@@ -109,8 +109,7 @@ cdef class Rayleigh:
                             jshift = j * jstride
                             for k in xrange(kmin, kmax):
                                 ijk = ishift + jshift + k
-                                PV.tendencies[var_shift + ijk] = (PV.tendencies[var_shift + ijk]
-                                                                  - (PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_zhalf[k])
+                                PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_zhalf[k]
             else:
                 with nogil:
                     for i in xrange(imin, imax):
@@ -119,6 +118,5 @@ cdef class Rayleigh:
                             jshift = j * jstride
                             for k in xrange(kmin, kmax):
                                 ijk = ishift + jshift + k
-                                PV.tendencies[var_shift + ijk] = PV.tendencies[var_shift + ijk] - (
-                                    PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_z[k]
+                                PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_z[k]
         return

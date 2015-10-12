@@ -357,11 +357,58 @@ cdef class ForcingDyCOMS_RF01:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
+            Py_ssize_t thetali_shift = DV.get_varshift(Gr,'thetali')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+
+            double [:] thetal_subs = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+            double [:] qt_subs = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i,j,k,ishift,jshift,ijk
+
+            double pd
+            double pv
+            double qt
+            double qv
+            double p0
+            double rho0
+            double t
 
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
+        #apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&DV.values[thetali_shift],&thetal_subs[0])
+        #apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&qt_subs[0])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
+
+        #Apply large scale source terms
+        #with nogil:
+        #    for i in xrange(imin,imax):
+        #        ishift = i * istride
+        #        for j in xrange(jmin,jmax):
+        #            jshift = j * jstride
+        #            for k in xrange(kmin,kmax):
+        #                ijk = ishift + jshift + k
+        #                p0 = Ref.p0_half[k]
+        #                rho0 = Ref.rho0_half[k]
+        #                qt = PV.values[qt_shift + ijk]
+        #                qv = qt - DV.values[ql_shift + ijk]
+        #                pd = pd_c(p0,qt,qv)
+        #                pv = pv_c(p0,qt,qv)
+        #                t  = DV.values[t_shift + ijk]
+        #                PV.tendencies[s_shift + ijk] += (cpm_c(qt)
+        #                                                 * thetal_subs[ijk] * exner_c(p0) * rho0)/t
+        #                PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*qt_subs[ijk]
+        #                PV.tendencies[qt_shift + ijk] += qt_subs[ijk]
+
 
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
