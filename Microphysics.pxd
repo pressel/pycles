@@ -43,6 +43,8 @@ cdef class Microphysics_SB_Liquid:
         double (*compute_droplet_nu)(double density, double ql) nogil
         ClausiusClapeyron CC
         double ccn
+        Py_ssize_t order
+
 
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

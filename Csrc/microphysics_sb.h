@@ -190,82 +190,169 @@ void sb_evaporation_rain( double g_therm, double sat_ratio, double nr, double qr
 }
 
 
-void sb_sedimentation_velocity_rain(double (*rain_mu)(double,double,double),double density, double nr, double qr, double* nr_velocity, double* qr_velocity){
+void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_mu)(double,double,double),double* restrict density, double* restrict nr, double* restrict qr, double* nr_velocity, double* qr_velocity){
 
-    double density_factor = sqrt(density_sb/density);
-    double rain_mass = microphysics_mean_mass(nr, qr, rain_min_mass, rain_max_mass);
-    double Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
-    double mu = rain_mu(density, qr, Dm);
-    double Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
 
-    *nr_velocity = -fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 1.0)) , 0.0);
-    *qr_velocity = -fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 4.0)) , 0.0);
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    //must compute at ghost points
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                double density_factor = sqrt(density_sb/density[k]);
+                double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
+                double Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
+                double mu = rain_mu(density[k], qr[ijk], Dm);
+                double Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
+
+                nr_velocity[ijk] = -fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 1.0)) , 0.0);
+                qr_velocity[ijk] = -fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 4.0)) , 0.0);
+
+            }
+        }
+    }
     return;
 }
 
-void sb_microphysics_sources(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                              double (*rain_mu)(double,double,double), double (*droplet_nu)(double,double),
-                             double density, double p0,  double temperature,  double qt, double ccn,
-                             double ql, double nr, double qr, double dt, double* nr_tendency, double* qr_tendency){
+                             double* restrict density, double* restrict p0,  double* restrict temperature,  double* restrict qt, double ccn,
+                             double* restrict ql, double* restrict nr, double* restrict qr, double dt, double* restrict nr_tendency, double* restrict qr_tendency){
 
-    const double qv = qt - ql;
-    const double sat_ratio = microphysical_saturation_ratio(LT, lam_fp, L_fp, temperature, p0, qt, qv);
-    const double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature);
-    const double nl = ccn/density;
-    double ql_tmp = ql;
-    double nr_tmp = nr;
-    double qr_tmp = qr;
-    //holding nl fixed since it doesn't change between timesteps
+    //Here we compute the source terms for nr and qr (number and mass of rain)
+    //Temporal substepping is used to help ensure boundedness of moments
     double rain_mass, Dm, mu, Dp, nr_tendency_tmp, qr_tendency_tmp, ql_tendency_tmp;
     double nr_tendency_au, nr_tendency_scbk, nr_tendency_evp;
     double qr_tendency_au, qr_tendency_ac,  qr_tendency_evp;
-    double time_added = 0.0, dt_, rate;
-    ssize_t iter_count = 0;
 
 
-    do{
-        nr_tendency_tmp = 0.0;
-        qr_tendency_tmp = 0.0;
-        iter_count += 1;
-        //obtain some parameters
-        rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, rain_min_mass, rain_max_mass);
-        Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
-        mu = rain_mu(density, qr, Dm);
-        Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
-        //compute the source terms
-        sb_autoconversion_rain(droplet_nu, density, nl, ql_tmp, qr_tmp, &nr_tendency_au, &qr_tendency_au);
-        sb_accretion_rain(density, ql_tmp, qr_tmp, &qr_tendency_ac);
-        sb_selfcollection_breakup_rain(density, nr_tmp, qr_tmp, mu, rain_mass, Dm, &nr_tendency_scbk);
-        sb_evaporation_rain( g_therm, sat_ratio, nr_tmp, qr_tmp, mu, Dp, Dm, &nr_tendency_evp, &qr_tendency_evp);
-        //find the maximum substep time
-        dt_ = dt - time_added;
-        //check the source term magnitudes
-        nr_tendency_tmp = nr_tendency_au + nr_tendency_scbk + nr_tendency_evp;
-        qr_tendency_tmp = qr_tendency_au + qr_tendency_ac + qr_tendency_evp;
-        ql_tendency_tmp = -qr_tendency_au - qr_tendency_ac;
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
 
-        //Factor of 1.05 is ad-hoc
-        rate = 1.05 * ql_tendency_tmp * dt_ /(-ql_tmp - sb_eps);
-        rate = fmax(1.05 * nr_tendency_tmp * dt_ /(-nr_tmp - sb_eps), rate);
-        rate = fmax(1.05 * qr_tendency_tmp * dt_ /(-qr_tmp - sb_eps), rate);
-        if(rate > 1.0 && iter_count < max_iter){
-            //Limit the timestep, but don't allow it to become vanishingly small
-            //Don't adjust if we have reached the maximum iteration number
-            dt_ = fmax(dt_/rate, 1.0e-3);
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double qv = qt[ijk] - ql[ijk];
+                double sat_ratio = microphysical_saturation_ratio(LT, lam_fp, L_fp, temperature[ijk], p0[k], qt[ijk], qv);
+                double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
+                double nl = ccn/density[k];
+                double ql_tmp = ql[ijk];
+                double nr_tmp = nr[ijk];
+                double qr_tmp = qr[ijk];
+
+                //holding nl fixed since it doesn't change between timesteps
+
+                double time_added = 0.0, dt_, rate;
+                ssize_t iter_count = 0;
+                do{
+                    nr_tendency_tmp = 0.0;
+                    qr_tendency_tmp = 0.0;
+                    iter_count += 1;
+                    //obtain some parameters
+                    rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, rain_min_mass, rain_max_mass);
+                    Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
+                    mu = rain_mu(density[k], qr_tmp, Dm);
+                    Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
+                    //compute the source terms
+                    sb_autoconversion_rain(droplet_nu, density[k], nl, ql_tmp, qr_tmp, &nr_tendency_au, &qr_tendency_au);
+//                    qr_tendency_ac = 0.0;
+                    sb_accretion_rain(density[k], ql_tmp, qr_tmp, &qr_tendency_ac);
+//                    nr_tendency_scbk = 0.0;
+                    sb_selfcollection_breakup_rain(density[k], nr_tmp, qr_tmp, mu, rain_mass, Dm, &nr_tendency_scbk);
+                    nr_tendency_evp = 0.0;
+                    qr_tendency_evp = 0.0;
+//                    sb_evaporation_rain( g_therm, sat_ratio, nr_tmp, qr_tmp, mu, Dp, Dm, &nr_tendency_evp, &qr_tendency_evp);
+                    //find the maximum substep time
+                    dt_ = dt - time_added;
+                    //check the source term magnitudes
+                    nr_tendency_tmp = nr_tendency_au + nr_tendency_scbk + nr_tendency_evp;
+                    qr_tendency_tmp = qr_tendency_au + qr_tendency_ac + qr_tendency_evp;
+                    ql_tendency_tmp = -qr_tendency_au - qr_tendency_ac;
+
+                    //Factor of 1.05 is ad-hoc
+                    rate = 1.05 * ql_tendency_tmp * dt_ /(-ql_tmp - sb_eps);
+                    rate = fmax(1.05 * nr_tendency_tmp * dt_ /(-nr_tmp - sb_eps), rate);
+                    rate = fmax(1.05 * qr_tendency_tmp * dt_ /(-qr_tmp - sb_eps), rate);
+                    if(rate > 1.0 && iter_count < max_iter){
+                        //Limit the timestep, but don't allow it to become vanishingly small
+                        //Don't adjust if we have reached the maximum iteration number
+                        dt_ = fmax(dt_/rate, 1.0e-3);
+                    }
+                    //Integrate forward in time
+                    ql_tmp += ql_tendency_tmp * dt_;
+                    nr_tmp += nr_tendency_tmp * dt_;
+                    qr_tmp += qr_tendency_tmp * dt_;
+                    time_added += dt_ ;
+
+
+                }while(time_added < dt);
+
+                nr_tendency[ijk] += (nr_tmp - nr[ijk] )/dt;
+                qr_tendency[ijk] += (qr_tmp - qr[ijk])/dt;
+            }
         }
-        //Integrate forward in time
-        ql_tmp += ql_tendency_tmp * dt_;
-        nr_tmp += nr_tendency_tmp * dt_;
-        qr_tmp += qr_tendency_tmp * dt_;
-        time_added += dt_ ;
-
-
-    }while(time_added < dt);
-
-    *nr_tendency += (nr_tmp - nr )/dt;
-    *qr_tendency += (qr_tmp - qr)/dt;
+    }
 
 
     return;
 }
 
+
+
+void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                              double* restrict qr_tendency, double* restrict qt_tendency){
+
+
+    //Here we compute the source terms of total water and entropy related to microphysics. See Pressel et al. 2015, Eq. 49-54
+    //
+    //Some simplifications are possible because there is only a single hydrometeor species (rain), so d(qr)/dt
+    //can only represent a transfer to/from the equilibrium mixture. Furthermore, formation and evaporation of
+    //rain cannot occur simultaneously at the same physical location so keeping track of each sub-tendency is not required
+
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    //for now, only the qt tendency
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                qt_tendency[ijk] = qr_tendency[ijk];
+            }
+        }
+    }
+
+
+
+    return;
+
+}

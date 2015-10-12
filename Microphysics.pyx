@@ -50,11 +50,12 @@ cdef extern from "microphysics_sb.h":
     double sb_droplet_nu_0(double density, double ql) nogil
     double sb_droplet_nu_1(double density, double ql) nogil
     double sb_droplet_nu_2(double density, double ql) nogil
-    void sb_sedimentation_velocity_rain(double (*rain_mu)(double,double,double),double density, double nr, double qr, double* nr_velocity, double* qr_velocity) nogil
-    void sb_microphysics_sources(Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+    void sb_sedimentation_velocity_rain(double (*rain_mu)(double,double,double),double* density, double* nr, double qr, double* nr_velocity, double* qr_velocity) nogil
+    void sb_microphysics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                              double (*rain_mu)(double,double,double), double (*droplet_nu)(double,double),
-                             double density, double p0, double temperature,  double qt, double ccn,
-                             double ql, double nr, double qr, double dt, double* nr_tendency, double* qr_tendency) nogil
+                             double* density, double* p0, double* temperature,  double* qt, double ccn,
+                             double* ql, double* nr, double* qr, double dt, double* nr_tendency, double* qr_tendency) nogil
+    void sb_thermodynamics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double), double* qr_tendency, double* qt_tendency ) nogil
 
 
 
@@ -109,6 +110,15 @@ cdef class Microphysics_SB_Liquid:
                 self.compute_droplet_nu = sb_droplet_nu_0
         except:
             self.compute_droplet_nu = sb_droplet_nu_0
+
+        try:
+            self.order = namelist['scalar_transport']['order']
+        except:
+            Par.root_print('scalar_transport order not given in namelist')
+            Par.root_print('Killing simulation now!')
+            Par.kill()
+            Par.kill()
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -149,42 +159,25 @@ cdef class Microphysics_SB_Liquid:
 
 
 
-        with nogil:
-            for i in xrange(gw, imax - gw):
-                ishift = i * istride
-                for j in xrange(gw, jmax - gw):
-                    jshift = j * jstride
-                    for k in xrange(gw, kmax-gw):
-                        ijk = ishift + jshift + k
-                        # PV.values[qr_shift + ijk] = fmax(PV.values[qr_shift + ijk], 0.0)
-                        # PV.values[nr_shift + ijk] = fmax(PV.values[nr_shift + ijk], 0.0)
+        sb_microphysics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, self.compute_rain_shape_parameter,
+                                self.compute_droplet_nu, &Ref.rho0_half[0],  &Ref.p0_half[0], &DV.values[t_shift],
+                                &PV.values[qt_shift], self.ccn, &DV.values[ql_shift], &PV.values[nr_shift],
+                                &PV.values[qr_shift], dt, &PV.tendencies[nr_shift], &PV.tendencies[qr_shift] )
 
 
-                        sb_microphysics_sources(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, self.compute_rain_shape_parameter,
-                                                self.compute_droplet_nu, Ref.rho0_half[k],  Ref.p0_half[k], DV.values[t_shift + ijk],
-                                                PV.values[qt_shift + ijk], self.ccn, DV.values[ql_shift + ijk], PV.values[nr_shift + ijk],
-                                                PV.values[qr_shift + ijk], dt, &PV.tendencies[nr_shift + ijk], &PV.tendencies[qr_shift + ijk] )
-            #
-            # for i in xrange(imax):
-            #     ishift = i * istride
-            #     for j in xrange(jmax):
-            #         jshift = j * jstride
-            #         for k in xrange( kmax):
-            #             ijk = ishift + jshift + k
-            #
-            #             sb_sedimentation_velocity_rain(self.compute_rain_shape_parameter,Ref.rho0_half[k],
-            #                                            PV.values[nr_shift + ijk], PV.values[qr_shift + ijk], &nr_velocity[ijk], &qr_velocity[ijk])
+        # sb_sedimentation_velocity_rain(&Gr.dims,self.compute_rain_shape_parameter,Ref.rho0_half[0],PV.values[nr_shift], PV.values[qr_shift], &nr_velocity[0], &qr_velocity[0])
 
+        sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &PV.tendencies[qr_shift], &PV.tendencies[qt_shift]  )
 
 
         return
 
-
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-
-
-
-        return
+    #
+    # cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    #
+    #
+    #
+    #     return
 
 
 
