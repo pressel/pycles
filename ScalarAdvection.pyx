@@ -18,7 +18,7 @@ cimport numpy as np
 import cython
 
 cdef extern from "scalar_advection.h":
-    void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme) nogil
+    void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme, int mp) nogil
 cdef class ScalarAdvection:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         try:
@@ -28,6 +28,12 @@ cdef class ScalarAdvection:
             Pa.root_print('Killing simulation now!')
             Pa.kill()
             Pa.kill()
+        try:
+            self.mp = namelist['scalar_transport']['mp']
+
+        except:
+            self.mp = 0
+        print('MP ', self.mp)
 
         return
 
@@ -59,16 +65,16 @@ cdef class ScalarAdvection:
                     vel_shift = PV.velocity_directions[d]*Gr.dims.npg
 
                     compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&PV.values[vel_shift],
-                                             &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order)
+                                             &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order, self.mp)
 
                     scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
                                             &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
                 scalar_count += 1
 
         return
-    
+
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        
+
         cdef:
             Py_ssize_t scalar_count =  0, i, d = 2, flux_shift, k
             double[:] tmp
@@ -84,5 +90,5 @@ cdef class ScalarAdvection:
                 scalar_count += 1
 
 
-        
+
         return
