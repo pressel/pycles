@@ -156,8 +156,8 @@ cdef class Microphysics_SB_Liquid:
                     jshift = j * jstride
                     for k in xrange(gw, kmax-gw):
                         ijk = ishift + jshift + k
-                        PV.values[qr_shift + ijk] = fmax(PV.values[qr_shift + ijk], 0.0)
-                        PV.values[nr_shift + ijk] = fmax(PV.values[nr_shift + ijk], 0.0)
+                        # PV.values[qr_shift + ijk] = fmax(PV.values[qr_shift + ijk], 0.0)
+                        # PV.values[nr_shift + ijk] = fmax(PV.values[nr_shift + ijk], 0.0)
 
 
                         sb_microphysics_sources(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, self.compute_rain_shape_parameter,
