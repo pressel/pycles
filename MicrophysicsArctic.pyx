@@ -125,6 +125,10 @@ cdef class MicrophysicsArctic:
         NS.add_profile('micro_s_source_precipitation', Gr, Pa)
         NS.add_profile('micro_s_source_evaporation', Gr, Pa)
 
+        NS.add_ts('iwp', Gr, Pa)
+        NS.add_ts('rwp', Gr, Pa)
+        NS.add_ts('swp', Gr, Pa)
+
 
         return
 
@@ -445,23 +449,23 @@ cdef class MicrophysicsArctic:
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
                         snow_prop.n0 = get_n0_snow_c(Ref.alpha0_half[k], PV.values[qsnow_shift+ijk], &snow_param)
-                        #snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
-                        snow_number[ijk] = snow_prop.n0#/snow_prop.lam
+                        snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
+                        snow_number[ijk] = snow_prop.n0/snow_prop.lam
 
                         rain_prop.n0 = get_n0_rain_c(Ref.alpha0_half[k], PV.values[qrain_shift+ijk], &rain_param)
-                        #rain_prop.lam = get_lambda_c(Ref.alpha0_half[k], &rain_prop, &rain_param)
-                        rain_number[ijk] = rain_prop.n0#/rain_prop.lam
+                        rain_prop.lam = get_lambda_c(Ref.alpha0_half[k], &rain_prop, &rain_param)
+                        rain_number[ijk] = rain_prop.n0/rain_prop.lam
 
                         ice_prop.n0 = get_n0_ice_c(Ref.alpha0_half[k], DV.values[qi_shift+ijk], self.n0_ice, &ice_param)
-                        #ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
-                        ice_number[ijk] = ice_prop.n0#/ice_prop.lam
+                        ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
+                        ice_number[ijk] = ice_prop.n0/ice_prop.lam
 
 
 
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, PrognosticVariables.PrognosticVariables PV,
                    DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
@@ -495,6 +499,9 @@ cdef class MicrophysicsArctic:
         tmp = Pa.HorizontalMean(Gr, &self.ice_number_density[0])
         NS.write_profile('n_ice_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+        tmp = Pa.HorizontalMean(Gr, &self.rain_number_density[0])
+        NS.write_profile('n_rain_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
         tmp = Pa.HorizontalMean(Gr, &self.snow_number_density[0])
         NS.write_profile('n_snow_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
@@ -518,16 +525,92 @@ cdef class MicrophysicsArctic:
 
         #Output entropy source terms due to microphysics
 
-        get_s_source_precip(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
+        get_s_source_precip(&Gr.dims, Th, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
                             &self.precip_rate[0], &tmp_tendency[0])
         tmp = Pa.HorizontalMean(Gr, &tmp_tendency[0])
         NS.write_profile('micro_s_source_precipitation', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp_tendency[:] = 0.0
-        get_s_source_evap(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
+        get_s_source_evap(&Gr.dims, Th, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
                             &self.evap_rate[0], &tmp_tendency[0])
         tmp = Pa.HorizontalMean(Gr, &tmp_tendency[0])
         NS.write_profile('micro_s_source_evaporation', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        self.ice_stats(Gr, RS, PV, DV, NS, Pa)
+
+        return
+
+    cpdef ice_stats(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+                    DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t kmin = 0
+            Py_ssize_t kmax = Gr.dims.n[2]
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t pi, k
+            ParallelMPI.Pencil z_pencil = ParallelMPI.Pencil()
+            Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
+            Py_ssize_t qrain_shift = PV.get_varshift(Gr, 'qrain')
+            Py_ssize_t qsnow_shift = PV.get_varshift(Gr, 'qsnow')
+            double[:, :] qi_pencils
+            double[:, :] qrain_pencils
+            double[:, :] qsnow_pencils
+            # Cloud indicator
+            double[:] ci
+            double cb
+            double ct
+            # Weighted sum of local cloud indicator
+            double ci_weighted_sum = 0.0
+            double mean_divisor = np.double(Gr.dims.n[0] * Gr.dims.n[1])
+
+            double dz = Gr.dims.dx[2]
+            double[:] iwp
+            double[:] rwp
+            double[:] swp
+            double iwp_weighted_sum = 0.0
+            double rwp_weighted_sum = 0.0
+            double swp_weighted_sum = 0.0
+
+            double[:] cf_profile = np.zeros((Gr.dims.n[2]), dtype=np.double, order='c')
+
+        # Initialize the z-pencil
+        z_pencil.initialize(Gr, Pa, 2)
+        qi_pencils =  z_pencil.forward_double( &Gr.dims, Pa, &DV.values[qi_shift])
+        qrain_pencils =  z_pencil.forward_double( &Gr.dims, Pa, &PV.values[qrain_shift])
+        qsnow_pencils =  z_pencil.forward_double( &Gr.dims, Pa, &PV.values[qsnow_shift])
+
+
+        # Compute liquid, ice, rain, and snow water paths
+        iwp = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
+        rwp = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
+        swp = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
+        with nogil:
+            for pi in xrange(z_pencil.n_local_pencils):
+                iwp[pi] = 0.0
+                rwp[pi] = 0.0
+                swp[pi] = 0.0
+                for k in xrange(kmin, kmax):
+                    iwp[pi] += RS.rho0_half[k] * qi_pencils[pi, k] * dz
+                    rwp[pi] += RS.rho0_half[k] * qrain_pencils[pi, k] * dz
+                    swp[pi] += RS.rho0_half[k] * qsnow_pencils[pi, k] * dz
+
+            for pi in xrange(z_pencil.n_local_pencils):
+                iwp_weighted_sum += iwp[pi]
+                rwp_weighted_sum += rwp[pi]
+                swp_weighted_sum += swp[pi]
+
+            iwp_weighted_sum /= mean_divisor
+            rwp_weighted_sum /= mean_divisor
+            swp_weighted_sum /= mean_divisor
+
+        iwp_weighted_sum = Pa.domain_scalar_sum(iwp_weighted_sum)
+        NS.write_ts('iwp', iwp_weighted_sum, Pa)
+
+        rwp_weighted_sum = Pa.domain_scalar_sum(rwp_weighted_sum)
+        NS.write_ts('rwp', rwp_weighted_sum, Pa)
+
+        swp_weighted_sum = Pa.domain_scalar_sum(swp_weighted_sum)
+        NS.write_ts('swp', swp_weighted_sum, Pa)
 
         return
 
