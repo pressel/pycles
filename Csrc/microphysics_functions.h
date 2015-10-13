@@ -49,9 +49,14 @@ inline double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const
     double db_ice = 125.0e-6;
     double val = 0.0;
     double gtherm, psi;
+    double vapor_diff = 3.0e-5;
+    double therm_cond = 2.5e-2;
+    //double vapor_diff = 2.11e-5 * pow((temp_ / 273.15), 1.94) * (p0_ / 101325.0);
+    //double therm_cond = 2.591e-2 * pow((temp_ / 296.0), 1.5) * (416.0 / (temp_ - 120.0));
 
     if( ice_prop->mf > 1.0e-10 && satratio > 1.0){
-        gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
+        //gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
+        gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/temp_) );
         psi = 4.0*pi*(satratio - 1.0)*gtherm;
         val = (psi*ice_prop->n0*exp(-ice_prop->lam*db_ice)
                *(db_ice*db_ice/3.0 + (1.0+ice_prop->lam*db_ice)/(ice_prop->lam*ice_prop->lam))*alpha_);
