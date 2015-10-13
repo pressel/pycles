@@ -17,9 +17,9 @@ cdef class Restart:
         self.uuid = str(namelist['meta']['uuid'])
 
         try:
-            outpath = str(os.path.join(namelist['output']['output_root']
-                                   + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
-            self.restart_path = str(os.path.join(outpath, namelist['restart']['restart_dir']))
+            outpath = str(os.path.join(str(namelist['output']['output_root'])
+                                   + 'Output.' + str(namelist['meta']['simname']) + '.' + self.uuid[-5:]))
+            self.restart_path = os.path.join(outpath, 'Restart')
         except:
             self.restart_path = './restart.' + self.uuid[-5:]
 
