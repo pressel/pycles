@@ -39,7 +39,7 @@ cdef class ParallelMPI:
         double [:] HorizontalMeanofSquaresConditional(self,Grid.Grid Gr, double* values1, double* values2, double* mask)
 
     cpdef root_print(self, txt_output)
-    cpdef void kill(self)
+    cpdef kill(self)
 
 cdef class Pencil:
 

@@ -75,7 +75,7 @@ cdef class ParallelMPI:
             print(txt_output)
         return
 
-    cpdef void kill(self):
+    cpdef kill(self):
         '''
         Call MPI_Abort.
         :return:
