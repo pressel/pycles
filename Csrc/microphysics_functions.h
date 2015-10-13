@@ -39,13 +39,14 @@ inline double get_aut_rain_c(const double alpha_, const double ccn, struct hm_pr
 };
 
 
-inline double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_, const double qt_, double temp_, struct hm_properties *ice_prop){
+inline double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_, const double qt_, const double qi_, const double temp_, struct hm_properties *ice_prop){
     /* Harrington 1995 snow autoconversion model */
     /* Saturation vapor pressure over ICE??? */
     double pv_star = lookup(LT, temp_);
     //double y_sat_ice = pv_star/(p0_-pv_star)*eps_v*(1.0-qt_);
     double qv_star = qv_star_c(p0_, qt_, pv_star);
-    double satratio = qt_/qv_star;
+    //double satratio = qt_/qv_star;
+    double satratio = (qt_-qi_)/qv_star;
     double db_ice = 125.0e-6;
     double val = 0.0;
     double gtherm, psi;
@@ -55,8 +56,8 @@ inline double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const
     //double therm_cond = 2.591e-2 * pow((temp_ / 296.0), 1.5) * (416.0 / (temp_ - 120.0));
 
     if( ice_prop->mf > 1.0e-10 && satratio > 1.0){
-        //gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
-        gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/temp_) );
+        gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
+        //gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/temp_) );
         psi = 4.0*pi*(satratio - 1.0)*gtherm;
         val = (psi*ice_prop->n0*exp(-ice_prop->lam*db_ice)
                *(db_ice*db_ice/3.0 + (1.0+ice_prop->lam*db_ice)/(ice_prop->lam*ice_prop->lam))*alpha_);
@@ -280,7 +281,7 @@ inline double get_n0_ice_c(const double alpha_, const double mf, const double n0
     return n0_ice;
 };
 
-void micro_substep_c(struct LookupStruct *LT, const double alpha, const double p0, const double qt, const double T, const double ccn, const double n0_ice,
+void micro_substep_c(struct LookupStruct *LT, const double alpha, const double p0, const double qt, const double qi, const double T, const double ccn, const double n0_ice,
                      struct hm_parameters *rain_param, struct hm_parameters *snow_param, struct hm_parameters *liquid_param, struct hm_parameters *ice_param,
                      struct hm_properties *rain_prop, struct hm_properties *snow_prop, struct hm_properties *liquid_prop, struct hm_properties *ice_prop,
                      double* aut_rain, double* aut_snow, struct ret_acc *_ret, double* evp_rain,
@@ -303,7 +304,7 @@ void micro_substep_c(struct LookupStruct *LT, const double alpha, const double p
     ice_prop->diam = get_dmean_c(alpha, ice_prop, ice_param);
 
     *aut_rain = get_aut_rain_c(alpha, ccn, liquid_prop);
-    *aut_snow = get_aut_snow_c(LT, alpha, p0, qt, T, ice_prop);
+    *aut_snow = get_aut_snow_c(LT, alpha, p0, qt, qi, T, ice_prop);
 
     get_acc_c(alpha, T, ccn, rain_param, snow_param, liquid_param,
               ice_param, rain_prop, snow_prop, liquid_prop, ice_prop, _ret);

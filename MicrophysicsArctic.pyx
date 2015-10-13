@@ -26,7 +26,7 @@ from libc.math cimport fmax, fmin, fabs
 include 'micro_parameters.pxi'
 
 cdef extern from "microphysics_functions.h":
-    void micro_substep_c(Lookup.LookupStruct *LT, double alpha, double p0, double qt, double T, double cnn, double n0_ice,
+    void micro_substep_c(Lookup.LookupStruct *LT, double alpha, double p0, double qt, double qi, double T, double cnn, double n0_ice,
                          hm_parameters *rain_param, hm_parameters *snow_param, hm_parameters *liquid_param, hm_parameters *ice_param,
                          hm_properties *rain_prop, hm_properties *snow_prop, hm_properties *liquid_prop, hm_properties *ice_prop,
                          double* aut_rain, double* aut_snow, ret_acc *src_acc, double* evp_rain,
@@ -219,7 +219,7 @@ cdef class MicrophysicsArctic:
                             if (liquid_prop.mf+ice_prop.mf) < small and (rain_prop.mf+snow_prop.mf) < small:
                                 break
 
-                            micro_substep_c(&self.CC.LT.LookupStructC, Ref.alpha0_half[k], Ref.p0_half[k], qt_micro, DV.values[t_shift + ijk],
+                            micro_substep_c(&self.CC.LT.LookupStructC, Ref.alpha0_half[k], Ref.p0_half[k], qt_micro, DV.values[qi_shift + ijk], DV.values[t_shift + ijk],
                                             self.ccn, self.n0_ice, &rain_param, &snow_param, &liquid_param, &ice_param,
                                             &rain_prop, &snow_prop, &liquid_prop, &ice_prop, &aut_rain, &aut_snow,
                                             &src_acc, &evp_rain, &evp_snow, &melt_snow)
