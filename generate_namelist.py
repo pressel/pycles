@@ -85,6 +85,12 @@ def SullivanPatton():
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = True
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = 'None'
@@ -155,6 +161,12 @@ def SaturatedBubble():
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = True
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -227,6 +239,12 @@ def StableBubble():
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = True
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = 'None'
@@ -297,6 +315,12 @@ def Bomex():
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = True
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -369,6 +393,12 @@ def Gabls():
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = True
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = 'StableBL'
@@ -438,6 +468,12 @@ def DYCOMS_RF01():
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = True
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'

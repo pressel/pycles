@@ -5,6 +5,7 @@
 # cython: cdivision=True
 
 cimport Grid
+cimport Restart
 cimport numpy as np
 import numpy as np
 from NetCDFIO cimport NetCDFIO_Stats
@@ -132,5 +133,36 @@ cdef class ReferenceState:
         NS.write_reference_profile('qv0', qv_half[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.add_reference_profile('qi0', Gr, Pa)
         NS.write_reference_profile('qi0', qi_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        return
+
+    cpdef restart(self, Grid.Grid Gr, Restart.Restart Re):
+        Re.restart_data['Ref'] = {}
+
+        Re.restart_data['Ref']['p0'] = np.array(self.p0)[Gr.dims.gw:-Gr.dims.gw]
+        Re.restart_data['Ref']['p0_half'] = np.array(self.p0_half)[Gr.dims.gw:-Gr.dims.gw]
+        Re.restart_data['Ref']['alpha0'] = np.array(self.alpha0)[Gr.dims.gw:-Gr.dims.gw]
+        Re.restart_data['Ref']['alpha0_half'] = np.array(self.alpha0_half)[Gr.dims.gw:-Gr.dims.gw]
+
+        Re.restart_data['Ref']['Tg'] = self.Tg
+        Re.restart_data['Ref']['Pg'] = self.Pg
+        Re.restart_data['Ref']['sg'] = self.sg
+        Re.restart_data['Ref']['qtg'] = self.qtg
+        Re.restart_data['Ref']['u0'] = self.u0
+        Re.restart_data['Ref']['v0'] = self.v0
+
+        return
+
+
+    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re):
+
+
+        #self.Tg = Re.restart_data['Ref']['Tg']
+        #self.Pg = Re.restart_data['Ref']['Pg']
+        #self.sg = Re.restart_data['Ref']['sg']
+        #self.qtg = Re.restart_data['Ref']['qtg']
+        #self.u0 = Re.restart_data['Ref']['u0']
+        #self.v0 = Re.restart_data['Ref']['v0']
+
 
         return

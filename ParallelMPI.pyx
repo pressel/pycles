@@ -75,7 +75,7 @@ cdef class ParallelMPI:
             print(txt_output)
         return
 
-    cdef void kill(self):
+    cpdef void kill(self):
         '''
         Call MPI_Abort.
         :return:
@@ -1065,3 +1065,4 @@ cdef class Pencil:
                         ijk_no_gw = ishift_nogw + jshift_nogw+ (k-dims.gw)*kstride_nogw
                         data[ijk] = recv_buffer[ijk_no_gw]
         return
+

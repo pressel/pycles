@@ -6,6 +6,7 @@
 
 cimport mpi4py.mpi_c as mpi
 cimport ParallelMPI
+cimport Restart
 cimport numpy as np
 import numpy as np
 import time
@@ -179,3 +180,43 @@ cdef class Grid:
         cdef int end = self.dims.indx_lo_g[dim] + self.dims.nlg[dim]
         #Force a copy with the return statement
         return np.array(global_array[start:end],dtype=np.double)
+
+    cpdef restart(self, Restart.Restart Re):
+        Re.restart_data['Gr'] = {}
+        Re.restart_data['Gr']['dims'] = self.dims.dims
+        Re.restart_data['Gr']['n'] = np.array([self.dims.n[0],
+                                               self.dims.n[1],
+                                               self.dims.n[2]])
+        Re.restart_data['Gr']['ng'] =  np.array([self.dims.ng[0],
+                                                 self.dims.ng[1],
+                                                 self.dims.ng[2]])
+        Re.restart_data['Gr']['nl'] = np.array([self.dims.nl[0],
+                                                self.dims.nl[1],
+                                                self.dims.nl[2]])
+        Re.restart_data['Gr']['nlg'] = np.array([self.dims.nlg[0],
+                                                  self.dims.nlg[1],
+                                                  self.dims.nlg[2]])
+        Re.restart_data['Gr']['indx_lo_g'] = np.array([self.dims.indx_lo_g[0],
+                                                  self.dims.indx_lo_g[1],
+                                                  self.dims.indx_lo_g[2]])
+        Re.restart_data['Gr']['indx_lo'] = np.array([self.dims.indx_lo[0],
+                                                  self.dims.indx_lo[1],
+                                                  self.dims.indx_lo[2]])
+        Re.restart_data['Gr']['npd'] = self.dims.npd
+        Re.restart_data['Gr']['npl'] = self.dims.npl
+        Re.restart_data['Gr']['npg'] = self.dims.npg
+        Re.restart_data['Gr']['gw'] = self.dims.gw
+        Re.restart_data['Gr']['nbuffer']  = np.array([self.dims.nbuffer[0],
+                                                  self.dims.nbuffer[1],
+                                                  self.dims.nbuffer[2]])
+        Re.restart_data['Gr']['nbuffer']  = np.array([self.dims.ghosted_stride[0],
+                                                  self.dims.ghosted_stride[1],
+                                                  self.dims.ghosted_stride[2]])
+        Re.restart_data['Gr']['dx'] = np.array([self.dims.dx[0],
+                                                self.dims.dx[1],
+                                                self.dims.dx[2]])
+        Re.restart_data['Gr']['dxi'] = np.array([self.dims.dxi[0],
+                                                self.dims.dxi[1],
+                                                self.dims.dxi[2]])
+
+        return

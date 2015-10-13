@@ -27,18 +27,9 @@ cdef class NetCDFIO_Stats:
         self.frequency = namelist['stats_io']['frequency']
 
         # Setup the statistics output path
-        outpath = str(os.path.join(namelist['output'][
-                      'output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
-        self.stats_path = str(
-            os.path.join(
-                outpath,
-                namelist['stats_io']['stats_dir']))
-        self.path_plus_file = str(
-            self.stats_path +
-            '/' +
-            'Stats.' +
-            namelist['meta']['simname'] +
-            '.nc')
+        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
+        self.stats_path = str( os.path.join(outpath, namelist['stats_io']['stats_dir']))
+        self.path_plus_file = str( self.stats_path + '/' + 'Stats.' + namelist['meta']['simname'] + '.nc')
         if Pa.rank == 0:
             try:
                 os.mkdir(outpath)
@@ -50,14 +41,8 @@ cdef class NetCDFIO_Stats:
                 pass
 
             shutil.copyfile(
-                os.path.join(
-                    './',
-                    namelist['meta']['simname'] +
-                    '.in'),
-                os.path.join(
-                    outpath,
-                    namelist['meta']['simname'] +
-                    '.in'))
+                os.path.join( './', namelist['meta']['simname'] + '.in'),
+                os.path.join( outpath, namelist['meta']['simname'] + '.in'))
             self.setup_stats_file(Gr, Pa)
         return
 
@@ -191,12 +176,8 @@ cdef class NetCDFIO_Fields:
         self.diagnostic_fields = namelist['fields_io']['diagnostic_fields']
 
         # Setup the statistics output path
-        outpath = str(os.path.join(namelist['output'][
-                      'output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
-        self.fields_path = str(
-            os.path.join(
-                outpath,
-                namelist['fields_io']['fields_dir']))
+        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
+        self.fields_path = str(os.path.join(outpath, namelist['fields_io']['fields_dir']))
         if Pa.rank == 0:
             try:
                 os.mkdir(outpath)
@@ -207,15 +188,8 @@ cdef class NetCDFIO_Fields:
             except:
                 pass
 
-            shutil.copyfile(
-                os.path.join(
-                    './',
-                    namelist['meta']['simname'] +
-                    '.in'),
-                os.path.join(
-                    outpath,
-                    namelist['meta']['simname'] +
-                    '.in'))
+            shutil.copyfile( os.path.join('./', namelist['meta']['simname'] + '.in'),
+                             os.path.join( outpath, namelist['meta']['simname'] + '.in'))
         return
 
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
