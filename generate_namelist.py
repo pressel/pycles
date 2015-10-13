@@ -87,7 +87,7 @@ def SullivanPatton():
 
     namelist['restart'] = {}
     namelist['restart']['output'] = True
-    namelist['restart']['init_from'] = True
+    namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
@@ -164,7 +164,7 @@ def SaturatedBubble():
 
     namelist['restart'] = {}
     namelist['restart']['output'] = True
-    namelist['restart']['init_from'] = True
+    namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
@@ -241,7 +241,7 @@ def StableBubble():
 
     namelist['restart'] = {}
     namelist['restart']['output'] = True
-    namelist['restart']['init_from'] = True
+    namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
@@ -318,7 +318,7 @@ def Bomex():
 
     namelist['restart'] = {}
     namelist['restart']['output'] = True
-    namelist['restart']['init_from'] = True
+    namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
@@ -395,7 +395,7 @@ def Gabls():
 
     namelist['restart'] = {}
     namelist['restart']['output'] = True
-    namelist['restart']['init_from'] = True
+    namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
@@ -471,7 +471,7 @@ def DYCOMS_RF01():
 
     namelist['restart'] = {}
     namelist['restart']['output'] = True
-    namelist['restart']['init_from'] = True
+    namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
