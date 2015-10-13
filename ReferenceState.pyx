@@ -139,10 +139,10 @@ cdef class ReferenceState:
     cpdef restart(self, Grid.Grid Gr, Restart.Restart Re):
         Re.restart_data['Ref'] = {}
 
-        Re.restart_data['Ref']['p0'] = np.array(self.p0)[Gr.dims.gw:-Gr.dims.gw]
-        Re.restart_data['Ref']['p0_half'] = np.array(self.p0_half)[Gr.dims.gw:-Gr.dims.gw]
-        Re.restart_data['Ref']['alpha0'] = np.array(self.alpha0)[Gr.dims.gw:-Gr.dims.gw]
-        Re.restart_data['Ref']['alpha0_half'] = np.array(self.alpha0_half)[Gr.dims.gw:-Gr.dims.gw]
+        Re.restart_data['Ref']['p0'] = np.array(self.p0)
+        Re.restart_data['Ref']['p0_half'] = np.array(self.p0_half)
+        Re.restart_data['Ref']['alpha0'] = np.array(self.alpha0)
+        Re.restart_data['Ref']['alpha0_half'] = np.array(self.alpha0_half)
 
         Re.restart_data['Ref']['Tg'] = self.Tg
         Re.restart_data['Ref']['Pg'] = self.Pg
@@ -156,13 +156,18 @@ cdef class ReferenceState:
 
     cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re):
 
+        self.Tg = Re.restart_data['Ref']['Tg']
+        self.Pg = Re.restart_data['Ref']['Pg']
+        self.sg = Re.restart_data['Ref']['sg']
+        self.qtg = Re.restart_data['Ref']['qtg']
+        self.u0 = Re.restart_data['Ref']['u0']
+        self.v0 = Re.restart_data['Ref']['v0']
 
-        #self.Tg = Re.restart_data['Ref']['Tg']
-        #self.Pg = Re.restart_data['Ref']['Pg']
-        #self.sg = Re.restart_data['Ref']['sg']
-        #self.qtg = Re.restart_data['Ref']['qtg']
-        #self.u0 = Re.restart_data['Ref']['u0']
-        #self.v0 = Re.restart_data['Ref']['v0']
-
+        self.p0 = Re.restart_data['Ref']['p0']
+        self.p0_half = Re.restart_data['Ref']['p0_half']
+        self.alpha0 = Re.restart_data['Ref']['alpha0']
+        self.alpha0_half = Re.restart_data['Ref']['alpha0_half']
+        self.rho0 = 1.0 / Re.restart_data['Ref']['alpha0']
+        self.rho0_half = 1.0 / Re.restart_data['Ref']['alpha0_half']
 
         return

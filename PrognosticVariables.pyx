@@ -251,7 +251,6 @@ cdef class PrognosticVariables:
         var_array = self.get_variable_array(var_name, Gr)
         return np.amin(var_array), np.amax(var_array)
 
-
     cpdef restart(self, Grid.Grid Gr, Restart.Restart Re):
 
         Re.restart_data['PV'] = {}
@@ -265,7 +264,6 @@ cdef class PrognosticVariables:
         Re.restart_data['PV']['var_type'] = np.array(self.var_type)
         Re.restart_data['PV']['velocity_directions'] = np.array(self.velocity_directions)
         Re.restart_data['PV']['velocity_names_directional'] = self.velocity_names_directional
-
 
         cdef:
             double [:] values = np.empty((self.nv * Gr.dims.npl),dtype=np.double,order='c')

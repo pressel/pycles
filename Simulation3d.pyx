@@ -92,8 +92,6 @@ class Simulation3d:
             self.TS.t = self.Restart.restart_data['TS']['t']
             self.TS.dt = self.Restart.restart_data['TS']['dt']
             self.Ref.init_from_restart(self.Gr, self.Restart)
-
-            print self.TS.t, self.TS.dt
             self.PV.init_from_restart(self.Gr, self.Restart)
             self.Restart.free_memory()
         else:
@@ -115,7 +113,6 @@ class Simulation3d:
         cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
         cdef DiagnosticVariables.DiagnosticVariables DV_ = self.DV
         PV_.Update_all_bcs(self.Gr, self.Pa)
-        PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
         cdef LatentHeat LH_ = self.LH
         cdef Grid.Grid GR_ = self.Gr
         cdef ParallelMPI.ParallelMPI PA_ = self.Pa
@@ -143,7 +140,7 @@ class Simulation3d:
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.Pa)
                 self.io()
-                PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
+                #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
@@ -162,7 +159,7 @@ class Simulation3d:
             stats_dt = self.StatsIO.last_output_time + self.StatsIO.frequency - self.TS.t
             restart_dt = self.Restart.last_restart_time + self.Restart.frequency - self.TS.t
 
-            dts = np.array([fields_dt, stats_dt, restart_dt, self.TS.dt ])
+            dts = np.array([fields_dt, stats_dt, restart_dt, self.TS.dt, self.TS.dt_max ])
             self.TS.dt = np.amin(dts[dts > 0.0])
 
             # If time to ouptut fields do output
