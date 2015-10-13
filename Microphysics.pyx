@@ -24,10 +24,13 @@ cdef class No_Microphysics_Dry:
         LH.L_fp = latent_heat_constant
         self.thermodynamics_type = 'dry'
         return
-    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
         return
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
 
 
 cdef class No_Microphysics_SA:
@@ -36,10 +39,13 @@ cdef class No_Microphysics_SA:
         LH.L_fp = latent_heat_constant
         self.thermodynamics_type = 'SA'
         return
-    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
         return
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
 
 
 cdef extern from "microphysics_sb.h":
@@ -50,16 +56,28 @@ cdef extern from "microphysics_sb.h":
     double sb_droplet_nu_0(double density, double ql) nogil
     double sb_droplet_nu_1(double density, double ql) nogil
     double sb_droplet_nu_2(double density, double ql) nogil
-    void sb_sedimentation_velocity_rain(double (*rain_mu)(double,double,double),double* density, double* nr, double qr, double* nr_velocity, double* qr_velocity) nogil
+    void sb_sedimentation_velocity_rain(Grid.DimStruct *dims, double (*rain_mu)(double,double,double),
+                                        double* density, double* nr, double* qr, double* w, double* nr_vel_cc,
+                                        double* qr_vel_cc, double* nr_velocity, double* qr_velocity) nogil
+
     void sb_microphysics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                              double (*rain_mu)(double,double,double), double (*droplet_nu)(double,double),
                              double* density, double* p0, double* temperature,  double* qt, double ccn,
                              double* ql, double* nr, double* qr, double dt, double* nr_tendency, double* qr_tendency) nogil
-    void sb_thermodynamics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double), double* qr_tendency, double* qt_tendency ) nogil
+    void sb_thermodynamics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double),
+                                   double (*L_fp)(double, double), double* qr_tendency, double* qt_tendency ) nogil
 
+    void sb_autoconversion_rain_wrapper(Grid.DimStruct *dims,  double (*droplet_nu)(double,double), double* density,
+                                        double ccn, double* ql, double* qr, double*  nr_tendency, double* qr_tendency) nogil
 
+    void sb_accretion_rain_wrapper(Grid.DimStruct *dims, double* density, double*  ql, double* qr, double* qr_tendency)nogil
 
+    void sb_selfcollection_breakup_rain_wrapper(Grid.DimStruct *dims, double (*rain_mu)(double,double,double),
+                                            double* density, double* nr, double* qr, double*  nr_tendency)nogil
 
+    void sb_evaporation_rain_wrapper(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                             double (*rain_mu)(double,double,double),  double* density, double* p0,  double* temperature,  double* qt,
+                             double* ql, double* nr, double* qr, double* nr_tendency, double* qr_tendency)nogil
 
 cdef class Microphysics_SB_Liquid:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
@@ -121,11 +139,14 @@ cdef class Microphysics_SB_Liquid:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         # add prognostic variables for mass and number of rain
         PV.add_variable('nr', '1/kg', 'sym','scalar',Pa)
         PV.add_variable('qr', 'kg/kg', 'sym','scalar',Pa)
 
+        # add sedimentation velocities as diagnostic variables
+        DV.add_variables('w_qr', 'm/s', 'asym', Pa)
+        DV.add_variables('w_nr', 'm/s', 'asym', Pa)
 
 
         # add statistical output for the class
@@ -137,7 +158,7 @@ cdef class Microphysics_SB_Liquid:
         NS.add_profile('qr_evaporation', Gr,Pa)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t i, j, k, ijk
             Py_ssize_t gw = Gr.dims.gw
@@ -153,11 +174,12 @@ cdef class Microphysics_SB_Liquid:
             Py_ssize_t nr_shift = PV.get_varshift(Gr, 'nr')
             Py_ssize_t qr_shift = PV.get_varshift(Gr, 'qr')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             double dt = TS.dt
-            double [:] nr_velocity  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] qr_velocity  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-
-
+            Py_ssize_t wqr_shift = DV.get_varshift(Gr, 'w_qr')
+            Py_ssize_t wnr_shift = DV.get_varshift(Gr, 'w_nr')
+            double[:] qr_vel_cc = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] nr_vel_cc = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
 
         sb_microphysics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, self.compute_rain_shape_parameter,
                                 self.compute_droplet_nu, &Ref.rho0_half[0],  &Ref.p0_half[0], &DV.values[t_shift],
@@ -165,7 +187,17 @@ cdef class Microphysics_SB_Liquid:
                                 &PV.values[qr_shift], dt, &PV.tendencies[nr_shift], &PV.tendencies[qr_shift] )
 
 
-        # sb_sedimentation_velocity_rain(&Gr.dims,self.compute_rain_shape_parameter,Ref.rho0_half[0],PV.values[nr_shift], PV.values[qr_shift], &nr_velocity[0], &qr_velocity[0])
+        sb_sedimentation_velocity_rain(&Gr.dims,self.compute_rain_shape_parameter,
+                                       &Ref.rho0_half[0],&PV.values[nr_shift], &PV.values[qr_shift], &PV.values[w_shift],
+                                       &nr_vel_cc[0], &qr_vel_cc[0],
+                                       &DV.values[wnr_shift], &DV.values[wqr_shift])
+
+
+        # update the Boundary conditions and ghost cells of the sedimentation velocities
+        wnr_nv = DV.name_index['w_nr']
+        wqr_nv = DV.name_index['w_qr']
+        DV.communicate_variable(Gr,Pa,wnr_nv)
+        DV.communicate_variable(Gr,Pa,wqr_nv )
 
         sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &PV.tendencies[qr_shift], &PV.tendencies[qt_shift]  )
 
@@ -173,11 +205,53 @@ cdef class Microphysics_SB_Liquid:
         return
 
     #
-    # cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-    #
-    #
-    #
-    #     return
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            Py_ssize_t i, j, k, ijk
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t kmax = Gr.dims.nlg[2]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t ishift, jshift
+
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
+            Py_ssize_t nr_shift = PV.get_varshift(Gr, 'nr')
+            Py_ssize_t qr_shift = PV.get_varshift(Gr, 'qr')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+
+            double[:] qr_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] nr_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] tmp
+
+        sb_autoconversion_rain_wrapper(&Gr.dims,  self.compute_droplet_nu, &Ref.rho0_half[0], self.ccn,
+                                       &DV.values[ql_shift], &PV.values[qr_shift], &nr_tendency[0], &qr_tendency[0])
+        tmp = Pa.HorizontalMean(Gr, &nr_tendency[0])
+        NS.write_profile('nr_autoconversion', tmp[gw:-gw], Pa)
+        tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
+        NS.write_profile('qr_autoconversion', tmp[gw:-gw], Pa)
+
+        sb_accretion_rain_wrapper(&Gr.dims, &Ref.rho0_half[0], &DV.values[ql_shift], &PV.values[qr_shift], &qr_tendency[0])
+        tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
+        NS.write_profile('qr_accretion', tmp[gw:-gw], Pa)
+
+        sb_selfcollection_breakup_rain_wrapper(&Gr.dims, self.compute_rain_shape_parameter, &Ref.rho0_half[0],
+                                               &PV.values[nr_shift], &PV.values[qr_shift], &nr_tendency[0])
+        tmp = Pa.HorizontalMean(Gr, &nr_tendency[0])
+        NS.write_profile('nr_selfcollection', tmp[gw:-gw], Pa)
+
+        sb_evaporation_rain_wrapper(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp,
+                                    self.compute_rain_shape_parameter, &Ref.rho0_half[0], &Ref.p0_half[0],
+                                    &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift],
+                                    &PV.values[nr_shift], &PV.values[qr_shift], &nr_tendency[0], &qr_tendency[0])
+
+        tmp = Pa.HorizontalMean(Gr, &nr_tendency[0])
+        NS.write_profile('nr_evaporation', tmp[gw:-gw], Pa)
+        tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
+        NS.write_profile('qr_evaporation', tmp[gw:-gw], Pa)
+        return
 
 
 

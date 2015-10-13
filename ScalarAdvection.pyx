@@ -8,6 +8,7 @@ cimport Grid
 cimport PrognosticVariables
 cimport ParallelMPI
 cimport ReferenceState
+cimport DiagnosticVariables
 from NetCDFIO cimport NetCDFIO_Stats
 
 from FluxDivergence cimport scalar_flux_divergence
@@ -32,7 +33,7 @@ cdef class ScalarAdvection:
             self.mp = namelist['scalar_transport']['mp']
 
         except:
-            self.mp = 0
+            self.mp = 1
         print('MP ', self.mp)
 
         return
@@ -49,7 +50,7 @@ cdef class ScalarAdvection:
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs,PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t d, i, vel_shift,scalar_shift, scalar_count = 0, flux_shift
@@ -62,10 +63,16 @@ cdef class ScalarAdvection:
                     flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + d * Gr.dims.npg
 
                     #Make sure that we get the velocity components in the correct order
-                    vel_shift = PV.velocity_directions[d]*Gr.dims.npg
-
-                    compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&PV.values[vel_shift],
-                                             &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order, self.mp)
+                    #Also check for a scalar-specific velocity (e.g. hydrometeor sedimentation)
+                    sc_vel_name = PV.velocity_names_directional[d] + '_' + DV.index_name[i]
+                    if sc_vel_name in DV.name_index:
+                        vel_shift = DV.get_varshift(Gr, sc_vel_name)
+                        compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
+                                                   &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order, self.mp)
+                    else:
+                        vel_shift = PV.velocity_directions[d]*Gr.dims.npg
+                        compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&PV.values[vel_shift],
+                                                   &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order, self.mp)
 
                     scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
                                             &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)

@@ -244,22 +244,23 @@ double interp_weno11(double phim5, double phim4, double phim3, double phim2, dou
 
 
 
+double minmod2(double x, double y){
 
-double minmod(double* x, ssize_t nx ){
-    //find minmod of nx values stored in array x
-    double sign_part = 0.0;
-    double min_part = 0.0;
-    for(ssize_t i=0; i<nx; i++){
-        sign_part += copysign(0.5, x[i]);
-        min_part = fmin(min_part, fabs(x[i]));
-    }
-    return sign_part * min_part;
+    return 0.5* (copysign(1.0,x)+ copysign(1.0,y))*fmin(fabs(x),fabs(y));
 }
 
 
+double minmod4(double x1, double x2, double x3, double x4){
+    double val=0.0;
+    if(x1*x2*x3*x4 > 0){
+        //all have same sign
+        val =  copysign(1.0,x1) * fmin(fmin(fmin(fabs(x1),fabs(x2)),fabs(x3)), fabs(x4));
+    }
+    return val;
+}
+
 double median(double x, double y, double z){
-    double xarray[2] = {y - x, z - x};
-    return x + minmod(&xarray[0], 2);
+    return x +  minmod2(y - x, z - x);
 
 }
 
@@ -272,11 +273,9 @@ double interp_mp_mm(double phim2, double phim1, double phi0, double phip1, doubl
     const double dm1 = phi0  - 2.0 * phim1 + phim2; //Eq. 3.3, shifted -1
     const double d0  = phip1 - 2.0 * phi0  + phim1; //Eq. 3.3
     const double dp1  = phip2 - 2.0 * phip1 + phi0; //Eq. 3.3, shifted +1
-    double x1[2] = {d0,dp1};
-    const double d_mm = minmod( &x1[0],2);
+    const double d_mm = minmod2( d0,dp1);
     const double phi_md = 0.5 * (phi0 + phip1) - 0.5 * d_mm; //Eq. 3.8
-    double x2[2] = {dm1,d0};
-    const double d_mm_m1 = minmod( &x2[0],2);
+    const double d_mm_m1 = minmod2(dm1,d0);
     const double phi_lc = phi0 + 0.5 * (phi0 -phim1) + beta/3.0 * d_mm_m1; //Eq. 3.9
     const double phi_min = fmax(fmin(phi0,fmin(phip1,phi_md)),fmin(phi0,fmin(phi_ul,phi_lc)));
     const double phi_max = fmin(fmax(phi0,fmax(phip1,phi_md)),fmax(phi0,fmax(phi_ul,phi_lc)));
@@ -286,29 +285,49 @@ double interp_mp_mm(double phim2, double phim1, double phi0, double phip1, doubl
 
 
 
+double interp_mp_m4(double phim2, double phim1, double phi0, double phip1, double phip2, double phi_weno){
+    //implementation of monotonicity preserving bounds following Balsara and Shu
+    //this function uses the least restrictive limiter (denoted 'MM') given in their Eq. 3.4
+    const double alpha = 2.0; //parameter of scheme; note CFL <= 1/(1 + alpha)
+    const double beta = 4.0; //parameter of scheme; should not be sensitive to value; beta=2 is also tested by B & S
+    const double phi_ul = phi0 + alpha * (phi0 - phim1); //Eq 3.7
+    const double dm1 = phi0  - 2.0 * phim1 + phim2; //Eq. 3.3, shifted -1
+    const double d0  = phip1 - 2.0 * phi0  + phim1; //Eq. 3.3
+    const double dp1  = phip2 - 2.0 * phip1 + phi0; //Eq. 3.3, shifted +1
+
+    const double d_m4 = minmod4(4.0*d0 - dp1, 4.0*dp1 - d0, d0, dp1);
+    const double phi_md = 0.5 * (phi0 + phip1) - 0.5 * d_m4; //Eq. 3.8
+    const double d_m4_m1 =  minmod4(4.0*dm1 - d0, 4.0*d0 - dm1, dm1, d0);
+    const double phi_lc = phi0 + 0.5 * (phi0 -phim1) + beta/3.0 * d_m4_m1; //Eq. 3.9
+    const double phi_min = fmax(fmin(phi0,fmin(phip1,phi_md)),fmin(phi0,fmin(phi_ul,phi_lc)));
+    const double phi_max = fmin(fmax(phi0,fmax(phip1,phi_md)),fmax(phi0,fmax(phi_ul,phi_lc)));
+    const double phi_weno_mp =  median(phi_weno, phi_min, phi_max);
+    return phi_weno_mp;
+}
+
 
 
 
 double interp_weno5_mp(double phim2, double phim1, double phi, double phip1, double phip2){
     double phi_weno = interp_weno5(phim2, phim1, phi, phip1, phip2);
-    double phi_weno_mp = interp_mp_mm(phim2, phim1, phi, phip1, phip2, phi_weno);
+    double phi_weno_mp = interp_mp_m4(phim2, phim1, phi, phip1, phip2, phi_weno);
     return phi_weno_mp;
 }
 
 double interp_weno7_mp(double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3){
     double phi_weno = interp_weno7(phim3, phim2, phim1, phi, phip1, phip2, phip3);
-    double phi_weno_mp = interp_mp_mm(phim2, phim1, phi, phip1, phip2, phi_weno);
+    double phi_weno_mp = interp_mp_m4(phim2, phim1, phi, phip1, phip2, phi_weno);
     return phi_weno_mp;
 }
 
 double interp_weno9_mp(double phim4, double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3, double phip4){
     double phi_weno =  interp_weno9(phim4, phim3, phim2, phim1, phi, phip1, phip2, phip3, phip4);
-    double phi_weno_mp = interp_mp_mm(phim2, phim1, phi, phip1, phip2, phi_weno);
+    double phi_weno_mp = interp_mp_m4(phim2, phim1, phi, phip1, phip2, phi_weno);
     return phi_weno_mp;
 }
 
 double interp_weno11_mp(double phim5, double phim4, double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3, double phip4, double phip5  ){
     double phi_weno = interp_weno11(phim5, phim4, phim3, phim2, phim1, phi, phip1, phip2, phip3, phip4, phip5  );
-    double phi_weno_mp = interp_mp_mm(phim2, phim1, phi, phip1, phip2, phi_weno);
+    double phi_weno_mp = interp_mp_m4(phim2, phim1, phi, phip1, phip2, phi_weno);
     return phi_weno_mp;
 }

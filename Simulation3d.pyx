@@ -66,7 +66,7 @@ class Simulation3d:
         self.FieldsIO.initialize(namelist, self.Pa)
         self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.StatsIO, self.Pa)
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.Micro.initialize(self.Gr, self.PV, self.StatsIO, self.Pa)
+        self.Micro.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
         self.PV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ke.initialize(self.Gr, self.StatsIO, self.Pa)
@@ -104,8 +104,8 @@ class Simulation3d:
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
-                self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS )
-                self.SA.update(self.Gr,self.Ref,PV_,self.Pa)
+                self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
+                self.SA.update(self.Gr,self.Ref,PV_, DV_, self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
@@ -118,7 +118,7 @@ class Simulation3d:
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
-                self.TS.adjust_timestep(self.Gr, self.PV, self.Pa)
+                self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
             time2 = time.time()
@@ -164,10 +164,12 @@ class Simulation3d:
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
                 self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
+
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.Fo.stats_io(
                     self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+                self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
                 self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
@@ -184,10 +186,12 @@ class Simulation3d:
         # output stats here
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
         self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
+
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
         self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)

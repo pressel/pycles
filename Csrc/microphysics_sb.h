@@ -1,6 +1,7 @@
 #pragma once
 #include "parameters.h"
 #include "microphysics.h"
+#include "advection_interpolation.h"
 #include <math.h>
 
 #define max_iter  5 //maximum substep loops in source term computation
@@ -146,7 +147,7 @@ void sb_selfcollection_breakup_rain(double density, double nr, double qr, double
     double lambda_rain, phi_sc, phi_bk = 0.0;
     double nr_tendency_sc;
 
-    if(qr < sb_eps){
+    if(qr < sb_eps || nr < sb_eps){
         *nr_tendency = 0.0;
     }
     else{
@@ -164,14 +165,18 @@ void sb_selfcollection_breakup_rain(double density, double nr, double qr, double
     return;
 }
 
-void sb_evaporation_rain( double g_therm, double sat_ratio, double nr, double qr, double mu, double Dp, double Dm, double* nr_tendency, double* qr_tendency){
+void sb_evaporation_rain( double g_therm, double sat_ratio, double nr, double qr, double mu, double rain_mass, double Dp, double Dm, double* nr_tendency, double* qr_tendency){
     double gamma, dpfv, phi_v;
     const double bova = b_rain_sed/a_rain_sed;
-    const double cdp  = c_rain_sed*Dp;
+    const double cdp  = c_rain_sed * Dp;
     const double mupow = mu + 2.5;
-    double qr_tendency_tmp;
+    double qr_tendency_tmp = 0.0;
 
-    if(qr < sb_eps || sat_ratio >= 0.0){
+    if(qr < sb_eps || nr < sb_eps){
+        *nr_tendency = 0.0;
+        *qr_tendency = 0.0;
+    }
+    else if(sat_ratio >= 0.0){
         *nr_tendency = 0.0;
         *qr_tendency = 0.0;
     }
@@ -183,31 +188,35 @@ void sb_evaporation_rain( double g_therm, double sat_ratio, double nr, double qr
 
         dpfv  = (a_vent_rain * tgamma(mu + 2.0) * Dp + b_vent_rain * nsc_3 * a_nu_sq * tgamma(mupow) * pow(Dp, 1.5) * phi_v)/tgamma(mu + 1.0);
         qr_tendency_tmp = 2.0 * pi * g_therm * sat_ratio* nr * dpfv;
-        *nr_tendency = gamma * nr/qr * qr_tendency_tmp;
+        *nr_tendency = gamma /rain_mass * qr_tendency_tmp;
         *qr_tendency = qr_tendency_tmp;
     }
     return;
 }
 
 
-void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_mu)(double,double,double),double* restrict density, double* restrict nr, double* restrict qr, double* nr_velocity, double* qr_velocity){
+void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_mu)(double,double,double),
+                                        double* restrict density, double* restrict nr, double* restrict qr, double* restrict w,
+                                        double* restrict nr_vel_cc, double* restrict qr_vel_cc ,
+                                        double* restrict nr_velocity, double* restrict qr_velocity){
 
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
     //must compute at ghost points
-    const ssize_t imin = 0;
-    const ssize_t jmin = 0;
-    const ssize_t kmin = 0;
-    const ssize_t imax = dims->nlg[0];
-    const ssize_t jmax = dims->nlg[1];
-    const ssize_t kmax = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
 
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin; k<kmax; k++){
+            for(ssize_t k=kmin-1; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
                 double density_factor = sqrt(density_sb/density[k]);
                 double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
@@ -215,13 +224,33 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
                 double mu = rain_mu(density[k], qr[ijk], Dm);
                 double Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
 
-                nr_velocity[ijk] = -fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 1.0)) , 0.0);
-                qr_velocity[ijk] = -fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 4.0)) , 0.0);
+                nr_vel_cc[ijk] = -fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 1.0)) , 0.0);
+                qr_vel_cc[ijk] = -fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 4.0)) , 0.0);
 
             }
         }
     }
+
+//NOTE: mean sedimentation velocities are fine (i.e. they are what we expect) because <w> = 0, however since w and sedimentation velocities are (generally)
+// correlated, higher moments are not correct
+
+     for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                nr_velocity[ijk] = interp_2(nr_vel_cc[ijk], nr_vel_cc[ijk-1]) + w[ijk];
+                qr_velocity[ijk] = interp_2(qr_vel_cc[ijk], qr_vel_cc[ijk-1]) + w[ijk];
+
+            }
+        }
+    }
+
+
     return;
+
 }
 
 void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
@@ -253,7 +282,7 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                 const ssize_t ijk = ishift + jshift + k;
 
                 double qv = qt[ijk] - ql[ijk];
-                double sat_ratio = microphysical_saturation_ratio(LT, lam_fp, L_fp, temperature[ijk], p0[k], qt[ijk], qv);
+                double sat_ratio = microphysics_saturation_ratio(LT, lam_fp, L_fp, temperature[ijk], p0[k], qt[ijk], qv);
                 double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
                 double nl = ccn/density[k];
                 double ql_tmp = ql[ijk];
@@ -279,9 +308,9 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                     sb_accretion_rain(density[k], ql_tmp, qr_tmp, &qr_tendency_ac);
 //                    nr_tendency_scbk = 0.0;
                     sb_selfcollection_breakup_rain(density[k], nr_tmp, qr_tmp, mu, rain_mass, Dm, &nr_tendency_scbk);
-                    nr_tendency_evp = 0.0;
-                    qr_tendency_evp = 0.0;
-//                    sb_evaporation_rain( g_therm, sat_ratio, nr_tmp, qr_tmp, mu, Dp, Dm, &nr_tendency_evp, &qr_tendency_evp);
+//                    nr_tendency_evp = 0.0;
+//                    qr_tendency_evp = 0.0;
+                    sb_evaporation_rain( g_therm, sat_ratio, nr_tmp, qr_tmp, mu, rain_mass, Dp, Dm, &nr_tendency_evp, &qr_tendency_evp);
                     //find the maximum substep time
                     dt_ = dt - time_added;
                     //check the source term magnitudes
@@ -356,3 +385,149 @@ void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct
     return;
 
 }
+
+
+
+///==========================To facilitate output=============================
+
+void sb_autoconversion_rain_wrapper(const struct DimStruct *dims,  double (*droplet_nu)(double,double),
+                                    double* restrict density,  double ccn, double* restrict ql,  double* restrict qr,
+                                    double* restrict nr_tendency, double* restrict qr_tendency){
+
+    //Here we compute the source terms for nr and qr (number and mass of rain)
+    //Temporal substepping is used to help ensure boundedness of moments
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+               const double nl = ccn/density[k];
+                //compute the source terms
+                sb_autoconversion_rain(droplet_nu, density[k], nl, ql[ijk], qr[ijk], &nr_tendency[ijk], &qr_tendency[ijk]);
+
+
+            }
+        }
+    }
+    return;
+}
+
+void sb_accretion_rain_wrapper(const struct DimStruct *dims, double* restrict density,  double* restrict ql,
+                               double* restrict qr, double* restrict qr_tendency){
+
+
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                sb_accretion_rain(density[k], ql[ijk], qr[ijk], &qr_tendency[ijk]);
+
+            }
+        }
+    }
+    return;
+}
+
+void sb_selfcollection_breakup_rain_wrapper(const struct DimStruct *dims, double (*rain_mu)(double,double,double),
+                                            double* restrict density, double* restrict nr, double* restrict qr, double* restrict nr_tendency){
+
+    //Here we compute the source terms for nr and qr (number and mass of rain)
+    //Temporal substepping is used to help ensure boundedness of moments
+    double rain_mass, Dm, mu;
+
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+               //obtain some parameters
+                const double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
+                const double Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
+                const double mu = rain_mu(density[k], qr[ijk], Dm);
+
+                //compute the source terms
+                sb_selfcollection_breakup_rain(density[k], nr[ijk], qr[ijk], mu, rain_mass, Dm, &nr_tendency[ijk]);
+
+            }
+        }
+    }
+    return;
+}
+
+void sb_evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                             double (*rain_mu)(double,double,double),  double* restrict density, double* restrict p0,  double* restrict temperature,  double* restrict qt,
+                             double* restrict ql, double* restrict nr, double* restrict qr, double* restrict nr_tendency, double* restrict qr_tendency){
+
+    //Here we compute the source terms for nr and qr (number and mass of rain)
+    //Temporal substepping is used to help ensure boundedness of moments
+    double rain_mass, Dm, mu, Dp;
+
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                const double qv = qt[ijk] - ql[ijk];
+                const double sat_ratio = microphysics_saturation_ratio(LT, lam_fp, L_fp, temperature[ijk], p0[k], qt[ijk], qv);
+                const double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
+                //obtain some parameters
+                const double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
+                const double Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
+                const double mu = rain_mu(density[k], qr[ijk], Dm);
+                const double Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
+                //compute the source terms
+                sb_evaporation_rain( g_therm, sat_ratio, nr[ijk], qr[ijk], mu, rain_mass, Dp, Dm, &nr_tendency[ijk], &qr_tendency[ijk]);
+
+            }
+        }
+    }
+    return;
+}
+
