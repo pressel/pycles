@@ -572,9 +572,6 @@ def Rico():
 
 
 
-
-
-
 def write_file(namelist):
 
     try:
