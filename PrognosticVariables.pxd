@@ -2,6 +2,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport Grid
 cimport ParallelMPI
 cimport ReferenceState
+cimport Restart
 
 cdef extern from "prognostic_variables.h":
     struct VelocityDofs:
@@ -47,3 +48,5 @@ cdef class PrognosticVariables:
     cpdef val_nan(self,PA,message)
     cpdef val_bounds(self,var_name,Grid.Grid Gr)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef restart(self, Grid.Grid Gr, Restart.Restart Re)
+    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re)

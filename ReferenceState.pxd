@@ -1,4 +1,5 @@
 cimport Grid
+cimport Restart
 cdef class ReferenceState:
     cdef:
         public double [:] p0
@@ -7,6 +8,7 @@ cdef class ReferenceState:
         public double [:] alpha0_half
         public double [:] rho0
         public double [:] rho0_half
+
         double sg
 
     cdef public:
@@ -17,6 +19,6 @@ cdef class ReferenceState:
         double u0 #u velocity removed in Galilean transformation
         double v0 #v velocity removed in Galilean transformation
 
-
-
+    cpdef restart(self, Grid.Grid Gr, Restart.Restart Re)
+    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re)
 
