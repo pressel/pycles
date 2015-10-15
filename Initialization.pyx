@@ -30,6 +30,8 @@ def InitializationFactory(namelist):
             return InitGabls
         elif casename == 'DYCOMS_RF01':
             return InitDYCOMS_RF01
+        elif casename == 'Rico':
+            return InitRico
         else:
             pass
 
@@ -531,3 +533,105 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
 
     return
+
+
+def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+
+    #First generate the reference profiles
+    RS.Pg = 1.0154e5  #Pressure at ground
+    RS.Tg = 299.8  #Temperature at ground
+    pvg = Th.get_pv_star(RS.Tg)
+    RS.qtg = eps_v * pvg/(RS.Pg - pvg)   #Total water mixing ratio at surface = qsat
+
+    RS.initialize(Gr, Th, NS, Pa)
+
+    #Get the variable number for each of the velocity components
+    np.random.seed(Pa.rank)
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift
+        Py_ssize_t ijk, e_varshift
+        double temp
+        double qt_
+        double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] v = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        Py_ssize_t count
+
+        theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
+        qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5) * 2.5e-5
+
+    for k in xrange(Gr.dims.nlg[2]):
+
+        #Set Thetal profile
+        if Gr.zl_half[k] <= 740.0:
+            theta[k] = 297.9
+        else:
+            theta[k] = 297.9 + (317.0-297.9)/(4000.0-740.0)*(Gr.zl_half[k] - 740.0)
+
+
+        #Set qt profile
+        if Gr.zl_half[k] <= 740.0:
+            qt[k] =  16.0 + (13.8 - 16.0)/740.0 * Gr.zl_half[k]
+        elif Gr.zl_half[k] > 740.0 and Gr.zl_half[k] <= 3260.0:
+            qt[k] = 13.8 + (2.4 - 13.8)/(3260.0-740.0) * (Gr.zl_half[k] - 740.0)
+        else:
+            qt[k] = 2.4 + (1.8-2.4)/(4000.0-3260.0)*(Gr.zl_half[k] - 3260.0)
+
+
+        #Change units to kg/kg
+        qt[k]/= 1000.0
+
+        #Set u profile
+        u[k] = -9.9 + 2.0e-3 * Gr.zl_half[k]
+        #set v profile
+        v[k] = -3.8
+    #Set velocities for Galilean transformation
+    RS.v0 = -3.8
+    RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
+
+
+
+    #Now loop and set the initial condition
+    #First set the velocities
+    count = 0
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = u[k] - RS.u0
+                PV.values[v_varshift + ijk] = v[k] - RS.v0
+                PV.values[w_varshift + ijk] = 0.0
+                if Gr.zl_half[k] <= 740.0:
+                    temp = (theta[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
+                    qt_ = qt[k]+qt_pert[count]
+                else:
+                    temp = (theta[k]) * exner_c(RS.p0_half[k])
+                    qt_ = qt[k]
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)
+                PV.values[qt_varshift + ijk] = qt_
+                count += 1
+
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    if Gr.zl_half[k] <= 740.0:
+                        PV.values[e_varshift + ijk] = 0.1
+
+
+    return
+

@@ -476,7 +476,7 @@ cdef class ForcingRico:
     def __init__(self):
         latitude = 18.0 # degrees
         self.coriolis_param = 2.0 * omega * sin(latitude * pi / 180.0 )
-        self.momentum_subsidence = False
+        self.momentum_subsidence = 0
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -506,7 +506,7 @@ cdef class ForcingRico:
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
-        if self.momentum_subsidence:
+        if self.momentum_subsidence == 1:
             NS.add_profile('u_subsidence_tendency', Gr, Pa)
             NS.add_profile('v_subsidence_tendency', Gr, Pa)
 
@@ -542,7 +542,7 @@ cdef class ForcingRico:
 
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
-        if self.momentum_subsidence:
+        if self.momentum_subsidence == 1:
             apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
             apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
