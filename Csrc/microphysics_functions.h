@@ -8,8 +8,18 @@
 #include <stdio.h>
 #include <math.h>
 
+double vapor_diffusivity(const double temp_, const double p0_){
+    double val = 2.11e-5 * pow((temp_ / 273.15), 1.94) * (p0_ / 101325.0);
+    return val;
+};
 
-inline double get_aut_rain_c(const double alpha_, const double ccn, struct hm_properties *liquid_prop){
+double thermal_conductivity(const double temp_){
+    double val = 2.591e-2 * pow((temp_ / 296.0), 1.5) * (416.0 / (temp_ - 120.0));
+    return val;
+};
+
+
+double get_aut_rain_c(const double alpha_, const double ccn, struct hm_properties *liquid_prop){
     /* Berry-Reinhardt 74 rain autoconversion model*/
     double l2, t2;
     const double ccn_ = ccn*1.0e-6;
@@ -39,25 +49,21 @@ inline double get_aut_rain_c(const double alpha_, const double ccn, struct hm_pr
 };
 
 
-inline double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_, const double qt_, const double qi_, const double temp_, struct hm_properties *ice_prop){
+double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_, const double qt_, const double qi_, const double temp_, struct hm_properties *ice_prop){
     /* Harrington 1995 snow autoconversion model */
-    /* Saturation vapor pressure over ICE??? */
     double pv_star = lookup(LT, temp_);
-    //double y_sat_ice = pv_star/(p0_-pv_star)*eps_v*(1.0-qt_);
     double qv_star = qv_star_c(p0_, qt_, pv_star);
     //double satratio = qt_/qv_star;
     double satratio = (qt_-qi_)/qv_star;
     double db_ice = 125.0e-6;
     double val = 0.0;
     double gtherm, psi;
-    double vapor_diff = 3.0e-5;
-    double therm_cond = 2.5e-2;
-    //double vapor_diff = 2.11e-5 * pow((temp_ / 273.15), 1.94) * (p0_ / 101325.0);
-    //double therm_cond = 2.591e-2 * pow((temp_ / 296.0), 1.5) * (416.0 / (temp_ - 120.0));
+    double vapor_diff = vapor_diffusivity(temp_, p0_);
+    double therm_cond = thermal_conductivity(temp_);
 
     if( ice_prop->mf > 1.0e-10 && satratio > 1.0){
-        gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
-        //gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/temp_) );
+        //gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
+        gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temp_*temp_)) );
         psi = 4.0*pi*(satratio - 1.0)*gtherm;
         val = (psi*ice_prop->n0*exp(-ice_prop->lam*db_ice)
                *(db_ice*db_ice/3.0 + (1.0+ice_prop->lam*db_ice)/(ice_prop->lam*ice_prop->lam))*alpha_);
@@ -66,13 +72,14 @@ inline double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const
     return val;
 };
 
-inline double get_evp_rain_c(struct LookupStruct *LT, const double alpha_, const double p0_, const double qt_,
+double get_evp_rain_c(struct LookupStruct *LT, const double alpha_, const double p0_, const double qt_,
                              const double temp_, struct hm_properties *_prop){
     double beta = 2.0;
     double pv_star = lookup(LT, temp_);
-    //double y_sat = pv_star/(p0_-pv_star)*eps_v*(1-qt_);
     double qv_star = qv_star_c(p0_, qt_, pv_star);
     double satratio = qt_/qv_star;
+    double vapor_diff = vapor_diffusivity(temp_, p0_);
+    double therm_cond = thermal_conductivity(temp_);
 
     double re, vent, gtherm;
     double val = 0.0;
@@ -80,24 +87,27 @@ inline double get_evp_rain_c(struct LookupStruct *LT, const double alpha_, const
     if( satratio < 1.0 && _prop->mf > 1.0e-15){
         re = _prop->diam*_prop->vel/visc_air;
         vent = 0.78 + 0.27*(pow(re, 0.5));
-        gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
+        //gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
+        gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temp_*temp_)) );
         val = 4.0*pi/beta*(satratio - 1.0)*vent*gtherm*_prop->n0/_prop->lam/_prop->lam*alpha_;
     }
 
     return val;
 };
 
-inline double get_evp_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_,
+double get_evp_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_,
                            const double qt_, double const temp_, struct hm_properties *_prop){
     double beta = 3.0;
     double pv_star = lookup(LT, temp_);
-    //double y_sat = pv_star/(p0_-pv_star)*eps_v*(1-qt_);
     double qv_star = qv_star_c(p0_, qt_, pv_star);
     double satratio = qt_/qv_star;
 
+    double vapor_diff = vapor_diffusivity(temp_, p0_);
+    double therm_cond = thermal_conductivity(temp_);
     double re = _prop->diam*_prop->vel/visc_air;
     double vent = 0.65 + 0.39*(pow(re, 0.5));
-    double gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
+    //double gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
+    double gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temp_*temp_)) );
     double val = 0.0;
 
     if( _prop->mf > 1.0e-15 ){
@@ -190,7 +200,7 @@ void get_acc_c(const double alpha_, const double temp_, const double ccn_, struc
     return;
 };
 
-inline double get_melt_snow_c(const double alpha_, const double temp_, struct hm_properties *snow_prop){
+double get_melt_snow_c(const double alpha_, const double temp_, struct hm_properties *snow_prop){
     double snow_loss = 0.0;
     double ka = 2.43e-2;
     double fvent = 0.65 + 0.39*sqrt(snow_prop->vel*snow_prop->diam/visc_air);
@@ -215,7 +225,7 @@ inline double get_dmean_c(const double alpha_, struct hm_properties *_prop, stru
     return val;
 };
 
-inline double get_droplet_dmean_c(const double alpha_, const double liq_, const double ccn){
+double get_droplet_dmean_c(const double alpha_, const double liq_, const double ccn){
     /* Martin et al. 1994 ???*/
     double varm6, ntot;
     double ccn_ = ccn*1.0e-6;
@@ -241,7 +251,7 @@ inline double get_velmean_c(const double dmean, struct hm_parameters *_param){
     return val;
 };
 
-inline double get_n0_rain_c(const double alpha_, const double mf, struct hm_parameters *_param){
+double get_n0_rain_c(const double alpha_, const double mf, struct hm_parameters *_param){
     double rwc = fmax(mf/alpha_, small);
     double b1 = 650.1466922699631;
     double b2 = -1.222222222222222;
@@ -255,7 +265,7 @@ inline double get_n0_rain_c(const double alpha_, const double mf, struct hm_para
     return n0_rain;
 };
 
-inline double get_n0_snow_c(const double alpha_, const double mf, struct hm_parameters *_param){
+double get_n0_snow_c(const double alpha_, const double mf, struct hm_parameters *_param){
     /* Morrison et al. (2011a) */
     double swc = fmax(mf/alpha_, small);
     double y1 = 5.62e7;
@@ -317,7 +327,7 @@ void micro_substep_c(struct LookupStruct *LT, const double alpha, const double p
     return;
 };
 
-inline double get_rain_vel_c(const double alpha_, const double qrain_, struct hm_parameters *rain_param,
+double get_rain_vel_c(const double alpha_, const double qrain_, struct hm_parameters *rain_param,
                              struct hm_properties *rain_prop){
     rain_prop->n0 = get_n0_rain_c(alpha_, qrain_, rain_param);
     rain_prop->lam = get_lambda_c(alpha_, rain_prop, rain_param);
@@ -327,7 +337,7 @@ inline double get_rain_vel_c(const double alpha_, const double qrain_, struct hm
     return vel_rain;
 };
 
-inline double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm_parameters *snow_param,
+double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm_parameters *snow_param,
                              struct hm_properties *snow_prop){
     snow_prop->n0 = get_n0_snow_c(alpha_, qsnow_, snow_param);
     snow_prop->lam = get_lambda_c(alpha_, snow_prop, snow_param);
@@ -342,7 +352,7 @@ inline double get_wet_bulb_c(const double T){
     return T;
 };
 
-inline double entropy_src_precipitation_c(const double p0, const double T, const double qt, const double qv, const double L, const double precip_rate){
+double entropy_src_precipitation_c(const double p0, const double T, const double qt, const double qv, const double L, const double precip_rate){
     double pd = pd_c(p0, qt, qv);
     double pv = pv_c(p0, qt, qv);
     double sd = sd_c(pd, T);
@@ -352,7 +362,7 @@ inline double entropy_src_precipitation_c(const double p0, const double T, const
     return (sd - sv + sc) * precip_rate;
 };
 
-inline double entropy_src_evaporation_c(const double p0, const double T, const double qt, const double qv, const double L, const double evap_rate){
+double entropy_src_evaporation_c(const double p0, const double T, const double qt, const double qv, const double L, const double evap_rate){
     double Tw = get_wet_bulb_c(T);
     double pd = pd_c(p0, qt, qv);
     double pv = pv_c(p0, qt, qv);
