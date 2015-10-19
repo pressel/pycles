@@ -221,22 +221,24 @@ cdef class TKE:
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
             Py_ssize_t bf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
             Py_ssize_t e_shift = PV.get_varshift(Gr,'e')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
             double [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
 
-        tke_dissipation(&Gr.dims, &PV.values[e_shift], &tmp_tendency[0], &DV.values[bf_shift], self.cn, self.ck)
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        cdef double [:] tmp_tendency1  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+        tke_dissipation(&Gr.dims, &PV.values[e_shift], &tmp_tendency1[0], &DV.values[bf_shift], self.cn, self.ck)
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency1[0])
         NS.write_profile('tke_dissipation_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        tke_shear_production(&Gr.dims,   &tmp_tendency[0], &DV.values[visc_shift], &Ke.strain_rate_mag[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        cdef double [:] tmp_tendency2  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+        tke_shear_production(&Gr.dims,   &tmp_tendency2[0], &DV.values[visc_shift], &Ke.strain_rate_mag[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency2[0])
         NS.write_profile('tke_shear_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        tke_buoyant_production(&Gr.dims,  &tmp_tendency[0], &DV.values[diff_shift], &DV.values[bf_shift])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        cdef double [:] tmp_tendency3  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+        tke_buoyant_production(&Gr.dims,  &tmp_tendency3[0], &DV.values[diff_shift], &DV.values[bf_shift])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency3[0])
         NS.write_profile('tke_buoyancy_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         cdef:
