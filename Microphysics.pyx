@@ -18,6 +18,9 @@ from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 from libc.math cimport fmax, fmin
 
 
+cdef extern from "scalar_advection.h":
+    void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme, int mp) nogil
+
 cdef class No_Microphysics_Dry:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
         LH.Lambda_fp = lambda_constant
@@ -65,7 +68,8 @@ cdef extern from "microphysics_sb.h":
                              double* density, double* p0, double* temperature,  double* qt, double ccn,
                              double* ql, double* nr, double* qr, double dt, double* nr_tendency, double* qr_tendency) nogil
     void sb_thermodynamics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double),
-                                   double (*L_fp)(double, double), double* qr_tendency, double* qt_tendency ) nogil
+                                   double (*L_fp)(double, double), double*  p0, double* temperature, double* qt,
+                                   double*  ql,double* qr_tendency, double* qt_tendency, double * entropy_tendency) nogil
 
     void sb_autoconversion_rain_wrapper(Grid.DimStruct *dims,  double (*droplet_nu)(double,double), double* density,
                                         double ccn, double* ql, double* qr, double*  nr_tendency, double* qr_tendency) nogil
@@ -150,6 +154,8 @@ cdef class Microphysics_SB_Liquid:
 
 
         # add statistical output for the class
+        NS.add_profile('qr_sedimentation', Gr, Pa)
+        NS.add_profile('nr_sedimentation', Gr, Pa)
         NS.add_profile('qr_autoconversion', Gr, Pa)
         NS.add_profile('nr_autoconversion', Gr, Pa)
         NS.add_profile('nr_selfcollection', Gr, Pa)
@@ -199,7 +205,12 @@ cdef class Microphysics_SB_Liquid:
         DV.communicate_variable(Gr,Pa,wnr_nv)
         DV.communicate_variable(Gr,Pa,wqr_nv )
 
-        sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &PV.tendencies[qr_shift], &PV.tendencies[qt_shift]  )
+
+
+        cdef Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+        sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
+                                  &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift], &PV.tendencies[qr_shift],
+                                  &PV.tendencies[qt_shift], &PV.tendencies[s_shift]  )
 
 
         return
@@ -225,6 +236,36 @@ cdef class Microphysics_SB_Liquid:
             double[:] qr_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] nr_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] tmp
+
+
+
+            double[:] qr_vel_cc = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] nr_vel_cc = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] dummy =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            Py_ssize_t wqr_shift = DV.get_varshift(Gr, 'w_qr')
+            Py_ssize_t wnr_shift = DV.get_varshift(Gr, 'w_nr')
+            Py_ssize_t mp =1 # use MP schemes, can update this later to match namelist option
+
+
+        # call sedimentation velocity with zero array instead of w to get sedimentation velocities only
+        # don't need to output the sedimentation velocities. This is taken care of because they are diagnostic variables
+        sb_sedimentation_velocity_rain(&Gr.dims,self.compute_rain_shape_parameter,
+                                       &Ref.rho0_half[0],&PV.values[nr_shift], &PV.values[qr_shift], &dummy[0],
+                                       &nr_vel_cc[0], &qr_vel_cc[0],
+                                       &DV.values[wnr_shift], &DV.values[wqr_shift])
+
+        #compute sedimentation flux only of nr
+        compute_advective_fluxes_a(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &DV.values[wnr_shift], &PV.values[nr_shift], &dummy[0], 2, self.order, mp)
+        tmp = Pa.HorizontalMean(Gr, &dummy[0])
+        NS.write_profile('nr_sedimentation', tmp[gw:-gw], Pa)
+
+        #compute sedimentation flux only of qr
+        compute_advective_fluxes_a(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &DV.values[wqr_shift], &PV.values[qr_shift], &dummy[0], 2, self.order, mp)
+        tmp = Pa.HorizontalMean(Gr, &dummy[0])
+        NS.write_profile('qr_sedimentation', tmp[gw:-gw], Pa)
+
+
+
 
         sb_autoconversion_rain_wrapper(&Gr.dims,  self.compute_droplet_nu, &Ref.rho0_half[0], self.ccn,
                                        &DV.values[ql_shift], &PV.values[qr_shift], &nr_tendency[0], &qr_tendency[0])
