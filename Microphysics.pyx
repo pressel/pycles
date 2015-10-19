@@ -154,8 +154,8 @@ cdef class Microphysics_SB_Liquid:
 
 
         # add statistical output for the class
-        NS.add_profile('qr_sedimentation', Gr, Pa)
-        NS.add_profile('nr_sedimentation', Gr, Pa)
+        NS.add_profile('qr_sedimentation_flux', Gr, Pa)
+        NS.add_profile('nr_sedimentation_flux', Gr, Pa)
         NS.add_profile('qr_autoconversion', Gr, Pa)
         NS.add_profile('nr_autoconversion', Gr, Pa)
         NS.add_profile('nr_selfcollection', Gr, Pa)
@@ -257,12 +257,12 @@ cdef class Microphysics_SB_Liquid:
         #compute sedimentation flux only of nr
         compute_advective_fluxes_a(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &DV.values[wnr_shift], &PV.values[nr_shift], &dummy[0], 2, self.order, mp)
         tmp = Pa.HorizontalMean(Gr, &dummy[0])
-        NS.write_profile('nr_sedimentation', tmp[gw:-gw], Pa)
+        NS.write_profile('nr_sedimentation_flux', tmp[gw:-gw], Pa)
 
         #compute sedimentation flux only of qr
         compute_advective_fluxes_a(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &DV.values[wqr_shift], &PV.values[qr_shift], &dummy[0], 2, self.order, mp)
         tmp = Pa.HorizontalMean(Gr, &dummy[0])
-        NS.write_profile('qr_sedimentation', tmp[gw:-gw], Pa)
+        NS.write_profile('qr_sedimentation_flux', tmp[gw:-gw], Pa)
 
 
 
