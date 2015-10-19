@@ -158,10 +158,13 @@ cdef class Microphysics_SB_Liquid:
         NS.add_profile('nr_sedimentation_flux', Gr, Pa)
         NS.add_profile('qr_autoconversion', Gr, Pa)
         NS.add_profile('nr_autoconversion', Gr, Pa)
+        NS.add_profile('s_autoconversion', Gr, Pa)
         NS.add_profile('nr_selfcollection', Gr, Pa)
         NS.add_profile('qr_accretion', Gr, Pa)
+        NS.add_profile('s_accretion', Gr, Pa)
         NS.add_profile('nr_evaporation', Gr, Pa)
         NS.add_profile('qr_evaporation', Gr,Pa)
+        NS.add_profile('s_evaporation', Gr,Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
@@ -266,23 +269,43 @@ cdef class Microphysics_SB_Liquid:
 
 
 
+        #note we can re-use nr_tendency and qr_tendency because they are overwritten in each function
+        #must have a zero array to pass as entropy tendency and need to send a dummy variable for qt tendency
 
+        # Autoconversion tendencies of qr, nr, s
         sb_autoconversion_rain_wrapper(&Gr.dims,  self.compute_droplet_nu, &Ref.rho0_half[0], self.ccn,
                                        &DV.values[ql_shift], &PV.values[qr_shift], &nr_tendency[0], &qr_tendency[0])
         tmp = Pa.HorizontalMean(Gr, &nr_tendency[0])
         NS.write_profile('nr_autoconversion', tmp[gw:-gw], Pa)
         tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
         NS.write_profile('qr_autoconversion', tmp[gw:-gw], Pa)
+        cdef double[:] s_auto =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
+                                  &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift], &qr_tendency[0],
+                                  &dummy[0], &s_auto[0])
 
+        tmp = Pa.HorizontalMean(Gr, &s_auto[0])
+        NS.write_profile('s_autoconversion', tmp[gw:-gw], Pa)
+
+
+        # Accretion tendencies of qr, s
         sb_accretion_rain_wrapper(&Gr.dims, &Ref.rho0_half[0], &DV.values[ql_shift], &PV.values[qr_shift], &qr_tendency[0])
         tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
         NS.write_profile('qr_accretion', tmp[gw:-gw], Pa)
+        cdef double[:] s_accr =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
+                                  &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift], &qr_tendency[0],
+                                  &dummy[0], &s_accr[0])
+        tmp = Pa.HorizontalMean(Gr, &s_accr[0])
+        NS.write_profile('s_accretion', tmp[gw:-gw], Pa)
 
+        # Self-collection and breakup tendencies (lumped) of nr
         sb_selfcollection_breakup_rain_wrapper(&Gr.dims, self.compute_rain_shape_parameter, &Ref.rho0_half[0],
                                                &PV.values[nr_shift], &PV.values[qr_shift], &nr_tendency[0])
         tmp = Pa.HorizontalMean(Gr, &nr_tendency[0])
         NS.write_profile('nr_selfcollection', tmp[gw:-gw], Pa)
 
+        # Evaporation tendencies of qr, nr, s
         sb_evaporation_rain_wrapper(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp,
                                     self.compute_rain_shape_parameter, &Ref.rho0_half[0], &Ref.p0_half[0],
                                     &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift],
@@ -292,6 +315,13 @@ cdef class Microphysics_SB_Liquid:
         NS.write_profile('nr_evaporation', tmp[gw:-gw], Pa)
         tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
         NS.write_profile('qr_evaporation', tmp[gw:-gw], Pa)
+        cdef double[:] s_evp =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
+                                  &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift], &qr_tendency[0],
+                                  &dummy[0], &s_evp[0])
+        tmp = Pa.HorizontalMean(Gr, &s_evp[0])
+        NS.write_profile('s_evaporation', tmp[gw:-gw], Pa)
+
         return
 
 
