@@ -1,4 +1,5 @@
 .DS_Store
+*.pkl
 *.pyc
 *.nc
 *.so

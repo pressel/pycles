@@ -1,4 +1,5 @@
 cimport ParallelMPI
+cimport Restart
 
 cdef extern from "grid.h":
     struct DimStruct:
@@ -49,6 +50,7 @@ cdef class Grid:
 
     cpdef extract_local_ghosted(self, double [:] global_array, int dim)
 
+    cpdef restart(self, Restart.Restart Re)
 
 
 

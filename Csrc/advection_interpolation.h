@@ -182,7 +182,7 @@ double interp_weno11(double phim5, double phim4, double phim3, double phim2, dou
 
     const double beta0 = ( phim5 * (1152561.0*phim5 - 12950184.0*phim4 + 29442256.0*phim3 - 33918804.0*phim2 + 19834350.0*phim1 -4712740.0*phi)
                          + phim4 * (36480687.0*phim4 - 166461044.0*phim3 + 192596472.0*phim2 - 113206788.0*phim1 + 27060170.0*phi)
-                         + phim3 * (190757572.0*phim3 -  444003904.0*phim2 + 262901672.0*phim2 - 63394124.0*phi)
+                         + phim3 * (190757572.0*phim3 -  444003904.0*phim2 + 262901672.0*phim1 - 63394124.0*phi)
                          +phim2*(260445372.0*phim2 - 311771244.0*phim1 + 76206736.0*phi)
                          +phim1*(94851237.0*phim1-47460464.0*phi)
                          +6150211.0*phi*phi);
