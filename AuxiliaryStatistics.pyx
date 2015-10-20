@@ -209,7 +209,7 @@ class CumulusStatistics:
 
 class StableBLStatistics:
     def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-            NS.add_ts('boundary_layer_height',Gr,Pa)
+        NS.add_ts('boundary_layer_height',Gr,Pa)
 
 
     def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
