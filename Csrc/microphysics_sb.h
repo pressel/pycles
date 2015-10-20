@@ -258,7 +258,7 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
 void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                              double (*rain_mu)(double,double,double), double (*droplet_nu)(double,double),
                              double* restrict density, double* restrict p0,  double* restrict temperature,  double* restrict qt, double ccn,
-                             double* restrict ql, double* restrict nr, double* restrict qr, double dt, double* restrict nr_tendency, double* restrict qr_tendency){
+                             double* restrict ql, double* restrict nr, double* restrict qr, double dt,double* restrict nr_tendency_micro, double* restrict qr_tendency_micro, double* restrict nr_tendency, double* restrict qr_tendency){
 
     //Here we compute the source terms for nr and qr (number and mass of rain)
     //Temporal substepping is used to help ensure boundedness of moments
@@ -337,7 +337,8 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
 
 
                 }while(time_added < dt);
-
+                nr_tendency_micro[ijk] = (nr_tmp - nr[ijk] )/dt;
+                qr_tendency_micro[ijk] = (qr_tmp - qr[ijk])/dt;
                 nr_tendency[ijk] += (nr_tmp - nr[ijk] )/dt;
                 qr_tendency[ijk] += (qr_tmp - qr[ijk])/dt;
             }
@@ -378,7 +379,7 @@ void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                qt_tendency[ijk] = qr_tendency[ijk];
+                qt_tendency[ijk] += qr_tendency[ijk];
             }
         }
     }
