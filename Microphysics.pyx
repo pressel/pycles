@@ -66,7 +66,8 @@ cdef extern from "microphysics_sb.h":
     void sb_microphysics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                              double (*rain_mu)(double,double,double), double (*droplet_nu)(double,double),
                              double* density, double* p0, double* temperature,  double* qt, double ccn,
-                             double* ql, double* nr, double* qr, double dt, double* nr_tendency, double* qr_tendency) nogil
+                             double* ql, double* nr, double* qr, double dt, double* nr_tendency_micro, double* qr_tendency_micro,
+                             double* nr_tendency, double* qr_tendency) nogil
     void sb_thermodynamics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double),
                                    double (*L_fp)(double, double), double*  p0, double* temperature, double* qt,
                                    double*  ql,double* qr_tendency, double* qt_tendency, double * entropy_tendency) nogil
@@ -189,11 +190,13 @@ cdef class Microphysics_SB_Liquid:
             Py_ssize_t wnr_shift = DV.get_varshift(Gr, 'w_nr')
             double[:] qr_vel_cc = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] nr_vel_cc = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] qr_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] nr_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
         sb_microphysics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, self.compute_rain_shape_parameter,
                                 self.compute_droplet_nu, &Ref.rho0_half[0],  &Ref.p0_half[0], &DV.values[t_shift],
                                 &PV.values[qt_shift], self.ccn, &DV.values[ql_shift], &PV.values[nr_shift],
-                                &PV.values[qr_shift], dt, &PV.tendencies[nr_shift], &PV.tendencies[qr_shift] )
+                                &PV.values[qr_shift], dt, &nr_tend_micro[0], &qr_tend_micro[0], &PV.tendencies[nr_shift], &PV.tendencies[qr_shift] )
 
 
         sb_sedimentation_velocity_rain(&Gr.dims,self.compute_rain_shape_parameter,
@@ -212,7 +215,7 @@ cdef class Microphysics_SB_Liquid:
 
         cdef Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
         sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
-                                  &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift], &PV.tendencies[qr_shift],
+                                  &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift],  &qr_tend_micro[0],
                                   &PV.tendencies[qt_shift], &PV.tendencies[s_shift]  )
 
 
