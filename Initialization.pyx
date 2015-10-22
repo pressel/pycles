@@ -538,6 +538,24 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 def InitSmoke(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+    '''
+
+
+    Initialization for the smoke cloud case
+
+    Bretherton, C. S., and coauthors, 1999:
+    An intercomparison of radiatively- driven entrainment and turbulence in a smoke cloud,
+    as simulated by different numerical models. Quart. J. Roy. Meteor. Soc., 125, 391-423. Full text copy.
+
+
+    :param Gr:
+    :param PV:
+    :param RS:
+    :param Th:
+    :param NS:
+    :param Pa:
+    :return:
+    '''
 
 
     RS.Pg = 1000.0 * 100.0

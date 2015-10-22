@@ -496,6 +496,17 @@ def DYCOMS_RF01():
 
 def SMOKE():
 
+    '''
+    Namelist generator for the smoke cloud case:
+
+    Bretherton, C. S., and coauthors, 1999:
+    An intercomparison of radiatively- driven entrainment and turbulence in a smoke cloud,
+    as simulated by different numerical models. Quart. J. Roy. Meteor. Soc., 125, 391-423. Full text copy.
+
+    :return:
+    '''
+
+
     namelist = {}
 
     namelist['grid'] = {}

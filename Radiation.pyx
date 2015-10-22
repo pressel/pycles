@@ -179,6 +179,16 @@ cdef class RadiationDyCOMS_RF01:
 
 
 cdef class RadiationSmoke:
+    '''
+    Radiation for the smoke cloud case
+
+    Bretherton, C. S., and coauthors, 1999:
+    An intercomparison of radiatively- driven entrainment and turbulence in a smoke cloud,
+    as simulated by different numerical models. Quart. J. Roy. Meteor. Soc., 125, 391-423. Full text copy.
+
+    '''
+
+
     def __init__(self):
         self.f0 = 60.0
         self.kap = 0.02
