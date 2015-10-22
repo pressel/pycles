@@ -1,7 +1,7 @@
 import time
 import numpy as np
 cimport numpy as np
-from Initialization import InitializationFactory
+from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
 from AuxiliaryStatistics import AuxiliaryStatisticsFactory
@@ -63,6 +63,8 @@ class Simulation3d:
         self.PV.set_velocity_direction('v', 1, self.Pa)
         self.PV.add_variable('w', 'm/s', "asym", "velocity", self.Pa)
         self.PV.set_velocity_direction('w', 2, self.Pa)
+
+        AuxillaryVariables(namelist, self.PV, self.DV, self.Pa)
 
 
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
