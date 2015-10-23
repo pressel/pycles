@@ -24,6 +24,8 @@ def main():
         namelist = Gabls()
     elif case_name == 'DYCOMS_RF01':
         namelist = DYCOMS_RF01()
+    elif case_name == 'SMOKE':
+        namelist = SMOKE()
     elif case_name == 'Rico':
         namelist = Rico()
     else:
@@ -497,7 +499,90 @@ def DYCOMS_RF01():
     return namelist
 
 
+def SMOKE():
 
+    '''
+    Namelist generator for the smoke cloud case:
+    Bretherton, C. S., and coauthors, 1999:
+    An intercomparison of radiatively- driven entrainment and turbulence in a smoke cloud,
+    as simulated by different numerical models. Quart. J. Roy. Meteor. Soc., 125, 391-423. Full text copy.
+    :return:
+    '''
+
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 64
+    namelist['grid']['ny'] = 64
+    namelist['grid']['nz'] = 50
+    namelist['grid']['gw'] = 5
+    namelist['grid']['dx'] = 50.0
+    namelist['grid']['dy'] = 50.0
+    namelist['grid']['dz'] = 25.0
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 4.0 * 3600.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_Dry'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 7
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 7
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.002
+    namelist['damping']['Rayleigh']['z_d'] = 500.0
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'SMOKE'
+    namelist['meta']['casename'] = 'SMOKE'
+
+    return namelist
 
 def Rico():
 
@@ -568,8 +653,6 @@ def Rico():
     namelist['meta']['casename'] = 'Rico'
 
     return namelist
-
-
 
 
 def write_file(namelist):

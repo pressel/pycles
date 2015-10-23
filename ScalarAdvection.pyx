@@ -89,8 +89,7 @@ cdef class ScalarAdvection:
 
         for i in xrange(PV.nv):
             if PV.var_type[i] == 1:
-                flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + d* Gr.dims.npg
-
+                flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + d * Gr.dims.npg
                 tmp = Pa.HorizontalMean(Gr, &self.flux[flux_shift])
                 for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
                     tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])

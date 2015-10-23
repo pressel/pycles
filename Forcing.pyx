@@ -28,6 +28,8 @@ cdef class Forcing:
             self.scheme = ForcingGabls()
         elif casename == 'DYCOMS_RF01':
             self.scheme = ForcingDyCOMS_RF01()
+        elif casename == 'SMOKE':
+            self.scheme = ForcingNone()
         elif casename == 'Rico':
             self.scheme = ForcingRico()
         else:

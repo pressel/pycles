@@ -167,6 +167,8 @@ cdef class PrognosticVariables:
 
         return
 
+
+
     cdef void update_all_bcs(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
 
         cdef double* send_buffer
@@ -192,6 +194,7 @@ cdef class PrognosticVariables:
             #Loop over shifts (this should only be -1 or 1)
             for s in shift:
                 #Now loop over variables and store in send buffer
+
                 for i in xrange(self.nv):
                     buffer_var_shift = Gr.dims.nbuffer[d] * i
                     var_shift = i * Gr.dims.npg
@@ -203,6 +206,7 @@ cdef class PrognosticVariables:
                 ierr = mpi.MPI_Sendrecv(&send_buffer[0],self.nv*Gr.dims.nbuffer[d],mpi.MPI_DOUBLE,dest_rank,0,
                                             &recv_buffer[0],self.nv*Gr.dims.nbuffer[d],
                                             mpi.MPI_DOUBLE,source_rank,0,Pa.cart_comm_world,&status)
+
 
                 for i in xrange(self.nv):
                     buffer_var_shift = Gr.dims.nbuffer[d] * i

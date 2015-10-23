@@ -10,6 +10,7 @@ cimport ParallelMPI
 from NetCDFIO cimport NetCDFIO_Stats
 cimport Grid
 cimport PrognosticVariables
+cimport DiagnosticVariables
 from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
 cimport ReferenceState
 from libc.math cimport sqrt, fmin, cos, exp, fabs
@@ -30,6 +31,8 @@ def InitializationFactory(namelist):
             return InitGabls
         elif casename == 'DYCOMS_RF01':
             return InitDYCOMS_RF01
+        elif casename == 'SMOKE':
+            return InitSmoke
         elif casename == 'Rico':
             return InitRico
         else:
@@ -535,6 +538,100 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 
+def InitSmoke(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+    '''
+    Initialization for the smoke cloud case
+    Bretherton, C. S., and coauthors, 1999:
+    An intercomparison of radiatively- driven entrainment and turbulence in a smoke cloud,
+    as simulated by different numerical models. Quart. J. Roy. Meteor. Soc., 125, 391-423. Full text copy.
+    :param Gr:
+    :param PV:
+    :param RS:
+    :param Th:
+    :param NS:
+    :param Pa:
+    :return:
+    '''
+
+
+    RS.Pg = 1000.0 * 100.0
+    RS.qtg = 0.0
+    RS.u0 = 0.0
+    RS.v0 = 0.0
+    RS.Tg = 288.0
+
+    RS.initialize(Gr ,Th, NS, Pa)
+
+    #Get the variable number for each of the velocity components
+    np.random.seed(Pa.rank)
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr, 'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr, 'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr, 'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr, 's')
+        Py_ssize_t smoke_varshift = PV.get_varshift(Gr, 'smoke')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift, e_varshift
+        Py_ssize_t ijk
+        double [:] theta = np.empty((Gr.dims.nlg[2]), dtype=np.double, order='c')
+        double [:] smoke = np.empty((Gr.dims.nlg[2]), dtype=np.double, order='c')
+        double t
+
+        #Generate initial perturbations (here we are generating more than we need)
+        cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+        cdef double theta_pert_
+
+    for k in xrange(Gr.dims.nlg[2]):
+        if Gr.zl_half[k] <=  687.5:
+            theta[k] = 288.0
+            smoke[k] = 1.0
+        elif Gr.zl_half[k] <= 687.5 and Gr.zl_half[k] <= 712.5:
+            theta[k] = 288.0 + (Gr.zl_half[k] - 687.5) * 0.28
+            smoke[k] = 1.0 - 0.04 * (Gr.zl_half[k] - 687.5)
+        else:
+            theta[k] = 295.0 + (Gr.zl_half[k] - 712.5) * 1e-4
+            smoke[k] = 0.0
+
+    cdef double [:] p0 = RS.p0_half
+
+    #Now loop and set the initial condition
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = 0.0 - RS.u0
+                PV.values[v_varshift + ijk] = 0.0 - RS.v0
+                PV.values[w_varshift + ijk] = 0.0
+
+                #Now set the entropy prognostic variable including a potential temperature perturbation
+                if Gr.zl_half[k] < 700.0:
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                else:
+                    theta_pert_ = 0.0
+                t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
+
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+                PV.values[smoke_varshift + ijk] = smoke[k]
+
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    if Gr.zl_half[k] < 700.0:
+                        PV.values[e_varshift + ijk] = 0.1
+                    else:
+                        PV.values[e_varshift + ijk] = 0.0
+
+    return
+
+
 def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
@@ -543,7 +640,6 @@ def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.Tg = 299.8  #Temperature at ground
     pvg = Th.get_pv_star(RS.Tg)
     RS.qtg = eps_v * pvg/(RS.Pg - pvg)   #Total water mixing ratio at surface = qsat
-
 
     RS.initialize(Gr, Th, NS, Pa)
 
@@ -634,5 +730,14 @@ def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                         PV.values[e_varshift + ijk] = 0.1
 
 
+    return
+
+def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
+                       DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+
+    casename = nml['meta']['casename']
+    if casename == 'SMOKE':
+        PV.add_variable('smoke', 'm/s', "sym", "scalar", Pa)
+        return
     return
 

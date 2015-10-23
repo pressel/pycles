@@ -26,7 +26,7 @@ elif 'euler' in platform.node():
     libraries.append('mpi')
     extensions = []
     extra_compile_args=[]
-    extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
+    extra_compile_args+=['-std=c99', '-Ofast', '-march=native', '-Wno-unused',
                          '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds']
 else:
     print('Unknown system platform: ' + sys.platform  + 'or unknown system name: ' + platform.node())
