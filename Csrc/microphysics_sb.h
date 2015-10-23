@@ -335,6 +335,7 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                 qr_tendency_micro[ijk] = (fmax(qr_tmp,0.0) - qr[ijk])/dt;
                 nr_tendency[ijk] += (fmax(nr_tmp,0.0) - nr[ijk] )/dt;
                 qr_tendency[ijk] += (fmax(qr_tmp,0.0) - qr[ijk])/dt;
+
             }
         }
     }

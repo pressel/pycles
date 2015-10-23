@@ -603,7 +603,8 @@ cdef class SurfaceRico:
                     PV.tendencies[u_shift  + ijk] += self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift  + ijk] += self.v_flux[ij] * tendency_factor
                     PV.tendencies[s_shift  + ijk] += self.s_flux[ij] * tendency_factor
-                    PV.tendencies[qt_shift  + ijk] += self.qt_flux[ij] * tendency_factor
+                    PV.tendencies[qt_shift + ijk] += self.qt_flux[ij] * tendency_factor
+
         return
 
 
