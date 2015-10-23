@@ -221,7 +221,6 @@ cdef class TKE:
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
             Py_ssize_t bf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
             Py_ssize_t e_shift = PV.get_varshift(Gr,'e')
-
             double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
             double [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')

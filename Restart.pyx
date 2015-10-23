@@ -3,7 +3,8 @@ import os
 try:
     import cPickle as pickle
 except:
-    import pickle as pickle
+    import pickle as pickle # for Python 3 users
+
 cimport ParallelMPI
 
 cdef class Restart:
