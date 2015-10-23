@@ -62,8 +62,8 @@ cdef class ReferenceState:
         p_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
 
         # Perform the integration
-        p[Gr.dims.gw - 1:-Gr.dims.gw +1] = odeint(rhs, p0, z, hmax=0.5)[:, 0]
-        p_half[Gr.dims.gw:-Gr.dims.gw] = odeint(rhs, p0, z_half, hmax=0.5)[1:, 0]
+        p[Gr.dims.gw - 1:-Gr.dims.gw +1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
+        p_half[Gr.dims.gw:-Gr.dims.gw] = odeint(rhs, p0, z_half, hmax=1.0)[1:, 0]
 
         # Set boundary conditions
         p[:Gr.dims.gw - 1] = p[2 * Gr.dims.gw - 2:Gr.dims.gw - 1:-1]
