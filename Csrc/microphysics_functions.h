@@ -18,6 +18,13 @@ double thermal_conductivity(const double temp_){
     return val;
 };
 
+double pv_star_ice_c(const double temp_){
+    double t0 = 273.16;
+    double a3i = 22.587;
+    double a4i = -0.7;
+    double es0 = 611.21;
+    return es0 * exp(a3i * (temp_ - t0)/(temp_ - a4i));
+}
 
 double get_aut_rain_c(const double alpha_, const double ccn, struct hm_properties *liquid_prop){
     /* Berry-Reinhardt 74 rain autoconversion model*/
@@ -51,7 +58,8 @@ double get_aut_rain_c(const double alpha_, const double ccn, struct hm_propertie
 
 double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_, const double qt_, const double qi_, const double temp_, struct hm_properties *ice_prop){
     /* Harrington 1995 snow autoconversion model */
-    double pv_star = lookup(LT, temp_);
+    //double pv_star = lookup(LT, temp_);
+    double pv_star = pv_star_ice_c(temp_);
     double qv_star = qv_star_c(p0_, qt_, pv_star);
     //double satratio = qt_/qv_star;
     double satratio = (qt_-qi_)/qv_star;
@@ -98,7 +106,8 @@ double get_evp_rain_c(struct LookupStruct *LT, const double alpha_, const double
 double get_evp_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_,
                            const double qt_, double const temp_, struct hm_properties *_prop){
     double beta = 3.0;
-    double pv_star = lookup(LT, temp_);
+    //double pv_star = lookup(LT, temp_);
+    double pv_star = pv_star_ice_c(temp_);
     double qv_star = qv_star_c(p0_, qt_, pv_star);
     double satratio = qt_/qv_star;
 
@@ -211,14 +220,14 @@ double get_melt_snow_c(const double alpha_, const double temp_, struct hm_proper
     return snow_loss;
 };
 
-inline double get_lambda_c(const double alpha_, struct hm_properties *_prop, struct hm_parameters *_param){
+double get_lambda_c(const double alpha_, struct hm_properties *_prop, struct hm_parameters *_param){
     double wc = fmax(_prop->mf/alpha_, small);
     double val = pow((_param->a*_prop->n0*_param->gb1/wc), (1.0/(_param->b+1.0)));
 
     return val;
 };
 
-inline double get_dmean_c(const double alpha_, struct hm_properties *_prop, struct hm_parameters *_param){
+double get_dmean_c(const double alpha_, struct hm_properties *_prop, struct hm_parameters *_param){
     double wc = _prop->mf/alpha_ + small;
     double val = pow((wc*_param->gamstar/_param->a/_prop->n0), (1.0/(_param->b+1.0)));
 
@@ -245,7 +254,7 @@ double get_droplet_dmean_c(const double alpha_, const double liq_, const double 
     return df;
 };
 
-inline double get_velmean_c(const double dmean, struct hm_parameters *_param){
+double get_velmean_c(const double dmean, struct hm_parameters *_param){
     double val = _param->c*pow(dmean, _param->d);
 
     return val;
@@ -280,7 +289,7 @@ double get_n0_snow_c(const double alpha_, const double mf, struct hm_parameters 
     return n0_snow;
 };
 
-inline double get_n0_ice_c(const double alpha_, const double mf, const double n0_input, struct hm_parameters *_param){
+double get_n0_ice_c(const double alpha_, const double mf, const double n0_input, struct hm_parameters *_param){
     double iwc = fmax(mf/alpha_, small);
     double n0_ice = n0_input;
     double n0_max = iwc*_param->gamstar/_param->a/pow(_param->d_min, (_param->b+1.0));
@@ -348,7 +357,7 @@ double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm_parame
     return vel_snow;
 };
 
-inline double get_wet_bulb_c(const double T){
+double get_wet_bulb_c(const double T){
     return T;
 };
 

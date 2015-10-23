@@ -225,10 +225,10 @@ cdef class MicrophysicsArctic:
                                             &src_acc, &evp_rain, &evp_snow, &melt_snow)
 
                             dt_ = TS.dt - time_added
-                            rate1 = 1.05 * (aut_rain + src_acc.dyr +  evp_rain - melt_snow)/(-(rain_prop.mf+machine_eps)/dt_)
-                            rate2 = 1.05 * (aut_snow + src_acc.dys +  evp_snow + melt_snow)/(-(snow_prop.mf+machine_eps)/dt_)
-                            rate3 = 1.05 * (-aut_rain + src_acc.dyl)/(-(liquid_prop.mf+machine_eps)/dt_)
-                            rate4 = 1.05 * (-aut_snow + src_acc.dyi)/(-(ice_prop.mf+machine_eps)/dt_)
+                            rate1 = 1.05 * (aut_rain + src_acc.dyr +  evp_rain - melt_snow)/(-fmax(rain_prop.mf,machine_eps)/dt_)
+                            rate2 = 1.05 * (aut_snow + src_acc.dys +  evp_snow + melt_snow)/(-fmax(snow_prop.mf,machine_eps)/dt_)
+                            rate3 = 1.05 * (-aut_rain + src_acc.dyl)/(-fmax(liquid_prop.mf,machine_eps)/dt_)
+                            rate4 = 1.05 * (-aut_snow + src_acc.dyi)/(-fmax(ice_prop.mf,machine_eps)/dt_)
 
                             rate = fmax(fmax(fmax(rate1,rate2),rate3),rate4)
                             if rate > 1.0:
