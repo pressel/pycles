@@ -226,8 +226,8 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
                 double mu = rain_mu(density[k], qr[ijk], Dm);
                 double Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
 
-                nr_vel_cc[ijk] = -fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 1.0)) , 0.0);
-                qr_vel_cc[ijk] = -fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 4.0)) , 0.0);
+                nr_vel_cc[ijk] = -fmin(fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 1.0)) , 0.0),10.0);
+                qr_vel_cc[ijk] = -fmin(fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 4.0)) , 0.0),10.0);
 
             }
         }
