@@ -544,6 +544,7 @@ def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     pvg = Th.get_pv_star(RS.Tg)
     RS.qtg = eps_v * pvg/(RS.Pg - pvg)   #Total water mixing ratio at surface = qsat
 
+
     RS.initialize(Gr, Th, NS, Pa)
 
     #Get the variable number for each of the velocity components

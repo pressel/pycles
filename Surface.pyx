@@ -57,6 +57,8 @@ cdef class Surface:
             self.scheme = SurfaceGabls()
         elif casename == 'DYCOMS_RF01':
             self.scheme = SurfaceDYCOMS_RF01(namelist, LH)
+        elif casename == 'Rico':
+            self.scheme= SurfaceRico()
         else:
             self.scheme= SurfaceNone()
         return
@@ -539,6 +541,8 @@ cdef class SurfaceRico:
         self.ch = self.ch*(log(20.0/self.z0)/log(Gr.zl_half[Gr.dims.gw]/self.z0))**2
         self.cq = self.cq*(log(20.0/self.z0)/log(Gr.zl_half[Gr.dims.gw]/self.z0))**2
 
+        print(self.cm, self.ch, self.cq)
+
         cdef double pv_star = pv_c(Ref.Pg, Ref.qtg, Ref.qtg)
         cdef double  pd_star = Ref.Pg - pv_star
         self.s_star = (1.0-Ref.qtg) * sd_c(pd_star, Ref.Tg) + Ref.qtg * sv_c(pv_star,Ref.Tg)
@@ -599,6 +603,7 @@ cdef class SurfaceRico:
                     PV.tendencies[u_shift  + ijk] += self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift  + ijk] += self.v_flux[ij] * tendency_factor
                     PV.tendencies[s_shift  + ijk] += self.s_flux[ij] * tendency_factor
+                    PV.tendencies[qt_shift  + ijk] += self.qt_flux[ij] * tendency_factor
         return
 
 

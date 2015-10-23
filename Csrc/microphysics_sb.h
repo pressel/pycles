@@ -6,7 +6,7 @@
 #include "thermodynamic_functions.h"
 #include <math.h>
 
-#define max_iter  5 //maximum substep loops in source term computation
+#define max_iter  15 //maximum substep loops in source term computation
 #define rain_max_mass  5.2e-7 //kg; DALES: 5.0e-6 kg
 #define rain_min_mass  2.6e-10 //kg
 #define droplet_min_mass 4.20e-15 // kg
@@ -258,7 +258,7 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
 void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                              double (*rain_mu)(double,double,double), double (*droplet_nu)(double,double),
                              double* restrict density, double* restrict p0,  double* restrict temperature,  double* restrict qt, double ccn,
-                             double* restrict ql, double* restrict nr, double* restrict qr, double dt, double* restrict nr_tendency, double* restrict qr_tendency){
+                             double* restrict ql, double* restrict nr, double* restrict qr, double dt,double* restrict nr_tendency_micro, double* restrict qr_tendency_micro, double* restrict nr_tendency, double* restrict qr_tendency){
 
     //Here we compute the source terms for nr and qr (number and mass of rain)
     //Temporal substepping is used to help ensure boundedness of moments
@@ -287,17 +287,14 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                 double sat_ratio = microphysics_saturation_ratio(LT, lam_fp, L_fp, temperature[ijk], p0[k], qt[ijk], qv);
                 double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
                 double nl = ccn/density[k];
-                double ql_tmp = ql[ijk];
-                double nr_tmp = nr[ijk];
-                double qr_tmp = qr[ijk];
-
+                double ql_tmp = fmax(ql[ijk],0.0);
+                double nr_tmp = fmax(nr[ijk],0.0);
+                double qr_tmp = fmax(qr[ijk],0.0);
                 //holding nl fixed since it doesn't change between timesteps
 
                 double time_added = 0.0, dt_, rate;
                 ssize_t iter_count = 0;
                 do{
-                    nr_tendency_tmp = 0.0;
-                    qr_tendency_tmp = 0.0;
                     iter_count += 1;
                     //obtain some parameters
                     rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, rain_min_mass, rain_max_mass);
@@ -306,12 +303,8 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                     Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
                     //compute the source terms
                     sb_autoconversion_rain(droplet_nu, density[k], nl, ql_tmp, qr_tmp, &nr_tendency_au, &qr_tendency_au);
-//                    qr_tendency_ac = 0.0;
                     sb_accretion_rain(density[k], ql_tmp, qr_tmp, &qr_tendency_ac);
-//                    nr_tendency_scbk = 0.0;
                     sb_selfcollection_breakup_rain(density[k], nr_tmp, qr_tmp, mu, rain_mass, Dm, &nr_tendency_scbk);
-//                    nr_tendency_evp = 0.0;
-//                    qr_tendency_evp = 0.0;
                     sb_evaporation_rain( g_therm, sat_ratio, nr_tmp, qr_tmp, mu, rain_mass, Dp, Dm, &nr_tendency_evp, &qr_tendency_evp);
                     //find the maximum substep time
                     dt_ = dt - time_added;
@@ -321,9 +314,9 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                     ql_tendency_tmp = -qr_tendency_au - qr_tendency_ac;
 
                     //Factor of 1.05 is ad-hoc
-                    rate = 1.05 * ql_tendency_tmp * dt_ /(-ql_tmp - sb_eps);
-                    rate = fmax(1.05 * nr_tendency_tmp * dt_ /(-nr_tmp - sb_eps), rate);
-                    rate = fmax(1.05 * qr_tendency_tmp * dt_ /(-qr_tmp - sb_eps), rate);
+                    rate = 1.05 * ql_tendency_tmp * dt_ /(- fmax(ql_tmp,sb_eps));
+                    rate = fmax(1.05 * nr_tendency_tmp * dt_ /(-fmax(nr_tmp,sb_eps)), rate);
+                    rate = fmax(1.05 * qr_tendency_tmp * dt_ /(-fmax(qr_tmp,sb_eps)), rate);
                     if(rate > 1.0 && iter_count < max_iter){
                         //Limit the timestep, but don't allow it to become vanishingly small
                         //Don't adjust if we have reached the maximum iteration number
@@ -333,13 +326,15 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                     ql_tmp += ql_tendency_tmp * dt_;
                     nr_tmp += nr_tendency_tmp * dt_;
                     qr_tmp += qr_tendency_tmp * dt_;
+
                     time_added += dt_ ;
 
 
                 }while(time_added < dt);
-
-                nr_tendency[ijk] += (nr_tmp - nr[ijk] )/dt;
-                qr_tendency[ijk] += (qr_tmp - qr[ijk])/dt;
+                nr_tendency_micro[ijk] = (fmax(nr_tmp,0.0) - nr[ijk] )/dt;
+                qr_tendency_micro[ijk] = (fmax(qr_tmp,0.0) - qr[ijk])/dt;
+                nr_tendency[ijk] += (fmax(nr_tmp,0.0) - nr[ijk] )/dt;
+                qr_tendency[ijk] += (fmax(qr_tmp,0.0) - qr[ijk])/dt;
             }
         }
     }
@@ -378,7 +373,7 @@ void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                qt_tendency[ijk] = qr_tendency[ijk];
+                qt_tendency[ijk] += qr_tendency[ijk];
             }
         }
     }

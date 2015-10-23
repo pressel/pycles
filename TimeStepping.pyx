@@ -102,9 +102,9 @@ cdef class TimeStepping:
             if self.t + self.dt > self.t_max:
                 self.dt = self.t_max - self.t
 
-            if self.dt < 0.0:
-                Pa.root_print('dt = '+ str(self.dt)+ " killing simulation!")
-                Pa.kill()
+            # if self.dt < 0.0:
+            #     Pa.root_print('dt = '+ str(self.dt)+ " killing simulation!")
+            #     Pa.kill()
 
         return
 
@@ -263,10 +263,10 @@ cdef class TimeStepping:
 
         self.cfl_max += 1e-11
 
-        if self.cfl_max < 0.0:
-            Pa.root_print('CFL_MAX = '+ str(self.cfl_max)+ " killing simulation!")
-            Pa.kill()
-        return
+        # if self.cfl_max < 0.0:
+        #     Pa.root_print('CFL_MAX = '+ str(self.cfl_max)+ " killing simulation!")
+        #     Pa.kill()
+        # return
 
     cdef inline double cfl_time_step(self):
         return fmin(self.dt_max,self.cfl_limit/(self.cfl_max/self.dt))
