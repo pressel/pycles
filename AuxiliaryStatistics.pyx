@@ -29,6 +29,8 @@ def AuxiliaryStatisticsFactory(namelist, Grid.Grid Gr, NetCDFIO_Stats NS, Parall
         return CumulusStatistics(Gr, NS, Pa)
     elif auxiliary_statistics == 'StableBL':
         return StableBLStatistics(Gr, NS, Pa)
+    elif auxiliary_statistics == 'SMOKE':
+        return SmokeStatistics(Gr, NS, Pa)
     elif auxiliary_statistics == 'None':
         return AuxiliaryStatisticsNone()
     else:
@@ -257,9 +259,15 @@ class StableBLStatistics:
         return
 
 
+class SmokeStatistics:
+    def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+            NS.add_ts('boundary_layer_height',Gr,Pa)
 
 
+    def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
+        return
 
 
 
