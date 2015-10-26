@@ -220,9 +220,9 @@ cdef class RadiationSmoke:
             Py_ssize_t smoke_shift = PV.get_varshift(Gr, 'smoke')
             Py_ssize_t gw = Gr.dims.gw
             double [:, :] smoke_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[smoke_shift])
-            double[:, :] f_rad = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
-            double[:, :] f_heat = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
-            double[:] heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:, :] f_rad = np.zeros((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
+            double[:, :] f_heat = np.zeros((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
+            double[:] heating_rate = np.zeros((Gr.dims.npg, ), dtype=np.double, order='c')
             double q_0
 
             double zi
@@ -240,37 +240,10 @@ cdef class RadiationSmoke:
             for pi in xrange(self.z_pencil.n_local_pencils):
 
                 q_0 = 0.0
-                f_rad[pi, Gr.dims.n[2]] += self.f0 * exp(-q_0)
+                f_rad[pi, Gr.dims.n[2]] = self.f0 * exp(-q_0)
                 for k in xrange(Gr.dims.n[2] - 1, -1, -1):
                     q_0 += self.kap * rho_half[gw + k] * smoke_pencils[pi, k] * dz
                     f_rad[pi, k] = self.f0 * exp(-q_0)
-                # Now compute the third term on RHS of Stevens et al 2005
-                # (equation 3)
-                #f_rad[pi, 0] = 0.0
-                #for k in xrange(Gr.dims.n[2]):
-                #    if z[gw + k] >= zi:
-                #        cbrt_z = cbrt(z[gw + k] - zi)
-                #        f_rad[pi, k + 1] = rhoi * cpd * self.divergence * self.alpha_z * (pow(cbrt_z,4)  / 4.0
-                #                                                                     + zi * cbrt_z)
-                #    else:
-                #        f_rad[pi, k + 1] = 0.0
-
-                # Compute the second term on RHS of Stevens et al. 2005
-                # (equation 3)
-               # q_1 = 0.0
-               # f_rad[pi, 0] += self.f1 * exp(-q_1)
-               # for k in xrange(1, Gr.dims.n[2] + 1):
-               #     q_1 += self.kap * \
-               #         rho_half[gw + k - 1] * ql_pencils[pi, k - 1] * dz
-               #     f_rad[pi, k] += self.f1 * exp(-q_1)
-
-                # Compute the first term on RHS of Stevens et al. 2005
-                # (equation 3)
-               #q_0 = 0.0
-               # f_rad[pi, Gr.dims.n[2]] += self.f0 * exp(-q_0)
-               # for k in xrange(Gr.dims.n[2] - 1, -1, -1):
-               #     q_0 += self.kap * rho_half[gw + k] * ql_pencils[pi, k] * dz
-               #     f_rad[pi, k] += self.f0 * exp(-q_0)
 
                 for k in xrange(Gr.dims.n[2]):
                     f_heat[pi, k] = - \
@@ -290,8 +263,6 @@ cdef class RadiationSmoke:
                         ijk = ishift + jshift + k
                         PV.tendencies[
                             s_shift + ijk] +=  heating_rate[ijk] / DV.values[ijk + t_shift]
-
-        #print np.array(f_rad[1,:]), np.array(smoke_pencils[1,:])
 
         return
 
