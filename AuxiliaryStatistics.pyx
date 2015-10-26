@@ -264,30 +264,43 @@ class SmokeStatistics:
 
         #Here we compute the boundary layer height consistent with Bretherton et al. 1999
         cdef:
-            Py_ssize_t k,
-            Py_ssize_t level_1 = 0
-            Py_ssize_t level_2 = 0
+            Py_ssize_t i, j, k, ij, ij2d, ijk
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t level_1
+            Py_ssize_t level_2
             Py_ssize_t smoke_shift = PV.get_varshift(Gr, 'smoke')
-            double [:] smoke_mean = Pa.HorizontalMean(Gr, &PV.values[smoke_shift])
-            double smoke_1 = 0.0
-            double smoke_2 = 0.0
+            double [:] blh = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+            double blh_mean
+            double smoke_1
+            double smoke_2
             double z1
             double z2
             double dz
 
         with nogil:
-            for k in xrange(Gr.dims.ng[2]):
-                if smoke_mean[k] >= 0.5:
-                    level_1 =  k
-            level_2 = level_1 + 1
-            smoke_1 = smoke_mean[level_1]
-            smoke_2 = smoke_mean[level_2]
-            z1 = Gr.z[level_1]
-            z2 = Gr.z[level_2]
+            for i in xrange(Gr.dims.nlg[0]):
+                for j in xrange(Gr.dims.nlg[1]):
+                    ij = i * istride + j * jstride
+                    ij2d = i * Gr.dims.nlg[1] + j
+                    level_1 = 0
+                    level_2 = 0
+                    for k in xrange(Gr.dims.nlg[2]):
+                        ijk = ij + k
+                        if PV.values[smoke_shift + ijk] > 0.5:
+                            level_1 = k
+                    level_2 = level_1 + 1
+                    smoke_1 = PV.values[smoke_shift + ij + level_1]
+                    smoke_2 = PV.values[smoke_shift + ij + level_2]
+                    z1 = Gr.zl_half[level_1]
+                    z2 = Gr.zl_half[level_2]
+                    dz = (0.5 - smoke_1)/(smoke_2 - smoke_1)*(z2 - z1)
 
-            dz = (0.5 - smoke_1)/(smoke_2 - smoke_1)*(z2 - z1)
+                    blh[ij2d] = z1 + dz
 
-        NS.write_ts('boundary_layer_height', z1 + dz, Pa)
+        blh_mean = Pa.HorizontalMeanSurface(Gr, &blh[0])
+
+        NS.write_ts('boundary_layer_height', blh_mean, Pa)
 
         return
 
