@@ -39,7 +39,6 @@ def AuxiliaryStatisticsFactory(namelist, Grid.Grid Gr, NetCDFIO_Stats NS, Parall
         return AuxiliaryStatisticsNone()
 
 
-
 class AuxiliaryStatisticsNone:
     def __init__(self):
         return
@@ -173,15 +172,11 @@ class CumulusStatistics:
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
         NS.write_profile('thetali2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-
-
-
         #--theta_s
         cdef:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
-
 
         with nogil:
             count = 0
@@ -204,9 +199,6 @@ class CumulusStatistics:
         NS.write_profile('thetas2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
-
-
-
 
 
 class StableBLStatistics:
