@@ -222,7 +222,7 @@ cdef class RadiationSmoke:
             double [:, :] smoke_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[smoke_shift])
             double[:, :] f_rad = np.zeros((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
             double[:, :] f_heat = np.zeros((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
-            double[:] heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] heating_rate = np.zeros((Gr.dims.npg, ), dtype=np.double, order='c')
             double q_0
 
             double zi
@@ -263,11 +263,6 @@ cdef class RadiationSmoke:
                         ijk = ishift + jshift + k
                         PV.tendencies[
                             s_shift + ijk] +=  heating_rate[ijk] / DV.values[ijk + t_shift]
-
-        print np.min(np.array(f_heat[:,:])), np.amax(np.array(f_heat[:,:]))
-
-        #import sys;
-        #sys.exit()
 
         return
 
