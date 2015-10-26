@@ -527,7 +527,8 @@ def Mpace():
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'None_SA'
-    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['n0_ice'] = 1.0e7
 
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'Smagorinsky'
@@ -601,7 +602,8 @@ def Sheba():
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'None_SA'
-    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['n0_ice'] = 1.0e7
 
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'Smagorinsky'
@@ -675,7 +677,8 @@ def Isdac():
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic'
-    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['n0_ice'] = 1.0e7
 
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'Smagorinsky'

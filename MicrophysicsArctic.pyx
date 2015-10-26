@@ -59,8 +59,10 @@ cdef class MicrophysicsArctic:
 
         try:
             self.n0_ice = namelist['microphysics']['n0_ice']
+            print('set n0_ice to be ', self.n0_ice)
         except:
             self.n0_ice = 1.0e7
+            print('default n0_ice value 1.0e7')
 
         # self.L_fp = LH.L_fp
         # self.Lambda_fp = LH.Lambda_fp
@@ -91,6 +93,9 @@ cdef class MicrophysicsArctic:
         self.rain_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         self.snow_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         self.ice_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+        self.ice_lambda = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+        self.snow_lambda = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+        self.n0_snow = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
 
         self.precip_rate = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         self.evap_rate = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
@@ -106,6 +111,10 @@ cdef class MicrophysicsArctic:
         # NS.add_profile('n_snow_mean2', Gr, Pa)
         NS.add_profile('n_ice_mean', Gr, Pa)
         # NS.add_profile('n_ice_mean2', Gr, Pa)
+        NS.add_profile('snow_lambda', Gr, Pa)
+        NS.add_profile('ice_lambda', Gr, Pa)
+        NS.add_profile('n0_snow', Gr, Pa)
+
 
         NS.add_profile('rain_auto_mass', Gr, Pa)
         NS.add_profile('snow_auto_mass', Gr, Pa)
@@ -440,6 +449,9 @@ cdef class MicrophysicsArctic:
             double [:] rain_number = self.rain_number_density
             double [:] snow_number = self.snow_number_density
             double [:] ice_number = self.ice_number_density
+            double [:] snow_lambda = self.snow_lambda
+            double [:] ice_lambda = self.ice_lambda
+            double [:] n0_snow = self.n0_snow
 
         with nogil:
             for i in xrange(imin,imax):
@@ -451,6 +463,8 @@ cdef class MicrophysicsArctic:
                         snow_prop.n0 = get_n0_snow_c(Ref.alpha0_half[k], PV.values[qsnow_shift+ijk], &snow_param)
                         snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
                         snow_number[ijk] = snow_prop.n0/snow_prop.lam
+                        snow_lambda[ijk] = snow_prop.lam
+                        n0_snow[ijk] = snow_prop.n0
 
                         rain_prop.n0 = get_n0_rain_c(Ref.alpha0_half[k], PV.values[qrain_shift+ijk], &rain_param)
                         rain_prop.lam = get_lambda_c(Ref.alpha0_half[k], &rain_prop, &rain_param)
@@ -459,7 +473,7 @@ cdef class MicrophysicsArctic:
                         ice_prop.n0 = get_n0_ice_c(Ref.alpha0_half[k], DV.values[qi_shift+ijk], self.n0_ice, &ice_param)
                         ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
                         ice_number[ijk] = ice_prop.n0/ice_prop.lam
-
+                        ice_lambda[ijk] = ice_prop.lam
 
 
 
@@ -504,6 +518,15 @@ cdef class MicrophysicsArctic:
 
         tmp = Pa.HorizontalMean(Gr, &self.snow_number_density[0])
         NS.write_profile('n_snow_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.snow_lambda[0])
+        NS.write_profile('snow_lambda', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.ice_lambda[0])
+        NS.write_profile('ice_lambda', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.n0_snow[0])
+        NS.write_profile('n0_snow', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMean(Gr, &self.qrain_flux[0])
         NS.write_profile('rain_sedimentation_flux', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
