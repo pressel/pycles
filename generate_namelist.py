@@ -567,7 +567,7 @@ def SMOKE():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['auxiliary'] = 'SMOKE'
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}

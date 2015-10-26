@@ -146,7 +146,7 @@ class CumulusStatistics:
         NS.write_profile('theta_rho2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
         NS.write_profile('theta_rho_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], DV.values[shift], &coremask[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
         NS.write_profile('theta_rho2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
 
@@ -264,22 +264,30 @@ class SmokeStatistics:
 
         #Here we compute the boundary layer height consistent with Bretherton et al. 1999
         cdef:
-            Py_ssize_t k, level_1 = 0, level_2 = 0
+            Py_ssize_t k,
+            Py_ssize_t level_1 = 0
+            Py_ssize_t level_2 = 0
             Py_ssize_t smoke_shift = PV.get_varshift(Gr, 'smoke')
             double [:] smoke_mean = Pa.HorizontalMean(Gr, &PV.values[smoke_shift])
-            double smoke_1 = 0.0, smoke_2 = 0.0
+            double smoke_1 = 0.0
+            double smoke_2 = 0.0
+            double z1
+            double z2
+            double dz
 
         with nogil:
             for k in xrange(Gr.dims.ng[2]):
                 if smoke_mean[k] >= 0.5:
                     level_1 =  k
-            smoke_1 = smoke_mean[k]
-            smoke_2 = smoke_mean[k+1]
-            level_1 -= Gr.dims.gw
-            level_2 += 1
+            level_2 = level_1 + 1
+            smoke_1 = smoke_mean[level_1]
+            smoke_2 = smoke_mean[level_2]
+            z1 = Gr.z[level_1]
+            z2 = Gr.z[level_2]
 
+            dz = (0.5 - smoke_1)/(smoke_2 - smoke_1)*(z2 - z1)
 
-
+        NS.write_ts('boundary_layer_height', z1 + dz, Pa)
 
         return
 
