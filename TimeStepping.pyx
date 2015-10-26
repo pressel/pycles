@@ -240,9 +240,6 @@ cdef class TimeStepping:
             double w
             long isedv
 
-
-
-
         with nogil:
             for i in xrange(imin,imax):
                 ishift = i * istride
