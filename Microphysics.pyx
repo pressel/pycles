@@ -171,14 +171,7 @@ cdef class Microphysics_SB_Liquid:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         cdef:
-            Py_ssize_t i, j, k, ijk
-            Py_ssize_t gw = Gr.dims.gw
-            Py_ssize_t imax = Gr.dims.nlg[0]
-            Py_ssize_t jmax = Gr.dims.nlg[1]
-            Py_ssize_t kmax = Gr.dims.nlg[2]
-            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            Py_ssize_t jstride = Gr.dims.nlg[2]
-            Py_ssize_t ishift, jshift
+
 
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')

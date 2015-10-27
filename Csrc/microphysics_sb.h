@@ -12,7 +12,7 @@
 #define droplet_min_mass 4.20e-15 // kg
 #define droplet_max_mass  2.6e-10 //1.0e-11  // kg
 #define density_sb  1.225 // kg/m^3; a reference density used in Seifert & Beheng 2006, DALES
-#define xstar  rain_min_mass
+#define xstar  2.6e-10
 #define kcc  10.58e9 // Constant in cloud-cloud kernel, m^3 kg^{-2} s^{-1}: Using Value in DALES; also, 9.44e9 (SB01, SS08), 4.44e9 (SB06)
 #define kcr  5.25   // Constant in cloud-rain kernel, m^3 kg^{-1} s^{-1}: Using Value in DALES and SB06;  kcr = kr = 5.78 (SB01, SS08)
 #define krr  7.12   // Constant in rain-rain kernel,  m^3 kg^{-1} s^{-1}: Using Value in DALES and SB06; krr = kr = 5.78 (SB01, SS08); krr = 4.33 (S08)
@@ -30,7 +30,7 @@
 #define kin_visc_air  1.4086e-5 //m^2/s kinematic viscosity of air
 #define a_nu_sq sqrt(a_rain_sed/kin_visc_air)
 
-#define sb_eps  1.0e-13 //small value
+#define sb_eps  1.0e-10 //small value
 //Unless specified otherwise, Diameter = Dm not Dp
 
 //Note: All sb_shape_parameter_X functions must have same signature
@@ -205,7 +205,6 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
-    //must compute at ghost points
     const ssize_t imin = dims->gw;
     const ssize_t jmin = dims->gw;
     const ssize_t kmin = dims->gw;
@@ -218,7 +217,7 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin-1; k<kmax; k++){
+            for(ssize_t k=kmin-1; k<kmax+1; k++){
                 const ssize_t ijk = ishift + jshift + k;
                 double density_factor = sqrt(density_sb/density[k]);
                 double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
@@ -233,8 +232,6 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
         }
     }
 
-//NOTE: mean sedimentation velocities are fine (i.e. they are what we expect) because <w> = 0, however since w and sedimentation velocities are (generally)
-// correlated, higher moments are not correct
 
      for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i * istride;
@@ -243,8 +240,8 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
-                nr_velocity[ijk] = interp_2(nr_vel_cc[ijk], nr_vel_cc[ijk-1]) + w[ijk];
-                qr_velocity[ijk] = interp_2(qr_vel_cc[ijk], qr_vel_cc[ijk-1]) + w[ijk];
+                nr_velocity[ijk] = interp_2(nr_vel_cc[ijk], nr_vel_cc[ijk+1]) + w[ijk];
+                qr_velocity[ijk] = interp_2(qr_vel_cc[ijk], qr_vel_cc[ijk+1]) + w[ijk];
 
             }
         }
@@ -258,7 +255,8 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
 void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                              double (*rain_mu)(double,double,double), double (*droplet_nu)(double,double),
                              double* restrict density, double* restrict p0,  double* restrict temperature,  double* restrict qt, double ccn,
-                             double* restrict ql, double* restrict nr, double* restrict qr, double dt,double* restrict nr_tendency_micro, double* restrict qr_tendency_micro, double* restrict nr_tendency, double* restrict qr_tendency){
+                             double* restrict ql, double* restrict nr, double* restrict qr, double dt,
+                             double* restrict nr_tendency_micro, double* restrict qr_tendency_micro, double* restrict nr_tendency, double* restrict qr_tendency){
 
     //Here we compute the source terms for nr and qr (number and mass of rain)
     //Temporal substepping is used to help ensure boundedness of moments
@@ -282,8 +280,10 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
+                qr[ijk] = fmax(qr[ijk],0.0);
+                nr[ijk] = fmax(nr[ijk],0.0);
 
-                double qv = qt[ijk] - ql[ijk];
+                double qv = qt[ijk] - fmax(ql[ijk],0.0);
                 double sat_ratio = microphysics_saturation_ratio(LT, lam_fp, L_fp, temperature[ijk], p0[k], qt[ijk], qv);
                 double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
                 double nl = ccn/density[k];
@@ -374,7 +374,7 @@ void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                qt_tendency[ijk] += qr_tendency[ijk];
+                qt_tendency[ijk] += -qr_tendency[ijk];
             }
         }
     }
@@ -404,7 +404,7 @@ void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct
                 const double S_P = sd_T - sv_star_T + L_fp_T/temperature[ijk];
                 const double S_E = sv_star_Tw - L_fp_Tw/Twet - sd_T;
                 const double S_D = -Rv * log(pv/pv_star_T) + cpv * log(temperature[ijk]/Twet);
-                entropy_tendency[ijk] += S_P * 0.5 * (qr_tendency[ijk] + fabs(qr_tendency[ijk])) + (S_E + S_D) * 0.5 *(qr_tendency[ijk] - fabs(qr_tendency[ijk])) ;
+                entropy_tendency[ijk] += S_P * 0.5 * (qr_tendency[ijk] + fabs(qr_tendency[ijk])) - (S_E + S_D) * 0.5 *(qr_tendency[ijk] - fabs(qr_tendency[ijk])) ;
 
             }
         }

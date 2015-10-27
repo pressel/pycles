@@ -5,7 +5,7 @@
 #define KT  2.5e-2 // J/m/s/K
 #define Dv 3.0e-5 // m^2/s
 #define density_liquid  1000.0 // density of liquid water, kg/m^3
-#define micro_eps  1.0e-13
+#define micro_eps  1.0e-10
 
 // Here, only functions that can be used commonly by any microphysical scheme
 // convention: begin function name with "microphysics"
@@ -16,7 +16,7 @@ double microphysics_mean_mass(double n, double q, double min_mass, double max_ma
     // q = specific mass of species x kg/kg
     // min_mass, max_mass = limits of allowable masses, kg
     // return: mass = mean particle mass in kg
-    double mass = fmin(fmax(q/(n + micro_eps),min_mass),max_mass); // MAX/MIN: when l_=0, x_=xmin
+    double mass = fmin(fmax(q/fmax(n, micro_eps),min_mass),max_mass); // MAX/MIN: when l_=0, x_=xmin
     return mass;
 }
 
