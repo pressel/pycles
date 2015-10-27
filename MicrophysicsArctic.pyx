@@ -115,6 +115,7 @@ cdef class MicrophysicsArctic:
         NS.add_profile('snow_lambda', Gr, Pa)
         NS.add_profile('ice_lambda', Gr, Pa)
         NS.add_profile('n0_snow', Gr, Pa)
+        NS.add_profile('n0_ice', Gr, Pa)
 
 
         NS.add_profile('rain_auto_mass', Gr, Pa)
@@ -461,20 +462,22 @@ cdef class MicrophysicsArctic:
                 jshift = j * jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
+
+                    snow_prop.mf = PV.values[qsnow_shift + ijk]
                     snow_prop.n0 = get_n0_snow_c(Ref.alpha0_half[k], PV.values[qsnow_shift+ijk], &snow_param)
-                    #snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
-                    snow_prop.lam = get_lambda(Ref.alpha0_half[k], snow_prop, snow_param)
+                    snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
                     snow_number[ijk] = snow_prop.n0/snow_prop.lam
                     snow_lambda[ijk] = snow_prop.lam
                     n0_snow[ijk] = snow_prop.n0
 
+                    rain_prop.mf = PV.values[qrain_shift + ijk]
                     rain_prop.n0 = get_n0_rain_c(Ref.alpha0_half[k], PV.values[qrain_shift+ijk], &rain_param)
                     rain_prop.lam = get_lambda_c(Ref.alpha0_half[k], &rain_prop, &rain_param)
                     rain_number[ijk] = rain_prop.n0/rain_prop.lam
 
+                    ice_prop.mf = DV.values[qi_shift + ijk]
                     ice_prop.n0 = get_n0_ice_c(Ref.alpha0_half[k], DV.values[qi_shift+ijk], self.n0_ice_input, &ice_param)
-                    #ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
-                    ice_prop.lam = get_lambda(Ref.alpha0_half[k], ice_prop, ice_param)
+                    ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
                     ice_number[ijk] = ice_prop.n0/ice_prop.lam
                     ice_lambda[ijk] = ice_prop.lam
                     n0_ice[ijk] = ice_prop.n0
@@ -531,6 +534,9 @@ cdef class MicrophysicsArctic:
 
         tmp = Pa.HorizontalMean(Gr, &self.n0_snow[0])
         NS.write_profile('n0_snow', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.n0_ice[0])
+        NS.write_profile('n0_ice', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMean(Gr, &self.qrain_flux[0])
         NS.write_profile('rain_sedimentation_flux', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -688,9 +694,3 @@ cdef get_s_source_evap(Grid.DimStruct *dims, Th, double *p0_half, double *t, dou
                 s_tendency[ijk] += entropy_src_evaporation_c(p0_half[k], t[ijk], qt[ijk], qv[ijk], L, evap_rate[ijk])
 
     return
-
-cdef get_lambda(double alpha, hm_properties _prop, hm_parameters _param):
-    cdef wc, val
-    wc = fmax(_prop.mf/alpha, small)
-    val = (_param.a*_prop.n0*_param.gb1/wc)**(1.0/(_param.b + 1.0))
-    return val

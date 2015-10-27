@@ -94,7 +94,7 @@ double get_evp_rain_c(struct LookupStruct *LT, const double alpha_, const double
 
     if( satratio < 1.0 && _prop->mf > 1.0e-15){
         re = _prop->diam*_prop->vel/visc_air;
-        vent = 0.78 + 0.27*(pow(re, 0.5));
+        vent = 0.78 + 0.27*sqrt(re);
         //gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
         gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temp_*temp_)) );
         val = 4.0*pi/beta*(satratio - 1.0)*vent*gtherm*_prop->n0/_prop->lam/_prop->lam*alpha_;
@@ -114,7 +114,7 @@ double get_evp_snow_c(struct LookupStruct *LT, const double alpha_, const double
     double vapor_diff = vapor_diffusivity(temp_, p0_);
     double therm_cond = thermal_conductivity(temp_);
     double re = _prop->diam*_prop->vel/visc_air;
-    double vent = 0.65 + 0.39*(pow(re, 0.5));
+    double vent = 0.65 + 0.39*sqrt(re);
     //double gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
     double gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temp_*temp_)) );
     double val = 0.0;
