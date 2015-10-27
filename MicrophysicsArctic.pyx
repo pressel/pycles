@@ -58,10 +58,10 @@ cdef class MicrophysicsArctic:
             self.ccn = 100.0e6
 
         try:
-            self.n0_ice = namelist['microphysics']['n0_ice']
-            print('set n0_ice to be ', self.n0_ice)
+            self.n0_ice_input = namelist['microphysics']['n0_ice']
+            print('set n0_ice to be ', self.n0_ice_input)
         except:
-            self.n0_ice = 1.0e7
+            self.n0_ice_input = 1.0e7
             print('default n0_ice value 1.0e7')
 
         # self.L_fp = LH.L_fp
@@ -96,6 +96,7 @@ cdef class MicrophysicsArctic:
         self.ice_lambda = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         self.snow_lambda = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         self.n0_snow = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+        self.n0_ice = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
 
         self.precip_rate = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         self.evap_rate = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
@@ -166,7 +167,6 @@ cdef class MicrophysicsArctic:
             Py_ssize_t i,j,k,ishift,jshift,ijk, pi
             Py_ssize_t allshift = Gr.dims.npg
 
-            Py_ssize_t alpha_shift = DV.get_varshift(Gr, 'alpha')
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
@@ -229,7 +229,7 @@ cdef class MicrophysicsArctic:
                                 break
 
                             micro_substep_c(&self.CC.LT.LookupStructC, Ref.alpha0_half[k], Ref.p0_half[k], qt_micro, DV.values[qi_shift + ijk], DV.values[t_shift + ijk],
-                                            self.ccn, self.n0_ice, &rain_param, &snow_param, &liquid_param, &ice_param,
+                                            self.ccn, self.n0_ice_input, &rain_param, &snow_param, &liquid_param, &ice_param,
                                             &rain_prop, &snow_prop, &liquid_prop, &ice_prop, &aut_rain, &aut_snow,
                                             &src_acc, &evp_rain, &evp_snow, &melt_snow)
 
@@ -452,28 +452,32 @@ cdef class MicrophysicsArctic:
             double [:] snow_lambda = self.snow_lambda
             double [:] ice_lambda = self.ice_lambda
             double [:] n0_snow = self.n0_snow
+            double [:] n0_ice = self.n0_ice
 
-        with nogil:
-            for i in xrange(imin,imax):
-                ishift = i * istride
-                for j in xrange(jmin,jmax):
-                    jshift = j * jstride
-                    for k in xrange(kmin,kmax):
-                        ijk = ishift + jshift + k
-                        snow_prop.n0 = get_n0_snow_c(Ref.alpha0_half[k], PV.values[qsnow_shift+ijk], &snow_param)
-                        snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
-                        snow_number[ijk] = snow_prop.n0/snow_prop.lam
-                        snow_lambda[ijk] = snow_prop.lam
-                        n0_snow[ijk] = snow_prop.n0
+        #with nogil:
+        for i in xrange(imin,imax):
+            ishift = i * istride
+            for j in xrange(jmin,jmax):
+                jshift = j * jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    snow_prop.n0 = get_n0_snow_c(Ref.alpha0_half[k], PV.values[qsnow_shift+ijk], &snow_param)
+                    #snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
+                    snow_prop.lam = get_lambda(Ref.alpha0_half[k], snow_prop, snow_param)
+                    snow_number[ijk] = snow_prop.n0/snow_prop.lam
+                    snow_lambda[ijk] = snow_prop.lam
+                    n0_snow[ijk] = snow_prop.n0
 
-                        rain_prop.n0 = get_n0_rain_c(Ref.alpha0_half[k], PV.values[qrain_shift+ijk], &rain_param)
-                        rain_prop.lam = get_lambda_c(Ref.alpha0_half[k], &rain_prop, &rain_param)
-                        rain_number[ijk] = rain_prop.n0/rain_prop.lam
+                    rain_prop.n0 = get_n0_rain_c(Ref.alpha0_half[k], PV.values[qrain_shift+ijk], &rain_param)
+                    rain_prop.lam = get_lambda_c(Ref.alpha0_half[k], &rain_prop, &rain_param)
+                    rain_number[ijk] = rain_prop.n0/rain_prop.lam
 
-                        ice_prop.n0 = get_n0_ice_c(Ref.alpha0_half[k], DV.values[qi_shift+ijk], self.n0_ice, &ice_param)
-                        ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
-                        ice_number[ijk] = ice_prop.n0/ice_prop.lam
-                        ice_lambda[ijk] = ice_prop.lam
+                    ice_prop.n0 = get_n0_ice_c(Ref.alpha0_half[k], DV.values[qi_shift+ijk], self.n0_ice_input, &ice_param)
+                    #ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
+                    ice_prop.lam = get_lambda(Ref.alpha0_half[k], ice_prop, ice_param)
+                    ice_number[ijk] = ice_prop.n0/ice_prop.lam
+                    ice_lambda[ijk] = ice_prop.lam
+                    n0_ice[ijk] = ice_prop.n0
 
 
 
@@ -684,3 +688,9 @@ cdef get_s_source_evap(Grid.DimStruct *dims, Th, double *p0_half, double *t, dou
                 s_tendency[ijk] += entropy_src_evaporation_c(p0_half[k], t[ijk], qt[ijk], qv[ijk], L, evap_rate[ijk])
 
     return
+
+cdef get_lambda(double alpha, hm_properties _prop, hm_parameters _param):
+    cdef wc, val
+    wc = fmax(_prop.mf/alpha, small)
+    val = (_param.a*_prop.n0*_param.gb1/wc)**(1.0/(_param.b + 1.0))
+    return val

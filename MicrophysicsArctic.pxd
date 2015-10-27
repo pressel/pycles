@@ -87,7 +87,7 @@ cdef class MicrophysicsArctic:
 
     cdef:
         double ccn
-        double n0_ice
+        double n0_ice_input
 
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
@@ -119,6 +119,8 @@ cdef class MicrophysicsArctic:
         double [:] snow_lambda
         double [:] ice_lambda
         double [:] n0_snow
+        double [:] n0_ice
+
         double [:] precip_rate
         double [:] evap_rate
 
