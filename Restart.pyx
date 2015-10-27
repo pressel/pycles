@@ -63,7 +63,7 @@ cdef class Restart:
 
 
     cpdef write(self, ParallelMPI.ParallelMPI Pa):
-
+        self.restart_data['last_restart_time'] = self.last_restart_time
         with open(self.restart_path + '/' + str(Pa.rank) + '.pkl', 'wb') as f:
             pickle.dump(self.restart_data,f,protocol=2)
 
