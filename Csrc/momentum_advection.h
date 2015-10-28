@@ -385,7 +385,6 @@ void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
-
         // Dynamically allocate flux array
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
@@ -504,8 +503,13 @@ void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
         return;
     }
 
-void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict flux, ssize_t d_advected, ssize_t d_advecting){
+void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+    double* restrict alpha0, double* restrict alpha0_half,
+    double* restrict vel_advected, double* restrict vel_advecting,
+    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+        // Dynamically allocate flux array
+        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -599,11 +603,19 @@ void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                 }
             }
         }
+        momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
+                                tendency, d_advected, d_advecting);
+        free(flux);
         return;
     }
 
-void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict flux, ssize_t d_advected, ssize_t d_advecting){
+void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+    double* restrict alpha0, double* restrict alpha0_half,
+    double* restrict vel_advected, double* restrict vel_advecting,
+    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+        // Dynamically allocate flux array
+        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -725,11 +737,19 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                 }
             }
         }
+        momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
+                                tendency, d_advected, d_advecting);
+        free(flux);
         return;
     }
 
-void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict flux, ssize_t d_advected, ssize_t d_advecting){
+void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+    double* restrict alpha0, double* restrict alpha0_half,
+    double* restrict vel_advected, double* restrict vel_advecting,
+    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+        // Dynamically allocate flux array
+        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -871,12 +891,20 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                 }
             }
         }
+        momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
+                                tendency, d_advected, d_advecting);
+        free(flux);
         return;
     }
 
 
-void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict flux, ssize_t d_advected, ssize_t d_advecting){
+void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+    double* restrict alpha0, double* restrict alpha0_half,
+    double* restrict vel_advected, double* restrict vel_advecting,
+    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+        // Dynamically allocate flux array
+        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -1045,11 +1073,19 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                 }
             }
         }
+        momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
+                                tendency, d_advected, d_advecting);
+        free(flux);
         return;
     }
 
-void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict flux, ssize_t d_advected, ssize_t d_advecting){
+void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+    double* restrict alpha0, double* restrict alpha0_half,
+    double* restrict vel_advected, double* restrict vel_advecting,
+    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+        // Dynamically allocate flux array
+        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -1235,6 +1271,9 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                 }
             }
         }
+        momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
+                                tendency, d_advected, d_advecting);
+        free(flux);
         return;
     }
 
@@ -1905,38 +1944,38 @@ void compute_advective_fluxes_m(struct DimStruct *dims, double* restrict rho0, d
             second_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
-//        case 3:
-//            weno_third_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
-//                flux, d_advected, d_advecting);
-//            break;
+        case 3:
+            weno_third_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
         case 4:
             fourth_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
-//        case 5:
-//            weno_fifth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
-//                flux, d_advected, d_advecting);
-//            break;
+        case 5:
+            weno_fifth_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
         case 6:
            sixth_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
-//        case 7:
-//            weno_seventh_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
-//                flux, d_advected, d_advecting);
-//            break;
+        case 7:
+            weno_seventh_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
         case 8:
             eighth_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
-//        case 9:
-//            weno_ninth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
-//                flux, d_advected, d_advecting);
-//            break;
-//        case 11:
-//            weno_eleventh_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
-//                flux, d_advected, d_advecting);
-//            break;
+        case 9:
+            weno_ninth_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
+        case 11:
+            weno_eleventh_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
         case 14:
             // This is an application of fourth order Wicker-Skamarock to momentum but using a lower order interpolation
             // for advecting velocity.
