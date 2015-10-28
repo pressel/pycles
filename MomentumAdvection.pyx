@@ -8,7 +8,6 @@ cimport Grid
 cimport PrognosticVariables
 cimport ParallelMPI
 cimport ReferenceState
-from FluxDivergence cimport momentum_flux_divergence
 from NetCDFIO cimport NetCDFIO_Stats
 
 
@@ -33,13 +32,6 @@ cdef class MomentumAdvection:
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.flux = np.zeros(
-            (PV.nv_velocities *
-             Gr.dims.npg *
-             Gr.dims.dims,
-             ),
-            dtype=np.double,
-            order='c')
 
         #for i in xrange(Gr.dims.dims):
         #    NS.add_profile(PV.velocity_names_directional[i] + '_flux_z',Gr,Pa)
@@ -57,9 +49,7 @@ cdef class MomentumAdvection:
             # Shift to beginning of advecting velocity componentin the
             # PV.values array
             Py_ssize_t shift_advecting
-            # Shift to the i_advecting, i_advected flux component in the
-            # self.flux array
-            Py_ssize_t shift_flux
+
 
         for i_advected in xrange(Gr.dims.dims):
             # Compute the shift to the starting location of the advected
@@ -71,11 +61,6 @@ cdef class MomentumAdvection:
                 # velocity in the PV values array
                 shift_advecting = PV.velocity_directions[
                     i_advecting] * Gr.dims.npg
-
-                # Compute the shift to the starting location of the advecting
-                # flux.
-                shift_flux = i_advected * Gr.dims.dims * \
-                    Gr.dims.npg + i_advecting * Gr.dims.npg
 
                 # Compute the fluxes
                 compute_advective_tendencies_m(&Gr.dims, &Rs.rho0[0], &Rs.rho0_half[0], &Rs.alpha0[0], &Rs.alpha0_half[0],

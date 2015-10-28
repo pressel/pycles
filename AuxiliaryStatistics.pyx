@@ -203,52 +203,53 @@ class CumulusStatistics:
 
 class StableBLStatistics:
     def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-            NS.add_ts('boundary_layer_height', Gr, Pa)
+            #NS.add_ts('boundary_layer_height', Gr, Pa)
+        return
 
 
     def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, MomentumAdvection.MomentumAdvection MA,
                  MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        cdef:
-            double [:] total_flux = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
-            Py_ssize_t d=2, i1, i,j,k, shift_flux
-            double [:] flux_profile
-
-        with nogil:
-            for i1 in xrange(Gr.dims.dims-1):
-                shift_flux = (i1*Gr.dims.dims + d) * Gr.dims.npg
-                for i in xrange(Gr.dims.npg):
-                    total_flux[i] += (MA.flux[shift_flux + i] + MD.flux[shift_flux + i] ) *  (MA.flux[shift_flux + i] + MD.flux[shift_flux + i] )
-
-            for i in xrange(Gr.dims.npg):
-                total_flux[i] = sqrt(total_flux[i])
-
-        flux_profile = Pa.HorizontalMean(Gr,&total_flux[0])
-
-        cdef:
-            Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
-            double flux_surface
-            double [:] ustar2 = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-
-        with nogil:
-            for i in xrange(Gr.dims.nlg[0]*Gr.dims.nlg[1]):
-                ustar2[i] = DV.values_2d[ustar_shift + i] * DV.values_2d[ustar_shift + i]
-
-        flux_surface = Pa.HorizontalMeanSurface(Gr,&ustar2[0])
-
-        k=Gr.dims.gw
-
-        while k < Gr.dims.nlg[2]-Gr.dims.gw and flux_profile[k] > 0.05 * flux_surface:
-            k += 1
-
-        h05 = Gr.zl_half[k]
-        h0 = h05/0.95
-
-        if np.isnan(h0):
-            print('bl height is nan')
-            h0 = 0.0
-
-        NS.write_ts('boundary_layer_height', h0, Pa)
+        # cdef:
+        #     double [:] total_flux = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+        #     Py_ssize_t d=2, i1, i,j,k, shift_flux
+        #     double [:] flux_profile
+        #
+        # with nogil:
+        #     for i1 in xrange(Gr.dims.dims-1):
+        #         shift_flux = (i1*Gr.dims.dims + d) * Gr.dims.npg
+        #         for i in xrange(Gr.dims.npg):
+        #             total_flux[i] += (MA.flux[shift_flux + i] + MD.flux[shift_flux + i] ) *  (MA.flux[shift_flux + i] + MD.flux[shift_flux + i] )
+        #
+        #     for i in xrange(Gr.dims.npg):
+        #         total_flux[i] = sqrt(total_flux[i])
+        #
+        # flux_profile = Pa.HorizontalMean(Gr,&total_flux[0])
+        #
+        # cdef:
+        #     Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
+        #     double flux_surface
+        #     double [:] ustar2 = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+        #
+        # with nogil:
+        #     for i in xrange(Gr.dims.nlg[0]*Gr.dims.nlg[1]):
+        #         ustar2[i] = DV.values_2d[ustar_shift + i] * DV.values_2d[ustar_shift + i]
+        #
+        # flux_surface = Pa.HorizontalMeanSurface(Gr,&ustar2[0])
+        #
+        # k=Gr.dims.gw
+        #
+        # while k < Gr.dims.nlg[2]-Gr.dims.gw and flux_profile[k] > 0.05 * flux_surface:
+        #     k += 1
+        #
+        # h05 = Gr.zl_half[k]
+        # h0 = h05/0.95
+        #
+        # if np.isnan(h0):
+        #     print('bl height is nan')
+        #     h0 = 0.0
+        #
+        # NS.write_ts('boundary_layer_height', h0, Pa)
         return
 
 
