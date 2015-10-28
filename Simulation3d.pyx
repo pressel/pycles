@@ -96,6 +96,9 @@ class Simulation3d:
             self.TS.dt = self.Restart.restart_data['TS']['dt']
             self.Ref.init_from_restart(self.Gr, self.Restart)
             self.PV.init_from_restart(self.Gr, self.Restart)
+            self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']
+            self.FieldsIO.last_output_time = self.Restart.restart_data['last_fields_output']
+            self.Restart.last_restart_time = self.Restart.restart_data['last_restart_time']
             self.Restart.free_memory()
         else:
             self.Pa.root_print('This is not a restart run!')
@@ -202,6 +205,8 @@ class Simulation3d:
             if self.Restart.last_restart_time + self.Restart.frequency == self.TS.t:
                 self.Pa.root_print('Dumping Restart Files!')
                 self.Restart.last_restart_time = self.TS.t
+                self.Restart.restart_data['last_stats_output'] = self.StatsIO.last_output_time
+                self.Restart.restart_data['last_fields_output'] = self.FieldsIO.last_output_time
                 self.Gr.restart(self.Restart)
                 self.Ref.restart(self.Gr, self.Restart)
                 self.PV.restart(self.Gr, self.Restart)
