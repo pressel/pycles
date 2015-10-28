@@ -16,8 +16,10 @@ import numpy as np
 cimport numpy as np
 
 cdef extern from "momentum_advection.h":
-    void compute_advective_fluxes_m(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *vel_advected, double *vel_advecting,
-                                    double *flux, Py_ssize_t d_advected, Py_ssize_t d_advecting, Py_ssize_t scheme) nogil
+    void compute_advective_fluxes_m(Grid.DimStruct *dims, double *rho0, double *rho0_half,
+                                    double *alpha0, double *alpha0_half, double *vel_advected,
+                                    double *vel_advecting, double *tendency, Py_ssize_t d_advected,
+                                    Py_ssize_t d_advecting, Py_ssize_t scheme) nogil
 cdef class MomentumAdvection:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         try:
@@ -39,8 +41,8 @@ cdef class MomentumAdvection:
             dtype=np.double,
             order='c')
 
-        for i in xrange(Gr.dims.dims):
-            NS.add_profile(PV.velocity_names_directional[i] + '_flux_z',Gr,Pa)
+        #for i in xrange(Gr.dims.dims):
+        #    NS.add_profile(PV.velocity_names_directional[i] + '_flux_z',Gr,Pa)
 
         return
 
@@ -76,31 +78,31 @@ cdef class MomentumAdvection:
                     Gr.dims.npg + i_advecting * Gr.dims.npg
 
                 # Compute the fluxes
-                compute_advective_fluxes_m(&Gr.dims, &Rs.rho0[0], &Rs.rho0_half[0],
-                                            &PV.values[shift_advected], &PV.values[shift_advecting], &self.flux[shift_flux],
-                                            i_advected, i_advecting, self.order)
+                compute_advective_fluxes_m(&Gr.dims, &Rs.rho0[0], &Rs.rho0_half[0], &Rs.alpha0[0], &Rs.alpha0_half[0],
+                                            &PV.values[shift_advected], &PV.values[shift_advecting],
+                                           &PV.tendencies[shift_advected], i_advected, i_advecting, self.order)
                 # Compute flux divergence
-                momentum_flux_divergence(&Gr.dims, &Rs.alpha0[0], &Rs.alpha0_half[0], &self.flux[shift_flux],
-                                          &PV.tendencies[shift_advected], i_advected, i_advecting)
+                #momentum_flux_divergence(&Gr.dims, &Rs.alpha0[0], &Rs.alpha0_half[0], &self.flux[shift_flux],
+                #                          &PV.tendencies[shift_advected], i_advected, i_advecting)
         return
 
 
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        cdef:
-            Py_ssize_t i_advected, i_advecting = 2, shift_flux, k
-            double[:] tmp
-            double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-
-
-        for i_advected in xrange(Gr.dims.dims):
-            shift_flux = i_advected * Gr.dims.dims* Gr.dims.npg + i_advecting * Gr.dims.npg
-            tmp = Pa.HorizontalMean(Gr, &self.flux[shift_flux])
-            if i_advected < 2:
-                for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
-                    tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])
-            else:
-                tmp_interp[:] = tmp[:]
-            NS.write_profile(PV.velocity_names_directional[i_advected] + '_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        # cdef:
+        #     Py_ssize_t i_advected, i_advecting = 2, shift_flux, k
+        #     double[:] tmp
+        #     double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        #
+        #
+        # for i_advected in xrange(Gr.dims.dims):
+        #     shift_flux = i_advected * Gr.dims.dims* Gr.dims.npg + i_advecting * Gr.dims.npg
+        #     tmp = Pa.HorizontalMean(Gr, &self.flux[shift_flux])
+        #     if i_advected < 2:
+        #         for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
+        #             tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])
+        #     else:
+        #         tmp_interp[:] = tmp[:]
+        #     NS.write_profile(PV.velocity_names_directional[i_advected] + '_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
 
