@@ -128,7 +128,6 @@ void fourth_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
         return;
     }
 
-
 void fourth_order_ws_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict flux, ssize_t d_advected, ssize_t d_advecting){
 
