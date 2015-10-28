@@ -58,8 +58,8 @@ double get_aut_rain_c(const double alpha_, const double ccn, struct hm_propertie
 
 double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_, const double qt_, const double qi_, const double temp_, struct hm_properties *ice_prop){
     /* Harrington 1995 snow autoconversion model */
-    //double pv_star = lookup(LT, temp_);
-    double pv_star = pv_star_ice_c(temp_);
+    double pv_star = lookup(LT, temp_);
+    //double pv_star = pv_star_ice_c(temp_);
     double qv_star = qv_star_c(p0_, qt_, pv_star);
     //double satratio = qt_/qv_star;
     double satratio = (qt_-qi_)/qv_star;
@@ -106,8 +106,8 @@ double get_evp_rain_c(struct LookupStruct *LT, const double alpha_, const double
 double get_evp_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_,
                            const double qt_, double const temp_, struct hm_properties *_prop){
     double beta = 3.0;
-    //double pv_star = lookup(LT, temp_);
-    double pv_star = pv_star_ice_c(temp_);
+    double pv_star = lookup(LT, temp_);
+    //double pv_star = pv_star_ice_c(temp_);
     double qv_star = qv_star_c(p0_, qt_, pv_star);
     double satratio = qt_/qv_star;
 
