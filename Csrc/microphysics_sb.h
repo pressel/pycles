@@ -30,7 +30,7 @@
 #define kin_visc_air  1.4086e-5 //m^2/s kinematic viscosity of air
 #define a_nu_sq sqrt(a_rain_sed/kin_visc_air)
 
-#define sb_eps  1.0e-10 //small value
+#define sb_eps  1.0e-13 //small value
 //Unless specified otherwise, Diameter = Dm not Dp
 
 //Note: All sb_shape_parameter_X functions must have same signature
@@ -156,7 +156,7 @@ void sb_selfcollection_breakup_rain(double density, double nr, double qr, double
         lambda_rain = 1.0/cbrt(rain_mass * tgamma(mu + 1.0)/ tgamma(mu + 4.0));
         phi_sc = pow((1.0 + kaprr/lambda_rain), -9.0); //Seifert & Beheng 2006, DALES
         // phi_sc = 1.0; //Seifert & Beheng 2001, Seifert & Stevens 2008, Seifert 2008
-        nr_tendency_sc = -krr * nr * qr * phi_sc * sqrt(density_sb/density);
+        nr_tendency_sc = -krr * nr * qr * phi_sc * sqrt(density_sb*density);
         // Seifert & Stevens 2008, Seifert 2008, DALES
         if(Dm > 0.3e-3){
             phi_bk = 1000.0 * Dm - 0.1;
@@ -281,15 +281,16 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
                 qr[ijk] = fmax(qr[ijk],0.0);
-                nr[ijk] = fmax(nr[ijk],0.0);
-
+                nr[ijk] = fmax(fmin(nr[ijk], qr_tmp/rain_min_mass),qr_tmp/rain_max_mass)
                 double qv = qt[ijk] - fmax(ql[ijk],0.0);
                 double sat_ratio = microphysics_saturation_ratio(LT, lam_fp, L_fp, temperature[ijk], p0[k], qt[ijk], qv);
                 double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
                 double nl = ccn/density[k];
                 double ql_tmp = fmax(ql[ijk],0.0);
-                double nr_tmp = fmax(nr[ijk],0.0);
                 double qr_tmp = fmax(qr[ijk],0.0);
+                double nr_tmp = fmax(fmin(nr[ijk], qr_tmp/rain_min_mass),qr_tmp/rain_max_mass);
+
+
                 //holding nl fixed since it doesn't change between timesteps
 
                 double time_added = 0.0, dt_, rate;
@@ -326,15 +327,17 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                     ql_tmp += ql_tendency_tmp * dt_;
                     nr_tmp += nr_tendency_tmp * dt_;
                     qr_tmp += qr_tendency_tmp * dt_;
-
+                    qr_tmp = fmax(qr_tmp,0.0);
+                    nr_tmp = fmax(fmin(nr_tmp, qr_tmp/rain_min_mass),qr_tmp/rain_max_mass);
+                    ql_tmp = fmax(ql_tmp,0.0);
                     time_added += dt_ ;
 
 
                 }while(time_added < dt);
-                nr_tendency_micro[ijk] = (fmax(nr_tmp,0.0) - nr[ijk] )/dt;
-                qr_tendency_micro[ijk] = (fmax(qr_tmp,0.0) - qr[ijk])/dt;
-                nr_tendency[ijk] += (fmax(nr_tmp,0.0) - nr[ijk] )/dt;
-                qr_tendency[ijk] += (fmax(qr_tmp,0.0) - qr[ijk])/dt;
+                nr_tendency_micro[ijk] = (nr_tmp - nr[ijk] )/dt;
+                qr_tendency_micro[ijk] = (qr_tmp - qr[ijk])/dt;
+                nr_tendency[ijk] += (nr_tmp - nr[ijk] )/dt;
+                qr_tendency[ijk] += (qr_tmp - qr[ijk])/dt;
 
             }
         }

@@ -5,7 +5,7 @@
 #define KT  2.5e-2 // J/m/s/K
 #define Dv 3.0e-5 // m^2/s
 #define density_liquid  1000.0 // density of liquid water, kg/m^3
-#define micro_eps  1.0e-10
+#define micro_eps  1.0e-13
 
 // Here, only functions that can be used commonly by any microphysical scheme
 // convention: begin function name with "microphysics"
@@ -22,7 +22,7 @@ double microphysics_mean_mass(double n, double q, double min_mass, double max_ma
 
 double microphysics_diameter_from_mass(double mass, double prefactor, double exponent){
     // find particle diameter from scaling rule of form
-    // D = prefactor * mass ** exponent
+    // Dm = prefactor * mass ** exponent
     double diameter = prefactor * pow(mass, exponent);
     return diameter;
 }

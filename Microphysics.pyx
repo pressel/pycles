@@ -119,6 +119,7 @@ cdef class Microphysics_SB_Liquid:
                 Par.root_print("SB_Liquid mu_rain option not recognized, defaulting to option 1")
                 self.compute_rain_shape_parameter = sb_rain_shape_parameter_1
         except:
+            Par.root_print("SB_Liquid mu_rain option not selected, defaulting to option 1")
             self.compute_rain_shape_parameter = sb_rain_shape_parameter_1
         # Set option for calculation of nu parameter of droplet distribution
         try:
@@ -133,6 +134,7 @@ cdef class Microphysics_SB_Liquid:
                 Par.root_print("SB_Liquid nu_droplet_option not recognized, defaulting to option 0")
                 self.compute_droplet_nu = sb_droplet_nu_0
         except:
+            Par.root_print("SB_Liquid nu_droplet_option not selected, defaulting to option 0")
             self.compute_droplet_nu = sb_droplet_nu_0
 
         try:
