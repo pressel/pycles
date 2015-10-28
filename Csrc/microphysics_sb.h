@@ -281,7 +281,7 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
                 qr[ijk] = fmax(qr[ijk],0.0);
-                nr[ijk] = fmax(fmin(nr[ijk], qr_tmp/rain_min_mass),qr_tmp/rain_max_mass)
+                nr[ijk] = fmax(fmin(nr[ijk], qr[ijk]/rain_min_mass),qr[ijk]/rain_max_mass);
                 double qv = qt[ijk] - fmax(ql[ijk],0.0);
                 double sat_ratio = microphysics_saturation_ratio(LT, lam_fp, L_fp, temperature[ijk], p0[k], qt[ijk], qv);
                 double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
@@ -297,6 +297,12 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                 ssize_t iter_count = 0;
                 do{
                     iter_count += 1;
+                    nr_tendency_au = 0.0;
+                    nr_tendency_scbk = 0.0;
+                    nr_tendency_evp = 0.0;
+                    qr_tendency_au = 0.0;
+                    qr_tendency_ac = 0.0;
+                    qr_tendency_evp = 0.0;
                     //obtain some parameters
                     rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, rain_min_mass, rain_max_mass);
                     Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
