@@ -16,7 +16,7 @@ import numpy as np
 cimport numpy as np
 
 cdef extern from "momentum_advection.h":
-    void compute_advective_fluxes_m(Grid.DimStruct *dims, double *rho0, double *rho0_half,
+    void compute_advective_tendencies_m(Grid.DimStruct *dims, double *rho0, double *rho0_half,
                                     double *alpha0, double *alpha0_half, double *vel_advected,
                                     double *vel_advecting, double *tendency, Py_ssize_t d_advected,
                                     Py_ssize_t d_advecting, Py_ssize_t scheme) nogil
@@ -78,12 +78,9 @@ cdef class MomentumAdvection:
                     Gr.dims.npg + i_advecting * Gr.dims.npg
 
                 # Compute the fluxes
-                compute_advective_fluxes_m(&Gr.dims, &Rs.rho0[0], &Rs.rho0_half[0], &Rs.alpha0[0], &Rs.alpha0_half[0],
+                compute_advective_tendencies_m(&Gr.dims, &Rs.rho0[0], &Rs.rho0_half[0], &Rs.alpha0[0], &Rs.alpha0_half[0],
                                             &PV.values[shift_advected], &PV.values[shift_advecting],
                                            &PV.tendencies[shift_advected], i_advected, i_advecting, self.order)
-                # Compute flux divergence
-                #momentum_flux_divergence(&Gr.dims, &Rs.alpha0[0], &Rs.alpha0_half[0], &self.flux[shift_flux],
-                #                          &PV.tendencies[shift_advected], i_advected, i_advecting)
         return
 
 
