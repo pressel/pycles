@@ -302,8 +302,13 @@ void sixth_order_m(struct DimStruct *dims, double* restrict rho0, double* restri
         return;
     }
 
-void sixth_order_ws_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict flux, ssize_t d_advected, ssize_t d_advecting){
+void sixth_order_ws_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+    double* restrict alpha0, double* restrict alpha0_half,
+    double* restrict vel_advected, double* restrict vel_advecting,
+    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+        // Dynamically allocate flux array
+        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -368,11 +373,21 @@ void sixth_order_ws_m(struct DimStruct *dims, double* restrict rho0, double* res
                 }
             }
         }
+        momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
+                                tendency, d_advected, d_advecting);
+        free(flux);
         return;
     }
 
-void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict flux, ssize_t d_advected, ssize_t d_advecting){
+
+void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+    double* restrict alpha0, double* restrict alpha0_half,
+    double* restrict vel_advected, double* restrict vel_advecting,
+    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+
+        // Dynamically allocate flux array
+        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -409,8 +424,22 @@ void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                    flux[ijk] = (interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing],vel_advecting[ijk+sp3_ing],vel_advecting[ijk+sp4_ing]) *
-                                 interp_8(vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed])) * rho0_half[k];
+                    flux[ijk] = (interp_8(vel_advecting[ijk+sm3_ing],
+                                          vel_advecting[ijk+sm2_ing],
+                                          vel_advecting[ijk+sm1_ing],
+                                          vel_advecting[ijk],
+                                          vel_advecting[ijk+sp1_ing],
+                                          vel_advecting[ijk+sp2_ing],
+                                          vel_advecting[ijk+sp3_ing],
+                                          vel_advecting[ijk+sp4_ing])
+                                 *interp_8(vel_advected[ijk+sm3_ed],
+                                           vel_advected[ijk+sm2_ed],
+                                           vel_advected[ijk+sm1_ed],
+                                           vel_advected[ijk],
+                                           vel_advected[ijk+sp1_ed],
+                                           vel_advected[ijk+sp2_ed],
+                                           vel_advected[ijk+sp3_ed],
+                                           vel_advected[ijk+sp4_ed])) * rho0_half[k];
                     }
                 }
             }
@@ -422,8 +451,22 @@ void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                    flux[ijk] = (interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing],vel_advecting[ijk+sp3_ing],vel_advecting[ijk+sp4_ing]) *
-                                 interp_8(vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed])) * rho0_half[k+1];
+                    flux[ijk] = (interp_8(vel_advecting[ijk+sm3_ing],
+                                          vel_advecting[ijk+sm2_ing],
+                                          vel_advecting[ijk+sm1_ing],
+                                          vel_advecting[ijk],
+                                          vel_advecting[ijk+sp1_ing],
+                                          vel_advecting[ijk+sp2_ing],
+                                          vel_advecting[ijk+sp3_ing],
+                                          vel_advecting[ijk+sp4_ing])
+                                 *interp_8(vel_advected[ijk+sm3_ed],
+                                           vel_advected[ijk+sm2_ed],
+                                           vel_advected[ijk+sm1_ed],
+                                           vel_advected[ijk],
+                                           vel_advected[ijk+sp1_ed],
+                                           vel_advected[ijk+sp2_ed],
+                                           vel_advected[ijk+sp3_ed],
+                                           vel_advected[ijk+sp4_ed])) * rho0_half[k+1];
                     }
                 }
             }
@@ -435,12 +478,29 @@ void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                    flux[ijk] = (interp_8(vel_advecting[ijk+sm3_ing],vel_advecting[ijk+sm2_ing],vel_advecting[ijk+sm1_ing],vel_advecting[ijk],vel_advecting[ijk+sp1_ing],vel_advecting[ijk+sp2_ing],vel_advecting[ijk+sp3_ing],vel_advecting[ijk+sp4_ing]) *
-                                 interp_8(vel_advected[ijk+sm3_ed],vel_advected[ijk+sm2_ed],vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed],vel_advected[ijk+sp3_ed],vel_advected[ijk+sp4_ed])) * rho0[k];
+                    flux[ijk] = (interp_8(vel_advecting[ijk+sm3_ing],
+                                          vel_advecting[ijk+sm2_ing],
+                                          vel_advecting[ijk+sm1_ing],
+                                          vel_advecting[ijk],
+                                          vel_advecting[ijk+sp1_ing],
+                                          vel_advecting[ijk+sp2_ing],
+                                          vel_advecting[ijk+sp3_ing],
+                                          vel_advecting[ijk+sp4_ing])
+                                 *interp_8(vel_advected[ijk+sm3_ed],
+                                           vel_advected[ijk+sm2_ed],
+                                           vel_advected[ijk+sm1_ed],
+                                           vel_advected[ijk],
+                                           vel_advected[ijk+sp1_ed],
+                                           vel_advected[ijk+sp2_ed],
+                                           vel_advected[ijk+sp3_ed],
+                                           vel_advected[ijk+sp4_ed])) * rho0[k];
                     }
                 }
             }
         }
+        momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
+                                tendency, d_advected, d_advecting);
+        free(flux);
         return;
     }
 
@@ -1857,18 +1917,18 @@ void compute_advective_fluxes_m(struct DimStruct *dims, double* restrict rho0, d
 //            weno_fifth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
 //                flux, d_advected, d_advecting);
 //            break;
-//        case 6:
-//            sixth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
-//                flux, d_advected, d_advecting);
-//            break;
+        case 6:
+           sixth_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
 //        case 7:
 //            weno_seventh_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
 //                flux, d_advected, d_advecting);
 //            break;
-//        case 8:
-//            eighth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
-//                flux, d_advected, d_advecting);
-//            break;
+        case 8:
+            eighth_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
 //        case 9:
 //            weno_ninth_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
 //                flux, d_advected, d_advecting);
@@ -1877,17 +1937,17 @@ void compute_advective_fluxes_m(struct DimStruct *dims, double* restrict rho0, d
 //            weno_eleventh_order_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
 //                flux, d_advected, d_advecting);
 //            break;
-//        case 12:
-//            // This is an application of fourth order Wicker-Skamarock to momentum but using a lower order interpolation
-//            // for advecting velocity.
-//            fourth_order_ws_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
-//                flux, d_advected, d_advecting);
+        case 14:
+            // This is an application of fourth order Wicker-Skamarock to momentum but using a lower order interpolation
+            // for advecting velocity.
+            fourth_order_ws_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
 //            break;
-//        case 13:
-//            // This is an application of sixth order Wicker-Skamarock to momentum but using a lower order interpolation
+        case 16:
+            // This is an application of sixth order Wicker-Skamarock to momentum but using a lower order interpolation
 //            // for advecting velocity.
-//            sixth_order_ws_m(dims, rho0, rho0_half, vel_advected, vel_advecting,
-//                flux, d_advected, d_advecting);
+            sixth_order_ws_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
 //            break;
 //        case 24:
 //            fourth_order_m_pt(dims, rho0, rho0_half, vel_advected, vel_advecting,
