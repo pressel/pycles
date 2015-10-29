@@ -230,6 +230,10 @@ void fourth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* re
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
+        // Y. Morinishi, T.S. Lund, O.V. Vasilyev, P. Moin, Fully Conservative Higher Order Finite Difference Schemes
+        // for Incompressible Flow, Journal of Computational Physics, Volume 143, Issue 1, 10 June 1998,
+        // Pages 90-124, ISSN 0021-9991, http://dx.doi.org/10.1006/jcph.1998.5962.
+
         // Dynamically allocate flux array
         double *flux1 = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *flux3 = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -346,6 +350,7 @@ void sixth_order_m(struct DimStruct *dims, double* restrict rho0, double* restri
     double* restrict alpha0, double* restrict alpha0_half,
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
 
         // Dynamically allocate flux array
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -500,6 +505,10 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
     double* restrict alpha0, double* restrict alpha0_half,
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+        // Y. Morinishi, T.S. Lund, O.V. Vasilyev, P. Moin, Fully Conservative Higher Order Finite Difference Schemes
+        // for Incompressible Flow, Journal of Computational Physics, Volume 143, Issue 1, 10 June 1998,
+        // Pages 90-124, ISSN 0021-9991, http://dx.doi.org/10.1006/jcph.1998.5962.
 
         // Dynamically allocate flux array
         double *flux1 = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
