@@ -309,9 +309,7 @@ void fourth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* re
                 }
             }
         }
-
         /// Now compute the velocity tendencies
-
         if(d_advected != 2){
             for(ssize_t i=imin + 1; i<imax; i++){
                 const ssize_t ishift = i * istride;
@@ -555,9 +553,9 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
                                           - 25.0/256.0*(vel_advecting[ijk+sm1_ing] + vel_advecting[ijk + sp2_ing])
                                           - 3.0/256.0*(vel_advecting[ijk+sm2_ing] + vel_advecting[ijk + sp3_ing])*rho0_half[k]);
 
-                        flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])/2.0 ;
-                        flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])/2.0 ;
-                        flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])/2.0 ;
+                        flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])*0.5 ;
+                        flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])*0.5 ;
+                        flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])*0.5 ;
                     }
                 }
             }
@@ -572,9 +570,9 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
                         const double d = (150.0/256.0*( vel_advecting[ijk] + vel_advecting[ijk + sp1_ing])
                                           - 25.0/256.0*(vel_advecting[ijk+sm1_ing] + vel_advecting[ijk + sp2_ing])
                                           - 3.0/256.0*(vel_advecting[ijk+sm2_ing] + vel_advecting[ijk + sp3_ing])*rho0_half[k+1]);
-                        flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])/2.0 ;
-                        flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])/2.0 ;
-                        flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])/2.0 ;
+                        flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])*0.5 ;
+                        flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])*0.5 ;
+                        flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])*0.5 ;
                     }
                 }
             }
@@ -589,9 +587,9 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
                         const double d = (150.0/256.0*(rho0[k]*vel_advecting[ijk] +  rho0[k+1]*vel_advecting[ijk + sp1_ing])
                                            - 25.0/256.0*(rho0[k-1]*vel_advecting[ijk+sm1_ing] + rho0[k+2]*vel_advecting[ijk + sp2_ing])
                                             - 3.0/256.0*(rho0[k-2]*vel_advecting[ijk+sm2_ing] + rho0[k+3]*vel_advecting[ijk + sp3_ing]));
-                        flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])/2.0 ;
-                        flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])/2.0 ;
-                        flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])/2.0 ;
+                        flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])*0.5 ;
+                        flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])*0.5 ;
+                        flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])*0.5 ;
                     }
                 }
             }
@@ -606,7 +604,7 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
                     const ssize_t jshift = j * jstride;
                     for(ssize_t k=kmin + 2 ; k<kmax; k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        tendency[ijk] -= alpha0_half[k] * (150.0 /256.0 * (flux1[ijk] - flux1[ijk + sm1_ed])
+                        tendency[ijk] -= alpha0_half[k] * (150.0/256.0 * (flux1[ijk] - flux1[ijk + sm1_ed])
                                                              - 25.0/384.0 * (flux3[ijk+sp1_ed] - flux3[ijk + sm2_ed])
                                                               + 3.0/640.0 * (flux5[ijk+sp2_ed] - flux5[ijk + sm3_ed]))*dxi;
                     }
