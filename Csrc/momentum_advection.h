@@ -598,11 +598,11 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
         /// Now compute the velocity tendencies
 
         if(d_advected != 2){
-            for(ssize_t i=imin + 2; i<imax; i++){
+            for(ssize_t i=imin + 3; i<imax-2; i++){
                 const ssize_t ishift = i * istride;
-                for(ssize_t j=jmin + 2; j<jmax; j++){
+                for(ssize_t j=jmin + 3; j<jmax-2; j++){
                     const ssize_t jshift = j * jstride;
-                    for(ssize_t k=kmin + 2 ; k<kmax; k++){
+                    for(ssize_t k=kmin + 3 ; k<kmax-2; k++){
                         const ssize_t ijk = ishift + jshift + k;
                         tendency[ijk] -= alpha0_half[k] * (150.0/256.0 * (flux1[ijk] - flux1[ijk + sm1_ed])
                                                              - 25.0/384.0 * (flux3[ijk+sp1_ed] - flux3[ijk + sm2_ed])
@@ -612,11 +612,11 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
             }
         }
         else{
-            for(ssize_t i=imin + 2 ; i<imax-1; i++){
+            for(ssize_t i=imin + 3 ; i<imax-2; i++){
                 const ssize_t ishift = i * istride;
-                for(ssize_t j=jmin + 2 ; j<jmax-1; j++){
+                for(ssize_t j=jmin + 3 ; j<jmax-2; j++){
                     const ssize_t jshift = j * jstride;
-                    for(ssize_t k=kmin + 2 ; k<kmax-1; k++){
+                    for(ssize_t k=kmin + 3 ; k<kmax-2; k++){
                         const ssize_t ijk = ishift + jshift + k;
                         tendency[ijk] -= alpha0[k] * (150.0 /256.0 * (flux1[ijk] - flux1[ijk + sm1_ed])
                                                              - 25.0/384.0 * (flux3[ijk+sp1_ed] - flux3[ijk + sm2_ed])
