@@ -551,7 +551,7 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
                         const ssize_t ijk = ishift + jshift + k;
                         const double d = (150.0/256.0*( vel_advecting[ijk] + vel_advecting[ijk + sp1_ing])
                                           - 25.0/256.0*(vel_advecting[ijk+sm1_ing] + vel_advecting[ijk + sp2_ing])
-                                          - 3.0/256.0*(vel_advecting[ijk+sm2_ing] + vel_advecting[ijk + sp3_ing])*rho0_half[k]);
+                                          + 3.0/256.0*(vel_advecting[ijk+sm2_ing] + vel_advecting[ijk + sp3_ing])*rho0_half[k]);
 
                         flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])*0.5 ;
                         flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])*0.5 ;
@@ -569,7 +569,7 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
                         const ssize_t ijk = ishift + jshift + k;
                         const double d = (150.0/256.0*( vel_advecting[ijk] + vel_advecting[ijk + sp1_ing])
                                           - 25.0/256.0*(vel_advecting[ijk+sm1_ing] + vel_advecting[ijk + sp2_ing])
-                                          - 3.0/256.0*(vel_advecting[ijk+sm2_ing] + vel_advecting[ijk + sp3_ing])*rho0_half[k+1]);
+                                          + 3.0/256.0*(vel_advecting[ijk+sm2_ing] + vel_advecting[ijk + sp3_ing])*rho0_half[k+1]);
                         flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])*0.5 ;
                         flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])*0.5 ;
                         flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])*0.5 ;
@@ -586,7 +586,7 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
                         const ssize_t ijk = ishift + jshift + k;
                         const double d = (150.0/256.0*(rho0[k]*vel_advecting[ijk] +  rho0[k+1]*vel_advecting[ijk + sp1_ing])
                                            - 25.0/256.0*(rho0[k-1]*vel_advecting[ijk+sm1_ing] + rho0[k+2]*vel_advecting[ijk + sp2_ing])
-                                            - 3.0/256.0*(rho0[k-2]*vel_advecting[ijk+sm2_ing] + rho0[k+3]*vel_advecting[ijk + sp3_ing]));
+                                            + 3.0/256.0*(rho0[k-2]*vel_advecting[ijk+sm2_ing] + rho0[k+3]*vel_advecting[ijk + sp3_ing]));
                         flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])*0.5 ;
                         flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])*0.5 ;
                         flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])*0.5 ;
