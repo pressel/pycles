@@ -75,6 +75,91 @@ void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
         return;
     }
 
+
+void second_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+    double* restrict alpha0, double* restrict alpha0_half,
+    double* restrict vel_advected, double* restrict vel_advecting,
+    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+        // Dynamically allocate flux array
+        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+
+        const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+        const ssize_t jstride = dims->nlg[2];
+
+        const ssize_t imin = 0;
+        const ssize_t jmin = 0;
+        const ssize_t kmin = 0;
+
+        const ssize_t imax = dims->nlg[0]-1;
+        const ssize_t jmax = dims->nlg[1]-1;
+        const ssize_t kmax = dims->nlg[2]-1;
+
+        const ssize_t stencil[3] = {istride,jstride,1};
+        const ssize_t sp1_ed = stencil[d_advecting];
+        const ssize_t sp1_ing = stencil[d_advected];
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+                        flux[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing])
+                            *interp_2(vel_advected[ijk],vel_advected[ijk + sp1_ed]) )*rho0_half[k];
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+                        flux[ijk] = (interp_2(vel_advecting[ijk]*rho0[k],vel_advecting[ijk+sp1_ing]*rho0[k])
+                            *interp_2(vel_advected[ijk],vel_advected[ijk + sp1_ed]) );
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2){
+            for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+                        flux[ijk] = (interp_2(vel_advecting[ijk] * rho0_half[k],vel_advecting[ijk+sp1_ing]*rho0_half[k+1])
+                            *interp_2(vel_advected[ijk],vel_advected[ijk + sp1_ed]) );
+                    }
+                }
+            }
+        }
+        else{
+            for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+                        flux[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing])
+                            *interp_2(vel_advected[ijk],vel_advected[ijk + sp1_ed]) )*rho0[k];
+                    }
+                }
+            }
+        }
+
+        momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
+                                tendency, d_advected, d_advecting);
+
+        //Free dynamically allocated array
+        free(flux);
+        return;
+    }
+
 void fourth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
         double* restrict alpha0, double* restrict alpha0_half,
         double* restrict vel_advected, double* restrict vel_advecting,
@@ -271,7 +356,7 @@ void fourth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* re
 
                         const ssize_t ijk = ishift + jshift + k;
                         const double d = (9.0/16.0*( vel_advecting[ijk] + vel_advecting[ijk + sp1_ing])
-                                          - 1.0/16.0*(vel_advecting[ijk+sm1_ing] + vel_advecting[ijk + sp2_ing])*rho0_half[k]);
+                                          - 1.0/16.0*(vel_advecting[ijk+sm1_ing] + vel_advecting[ijk + sp2_ing]))*rho0_half[k];
 
                         flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])/2.0 ;
                         flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])/2.0 ;
@@ -286,8 +371,23 @@ void fourth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        const double d = (9.0/16.0*( vel_advecting[ijk] +  vel_advecting[ijk + sp1_ing])
-                                           - 1.0/16.0*(vel_advecting[ijk+sm1_ing] + vel_advecting[ijk + sp2_ing])*rho0_half[k+1]);
+                        const double d = (9.0/16.0*( vel_advecting[ijk] * rho0[k] +  vel_advecting[ijk + sp1_ing]*rho0[k+1])
+                                           - 1.0/16.0*(vel_advecting[ijk+sm1_ing]*rho0[k-1] + vel_advecting[ijk + sp2_ing]*rho0[k+2]));
+                        flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])/2.0 ;
+                        flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])/2.0 ;
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2){
+            for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+                        const double d = (9.0/16.0*( vel_advecting[ijk]*rho0_half[k] +  vel_advecting[ijk + sp1_ing]*rho0_half[k+1])
+                                           - 1.0/16.0*(vel_advecting[ijk+sm1_ing]*rho0_half[k-1] + vel_advecting[ijk + sp2_ing]*rho0_half[k+2] ));
                         flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])/2.0 ;
                         flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])/2.0 ;
                     }
@@ -301,8 +401,8 @@ void fourth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        const double d = (9.0/16.0*(rho0[k]*vel_advecting[ijk] +  rho0[k+1]*vel_advecting[ijk + sp1_ing])
-                                           - 1.0/16.0*(rho0[k-1]*vel_advecting[ijk+sm1_ing] + rho0[k+2]*vel_advecting[ijk + sp2_ing]));
+                        const double d = (9.0/16.0*(vel_advecting[ijk] +  vel_advecting[ijk + sp1_ing])
+                                           - 1.0/16.0*(vel_advecting[ijk+sm1_ing] + vel_advecting[ijk + sp2_ing]))*rho0[k];
                         flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])/2.0 ;
                         flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])/2.0 ;
                     }
@@ -551,7 +651,7 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
                         const ssize_t ijk = ishift + jshift + k;
                         const double d = (150.0/256.0*( vel_advecting[ijk] + vel_advecting[ijk + sp1_ing])
                                           - 25.0/256.0*(vel_advecting[ijk+sm1_ing] + vel_advecting[ijk + sp2_ing])
-                                          + 3.0/256.0*(vel_advecting[ijk+sm2_ing] + vel_advecting[ijk + sp3_ing])*rho0_half[k]);
+                                          + 3.0/256.0*(vel_advecting[ijk+sm2_ing] + vel_advecting[ijk + sp3_ing]))*rho0_half[k];
 
                         flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])*0.5 ;
                         flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])*0.5 ;
@@ -567,9 +667,26 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        const double d = (150.0/256.0*( vel_advecting[ijk] + vel_advecting[ijk + sp1_ing])
-                                          - 25.0/256.0*(vel_advecting[ijk+sm1_ing] + vel_advecting[ijk + sp2_ing])
-                                          + 3.0/256.0*(vel_advecting[ijk+sm2_ing] + vel_advecting[ijk + sp3_ing])*rho0_half[k+1]);
+                        const double d = (150.0/256.0*( vel_advecting[ijk]*rho0[k] + vel_advecting[ijk + sp1_ing]*rho0[k+1])
+                                          - 25.0/256.0*(vel_advecting[ijk+sm1_ing]*rho0[k-1] + vel_advecting[ijk + sp2_ing]*rho0[k+2])
+                                          + 3.0/256.0*(vel_advecting[ijk+sm2_ing]*rho0[k-2] + vel_advecting[ijk + sp3_ing]*rho0[k+3]));
+                        flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])*0.5 ;
+                        flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])*0.5 ;
+                        flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])*0.5 ;
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2){
+            for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+                        const double d = (150.0/256.0*( vel_advecting[ijk]*rho0_half[k] + vel_advecting[ijk + sp1_ing]*rho0_half[k+1])
+                                          - 25.0/256.0*(vel_advecting[ijk+sm1_ing]*rho0_half[k-1] + vel_advecting[ijk + sp2_ing]*rho0_half[k+2])
+                                          + 3.0/256.0*(vel_advecting[ijk+sm2_ing]*rho0_half[k-2] + vel_advecting[ijk + sp3_ing]*rho0_half[k+3]));
                         flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])*0.5 ;
                         flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])*0.5 ;
                         flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])*0.5 ;
@@ -586,7 +703,7 @@ void sixth_order_ml_m(struct DimStruct *dims, double* restrict rho0, double* res
                         const ssize_t ijk = ishift + jshift + k;
                         const double d = (150.0/256.0*(rho0[k]*vel_advecting[ijk] +  rho0[k+1]*vel_advecting[ijk + sp1_ing])
                                            - 25.0/256.0*(rho0[k-1]*vel_advecting[ijk+sm1_ing] + rho0[k+2]*vel_advecting[ijk + sp2_ing])
-                                            + 3.0/256.0*(rho0[k-2]*vel_advecting[ijk+sm2_ing] + rho0[k+3]*vel_advecting[ijk + sp3_ing]));
+                                            + 3.0/256.0*(rho0[k-2]*vel_advecting[ijk+sm2_ing] + rho0[k+3]*vel_advecting[ijk + sp3_ing]))*rho0[k];
                         flux1[ijk] = d * (vel_advected[ijk] +  vel_advected[ijk + sp1_ed])*0.5 ;
                         flux3[ijk] = d * (vel_advected[ijk+sm1_ed] + vel_advected[ijk+sp2_ed])*0.5 ;
                         flux5[ijk] = d * (vel_advected[ijk+sm2_ed] + vel_advected[ijk+sp3_ed])*0.5 ;
@@ -2308,6 +2425,10 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
             break;
         case 29:
             weno_ninth_order_m_pt(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
+        case 32:
+            second_order_ml_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
         case 34:
