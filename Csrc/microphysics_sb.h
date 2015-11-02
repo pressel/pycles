@@ -263,6 +263,7 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
     double rain_mass, Dm, mu, Dp, nr_tendency_tmp, qr_tendency_tmp, ql_tendency_tmp;
     double nr_tendency_au, nr_tendency_scbk, nr_tendency_evp;
     double qr_tendency_au, qr_tendency_ac,  qr_tendency_evp;
+    double sat_ratio
 
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -282,13 +283,13 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                 const ssize_t ijk = ishift + jshift + k;
                 qr[ijk] = fmax(qr[ijk],0.0);
                 nr[ijk] = fmax(fmin(nr[ijk], qr[ijk]/rain_min_mass),qr[ijk]/rain_max_mass);
-                double qv = qt[ijk] - fmax(ql[ijk],0.0);
-                double sat_ratio = microphysics_saturation_ratio(LT, lam_fp, L_fp, temperature[ijk], p0[k], qt[ijk], qv);
-                double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
+                double qv_tmp = qt[ijk] - fmax(ql[ijk],0.0);
+                double qt_tmp = qt[ijk];
                 double nl = ccn/density[k];
                 double ql_tmp = fmax(ql[ijk],0.0);
                 double qr_tmp = fmax(qr[ijk],0.0);
                 double nr_tmp = fmax(fmin(nr[ijk], qr_tmp/rain_min_mass),qr_tmp/rain_max_mass);
+                double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
 
 
                 //holding nl fixed since it doesn't change between timesteps
@@ -297,6 +298,7 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                 ssize_t iter_count = 0;
                 do{
                     iter_count += 1;
+                    sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt_tmp, qv_tmp);
                     nr_tendency_au = 0.0;
                     nr_tendency_scbk = 0.0;
                     nr_tendency_evp = 0.0;
@@ -333,9 +335,11 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                     ql_tmp += ql_tendency_tmp * dt_;
                     nr_tmp += nr_tendency_tmp * dt_;
                     qr_tmp += qr_tendency_tmp * dt_;
+                    qv_tmp += -qr_tendency_evp * dt_;
                     qr_tmp = fmax(qr_tmp,0.0);
                     nr_tmp = fmax(fmin(nr_tmp, qr_tmp/rain_min_mass),qr_tmp/rain_max_mass);
                     ql_tmp = fmax(ql_tmp,0.0);
+                    qt_tmp = ql_tmp + qv_tmp;
                     time_added += dt_ ;
 
 
