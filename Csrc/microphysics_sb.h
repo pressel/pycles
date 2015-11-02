@@ -25,11 +25,9 @@
 #define c_rain_sed  600.0   // m^{-1}
 #define a_vent_rain  0.78
 #define b_vent_rain  0.308
-
 #define nsc_3  cbrt(0.71) // Schmidt number to the 1/3 power
 #define kin_visc_air  1.4086e-5 //m^2/s kinematic viscosity of air
 #define a_nu_sq sqrt(a_rain_sed/kin_visc_air)
-
 #define sb_eps  1.0e-13 //small value
 //Unless specified otherwise, Diameter = Dm not Dp
 
@@ -423,14 +421,9 @@ void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct
         }
     }
 
-
-
-
     return;
 
 }
-
-
 
 ///==========================To facilitate output=============================
 
@@ -471,8 +464,6 @@ void sb_autoconversion_rain_wrapper(const struct DimStruct *dims,  double (*drop
 void sb_accretion_rain_wrapper(const struct DimStruct *dims, double* restrict density,  double* restrict ql,
                                double* restrict qr, double* restrict qr_tendency){
 
-
-
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
     const ssize_t imin = dims->gw;
@@ -502,8 +493,6 @@ void sb_selfcollection_breakup_rain_wrapper(const struct DimStruct *dims, double
     //Here we compute the source terms for nr and qr (number and mass of rain)
     //Temporal substepping is used to help ensure boundedness of moments
     double rain_mass, Dm, mu;
-
-
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
     const ssize_t imin = dims->gw;
@@ -540,8 +529,6 @@ void sb_evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStru
     //Here we compute the source terms for nr and qr (number and mass of rain)
     //Temporal substepping is used to help ensure boundedness of moments
     double rain_mass, Dm, mu, Dp;
-
-
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
     const ssize_t imin = dims->gw;
