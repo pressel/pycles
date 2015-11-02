@@ -263,7 +263,7 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
     double rain_mass, Dm, mu, Dp, nr_tendency_tmp, qr_tendency_tmp, ql_tendency_tmp;
     double nr_tendency_au, nr_tendency_scbk, nr_tendency_evp;
     double qr_tendency_au, qr_tendency_ac,  qr_tendency_evp;
-    double sat_ratio
+    double sat_ratio;
 
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -559,7 +559,7 @@ void sb_evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStru
                 const ssize_t ijk = ishift + jshift + k;
 
                 const double qv = qt[ijk] - ql[ijk];
-                const double sat_ratio = microphysics_saturation_ratio(LT, lam_fp, L_fp, temperature[ijk], p0[k], qt[ijk], qv);
+                const double sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt[ijk], qv);
                 const double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
                 //obtain some parameters
                 const double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
