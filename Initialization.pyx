@@ -732,51 +732,6 @@ def InitIsdac(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.u0 = -7.0
     RS.v0 = 0.5 * (np.amax(v)+np.amin(v))
 
-    # #Thetal defined in Klein et al. 2009
-    # def thetal_mpace(p_,t_,ql_):
-    #     t_cb = 263. #cloud base temperature
-    #     return t_*(p_tilde/p_)**(Rd/cpd)*np.exp(-(2.26e6*ql_)/(cpd*t_cb))
-    #
-    # #Now do saturation adjustment to get temperature and ql
-    # def sat_adjst(p_,thetal_,qt_):
-    #     '''
-    #     Use saturation adjustment scheme to compute temperature and ql given thetal and qt.
-    #     :param p: pressure [Pa]
-    #     :param thetal: liquid water potential temperature  [K]
-    #     :param qt:  total water specific humidity
-    #     :return: T, ql
-    #     '''
-    #
-    #     #Compute temperature
-    #     t_1 = thetal_ * (p_/p_tilde)**(Rd/cpd)
-    #     #Compute saturation vapor pressure
-    #     pv_star_1 = Th.get_pv_star(t_1)
-    #     #Compute saturation mixing ratio
-    #     qs_1 = qv_star_c(p_,qt_,pv_star_1)
-    #
-    #     if qt_ <= qs_1:
-    #         #If not saturated return temperature and ql = 0.0
-    #         return t_1, 0.0
-    #     else:
-    #         ql_1 = qt_ - qs_1
-    #         f_1 = thetal_ - thetal_mpace(p_,t_1,ql_1)
-    #         t_2 = t_1 + 2.26e6*ql_1/cpd
-    #         pv_star_2 = Th.get_pv_star(t_2)
-    #         qs_2 = qv_star_c(p_,qt_,pv_star_2)
-    #         ql_2 = qt_ - qs_2
-    #
-    #         while fabs(t_2 - t_1) >= 1e-9:
-    #             pv_star_2 = Th.get_pv_star(t_2)
-    #             qs_2 = qv_star_c(p_,qt_,pv_star_2)
-    #             ql_2 = qt_ - qs_2
-    #             f_2 = thetal_ - thetal_mpace(p_, t_2, ql_2)
-    #             t_n = t_2 - f_2 * (t_2 - t_1)/(f_2 - f_1)
-    #             t_1 = t_2
-    #             t_2 = t_n
-    #             f_1 = f_2
-    #
-    #         return t_2, ql_2
-
     #Generate initial perturbations (here we are generating more than we need)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
