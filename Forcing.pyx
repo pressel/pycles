@@ -653,6 +653,7 @@ cdef class ForcingIsdac:
             double [:] thetal = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
             #double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
             double T, ql
+            double Q_rad_tropo = -1.0/86400.
 
         #self.w = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
         with nogil:
@@ -706,9 +707,9 @@ cdef class ForcingIsdac:
 
             #large-scale advection
             if Gr.zl_half[k] >= 825.0 and Gr.zl_half[k] < 2045.0:
-                self.ls_adv_Q[k] = -self.w_half[k] * 0.3 * (Gr.zl_half[k] - 825.0) ** (-0.7)
+                self.ls_adv_Q[k] = -self.w_half[k] * 0.3 * (Gr.zl_half[k] - 825.0) ** (-0.7) + Q_rad_tropo
             if Gr.zl_half[k] >= 2045.0:
-                self.ls_adv_Q[k] = -self.w_half[k] * 0.33 * (Gr.zl_half[k] - 2000.0) ** (-0.67)
+                self.ls_adv_Q[k] = -self.w_half[k] * 0.33 * (Gr.zl_half[k] - 2000.0) ** (-0.67) + Q_rad_tropo
                 self.ls_adv_qt[k] = self.w_half[k] * 7.5e-5
 
        #Initialize Statistical Output
@@ -952,7 +953,7 @@ cdef apply_ls_advection_entropy(Grid.DimStruct *dims, double *tendencies, double
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    tendencies[ijk] -= ls_adv_Q[k]/temperature[ijk]
+                    tendencies[ijk] += ls_adv_Q[k]/temperature[ijk]
 
     return
 
@@ -976,6 +977,6 @@ cdef apply_ls_advection_qt(Grid.DimStruct *dims, double *tendencies, double *ls_
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    tendencies[ijk] -= ls_adv_qt[k]
+                    tendencies[ijk] += ls_adv_qt[k]
 
     return
