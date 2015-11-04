@@ -645,6 +645,8 @@ cdef class ForcingIsdac:
         self.initial_u = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.initial_v = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.w_half =  np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.ls_adv_Q = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.ls_adv_qt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
         cdef:
             Py_ssize_t k
@@ -702,6 +704,13 @@ cdef class ForcingIsdac:
             if Gr.zl_half[k] > 825.0:
                 self.nudge_coeff_velocities[k] = 1/7200.0
 
+            #large-scale advection
+            if Gr.zl_half[k] >= 825.0 and Gr.zl_half[k] < 2045.0:
+                self.ls_adv_Q[k] = -self.w_half[k] * 0.3 * (Gr.zl_half[k] - 825.0) ** (-0.7)
+            if Gr.zl_half[k] >= 2045.0:
+                self.ls_adv_Q[k] = -self.w_half[k] * 0.33 * (Gr.zl_half[k] - 2000.0) ** (-0.67)
+                self.ls_adv_qt[k] = self.w_half[k] * 7.5e-5
+
        #Initialize Statistical Output
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
@@ -711,6 +720,8 @@ cdef class ForcingIsdac:
         NS.add_profile('v_nudging_tendency',Gr, Pa)
         NS.add_profile('s_nudging_tendency',Gr, Pa)
         NS.add_profile('qt_nudging_tendency',Gr, Pa)
+        NS.add_profile('s_ls_adv_tendency', Gr, Pa)
+        NS.add_profile('qt_ls_adv_tendency', Gr, Pa)
 
         return
 
@@ -721,17 +732,20 @@ cdef class ForcingIsdac:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
 
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[s_shift],&PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[u_shift],&PV.tendencies[u_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
-        apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_entropy[0],&PV.values[s_shift],&PV.tendencies[s_shift])
-        apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_qt[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
+        # apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_entropy[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        # apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_qt[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
         apply_nudging(&Gr.dims,&self.nudge_coeff_velocities[0],&self.initial_u[0],&PV.values[u_shift],&PV.tendencies[u_shift])
         apply_nudging(&Gr.dims,&self.nudge_coeff_velocities[0],&self.initial_v[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
+        apply_ls_advection_entropy(&Gr.dims, &PV.tendencies[s_shift], &DV.values[t_shift], &self.ls_adv_Q[0])
+        apply_ls_advection_qt(&Gr.dims, &PV.tendencies[qt_shift], &self.ls_adv_qt[0])
 
         return
 
@@ -744,6 +758,7 @@ cdef class ForcingIsdac:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
 
@@ -796,6 +811,15 @@ cdef class ForcingIsdac:
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('v_nudging_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
+        tmp_tendency[:] = 0.0
+        apply_ls_advection_entropy(&Gr.dims, &tmp_tendency[0], &DV.values[t_shift], &self.ls_adv_Q[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('s_ls_adv_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_ls_advection_qt(&Gr.dims, &tmp_tendency[0], &self.ls_adv_qt[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('qt_ls_adv_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
         return
 
 
@@ -905,5 +929,53 @@ cdef apply_nudging(Grid.DimStruct *dims, double *coefficient, double *mean, doub
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
                     tendencies[ijk] = tendencies[ijk] - (values[ijk] - mean[k]) * coefficient[k]
+
+    return
+
+cdef apply_ls_advection_entropy(Grid.DimStruct *dims, double *tendencies, double *temperature, double *ls_adv_Q):
+
+    cdef:
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] -dims.gw
+        Py_ssize_t jmax = dims.nlg[1] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k
+
+    with nogil:
+        for i in xrange(imin,imax):
+            ishift = i*istride
+            for j in xrange(jmin,jmax):
+                jshift = j*jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    tendencies[ijk] -= ls_adv_Q[k]/temperature[ijk]
+
+    return
+
+cdef apply_ls_advection_qt(Grid.DimStruct *dims, double *tendencies, double *ls_adv_qt):
+
+    cdef:
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] -dims.gw
+        Py_ssize_t jmax = dims.nlg[1] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k
+
+    with nogil:
+        for i in xrange(imin,imax):
+            ishift = i*istride
+            for j in xrange(jmin,jmax):
+                jshift = j*jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    tendencies[ijk] -= ls_adv_qt[k]
 
     return
