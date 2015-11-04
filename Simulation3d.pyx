@@ -124,7 +124,11 @@ class Simulation3d:
         cdef int rk_step
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
-        self.force_io()
+
+        #Do IO if not a restarted run
+        if not self.Restart.is_restart_run:
+            self.force_io()
+
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
