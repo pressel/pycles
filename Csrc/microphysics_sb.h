@@ -25,10 +25,11 @@
 #define c_rain_sed  600.0   // m^{-1}
 #define a_vent_rain  0.78
 #define b_vent_rain  0.308
-#define nsc_3  cbrt(0.71) // Schmidt number to the 1/3 power
+#define nsc_3  0.892112 //cbrt(0.71) // Schmidt number to the 1/3 power
 #define kin_visc_air  1.4086e-5 //m^2/s kinematic viscosity of air
 #define a_nu_sq sqrt(a_rain_sed/kin_visc_air)
 #define sb_eps  1.0e-13 //small value
+#define dp_factor  0.55032120814910
 //Unless specified otherwise, Diameter = Dm not Dp
 
 //Note: All sb_shape_parameter_X functions must have same signature
@@ -151,7 +152,8 @@ void sb_selfcollection_breakup_rain(double density, double nr, double qr, double
         *nr_tendency = 0.0;
     }
     else{
-        lambda_rain = 1.0/cbrt(rain_mass * tgamma(mu + 1.0)/ tgamma(mu + 4.0));
+//        lambda_rain = 1.0/cbrt(rain_mass * tgamma(mu + 1.0)/ tgamma(mu + 4.0));
+        lambda_rain = 1.0/cbrt(rain_mass/6.0)
         phi_sc = pow((1.0 + kaprr/lambda_rain), -9.0); //Seifert & Beheng 2006, DALES
         // phi_sc = 1.0; //Seifert & Beheng 2001, Seifert & Stevens 2008, Seifert 2008
         nr_tendency_sc = -krr * nr * qr * phi_sc * sqrt(density_sb*density);
@@ -186,7 +188,8 @@ void sb_evaporation_rain( double g_therm, double sat_ratio, double nr, double qr
                       + 0.0625 * bova * bova * bova * pow(1.0 +3.0*cdp, -mupow) + 0.0390625 * bova * bova * bova * bova * pow(1.0 + 4.0*cdp, -mupow));
 
 
-        dpfv  = (a_vent_rain * tgamma(mu + 2.0) * Dp + b_vent_rain * nsc_3 * a_nu_sq * tgamma(mupow) * pow(Dp, 1.5) * phi_v)/tgamma(mu + 1.0);
+//        dpfv  = (a_vent_rain * tgamma(mu + 2.0) * Dp + b_vent_rain * nsc_3 * a_nu_sq * tgamma(mupow) * pow(Dp, 1.5) * phi_v)/tgamma(mu + 1.0);
+        dpfv  = (a_vent_rain  * Dp + b_vent_rain * nsc_3 * a_nu_sq * 1.329340388179 * pow(Dp, 1.5) * phi_v);
         qr_tendency_tmp = 2.0 * pi * g_therm * sat_ratio* nr * dpfv;
         *nr_tendency = gamma /rain_mass * qr_tendency_tmp;
         *qr_tendency = qr_tendency_tmp;
@@ -220,8 +223,8 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
                 double density_factor = sqrt(density_sb/density[k]);
                 double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
                 double Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
-                double mu = rain_mu(density[k], qr[ijk], Dm);
-                double Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
+                double mu = 0.0;// rain_mu(density[k], qr[ijk], Dm);
+                double Dp = Dm * dp_factor ; //* cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
 
                 nr_vel_cc[ijk] = -fmin(fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 1.0)) , 0.0),10.0);
                 qr_vel_cc[ijk] = -fmin(fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 4.0)) , 0.0),10.0);
@@ -306,8 +309,8 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                     //obtain some parameters
                     rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, rain_min_mass, rain_max_mass);
                     Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
-                    mu = rain_mu(density[k], qr_tmp, Dm);
-                    Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
+                    mu = 0.0; //rain_mu(density[k], qr_tmp, Dm);
+                    Dp = Dm * dp_factor; //* cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
                     //compute the source terms
                     sb_autoconversion_rain(droplet_nu, density[k], nl, ql_tmp, qr_tmp, &nr_tendency_au, &qr_tendency_au);
                     sb_accretion_rain(density[k], ql_tmp, qr_tmp, &qr_tendency_ac);
@@ -344,8 +347,8 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                 }while(time_added < dt);
                 nr_tendency_micro[ijk] = (nr_tmp - nr[ijk] )/dt;
                 qr_tendency_micro[ijk] = (qr_tmp - qr[ijk])/dt;
-                nr_tendency[ijk] += (nr_tmp - nr[ijk] )/dt;
-                qr_tendency[ijk] += (qr_tmp - qr[ijk])/dt;
+                nr_tendency[ijk] += nr_tendency_micro[ijk];
+                qr_tendency[ijk] += qr_tendency_micro[ijk];
 
             }
         }
@@ -378,7 +381,7 @@ void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct
     const ssize_t jmax = dims->nlg[1]-dims->gw;
     const ssize_t kmax = dims->nlg[2]-dims->gw;
 
-    //for now, only the qt tendency
+
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
@@ -511,7 +514,7 @@ void sb_selfcollection_breakup_rain_wrapper(const struct DimStruct *dims, double
                //obtain some parameters
                 const double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
                 const double Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
-                const double mu = rain_mu(density[k], qr[ijk], Dm);
+                const double mu = 0.0;//rain_mu(density[k], qr[ijk], Dm);
 
                 //compute the source terms
                 sb_selfcollection_breakup_rain(density[k], nr[ijk], qr[ijk], mu, rain_mass, Dm, &nr_tendency[ijk]);
@@ -551,8 +554,8 @@ void sb_evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStru
                 //obtain some parameters
                 const double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
                 const double Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
-                const double mu = rain_mu(density[k], qr[ijk], Dm);
-                const double Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
+                const double mu = 0.0; //rain_mu(density[k], qr[ijk], Dm);
+                const double Dp = Dm * dp_factor; //cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
                 //compute the source terms
                 sb_evaporation_rain( g_therm, sat_ratio, nr[ijk], qr[ijk], mu, rain_mass, Dp, Dm, &nr_tendency[ijk], &qr_tendency[ijk]);
 

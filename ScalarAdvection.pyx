@@ -64,6 +64,7 @@ cdef class ScalarAdvection:
                     #Also check for a scalar-specific velocity (e.g. hydrometeor sedimentation)
                     sc_vel_name = PV.velocity_names_directional[d] + '_' + DV.index_name[i]
                     if sc_vel_name in DV.name_index:
+
                         vel_shift = DV.get_varshift(Gr, sc_vel_name)
                         compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
                                                    &PV.values[scalar_shift],&self.flux[flux_shift],d,order1)
