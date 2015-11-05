@@ -153,7 +153,7 @@ void sb_selfcollection_breakup_rain(double density, double nr, double qr, double
     }
     else{
 //        lambda_rain = 1.0/cbrt(rain_mass * tgamma(mu + 1.0)/ tgamma(mu + 4.0));
-        lambda_rain = 1.0/cbrt(rain_mass/6.0)
+        lambda_rain = 1.0/cbrt(rain_mass/6.0);
         phi_sc = pow((1.0 + kaprr/lambda_rain), -9.0); //Seifert & Beheng 2006, DALES
         // phi_sc = 1.0; //Seifert & Beheng 2001, Seifert & Stevens 2008, Seifert 2008
         nr_tendency_sc = -krr * nr * qr * phi_sc * sqrt(density_sb*density);
@@ -242,7 +242,7 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
             for(ssize_t k=kmin; k<kmax-1 ; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
-                nr_velocity[ijk] = interp_2(nr_velocityijk], nr_velocity[ijk+1]) ;
+                nr_velocity[ijk] = interp_2(nr_velocity[ijk], nr_velocity[ijk+1]) ;
                 qr_velocity[ijk] = interp_2(qr_velocity[ijk], qr_velocity[ijk+1]) ;
 
             }
@@ -556,7 +556,7 @@ void sb_evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStru
                 const double qr_tmp = fmax(qr[ijk],0.0);
                 const double nr_tmp = fmax(fmin(nr[ijk], qr_tmp/rain_min_mass),qr_tmp/rain_max_mass);
                 const double qv = qt[ijk] - ql[ijk];
-                const double sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt[ijk];
+                const double sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt[ijk]);
                 const double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
                 //obtain some parameters
                 const double rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, rain_min_mass, rain_max_mass);
