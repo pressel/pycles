@@ -710,7 +710,7 @@ cdef class ForcingIsdac:
                 self.ls_adv_Q[k] = -self.w_half[k] * 0.3 * (Gr.zl_half[k] - 825.0) ** (-0.7) + Q_rad_tropo
             if Gr.zl_half[k] >= 2045.0:
                 self.ls_adv_Q[k] = -self.w_half[k] * 0.33 * (Gr.zl_half[k] - 2000.0) ** (-0.67) + Q_rad_tropo
-                self.ls_adv_qt[k] = self.w_half[k] * 7.5e-5
+                self.ls_adv_qt[k] = self.w_half[k] * 7.5e-8
 
        #Initialize Statistical Output
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
