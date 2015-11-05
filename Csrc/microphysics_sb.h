@@ -167,7 +167,8 @@ void sb_selfcollection_breakup_rain(double density, double nr, double qr, double
     return;
 }
 
-void sb_evaporation_rain( double g_therm, double sat_ratio, double nr, double qr, double mu, double rain_mass, double Dp, double Dm, double* nr_tendency, double* qr_tendency){
+void sb_evaporation_rain( double g_therm, double sat_ratio, double nr, double qr, double mu, double rain_mass, double Dp,
+double Dm, double* nr_tendency, double* qr_tendency){
     double gamma, dpfv, phi_v;
     const double bova = b_rain_sed/a_rain_sed;
     const double cdp  = c_rain_sed * Dp;
@@ -199,19 +200,18 @@ void sb_evaporation_rain( double g_therm, double sat_ratio, double nr, double qr
 
 
 void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_mu)(double,double,double),
-                                        double* restrict density, double* restrict nr, double* restrict qr, double* restrict w,
-                                        double* restrict nr_vel_cc, double* restrict qr_vel_cc ,
+                                        double* restrict density, double* restrict nr, double* restrict qr,
                                         double* restrict nr_velocity, double* restrict qr_velocity){
 
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
-    const ssize_t imin = dims->gw;
-    const ssize_t jmin = dims->gw;
-    const ssize_t kmin = dims->gw;
-    const ssize_t imax = dims->nlg[0]-dims->gw;
-    const ssize_t jmax = dims->nlg[1]-dims->gw;
-    const ssize_t kmax = dims->nlg[2]-dims->gw;
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
 
 
     for(ssize_t i=imin; i<imax; i++){
@@ -220,14 +220,15 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin-1; k<kmax+1; k++){
                 const ssize_t ijk = ishift + jshift + k;
+                double qr_tmp = fmax(qr[ijk],0.0);
                 double density_factor = sqrt(density_sb/density[k]);
-                double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
+                double rain_mass = microphysics_mean_mass(nr[ijk], qr_tmp, rain_min_mass, rain_max_mass);
                 double Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
-                double mu = 0.0;// rain_mu(density[k], qr[ijk], Dm);
+                double mu = 0.0;// rain_mu(density[k], qr_tmp, Dm);
                 double Dp = Dm * dp_factor ; //* cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
 
-                nr_vel_cc[ijk] = -fmin(fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 1.0)) , 0.0),10.0);
-                qr_vel_cc[ijk] = -fmin(fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 4.0)) , 0.0),10.0);
+                nr_velocity[ijk] = -fmin(fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 1.0)) , 0.0),10.0);
+                qr_velocity[ijk] = -fmin(fmax( density_factor * (a_rain_sed - b_rain_sed * pow(1.0 + c_rain_sed * Dp, -mu - 4.0)) , 0.0),10.0);
 
             }
         }
@@ -238,11 +239,11 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin; k<kmax; k++){
+            for(ssize_t k=kmin; k<kmax-1 ; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
-                nr_velocity[ijk] = interp_2(nr_vel_cc[ijk], nr_vel_cc[ijk+1]) + w[ijk];
-                qr_velocity[ijk] = interp_2(qr_vel_cc[ijk], qr_vel_cc[ijk+1]) + w[ijk];
+                nr_velocity[ijk] = interp_2(nr_velocityijk], nr_velocity[ijk+1]) ;
+                qr_velocity[ijk] = interp_2(qr_velocity[ijk], qr_velocity[ijk+1]) ;
 
             }
         }
@@ -299,7 +300,7 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                 ssize_t iter_count = 0;
                 do{
                     iter_count += 1;
-                    sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt_tmp, qv_tmp);
+                    sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt_tmp);
                     nr_tendency_au = 0.0;
                     nr_tendency_scbk = 0.0;
                     nr_tendency_evp = 0.0;
@@ -549,7 +550,7 @@ void sb_evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStru
                 const ssize_t ijk = ishift + jshift + k;
 
                 const double qv = qt[ijk] - ql[ijk];
-                const double sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt[ijk], qv);
+                const double sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt[ijk];
                 const double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
                 //obtain some parameters
                 const double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);

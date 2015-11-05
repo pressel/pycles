@@ -36,7 +36,7 @@ double microphysics_g(struct LookupStruct *LT, double (*lam_fp)(double), double 
 
 }
 
-double microphysics_saturation_ratio(struct LookupStruct *LT,  double temperature, double  p0, double qt, double qv){
+double microphysics_saturation_ratio(struct LookupStruct *LT,  double temperature, double  p0, double qt){
     double pv_sat = lookup(LT, temperature);
     double qv_sat = qv_star_c(p0, qt, pv_sat);
     double saturation_ratio = qt/qv_sat - 1.0;
