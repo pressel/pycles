@@ -249,7 +249,7 @@ cdef class TimeStepping:
                         ijk = ishift + jshift + k
                         w = fabs(PV.values[w_shift+ijk])
                         for isedv in xrange(DV.nsedv):
-                            w = fmax(fabs(DV.values[DV.sedv_index[isedv]*Gr.dims.npg + ijk ]), w)
+                            w = fmax(fabs( DV.values[DV.sedv_index[isedv]*Gr.dims.npg + ijk ] + PV.values[w_shift+ijk]), w)
 
                         cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2]))
 

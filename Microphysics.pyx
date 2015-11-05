@@ -137,12 +137,9 @@ cdef class Microphysics_SB_Liquid:
             self.compute_droplet_nu = sb_droplet_nu_0
 
         try:
-            self.order = namelist['scalar_transport']['order']
+            self.order = namelist['scalar_transport']['order_sedimentation']
         except:
-            Par.root_print('scalar_transport order not given in namelist')
-            Par.root_print('Killing simulation now!')
-            Par.kill()
-            Par.kill()
+            self.order = namelist['scalar_transport']['order']
 
         return
 

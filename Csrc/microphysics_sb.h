@@ -453,10 +453,11 @@ void sb_autoconversion_rain_wrapper(const struct DimStruct *dims,  double (*drop
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-
-               const double nl = ccn/density[k];
+                const double nl = ccn/density[k];
                 //compute the source terms
-                sb_autoconversion_rain(droplet_nu, density[k], nl, ql[ijk], qr[ijk], &nr_tendency[ijk], &qr_tendency[ijk]);
+                double ql_tmp = fmax(ql[ijk], 0.0);
+                double qr_tmp = fmax(qr[ijk], 0.0);
+                sb_autoconversion_rain(droplet_nu, density[k], nl, ql_tmp, qr_tmp, &nr_tendency[ijk], &qr_tendency[ijk]);
 
 
             }
@@ -483,7 +484,9 @@ void sb_accretion_rain_wrapper(const struct DimStruct *dims, double* restrict de
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                sb_accretion_rain(density[k], ql[ijk], qr[ijk], &qr_tendency[ijk]);
+                const double ql_tmp = fmax(ql[ijk], 0.0);
+                const double qr_tmp = fmax(qr[ijk], 0.0);
+                sb_accretion_rain(density[k], ql_tmp, qr_tmp, &qr_tendency[ijk]);
 
             }
         }
@@ -513,12 +516,14 @@ void sb_selfcollection_breakup_rain_wrapper(const struct DimStruct *dims, double
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
                //obtain some parameters
-                const double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
+                const double qr_tmp = fmax(qr[ijk],0.0);
+                const double nr_tmp = fmax(fmin(nr[ijk], qr_tmp/rain_min_mass),qr_tmp/rain_max_mass);
+                const double rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, rain_min_mass, rain_max_mass);
                 const double Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
-                const double mu = 0.0;//rain_mu(density[k], qr[ijk], Dm);
+                const double mu = 0.0;//rain_mu(density[k], qr_tmp, Dm);
 
                 //compute the source terms
-                sb_selfcollection_breakup_rain(density[k], nr[ijk], qr[ijk], mu, rain_mass, Dm, &nr_tendency[ijk]);
+                sb_selfcollection_breakup_rain(density[k], nr_tmp, qr_tmp, mu, rain_mass, Dm, &nr_tendency[ijk]);
 
             }
         }
@@ -548,17 +553,18 @@ void sb_evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStru
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-
+                const double qr_tmp = fmax(qr[ijk],0.0);
+                const double nr_tmp = fmax(fmin(nr[ijk], qr_tmp/rain_min_mass),qr_tmp/rain_max_mass);
                 const double qv = qt[ijk] - ql[ijk];
                 const double sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt[ijk];
                 const double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
                 //obtain some parameters
-                const double rain_mass = microphysics_mean_mass(nr[ijk], qr[ijk], rain_min_mass, rain_max_mass);
+                const double rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, rain_min_mass, rain_max_mass);
                 const double Dm = cbrt(rain_mass * 6.0/density_liquid/pi);
-                const double mu = 0.0; //rain_mu(density[k], qr[ijk], Dm);
+                const double mu = 0.0; //rain_mu(density[k], qr_tmp, Dm);
                 const double Dp = Dm * dp_factor; //cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
                 //compute the source terms
-                sb_evaporation_rain( g_therm, sat_ratio, nr[ijk], qr[ijk], mu, rain_mass, Dp, Dm, &nr_tendency[ijk], &qr_tendency[ijk]);
+                sb_evaporation_rain( g_therm, sat_ratio, nr_tmp, qr_tmp, mu, rain_mass, Dp, Dm, &nr_tendency[ijk], &qr_tendency[ijk]);
 
             }
         }
