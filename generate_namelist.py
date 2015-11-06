@@ -553,6 +553,7 @@ def SMOKE():
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
 
+
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
     namelist['damping']['Rayleigh'] = {}
@@ -614,8 +615,14 @@ def Rico():
     namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'None_SA'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['scheme'] = 'SB_Liquid'
+    namelist['microphysics']['SB_Liquid'] = {}
+    namelist['microphysics']['SB_Liquid']['cloud_sedimentation'] = False
+    namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
+    namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
+    namelist['microphysics']['SB_Liquid']['ccn'] = 70.0e6
+
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -628,6 +635,7 @@ def Rico():
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
+    namelist['scalar_transport']['order_sedimentation'] = 1
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'

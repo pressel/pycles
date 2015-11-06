@@ -61,6 +61,7 @@ cdef extern from "microphysics_sb.h":
     double sb_droplet_nu_2(double density, double ql) nogil
     void sb_sedimentation_velocity_rain(Grid.DimStruct *dims, double (*rain_mu)(double,double,double),
                                         double* density, double* nr, double* qr, double* nr_velocity, double* qr_velocity) nogil
+    void sb_sedimentation_velocity_liquid(Grid.DimStruct *dims, double*  density, double ccn, double* ql, double* qt_velocity)nogil
 
     void sb_microphysics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                              double (*rain_mu)(double,double,double), double (*droplet_nu)(double,double),
@@ -83,6 +84,11 @@ cdef extern from "microphysics_sb.h":
     void sb_evaporation_rain_wrapper(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                              double (*rain_mu)(double,double,double),  double* density, double* p0,  double* temperature,  double* qt,
                              double* ql, double* nr, double* qr, double* nr_tendency, double* qr_tendency)nogil
+
+    void compute_qt_sedimentation_s_source(Grid.DimStruct *dims, double *p0_half,  double* rho0_half, double *flux,
+                                           double* qt, double* qv, double* T, double* tendency, double (*lam_fp)(double),
+                                           double (*L_fp)(double, double), double dx, ssize_t d)nogil
+
 
 cdef class Microphysics_SB_Liquid:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
@@ -141,6 +147,11 @@ cdef class Microphysics_SB_Liquid:
         except:
             self.order = namelist['scalar_transport']['order']
 
+        try:
+            self.cloud_sedimentation = namelist['microphysics']['SB_Liquid']['cloud_sedimentation']
+        except:
+            self.cloud_sedimentation = False
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -149,8 +160,12 @@ cdef class Microphysics_SB_Liquid:
         PV.add_variable('qr', 'kg/kg', 'sym','scalar',Pa)
 
         # add sedimentation velocities as diagnostic variables
-        DV.add_variables('w_qr', 'm/s', 'asym', Pa)
-        DV.add_variables('w_nr', 'm/s', 'asym', Pa)
+        DV.add_variables('w_qr', 'm/s', 'sym', Pa)
+        DV.add_variables('w_nr', 'm/s', 'sym', Pa)
+        if self.cloud_sedimentation:
+            DV.add_variables('w_qt', 'm/s', 'sym', Pa)
+            NS.add_profile('qt_sedimentation_flux', Gr, Pa)
+            NS.add_profile('s_qt_sedimentation_source',Gr,Pa)
 
 
         # add statistical output for the class
@@ -180,6 +195,7 @@ cdef class Microphysics_SB_Liquid:
             double dt = TS.dt
             Py_ssize_t wqr_shift = DV.get_varshift(Gr, 'w_qr')
             Py_ssize_t wnr_shift = DV.get_varshift(Gr, 'w_nr')
+            Py_ssize_t wqt_shift
             double[:] qr_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] nr_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
@@ -193,6 +209,10 @@ cdef class Microphysics_SB_Liquid:
         sb_sedimentation_velocity_rain(&Gr.dims,self.compute_rain_shape_parameter,
                                        &Ref.rho0_half[0],&PV.values[nr_shift], &PV.values[qr_shift],
                                        &DV.values[wnr_shift], &DV.values[wqr_shift])
+        if self.cloud_sedimentation:
+            wqt_shift = DV.get_varshift(Gr, 'w_qt')
+            sb_sedimentation_velocity_liquid(&Gr.dims,  &Ref.rho0_half[0], self.ccn, &DV.values[ql_shift], &DV.values[wqt_shift])
+
 
 
         # update the Boundary conditions and ghost cells of the sedimentation velocities
@@ -224,6 +244,7 @@ cdef class Microphysics_SB_Liquid:
             Py_ssize_t ishift, jshift
 
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             Py_ssize_t nr_shift = PV.get_varshift(Gr, 'nr')
             Py_ssize_t qr_shift = PV.get_varshift(Gr, 'qr')
@@ -239,13 +260,21 @@ cdef class Microphysics_SB_Liquid:
             double[:] dummy =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             Py_ssize_t wqr_shift = DV.get_varshift(Gr, 'w_qr')
             Py_ssize_t wnr_shift = DV.get_varshift(Gr, 'w_nr')
+            Py_ssize_t wqt_shift
+
+        cdef double[:] s_src =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        if self.cloud_sedimentation:
+            wqt_shift = DV.get_varshift(Gr,'w_qt')
+
+            compute_advective_fluxes_a(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &DV.values[wqt_shift], &PV.values[qt_shift], &dummy[0], 2, self.order)
+            tmp = Pa.HorizontalMean(Gr, &dummy[0])
+            NS.write_profile('qt_sedimentation_flux', tmp[gw:-gw], Pa)
+
+            compute_qt_sedimentation_s_source(&Gr.dims, &Ref.p0_half[0], &Ref.rho0_half[0], &dummy[0],
+                                    &PV.values[qt_shift], &DV.values[qv_shift],&DV.values[t_shift], &s_src[0], self.Lambda_fp,
+                                    self.L_fp, Gr.dims.dx[2], 2)
 
 
-        # call sedimentation velocity with zero array instead of w to get sedimentation velocities only
-        # don't need to output the sedimentation velocities. This is taken care of because they are diagnostic variables
-        sb_sedimentation_velocity_rain(&Gr.dims,self.compute_rain_shape_parameter,
-                                       &Ref.rho0_half[0],&PV.values[nr_shift], &PV.values[qr_shift],
-                                       &DV.values[wnr_shift], &DV.values[wqr_shift])
 
         #compute sedimentation flux only of nr
         compute_advective_fluxes_a(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &DV.values[wnr_shift], &PV.values[nr_shift], &dummy[0], 2, self.order)

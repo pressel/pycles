@@ -46,6 +46,7 @@ cdef class Microphysics_SB_Liquid:
         ClausiusClapeyron CC
         double ccn
         Py_ssize_t order
+        bint cloud_sedimentation
 
 
 

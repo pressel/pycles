@@ -40,7 +40,7 @@ class Simulation3d:
         self.Pr = PressureSolver.PressureSolver()
         self.LH = LatentHeat(namelist, self.Pa)
         self.Micro = MicrophysicsFactory(namelist, self.LH, self.Pa)
-        self.SA = ScalarAdvection.ScalarAdvection(namelist, self.Pa)
+        self.SA = ScalarAdvection.ScalarAdvection(namelist, self.LH, self.Pa)
         self.MA = MomentumAdvection.MomentumAdvection(namelist, self.Pa)
         self.SGS = SGS.SGS(namelist)
         self.SD = ScalarDiffusion.ScalarDiffusion(namelist, self.LH, self.DV, self.Pa)
