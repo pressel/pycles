@@ -413,10 +413,34 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
 }
 
 
+void sb_qt_source_formation(const struct DimStruct *dims,double* restrict qr_tendency, double* restrict qt_tendency ){
 
-void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
-                              double* restrict p0, double* restrict temperature, double* restrict qt, double* restrict ql,
-                              double* restrict qr_tendency, double* restrict qt_tendency, double* restrict entropy_tendency){
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                qt_tendency[ijk] += -qr_tendency[ijk];
+            }
+        }
+    }
+    return;
+}
+
+
+void sb_entropy_source_formation(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                              double* restrict p0, double* restrict T, double* restrict Twet, double* restrict qt, double* restrict qv,
+                              double* restrict qr_tendency,  double* restrict entropy_tendency){
 
 
     //Here we compute the source terms of total water and entropy related to microphysics. See Pressel et al. 2015, Eq. 49-54
@@ -436,17 +460,6 @@ void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct
     const ssize_t kmax = dims->nlg[2]-dims->gw;
 
 
-    for(ssize_t i=imin; i<imax; i++){
-        const ssize_t ishift = i * istride;
-        for(ssize_t j=jmin; j<jmax; j++){
-            const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin; k<kmax; k++){
-                const ssize_t ijk = ishift + jshift + k;
-                qt_tendency[ijk] += -qr_tendency[ijk];
-            }
-        }
-    }
-
     //entropy tendencies from formation or evaporation of precipitation
     //we use fact that P = d(qr)/dt > 0, E =  d(qr)/dt < 0
     for(ssize_t i=imin; i<imax; i++){
@@ -455,25 +468,89 @@ void sb_thermodynamics_sources(const struct DimStruct *dims, struct LookupStruct
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                //temporary: set Twetbulb = temperature
-                const double qv = qt[ijk] - ql[ijk];
-                const double Twet = temperature[ijk];
-                const double lam_T = lam_fp(temperature[ijk]);
-                const double L_fp_T = L_fp(temperature[ijk],lam_T);
-                const double lam_Tw = lam_fp(Twet);
-                const double L_fp_Tw = L_fp(Twet,lam_Tw);
-                const double pv_star_T = lookup(LT, temperature[ijk]);
-                const double pv_star_Tw = lookup(LT,Twet);
-                const double pv = pv_c(p0[k], qt[ijk], qv);
+
+                const double lam_T = lam_fp(T[ijk]);
+                const double L_fp_T = L_fp(T[ijk],lam_T);
+                const double lam_Tw = lam_fp(Twet[ijk]);
+                const double L_fp_Tw = L_fp(Twet[ijk],lam_Tw);
+                const double pv_star_T = lookup(LT, T[ijk]);
+                const double pv_star_Tw = lookup(LT,Twet[ijk]);
+                const double pv = pv_c(p0[k], qt[ijk], qv[ijk]);
                 const double pd = p0[k] - pv;
-                const double sd_T = sd_c(pd, temperature[ijk]);
-                const double sv_star_T = sv_c(pv_star_T,temperature[ijk] );
-                const double sv_star_Tw = sv_c(pv_star_Tw, Twet);
-                const double S_P = sd_T - sv_star_T + L_fp_T/temperature[ijk];
-                const double S_E = sv_star_Tw - L_fp_Tw/Twet - sd_T;
-                const double S_D = -Rv * log(pv/pv_star_T) + cpv * log(temperature[ijk]/Twet);
+                const double sd_T = sd_c(pd, T[ijk]);
+                const double sv_star_T = sv_c(pv_star_T,T[ijk] );
+                const double sv_star_Tw = sv_c(pv_star_Tw, Twet[ijk]);
+                const double S_P = sd_T - sv_star_T + L_fp_T/T[ijk];
+                const double S_E = sv_star_Tw - L_fp_Tw/Twet[ijk] - sd_T;
+                const double S_D = -Rv * log(pv/pv_star_T) + cpv * log(T[ijk]/Twet[ijk]);
                 entropy_tendency[ijk] += S_P * 0.5 * (qr_tendency[ijk] + fabs(qr_tendency[ijk])) - (S_E + S_D) * 0.5 *(qr_tendency[ijk] - fabs(qr_tendency[ijk])) ;
 
+            }
+        }
+    }
+
+    return;
+
+}
+
+
+
+
+
+void sb_entropy_source_heating(const struct DimStruct *dims, double* restrict T, double* restrict Twet, double* restrict qr,
+                               double* restrict w_qr, double* restrict w,  double* restrict entropy_tendency){
+
+
+    //derivative of Twet is upwinded
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+    const double dzi = 1.0/dims->dx[2];
+
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                entropy_tendency[ijk]+= qr[ijk]*(fabs(w_qr[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk])* dzi/T[ijk];
+            }
+        }
+    }
+
+    return;
+
+}
+
+void sb_entropy_source_drag(const struct DimStruct *dims, double* restrict T,  double* restrict qr,
+                            double* restrict w_qr, double* restrict entropy_tendency){
+
+
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                entropy_tendency[ijk]+= g * qr[ijk]* fabs(w_qr[ijk])/ T[ijk];
             }
         }
     }

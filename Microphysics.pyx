@@ -69,9 +69,18 @@ cdef extern from "microphysics_sb.h":
                              double* ql, double* nr, double* qr, double dt, double* nr_tendency_micro, double* qr_tendency_micro,
                              double* nr_tendency, double* qr_tendency) nogil
 
-    void sb_thermodynamics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double),
-                                   double (*L_fp)(double, double), double*  p0, double* temperature, double* qt,
-                                   double*  ql,double* qr_tendency, double* qt_tendency, double * entropy_tendency) nogil
+
+    void sb_qt_source_formation(Grid.DimStruct *dims,double* qr_tendency, double* qt_tendency )nogil
+
+    void sb_entropy_source_formation(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double),
+                                     double (*L_fp)(double, double), double* p0, double* T, double* Twet, double* qt,
+                                     double* qv, double* qr_tendency,  double*  entropy_tendency)nogil
+
+    void sb_entropy_source_heating(Grid.DimStruct *dims, double* T, double* Twet, double* qr, double* w_qr, double* w,
+                                   double* entropy_tendency)nogil
+
+    void sb_entropy_source_drag(Grid.DimStruct *dims, double* T,  double* qr, double* w_qr, double* entropy_tendency)nogil
+
 
     void sb_autoconversion_rain_wrapper(Grid.DimStruct *dims,  double (*droplet_nu)(double,double), double* density,
                                         double ccn, double* ql, double* qr, double*  nr_tendency, double* qr_tendency) nogil
@@ -166,6 +175,8 @@ cdef class Microphysics_SB_Liquid:
             DV.add_variables('w_qt', 'm/s', 'sym', Pa)
             NS.add_profile('qt_sedimentation_flux', Gr, Pa)
             NS.add_profile('s_qt_sedimentation_source',Gr,Pa)
+        # add wet bulb temperature
+        DV.add_variables('temperature_wb', 'K', 'sym', Pa)
 
 
         # add statistical output for the class
@@ -180,14 +191,17 @@ cdef class Microphysics_SB_Liquid:
         NS.add_profile('nr_evaporation', Gr, Pa)
         NS.add_profile('qr_evaporation', Gr,Pa)
         NS.add_profile('s_evaporation', Gr,Pa)
+        NS.add_profile('s_precip_heating', Gr, Pa)
+        NS.add_profile('s_precip_drag', Gr, Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         cdef:
 
-
+            Py_ssize_t tw_shift = DV.get_varshift(Gr, 'temperature_wb')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
             Py_ssize_t nr_shift = PV.get_varshift(Gr, 'nr')
             Py_ssize_t qr_shift = PV.get_varshift(Gr, 'qr')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
@@ -221,12 +235,19 @@ cdef class Microphysics_SB_Liquid:
         # DV.communicate_variable(Gr,Pa,wnr_nv)
         # DV.communicate_variable(Gr,Pa,wqr_nv )
 
+        sb_qt_source_formation(&Gr.dims,  &qr_tend_micro[0], &PV.tendencies[qt_shift])
 
 
         cdef Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
-        sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
-                                  &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift], &qr_tend_micro[0],
-                                  &PV.tendencies[qt_shift], &PV.tendencies[s_shift])
+        sb_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
+                                    &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qt_shift], &DV.values[qv_shift],
+                                    &qr_tend_micro[0], &PV.tendencies[s_shift])
+
+
+        sb_entropy_source_heating(&Gr.dims, &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qr_shift],
+                                  &DV.values[wqr_shift],  &PV.values[w_shift], &PV.tendencies[s_shift])
+
+        sb_entropy_source_drag(&Gr.dims, &DV.values[t_shift], &PV.values[qr_shift], &DV.values[wqr_shift], &PV.tendencies[s_shift])
 
 
         return
@@ -244,12 +265,13 @@ cdef class Microphysics_SB_Liquid:
             Py_ssize_t ishift, jshift
 
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t tw_shift = DV.get_varshift(Gr, 'temperature_wb')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             Py_ssize_t nr_shift = PV.get_varshift(Gr, 'nr')
             Py_ssize_t qr_shift = PV.get_varshift(Gr, 'qr')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             double[:] qr_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] nr_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] tmp
@@ -299,9 +321,9 @@ cdef class Microphysics_SB_Liquid:
         tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
         NS.write_profile('qr_autoconversion', tmp[gw:-gw], Pa)
         cdef double[:] s_auto =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-        sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
-                                  &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift], &qr_tendency[0],
-                                  &dummy[0], &s_auto[0])
+        sb_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
+                                  &DV.values[t_shift], &DV.values[tw_shift],&PV.values[qt_shift], &DV.values[qv_shift],
+                                  &qr_tendency[0], &s_auto[0])
 
         tmp = Pa.HorizontalMean(Gr, &s_auto[0])
         NS.write_profile('s_autoconversion', tmp[gw:-gw], Pa)
@@ -312,9 +334,9 @@ cdef class Microphysics_SB_Liquid:
         tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
         NS.write_profile('qr_accretion', tmp[gw:-gw], Pa)
         cdef double[:] s_accr =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-        sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
-                                  &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift], &qr_tendency[0],
-                                  &dummy[0], &s_accr[0])
+        sb_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
+                                  &DV.values[t_shift], &DV.values[tw_shift],&PV.values[qt_shift], &DV.values[qv_shift],
+                                  &qr_tendency[0], &s_accr[0])
         tmp = Pa.HorizontalMean(Gr, &s_accr[0])
         NS.write_profile('s_accretion', tmp[gw:-gw], Pa)
 
@@ -335,11 +357,23 @@ cdef class Microphysics_SB_Liquid:
         tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
         NS.write_profile('qr_evaporation', tmp[gw:-gw], Pa)
         cdef double[:] s_evp =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-        sb_thermodynamics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
-                                  &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift], &qr_tendency[0],
-                                  &dummy[0], &s_evp[0])
+        sb_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
+                                  &DV.values[t_shift], &DV.values[tw_shift],&PV.values[qt_shift], &DV.values[qv_shift],
+                                  &qr_tendency[0], &s_evp[0])
         tmp = Pa.HorizontalMean(Gr, &s_evp[0])
         NS.write_profile('s_evaporation', tmp[gw:-gw], Pa)
+
+
+        cdef double[:] s_heat =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        sb_entropy_source_heating(&Gr.dims, &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qr_shift],
+                                  &DV.values[wqr_shift],  &PV.values[w_shift], &s_heat[0])
+        tmp = Pa.HorizontalMean(Gr, &s_heat[0])
+        NS.write_profile('s_precip_heating', tmp[gw:-gw], Pa)
+
+        cdef double[:] s_drag =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        sb_entropy_source_drag(&Gr.dims, &DV.values[t_shift], &PV.values[qr_shift], &DV.values[wqr_shift], &s_drag[0])
+        tmp = Pa.HorizontalMean(Gr, &s_drag[0])
+        NS.write_profile('s_precip_drag', tmp[gw:-gw], Pa)
 
         return
 

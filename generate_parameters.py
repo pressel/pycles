@@ -18,6 +18,8 @@ def main():
     parameters['eps_vi'] = 1.0 / parameters['eps_v']
     parameters['cpd'] = 1004.0
     parameters['cpv'] = 1859.0
+    parameters['cl'] = 4218.0
+    parameters['ci'] = 2106.0
     parameters['kappa'] = parameters['Rd'] / parameters['cpd']
     parameters['Tf'] = 273.15
     parameters['Tt'] = 273.16
