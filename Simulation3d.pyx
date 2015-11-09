@@ -21,6 +21,7 @@ cimport TimeStepping
 cimport Kinematics
 cimport Damping
 cimport NetCDFIO
+cimport VisualizationOutput
 cimport Surface
 cimport Forcing
 cimport Radiation
@@ -53,6 +54,7 @@ class Simulation3d:
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
         self.Restart = Restart.Restart(namelist, self.Pa)
+        self.VO = VisualizationOutput.VisualizationOutput(namelist, self.Pa)
         self.Damping = Damping.Damping(namelist, self.Pa)
         self.TS = TimeStepping.TimeStepping()
 
@@ -70,6 +72,7 @@ class Simulation3d:
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist, self.Pa)
         self.Restart.initialize()
+        self.VO.initialize()
         self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.StatsIO, self.Pa)
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
@@ -162,6 +165,7 @@ class Simulation3d:
             double fields_dt = 0.0
             double stats_dt = 0.0
             double restart_dt = 0.0
+            double vis_dt = 0.0
             double min_dt = 0.0
 
         if self.TS.t > 0 and self.TS.rk_step == self.TS.n_rk_steps - 1:
@@ -169,10 +173,13 @@ class Simulation3d:
             fields_dt = self.FieldsIO.last_output_time + self.FieldsIO.frequency - self.TS.t
             stats_dt = self.StatsIO.last_output_time + self.StatsIO.frequency - self.TS.t
             restart_dt = self.Restart.last_restart_time + self.Restart.frequency - self.TS.t
+            vis_dt = self.VO.last_vis_time + self.VO.frequency - self.TS.t
 
-            dts = np.array([fields_dt, stats_dt, restart_dt, self.TS.dt, self.TS.dt_max ])
+
+            dts = np.array([fields_dt, stats_dt, restart_dt, vis_dt,
+                            self.TS.dt, self.TS.dt_max ])
+
             self.TS.dt = np.amin(dts[dts > 0.0])
-
             # If time to ouptut fields do output
             if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
                 self.Pa.root_print('Doing 3D FiledIO')
@@ -213,6 +220,10 @@ class Simulation3d:
 
                 self.Restart.write(self.Pa)
                 self.Pa.root_print('Finished Dumping Restart Files!')
+
+            if self.VO.last_vis_time + self.VO.frequency == self.TS.t:
+                self.VO.last_vis_time = self.TS.t
+                self.VO.write(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
 
         return
 

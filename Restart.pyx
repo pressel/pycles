@@ -66,7 +66,7 @@ cdef class Restart:
 
         self.restart_data['last_restart_time'] = self.last_restart_time
         #Set up path for writing restar files
-        path = self.restart_path + '/' + str(np.int(self.last_restart_time))
+        path = self.restart_path + '/' + str(np.int(self.last_restart_time + self.frequency))
 
         if Pa.rank == 0:
             if os.path.exists(path):
@@ -79,7 +79,7 @@ cdef class Restart:
         Pa.barrier()
 
         with open(path+ '/' + str(Pa.rank) + '.pkl', 'wb') as f:
-            pickle.dump(self.restart_data, f, protocol=2)
+            pickle.dump(self.restart_data, f,protocol=2)
 
         # No point keeping data in dictionary so empty it now
         self.free_memory()
