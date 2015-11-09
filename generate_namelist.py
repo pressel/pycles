@@ -488,7 +488,7 @@ def DYCOMS_RF01():
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['visualization'] = {}
-    namelist['visualization']['frequency']
+    namelist['visualization']['frequency'] = 10.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'DYCOMS_RF01'
