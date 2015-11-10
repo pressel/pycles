@@ -19,14 +19,15 @@ from thermodynamic_functions cimport thetas_c
 include "parameters.pxi"
 
 
-def AuxiliaryStatisticsFactory(namelist, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+def AuxiliaryStatisticsFactory(namelist, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+                               DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
     try:
         auxiliary_statistics = namelist['stats_io']['auxiliary']
     except:
         auxiliary_statistics = 'None'
 
     if auxiliary_statistics == 'Cumulus':
-        return CumulusStatistics(Gr, NS, Pa)
+        return CumulusStatistics(Gr,PV, DV, NS, Pa)
     elif auxiliary_statistics == 'StableBL':
         return StableBLStatistics(Gr, NS, Pa)
     elif auxiliary_statistics == 'SMOKE':
@@ -47,9 +48,21 @@ class AuxiliaryStatisticsNone:
         return
 
 class CumulusStatistics:
-    def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    def __init__(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         conditions = ['cloud','core']
-        scalars = ['theta_rho','thetali','thetas','qt','ql','s']
+        scalars = ['qt','ql','s', 'thetas']
+
+        if 'qr' in PV.name_index:
+            scalars.append('qr')
+        if 'nr' in PV.name_index:
+            scalars.append('nr')
+        if 'theta_rho' in DV.name_index:
+            scalars.append('theta_rho')
+        if 'thetali' in DV.name_index:
+            scalars.append('theta_li')
+
+
         for cond in conditions:
             NS.add_profile('fraction_'+cond,Gr,Pa)
             NS.add_profile('w_'+cond,Gr,Pa)
@@ -58,8 +71,7 @@ class CumulusStatistics:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
 
-        NS.add_profile('ql_flux_mean',Gr,Pa)
-        NS.add_profile('theta_rho_flux_mean',Gr,Pa)
+
 
     def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -138,18 +150,6 @@ class CumulusStatistics:
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
         NS.write_profile('ql2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        #--theta_rho
-        shift = DV.get_varshift(Gr, 'theta_rho')
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
-        NS.write_profile('theta_rho_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
-        NS.write_profile('theta_rho2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
-        NS.write_profile('theta_rho_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
-        NS.write_profile('theta_rho2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-
-
         #-s
         shift = PV.get_varshift(Gr,'s')
         tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[shift],&cloudmask[0])
@@ -161,42 +161,91 @@ class CumulusStatistics:
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift], &PV.values[shift], &coremask[0])
         NS.write_profile('s2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        #--theta_s
-        shift = DV.get_varshift(Gr,'thetali')
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
-        NS.write_profile('thetali_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
-        NS.write_profile('thetali2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
-        NS.write_profile('thetali_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
-        NS.write_profile('thetali2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        #--theta_s
-        cdef:
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
-            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+        if 'qr' in PV.name_index:
+            shift = PV.get_varshift(Gr, 'qr')
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+            NS.write_profile('qr_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
+            NS.write_profile('qr2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+            NS.write_profile('qr_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
+            NS.write_profile('qr2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        with nogil:
-            count = 0
-            for i in range(imin, imax):
-                ishift = i * istride
-                for j in range(jmin, jmax):
-                    jshift = j * jstride
-                    for k in range(kmin, kmax):
-                        ijk = ishift + jshift + k
-                        data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
 
-                        count += 1
-        tmp = Pa.HorizontalMeanConditional(Gr, &data[0], &cloudmask[0])
-        NS.write_profile('thetas_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &data[0], &data[0], &cloudmask[0])
-        NS.write_profile('thetas2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &data[0], &coremask[0])
-        NS.write_profile('thetas_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &data[0], &data[0], &coremask[0])
-        NS.write_profile('thetas2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        if 'nr' in PV.name_index:
+            shift = PV.get_varshift(Gr, 'nr')
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+            NS.write_profile('nr_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
+            NS.write_profile('nr2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+            NS.write_profile('nr_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
+            NS.write_profile('nr2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+
+        if 'theta_rho' in DV.name_index:
+            shift = DV.get_varshift(Gr, 'theta_rho')
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+            NS.write_profile('theta_rho_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
+            NS.write_profile('theta_rho2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+            NS.write_profile('theta_rho_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
+            NS.write_profile('theta_rho2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+
+        if 'thetali' in DV.name_index:
+            shift = DV.get_varshift(Gr,'thetali')
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+            NS.write_profile('thetali_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
+            NS.write_profile('thetali2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+            NS.write_profile('thetali_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
+            NS.write_profile('thetali2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        if 'thetas' in DV.name_index:
+            shift = DV.get_varshift(Gr,'thetas')
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+            NS.write_profile('thetas_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
+            NS.write_profile('thetas2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+            NS.write_profile('thetas_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
+            NS.write_profile('thetas2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        else:
+
+            cdef:
+                Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+                Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+                double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+
+            with nogil:
+                count = 0
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
+
+                            count += 1
+            tmp = Pa.HorizontalMeanConditional(Gr, &data[0], &cloudmask[0])
+            NS.write_profile('thetas_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &data[0], &data[0], &cloudmask[0])
+            NS.write_profile('thetas2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &data[0], &coremask[0])
+            NS.write_profile('thetas_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &data[0], &data[0], &coremask[0])
+            NS.write_profile('thetas2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
 

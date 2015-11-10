@@ -49,11 +49,11 @@ double microphysics_saturation_ratio(struct LookupStruct *LT,  double temperatur
 double compute_wetbulb(struct LookupStruct *LT,const double p0, const double s, const double qt, const double T){
 
 
-    double Twet;
+    double Twet = T;
     double T_1 = T;
     double pv_star_1  = lookup(LT, T_1);
     double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
-
+    ssize_t iter = 0;
     /// If not saturated
     if(qt >= qv_star_1){
         Twet = T_1;
@@ -63,21 +63,23 @@ double compute_wetbulb(struct LookupStruct *LT,const double p0, const double s, 
         double pd_1 = p0 - pv_star_1;
         double s_1 = sd_c(pd_1,T_1) * (1.0 - qv_star_1) + sv_c(pv_star_1,T_1) * qv_star_1;
         double f_1 = s - s_1;
-        double T_2 = T_1 - 1.0;
+        double T_2 = T_1 - 0.5;
         double delta_T  = fabs(T_2 - T_1);
-        double qv_star_2;
+
         do{
             double pv_star_2 = lookup(LT, T_2);
-            qv_star_2 = pv_star_2/(eps_vi * (p0 - pv_star_2) + pv_star_2);
-            double s_2 = sd_c(pv_star_2,T_2) * (1.0 - qv_star_2) + sv_c(pv_star_2,T_2) * qv_star_2;
+            double qv_star_2 = pv_star_2/(eps_vi * (p0 - pv_star_2) + pv_star_2);
+            double pd_2 = p0 - pv_star_2;
+            double s_2 = sd_c(pd_2,T_2) * (1.0 - qv_star_2) + sv_c(pv_star_2,T_2) * qv_star_2;
             double f_2 = s - s_2;
             double T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1);
             T_1 = T_2;
             T_2 = T_n;
             f_1 = f_2;
             delta_T  = fabs(T_2 - T_1);
-        } while(delta_T >= 1.0e-3);
-        Twet  = T_2;
+            iter += 1;
+        } while(iter < 1);    //(delta_T >= 1.0e-3);
+        Twet  = T_1;
     }
 
     return Twet;
@@ -99,15 +101,15 @@ void microphysics_wetbulb_temperature(struct DimStruct *dims, struct LookupStruc
     const ssize_t kmax = dims->nlg[2];
 
     for (i=imin; i<imax; i++){
-       const ssize_t ishift = i * istride;
+        const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
             const ssize_t jshift = j * jstride;
-                for (k=kmin;k<kmax;k++){
-                    const ssize_t ijk = ishift + jshift + k;
-                    Twet[ijk] = compute_wetbulb(LT, p0[k], s[ijk], qt[ijk],  T[ijk]);
+            for (k=kmin;k<kmax;k++){
+                const ssize_t ijk = ishift + jshift + k;
+                Twet[ijk] = compute_wetbulb(LT, p0[k], s[ijk], qt[ijk],  T[ijk]);
 
-                } // End k loop
-            } // End j loop
-        } // End i loop
+            } // End k loop
+        } // End j loop
+    } // End i loop
     return;
-    }
+ }

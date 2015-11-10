@@ -70,7 +70,7 @@ class Simulation3d:
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist, self.Pa)
         self.Restart.initialize()
-        self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.StatsIO, self.Pa)
+        self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Micro.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)

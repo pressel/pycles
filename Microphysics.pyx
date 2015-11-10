@@ -15,7 +15,8 @@ cimport ParallelMPI
 cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
-from libc.math cimport fmax, fmin
+from libc.math cimport fmax, fmin, fabs
+include 'parameters.pxi'
 
 
 cdef extern from "scalar_advection.h":
@@ -94,9 +95,14 @@ cdef extern from "microphysics_sb.h":
                              double (*rain_mu)(double,double,double),  double* density, double* p0,  double* temperature,  double* qt,
                              double* ql, double* nr, double* qr, double* nr_tendency, double* qr_tendency)nogil
 
+cdef extern from "scalar_advection.h":
     void compute_qt_sedimentation_s_source(Grid.DimStruct *dims, double *p0_half,  double* rho0_half, double *flux,
                                            double* qt, double* qv, double* T, double* tendency, double (*lam_fp)(double),
                                            double (*L_fp)(double, double), double dx, ssize_t d)nogil
+cdef extern from "microphysics.h":
+    void microphysics_wetbulb_temperature(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double* p0, double* s,
+                                          double* qt,  double* T, double* Twet )nogil
+
 
 
 cdef class Microphysics_SB_Liquid:
@@ -198,7 +204,7 @@ cdef class Microphysics_SB_Liquid:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         cdef:
 
-            Py_ssize_t tw_shift = DV.get_varshift(Gr, 'temperature_wb')
+
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
@@ -238,7 +244,15 @@ cdef class Microphysics_SB_Liquid:
         sb_qt_source_formation(&Gr.dims,  &qr_tend_micro[0], &PV.tendencies[qt_shift])
 
 
-        cdef Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+        cdef:
+            Py_ssize_t tw_shift = DV.get_varshift(Gr, 'temperature_wb')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+
+
+
+        microphysics_wetbulb_temperature(&Gr.dims, &self.CC.LT.LookupStructC, &Ref.p0_half[0], &PV.values[s_shift],
+                                         &PV.values[qt_shift], &DV.values[t_shift], &DV.values[tw_shift])
+
         sb_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
                                     &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qt_shift], &DV.values[qv_shift],
                                     &qr_tend_micro[0], &PV.tendencies[s_shift])
@@ -376,6 +390,79 @@ cdef class Microphysics_SB_Liquid:
         NS.write_profile('s_precip_drag', tmp[gw:-gw], Pa)
 
         return
+
+
+
+cdef extern from "entropies.h":
+    inline double sd_c(double pd, double T) nogil
+    inline double sv_c(double pv, double T) nogil
+cdef extern from "thermodynamic_functions.h":
+    inline double qv_star_c(const double p0, const double qt, const double pv)nogil
+
+
+
+
+cdef cython_wetbulb(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double *p0, double *s, double *qt, double *T, double *Twet):
+
+    cdef:
+        Py_ssize_t imin = 0
+        Py_ssize_t jmin = 0
+        Py_ssize_t kmin = 0
+        Py_ssize_t imax = dims.nlg[0]
+        Py_ssize_t jmax = dims.nlg[1]
+        Py_ssize_t kmax = dims.nlg[2]
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k, iter = 0
+    cdef:
+        double T_1, T_2, T_n, pv_star_1, pv_star_2, qv_star_1, qv_star_2
+        double pd_1, pd_2, s_1, s_2, f_1, f_2, delta_T
+    print('In wetbulb')
+    cdef Py
+
+    with nogil:
+        for i in xrange(imin,imax):
+            ishift = i*istride
+            for j in xrange(jmin,jmax):
+                jshift = j*jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    T_1 = T[ijk]
+                    pv_star_1 = Lookup.lookup(LT, T_1)
+                    qv_star_1 = qv_star_c(p0[k], qt[ijk], pv_star_1)
+
+                    if qt[ijk] >= qv_star_1:
+                        Twet[ijk] = T_1
+
+                    else:
+                        T_2 = T_1 + 1.0
+                        delta_T = fabs(T_2 - T_1)
+                        qv_star_1 = pv_star_1/(eps_vi * (p0[k] - pv_star_1) + pv_star_1)
+                        pd_1 = p0[k] - pv_star_1
+                        s_1 = sd_c(pd_1,T_1) * (1.0 - qv_star_1) + sv_c(pv_star_1,T_1) * qv_star_1
+                        f_1 = s[ijk] - s_1
+                        iter = 0
+                        while delta_T > 1.0e-3:
+                            pv_star_2 = Lookup.lookup(LT, T_2)
+                            qv_star_2 = pv_star_2/(eps_vi * (p0[k] - pv_star_2) + pv_star_2)
+                            pd_2 = p0[k] - pv_star_2
+                            s_2 = sd_c(pd_2,T_2) * (1.0 - qv_star_2) + sv_c(pv_star_2,T_2) * qv_star_2
+                            f_2 = s[ijk] - s_2
+                            T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1)
+                            T_1 = T_2
+                            T_2 = T_n
+                            f_1 = f_2
+                            delta_T = fabs(T_2 - T_1)
+                            iter += 1
+                        Twet[ijk] = T_2
+                        with gil:
+                            print(T[ijk]-Twet[ijk], iter)
+
+    print('leaving wetbulb')
+    return
+
+
+
 
 
 
