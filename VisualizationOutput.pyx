@@ -40,7 +40,7 @@ cdef class VisualizationOutput:
         try:
             self.frequency = namelist['visualization']['frequency']
         except:
-            self.frequency = 10.0
+            self.frequency = 1e6
 
         return
 
