@@ -6,7 +6,6 @@ from NetCDFIO cimport NetCDFIO_Stats
 
 cdef class MomentumAdvection:
     cdef:
-        double[:] flux
         Py_ssize_t order
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

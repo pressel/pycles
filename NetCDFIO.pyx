@@ -19,6 +19,7 @@ import cython
 cdef class NetCDFIO_Stats:
     def __init__(self):
         return
+
     @cython.wraparound(True)
     cpdef initialize(self, dict namelist, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
 
@@ -28,18 +29,37 @@ cdef class NetCDFIO_Stats:
 
         # Setup the statistics output path
         outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
-        self.stats_path = str( os.path.join(outpath, namelist['stats_io']['stats_dir']))
-        self.path_plus_file = str( self.stats_path + '/' + 'Stats.' + namelist['meta']['simname'] + '.nc')
+
         if Pa.rank == 0:
             try:
                 os.mkdir(outpath)
             except:
                 pass
+
+        self.stats_path = str( os.path.join(outpath, namelist['stats_io']['stats_dir']))
+        if Pa.rank == 0:
             try:
                 os.mkdir(self.stats_path)
             except:
                 pass
 
+
+        self.path_plus_file = str( self.stats_path + '/' + 'Stats.' + namelist['meta']['simname'] + '.nc')
+        if os.path.exists(self.path_plus_file):
+            for i in range(100):
+                res_name = 'Restart_'+str(i)
+                print "Here " + res_name
+                if os.path.exists(self.path_plus_file):
+                    self.path_plus_file = str( self.stats_path + '/' + 'Stats.' + namelist['meta']['simname']
+                           + '.' + res_name + '.nc')
+                else:
+                    break
+
+        Pa.barrier()
+
+
+
+        if Pa.rank == 0:
             shutil.copyfile(
                 os.path.join( './', namelist['meta']['simname'] + '.in'),
                 os.path.join( outpath, namelist['meta']['simname'] + '.in'))
