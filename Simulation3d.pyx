@@ -74,7 +74,6 @@ class Simulation3d:
         self.Restart.initialize()
 
         self.VO.initialize()
-        self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Micro.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
@@ -117,6 +116,8 @@ class Simulation3d:
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Damping.initialize(self.Gr)
+        self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+
         return
 
     def run(self):

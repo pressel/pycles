@@ -663,6 +663,12 @@ def Rico():
     namelist['meta']['simname'] = 'Rico'
     namelist['meta']['casename'] = 'Rico'
 
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
     return namelist
 
 

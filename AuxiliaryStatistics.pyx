@@ -52,6 +52,7 @@ class CumulusStatistics:
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         conditions = ['cloud','core']
         scalars = ['qt','ql','s', 'thetas']
+        print('PV.name_index', PV.name_index)
 
         if 'qr' in PV.name_index:
             scalars.append('qr')
@@ -60,7 +61,8 @@ class CumulusStatistics:
         if 'theta_rho' in DV.name_index:
             scalars.append('theta_rho')
         if 'thetali' in DV.name_index:
-            scalars.append('theta_li')
+            scalars.append('thetali')
+        print('Aux scalars', scalars)
 
 
         for cond in conditions:
@@ -210,6 +212,12 @@ class CumulusStatistics:
             tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
             NS.write_profile('thetali2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+        cdef:
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+
+
         if 'thetas' in DV.name_index:
             shift = DV.get_varshift(Gr,'thetas')
             tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
@@ -222,10 +230,6 @@ class CumulusStatistics:
             NS.write_profile('thetas2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         else:
 
-            cdef:
-                Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
-                Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-                double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
 
             with nogil:
                 count = 0
