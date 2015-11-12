@@ -229,8 +229,6 @@ class CumulusStatistics:
             tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
             NS.write_profile('thetas2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         else:
-
-
             with nogil:
                 count = 0
                 for i in range(imin, imax):
