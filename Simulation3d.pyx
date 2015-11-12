@@ -177,7 +177,8 @@ class Simulation3d:
 
 
             dts = np.array([fields_dt, stats_dt, restart_dt, vis_dt,
-                            self.TS.dt, self.TS.dt_max ])
+                            self.TS.dt, self.TS.dt_max, self.VO.frequency, self.Restart.frequency,
+                            self.StatsIO.frequency, self.FieldsIO.frequency])
 
             self.TS.dt = np.amin(dts[dts > 0.0])
             # If time to ouptut fields do output
