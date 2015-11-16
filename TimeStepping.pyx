@@ -6,6 +6,7 @@
 
 cimport ParallelMPI as ParallelMPI
 cimport PrognosticVariables as PrognosticVariables
+cimport DiagnosticVariables as DiagnosticVariables
 cimport Grid as Grid
 cimport Restart
 cimport mpi4py.mpi_c as mpi
@@ -91,10 +92,10 @@ cdef class TimeStepping:
             Pa.kill()
         return
 
-    cpdef adjust_timestep(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+    cpdef adjust_timestep(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         #Compute the CFL number and diffusive stability criterion
         if self.rk_step == self.n_rk_steps - 1:
-            self.compute_cfl_max(Gr, PV, Pa)
+            self.compute_cfl_max(Gr, PV,DV, Pa)
             self.dt = self.cfl_time_step()
 
             #Diffusive limiting not yet implemented
@@ -219,7 +220,7 @@ cdef class TimeStepping:
 
         return
 
-    cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+    cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             double cfl_max_local = -9999.0
@@ -236,6 +237,8 @@ cdef class TimeStepping:
             long istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             long jstride = Gr.dims.nlg[2]
             long i,j,k, ijk, ishift, jshift
+            double w
+            long isedv
 
         with nogil:
             for i in xrange(imin,imax):
@@ -244,7 +247,13 @@ cdef class TimeStepping:
                     jshift = j * jstride
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
-                        cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + fabs(PV.values[w_shift+ijk])*dxi[2]))
+                        w = fabs(PV.values[w_shift+ijk])
+                        for isedv in xrange(DV.nsedv):
+                            w = fmax(fabs( DV.values[DV.sedv_index[isedv]*Gr.dims.npg + ijk ] + PV.values[w_shift+ijk]), w)
+
+                        cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2]))
+
+                        # cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + fabs(PV.values[w_shift+ijk])*dxi[2]))
 
         mpi.MPI_Allreduce(&cfl_max_local,&self.cfl_max,1,
                           mpi.MPI_DOUBLE,mpi.MPI_MAX,Pa.comm_world)

@@ -119,7 +119,7 @@ cdef class ThermodynamicsSA:
 
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
         '''
-        Provide a python rapper for the c function that computes the specific entropy
+        Provide a python wrapper for the c function that computes the specific entropy
         consistent with Pressel et al. 2015 equation (40)
         :param p0: reference state pressure [Pa]
         :param T: thermodynamic temperature [K]

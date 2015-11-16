@@ -26,6 +26,8 @@ def main():
         namelist = DYCOMS_RF01()
     elif case_name == 'SMOKE':
         namelist = SMOKE()
+    elif case_name == 'Rico':
+        namelist = Rico()
     else:
         print('Not a vaild case name')
         exit()
@@ -376,6 +378,9 @@ def Gabls():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['cs'] = 0.17
+    namelist['sgs']['Smagorinsky']['prt'] = 1.0/3.0
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -404,11 +409,11 @@ def Gabls():
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = 'StableBL'
-    namelist['stats_io']['frequency'] = 300.0
+    namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
-    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['frequency'] = 1800.0
     namelist['fields_io']['diagnostic_fields'] = ['temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
@@ -501,11 +506,9 @@ def SMOKE():
 
     '''
     Namelist generator for the smoke cloud case:
-
     Bretherton, C. S., and coauthors, 1999:
     An intercomparison of radiatively- driven entrainment and turbulence in a smoke cloud,
     as simulated by different numerical models. Quart. J. Roy. Meteor. Soc., 125, 391-423. Full text copy.
-
     :return:
     '''
 
@@ -553,6 +556,7 @@ def SMOKE():
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
 
+
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
     namelist['damping']['Rayleigh'] = {}
@@ -583,6 +587,90 @@ def SMOKE():
     namelist['meta']['casename'] = 'SMOKE'
 
     return namelist
+
+def Rico():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 128
+    namelist['grid']['ny'] = 128
+    namelist['grid']['nz'] = 150
+    namelist['grid']['gw'] = 7
+    namelist['grid']['dx'] = 100.0
+    namelist['grid']['dy'] = 100.0
+    namelist['grid']['dz'] = 40.0
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 3600.0*24.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['scheme'] = 'SB_Liquid'
+    namelist['microphysics']['SB_Liquid'] = {}
+    namelist['microphysics']['SB_Liquid']['cloud_sedimentation'] = False
+    namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
+    namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
+    namelist['microphysics']['SB_Liquid']['ccn'] = 70.0e6
+
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 7
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 7
+    namelist['scalar_transport']['order_sedimentation'] = 1
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 800
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = 'Cumulus'
+    namelist['stats_io']['frequency'] = 100.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Rico'
+    namelist['meta']['casename'] = 'Rico'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    return namelist
+
 
 def write_file(namelist):
 

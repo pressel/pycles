@@ -110,7 +110,9 @@ cdef class ScalarDiffusion:
                     diff_shift_n = DV.get_varshift(Gr,'viscosity')
                     flux_factor = 1.0
                 for d in xrange(Gr.dims.dims):
+
                     flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + d* Gr.dims.npg
+
 
                     compute_diffusive_flux(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],
                                            &DV.values[diff_shift],&PV.values[scalar_shift],

@@ -21,6 +21,7 @@ cdef extern from "prognostic_variables.h":
 cdef class DiagnosticVariables:
     def __init__(self):
         self.name_index = {}
+        self.index_name = []
         self.units = {}
         self.nv = 0
         self.bc_type = np.array([],dtype=np.double,order='c')
@@ -28,9 +29,13 @@ cdef class DiagnosticVariables:
         self.name_index_2d = {}
         self.units_2d = {}
         self.nv_2d = 0
+        # keep track of which indices are associated with sedimentation velocity
+        self.sedv_index  = np.array([],dtype=np.int,order='c')
+        self.nsedv = 0
 
     cpdef add_variables(self, name, units,bc_type,  ParallelMPI.ParallelMPI Pa):
         self.name_index[name] = self.nv
+        self.index_name.append(name)
         self.units[name] = units
         #Add bc type to array
         if bc_type == "sym":
@@ -40,8 +45,12 @@ cdef class DiagnosticVariables:
         else:
             Pa.root_print("Not a valid bc_type. Killing simulation now!")
             Pa.kill()
-        self.nv = len(self.name_index.keys())
 
+        if name[0:2] == 'w_':
+            self.sedv_index = np.append(self.sedv_index,self.nv)
+            self.nsedv += 1
+
+        self.nv = len(self.name_index.keys())
         return
 
     cpdef add_variables_2d(self, name, units):
