@@ -309,8 +309,8 @@ cdef class Microphysics_SB_Liquid:
             compute_qt_sedimentation_s_source(&Gr.dims, &Ref.p0_half[0], &Ref.rho0_half[0], &dummy[0],
                                     &PV.values[qt_shift], &DV.values[qv_shift],&DV.values[t_shift], &s_src[0], self.Lambda_fp,
                                     self.L_fp, Gr.dims.dx[2], 2)
-
-
+            tmp = Pa.HorizontalMean(Gr, &s_src[0])
+            NS.write_profile('s_qt_sedimentation_source', tmp[gw:-gw], Pa)
 
         #compute sedimentation flux only of nr
         compute_advective_fluxes_a(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &DV.values[wnr_shift], &PV.values[nr_shift], &dummy[0], 2, self.order)
