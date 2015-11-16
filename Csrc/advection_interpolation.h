@@ -64,13 +64,13 @@ double interp_weno3(double phim1, double phi, double phip1){
     const double beta1 = (phip1 - phi) * (phip1 - phi);
     const double beta0 = (phi - phim1) * (phi - phim1);
 
-    const double alpha0 = (1.0/3.0) /(beta0 + 1e-10)/(beta0 + 1.0e-10);
-    const double alpha1 = (2.0/3.0)/(beta1 + 1e-10)/(beta1 + 1.0e-10);
+    const double alpha0 = (1.0/3.0) /((beta0 + 1e-10) * (beta0 + 1.0e-10));
+    const double alpha1 = (2.0/3.0)/((beta1 + 1e-10) * (beta1 + 1.0e-10));
 
-    const double alpha_sum = alpha0 + alpha1;
+    const double alpha_sum_inv = 1.0/(alpha0 + alpha1);
 
-    const double w0 = alpha0/alpha_sum;
-    const double w1 = alpha1/alpha_sum;
+    const double w0 = alpha0 * alpha_sum_inv;
+    const double w1 = alpha1 * alpha_sum_inv;
 
 
     return w0 * p0 + w1 * p1;
@@ -89,15 +89,15 @@ double interp_weno5(double phim2, double phim1, double phi, double phip1, double
    const double beta0 = (13.0/12.0 * (phim2 - 2.0 * phim1 + phi)*(phim2 - 2.0 * phim1 + phi)
                         + 0.25 * (phim2 - 4.0 * phim1 + 3.0 * phi)*(phim2 - 4.0 * phim1 + 3.0 * phi));
 
-   const double alpha0 = 0.1/(beta0 + 1e-10)/(beta0 + 1e-10);
-   const double alpha1 = 0.6/(beta1 + 1e-10)/(beta1 + 1e-10);
-   const double alpha2 = 0.3/(beta2 + 1e-10)/(beta2 + 1e-10);
+   const double alpha0 = 0.1/((beta0 + 1e-10) * (beta0 + 1e-10));
+   const double alpha1 = 0.6/((beta1 + 1e-10) * (beta1 + 1e-10));
+   const double alpha2 = 0.3/((beta2 + 1e-10) * (beta2 + 1e-10));
 
-   const double alpha_sum = alpha0 + alpha1 + alpha2;
+   const double alpha_sum_inv = 1.0/(alpha0 + alpha1 + alpha2);
 
-   const double w0 = alpha0/alpha_sum;
-   const double w1 = alpha1/alpha_sum;
-   const double w2 = alpha2/alpha_sum;
+   const double w0 = alpha0 * alpha_sum_inv;
+   const double w1 = alpha1 * alpha_sum_inv;
+   const double w2 = alpha2 * alpha_sum_inv;
 
 
    return w0 * p0 + w1 * p1 + w2 * p2;
@@ -128,17 +128,17 @@ double interp_weno7(double phim3, double phim2, double phim1, double phi, double
                          + phip2*(7043.0*phip2 - 3882.0*phip3)
                          + 547.0*phip3*phip3);
 
-    const double alpha0 = (1.0/35.0)/(beta0 + 1e-10)/(beta0 + 1e-10);
-    const double alpha1 = (12.0/35.0)/(beta1 + 1e-10)/(beta1 + 1e-10);
-    const double alpha2 = (18.0/35.0)/(beta2 + 1e-10)/(beta2 + 1e-10);
-    const double alpha3 = (4.0/35.0)/(beta3 + 1e-10)/(beta3 + 1e-10);
+    const double alpha0 = (1.0/35.0)/((beta0 + 1e-10) * (beta0 + 1e-10));
+    const double alpha1 = (12.0/35.0)/((beta1 + 1e-10) * (beta1 + 1e-10));
+    const double alpha2 = (18.0/35.0)/((beta2 + 1e-10) * (beta2 + 1e-10));
+    const double alpha3 = (4.0/35.0)/((beta3 + 1e-10) * (beta3 + 1e-10));
 
-    const double alpha_sum = alpha0 + alpha1 + alpha2 + alpha3;
+    const double alpha_sum_inv = 1.0/(alpha0 + alpha1 + alpha2 + alpha3);
 
-    const double w0 = alpha0/alpha_sum;
-    const double w1 = alpha1/alpha_sum;
-    const double w2 = alpha2/alpha_sum;
-    const double w3 = alpha3/alpha_sum;
+    const double w0 = alpha0 * alpha_sum_inv;
+    const double w1 = alpha1 * alpha_sum_inv;
+    const double w2 = alpha2 * alpha_sum_inv;
+    const double w3 = alpha3 * alpha_sum_inv;
 
 
     return w0 * p0 + w1 * p1 + w2 * p2 + w3 * p3;
@@ -179,11 +179,11 @@ double interp_weno9(double phim4, double phim3, double phim2, double phim1, doub
                          + 22658.0 * phip4 * phip4 );
 
 
-    const double alpha0 = (1.0/126.0)/pow(beta0 + 1e-10,2.0);
-    const double alpha1 = (10.0/63.0)/pow(beta1 + 1e-10,2.0);
-    const double alpha2 = (10.0/21.0)/pow(beta2 + 1e-10,2.0);
-    const double alpha3 = (20.0/63.0)/pow(beta3 + 1e-10,2.0);
-    const double alpha4 = (5.0/126.0)/pow(beta4 + 1e-10,2.0);
+    const double alpha0 = (1.0/126.0)/((beta0 + 1e-10)*(beta0 + 1e-10));
+    const double alpha1 = (10.0/63.0)/((beta1 + 1e-10)*(beta1 + 1e-10));
+    const double alpha2 = (10.0/21.0)/((beta2 + 1e-10)*(beta2 + 1e-10) );
+    const double alpha3 = (20.0/63.0)/((beta3 + 1e-10)*(beta3 + 1e-10));
+    const double alpha4 = (5.0/126.0)/((beta4 + 1e-10)*(beta4 + 1e-10));
 
 
     const double alpha_sum_inv = 1.0/(alpha0 + alpha1 + alpha2 + alpha3 + alpha4 );
@@ -257,12 +257,12 @@ double interp_weno11(double phim5, double phim4, double phim3, double phim2, dou
                          + 1152561.0*phip5 * phip5);
 
 
-    const double alpha0 = (1.0/462.0)/(beta0 + 1e-10)/(beta0 + 1e-10);
-    const double alpha1 = (5.0/77.0)/(beta1 + 1e-10)/(beta1 + 1e-10);
-    const double alpha2 = (25.0/77.0)/(beta2 + 1e-10)/(beta2 + 1e-10);
-    const double alpha3 = (100.0/231.0)/(beta3 + 1e-10)/(beta3 + 1e-10);
-    const double alpha4 = (25.0/154.0)/(beta4 + 1e-10)/(beta4 + 1e-10);
-    const double alpha5 = (1.0/77.0)/(beta5 + 1e-10)/(beta5 + 1e-10);
+    const double alpha0 = (1.0/462.0)/((beta0 + 1e-10) * (beta0 + 1e-10));
+    const double alpha1 = (5.0/77.0)/((beta1 + 1e-10) * (beta1 + 1e-10));
+    const double alpha2 = (25.0/77.0)/((beta2 + 1e-10) * (beta2 + 1e-10));
+    const double alpha3 = (100.0/231.0)/((beta3 + 1e-10) * (beta3 + 1e-10));
+    const double alpha4 = (25.0/154.0)/((beta4 + 1e-10) * (beta4 + 1e-10));
+    const double alpha5 = (1.0/77.0)/((beta5 + 1e-10) * (beta5 + 1e-10));
 
     const double alpha_sum_inv = 1.0/(alpha0 + alpha1 + alpha2 + alpha3 + alpha4 + alpha5);
 
