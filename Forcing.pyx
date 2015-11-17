@@ -30,8 +30,10 @@ cdef class Forcing:
             self.scheme = ForcingGabls()
         elif casename == 'DYCOMS_RF01':
             self.scheme = ForcingDyCOMS_RF01()
-        elif casename == 'Mpace':
-            self.scheme = ForcingMpace()
+        elif casename == 'SMOKE':
+            self.scheme = ForcingNone()
+        elif casename == 'Rico':
+            self.scheme = ForcingRico()
         elif casename == 'Isdac':
             self.scheme = ForcingIsdac()
         else:
@@ -239,7 +241,7 @@ cdef class ForcingSullivanPatton:
     def __init__(self):
 
         return
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
         self.coriolis_param = 1.0e-4 #s^{-1}
@@ -285,7 +287,7 @@ cdef class ForcingGabls:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * 8.0
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.coriolis_param = 1.39e-4 #s^{-1}
@@ -324,13 +326,14 @@ cdef class ForcingGabls:
 
         return
 
+
 cdef class ForcingDyCOMS_RF01:
     def __init__(self):
         self.divergence = 3.75e-6
         self.coriolis_param = 2.0 * omega * sin(31.5 * pi / 180.0 )
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t k
@@ -474,49 +477,43 @@ cdef class ForcingDyCOMS_RF01:
 
         return
 
-
-cdef class ForcingMpace:
+cdef class ForcingRico:
     def __init__(self):
+        latitude = 18.0 # degrees
+        self.coriolis_param = 2.0 * omega * sin(latitude * pi / 180.0 )
+        self.momentum_subsidence = 0
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.divergence = 5.8e-6
-        self.initial_u = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.initial_v = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.initial_u[:] = -13.0
-        self.initial_v[:] = -3.0
-        self.nudging_timescale = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.nudging_timescale[:] = 1/(3600.0*2.0)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef Py_ssize_t k
 
-        cdef:
-            Py_ssize_t k
-            double omega
+        self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
+        self.ug = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.vg = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.dtdt = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * -2.5/86400.0
+        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
         with nogil:
-            for k in xrange(Gr.dims.nlg[2]):
+            for k in range(Gr.dims.nlg[2]):
+                if Gr.zl_half[k] <= 2260.0:
+                    self.subsidence[k] = -(0.005/2260.0) * Gr.zl_half[k]
+                else:
+                    self.subsidence[k] = -0.005
+                if Gr.zl_half[k]<=2980.0:
+                    self.dqtdt[k] = (-1.0 + 1.3456/2980.0 * Gr.zl_half[k])/86400.0/1000.0
+                else:
+                    self.dqtdt[k] = 0.3456/86400.0/1000.0
+                self.ug[k] = -9.9 + 2.0e-3 * Gr.zl_half[k]
+                self.vg[k] = -3.8
 
-                #Set large scale cooling
-                self.dtdt[k] = fmin(-4.0, -15.0*(1.0 - (Ref.Pg - Ref.p0_half[k])/21818.0))/(3600 * 24.0)
 
-                #Set large scale drying
-                self.dqtdt[k] = fmin(-0.164, -3*(1.0 - (Ref.Pg - Ref.p0_half[k])/15171.0))/(1000*3600*24.0)
-
-                #Set large scale subsidence
-                omega = fmin(self.divergence*(Ref.Pg - Ref.p0_half[k]), self.divergence*(Ref.Pg - 85000.0))
-                self.subsidence[k] = -omega / (Ref.rho0_half[0] * g)
-
-        #Initialize Statistical Output
-        NS.add_profile('s_subsidence_tendency', Gr, Pa)
-        NS.add_profile('qt_subsidence_tendency', Gr, Pa)
-        NS.add_profile('u_subsidence_tendency', Gr, Pa)
-        NS.add_profile('v_subsidence_tendency', Gr, Pa)
         NS.add_profile('u_coriolis_tendency', Gr, Pa)
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
+        NS.add_profile('s_subsidence_tendency', Gr, Pa)
+        NS.add_profile('qt_subsidence_tendency', Gr, Pa)
+        if self.momentum_subsidence == 1:
+            NS.add_profile('u_subsidence_tendency', Gr, Pa)
+            NS.add_profile('v_subsidence_tendency', Gr, Pa)
 
         return
 
@@ -532,11 +529,12 @@ cdef class ForcingMpace:
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
-            Py_ssize_t i,j,k,ishift,jshift,ijk
+            Py_ssize_t i, j, k, ishift, jshift, ijk
+
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
-            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             double pd
@@ -547,11 +545,14 @@ cdef class ForcingMpace:
             double rho0
             double t
 
-        # #Apply Coriolis Forcing
-        # coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-        #                &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
+        if self.momentum_subsidence == 1:
+            apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
+            apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
-        #Apply large scale source terms
+
+                #Apply large scale source terms
         with nogil:
             for i in xrange(imin,imax):
                 ishift = i * istride
@@ -567,17 +568,14 @@ cdef class ForcingMpace:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
                         PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-                                                         * self.dtdt[k] * rho0)/t
+                                                         * self.dtdt[k] * exner_c(p0) * rho0)/t
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
-        apply_nudging(&Gr.dims,&self.nudging_timescale[0],&self.initial_u[0],&PV.values[u_shift],&PV.tendencies[u_shift])
-        apply_nudging(&Gr.dims,&self.nudging_timescale[0],&self.initial_v[0],&PV.values[v_shift],&PV.tendencies[v_shift])
+
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
 
         return
 
@@ -585,51 +583,8 @@ cdef class ForcingMpace:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        cdef:
-            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
-            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
-            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
-            double [:] mean_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-
-
-        #Output subsidence tendencies
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
-                         &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
-
-        tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
-                         &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
-
-        tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],
-                         &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('u_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
-
-        tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],
-                         &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('v_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
-
-        # #Output Coriolis tendencies
-        # tmp_tendency[:] = 0.0
-        # coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
-        #                &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
-        # mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        # mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
-        # NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
-        # NS.write_profile('v_coriolis_tendency',mean_tendency_2[Gr.dims.gw:-Gr.dims.gw],Pa)
-
         return
+
 
 
 cdef class ForcingIsdac:

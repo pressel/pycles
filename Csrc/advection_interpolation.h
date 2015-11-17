@@ -5,22 +5,56 @@ double interp_2(double phi, double phip1){
     return 0.5*(phi + phip1);
 };
 
+double interp_2_pt(double phi, double phip1){
+    return 0.5*(phi + phip1);
+};
+
 double interp_4(double phim1, double phi, double phip1, double phip2){
     return (7.0/12.0)*(phi + phip1 ) -(1.0/12.0)*(phim1 + phip2);
 };
 
-double interp_6(double phim2, double phim1, double phi, double phip1, double phip2, double phip3){
-    return (37.0/60.0) *(phi + phip1) - (2.0/15.0)*(phim1 + phip2) + (1.0/60.0)*(phim2 + phip3);
+double interp_4_pt(double phim1, double phi, double phip1, double phip2){
+    return (9.0/16.0) * (phi + phip1 ) -(1.0/16.0) * (phim1 + phip2);
 };
 
-double interp_8(double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3, double phip4){
-   return  (533./840. * (phi + phip1) - 139.0/840.0 * (phim1 + phip2 ) + 29.0/840.0 * (phim2 + phip3) -1.0/280.0*(phim3 + phip4));
+double interp_6(double phim2, double phim1, double phi, double phip1,
+                double phip2, double phip3){
+    return ((37.0/60.0) * (phi + phip1) - (2.0/15.0)*(phim1 + phip2)
+            + (1.0/60.0)*(phim2 + phip3));
 };
 
-double interp_10(double phim4, double phim3, double phim2, double phim1, double phi, double phip1, double phip2, double phip3, double phip4, double phip5){
-    return (1627.0/2520.0* (phi + phip1) - 473.0/2520.0 * (phim1 + phip2 )
+double interp_6_pt(double phim2, double phim1, double phi, double phip1,
+                   double phip2, double phip3){
+    return ((75.0/128.0) * (phi + phip1) - (25.0/256.0)*(phim1 + phip2)
+           + (3.0/256.0)*(phim2 + phip3));
+};
+
+double interp_8(double phim3, double phim2, double phim1, double phi,
+                double phip1, double phip2, double phip3, double phip4){
+   return  (533./840. * (phi + phip1) - 139.0/840.0 * (phim1 + phip2 )
+            + 29.0/840.0 * (phim2 + phip3) -1.0/280.0*(phim3 + phip4));
+};
+
+double interp_8_pt(double phim3, double phim2, double phim1, double phi,
+                   double phip1, double phip2, double phip3, double phip4){
+   return  (1225.0/2048.0 * (phi + phip1) - 245.0/2048.0 * (phim1 + phip2 )
+              + 49.0/2048.0 * (phim2 + phip3) - 5.0/2048.0*(phim3 + phip4));
+};
+
+double interp_10(double phim4, double phim3, double phim2, double phim1,
+                double phi, double phip1, double phip2, double phip3,
+                double phip4, double phip5){
+    return (1627.0/2520.0 * (phi + phip1) - 473.0/2520.0 * (phim1 + phip2 )
                        + 127.0/2520.0* (phim2 + phip3) -23.0/2520.0 *(phim3 + phip4)
                         + 1.0/1260.0*(phim4 + phip5));
+};
+
+double interp_10_pt(double phim4, double phim3, double phim2, double phim1,
+                    double phi, double phip1, double phip2, double phip3,
+                    double phip4, double phip5){
+    return (668.0/1103.0 * (phi + phip1) - 79.0/587.0 * (phim1 + phip2 )
+                       + 173.0/4999.0 * (phim2 + phip3) -104.0/16829.0 * (phim3 + phip4)
+                        + 35.0/65536.0 * (phim4 + phip5));
 };
 
 double interp_weno3(double phim1, double phi, double phip1){
@@ -241,3 +275,6 @@ double interp_weno11(double phim5, double phim4, double phim3, double phim2, dou
 
     return w0 * p0 + w1 * p1 + w2 * p2 + w3 * p3 + w4 * p4 + w5 * p5;
 };
+
+
+

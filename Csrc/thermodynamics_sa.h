@@ -79,6 +79,7 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2];
 
+
     for (i=imin; i<imax; i++){
        const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
@@ -87,6 +88,7 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
                     const ssize_t ijk = ishift + jshift + k;
                     eos_c(LT, lam_fp, L_fp, p0[k], s[ijk],qt[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk],qt[ijk],qv[ijk]);
+
                 } // End k loop
             } // End j loop
         } // End i loop

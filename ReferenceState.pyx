@@ -39,6 +39,9 @@ cdef class ReferenceState:
         :return:
         '''
 
+
+
+
         self.sg = Thermodynamics.entropy(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
 
         # Form a right hand side for integrating the hydrostatic equation to
@@ -86,7 +89,6 @@ cdef class ReferenceState:
         cdef double[:] ql_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         cdef double[:] qi_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         cdef double[:] qv_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-
 
         # Compute reference state thermodynamic profiles
         for k in xrange(Gr.dims.ng[2]):
@@ -171,3 +173,4 @@ cdef class ReferenceState:
         self.rho0_half = 1.0 / Re.restart_data['Ref']['alpha0_half']
 
         return
+

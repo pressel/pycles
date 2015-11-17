@@ -226,7 +226,6 @@ cdef class TKE:
 
             double [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
-
         cdef double [:] tmp_tendency1  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
         tke_dissipation(&Gr.dims, &PV.values[e_shift], &tmp_tendency1[0], &DV.values[bf_shift], self.cn, self.ck)
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency1[0])
