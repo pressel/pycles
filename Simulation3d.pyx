@@ -109,19 +109,12 @@ class Simulation3d:
             SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa)
             del SetInitialConditions
 
-        self.Pa.root_print('restart done!')
         self.Sur.initialize(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
-        self.Pa.root_print('surface done!')
         self.Fo.initialize(self.Gr, self.Ref, self.Th, self.StatsIO, self.Pa)
-        self.Pa.root_print('forcing done!')
         self.Ra.initialize(self.Gr,self.StatsIO,self.Pa)
-        self.Pa.root_print('radiation done!')
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
-        self.Pa.root_print('pressure solver done!')
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
-        self.Pa.root_print('DV done!')
         self.Damping.initialize(self.Gr)
-        self.Pa.root_print('damping done!')
         self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
 
         return
