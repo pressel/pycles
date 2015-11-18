@@ -104,8 +104,8 @@ cdef class ForcingIsdac:
         double [:] nudge_coeff_velocities
         double [:] nudge_coeff_scalars
         double [:] w_half
-        double [:] ls_adv_Q
-        double [:] ls_adv_qt
+        # double [:] ls_adv_Q
+        # double [:] ls_adv_qt
         double divergence
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,

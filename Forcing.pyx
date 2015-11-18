@@ -600,8 +600,8 @@ cdef class ForcingIsdac:
         self.initial_u = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.initial_v = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.w_half =  np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.ls_adv_Q = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.ls_adv_qt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        # self.ls_adv_Q = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        # self.ls_adv_qt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
         cdef:
             Py_ssize_t k
@@ -660,12 +660,12 @@ cdef class ForcingIsdac:
             if Gr.zl_half[k] > 825.0:
                 self.nudge_coeff_velocities[k] = 1/7200.0
 
-            #large-scale advection
-            if Gr.zl_half[k] >= 825.0 and Gr.zl_half[k] < 2045.0:
-                self.ls_adv_Q[k] = -self.w_half[k] * 0.3 * (Gr.zl_half[k] - 825.0) ** (-0.7) + Q_rad_tropo
-            if Gr.zl_half[k] >= 2045.0:
-                self.ls_adv_Q[k] = -self.w_half[k] * 0.33 * (Gr.zl_half[k] - 2000.0) ** (-0.67) + Q_rad_tropo
-                self.ls_adv_qt[k] = self.w_half[k] * 7.5e-8
+            # #large-scale advection
+            # if Gr.zl_half[k] >= 825.0 and Gr.zl_half[k] < 2045.0:
+            #     self.ls_adv_Q[k] = -self.w_half[k] * 0.3 * (Gr.zl_half[k] - 825.0) ** (-0.7) + Q_rad_tropo
+            # if Gr.zl_half[k] >= 2045.0:
+            #     self.ls_adv_Q[k] = -self.w_half[k] * 0.33 * (Gr.zl_half[k] - 2000.0) ** (-0.67) + Q_rad_tropo
+            #     self.ls_adv_qt[k] = self.w_half[k] * 7.5e-8
 
        #Initialize Statistical Output
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
@@ -676,8 +676,8 @@ cdef class ForcingIsdac:
         NS.add_profile('v_nudging_tendency',Gr, Pa)
         NS.add_profile('s_nudging_tendency',Gr, Pa)
         NS.add_profile('qt_nudging_tendency',Gr, Pa)
-        NS.add_profile('s_ls_adv_tendency', Gr, Pa)
-        NS.add_profile('qt_ls_adv_tendency', Gr, Pa)
+        # NS.add_profile('s_ls_adv_tendency', Gr, Pa)
+        # NS.add_profile('qt_ls_adv_tendency', Gr, Pa)
 
         return
 
@@ -695,13 +695,13 @@ cdef class ForcingIsdac:
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[u_shift],&PV.tendencies[u_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.w_half[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
-        # apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_entropy[0],&PV.values[s_shift],&PV.tendencies[s_shift])
-        # apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_qt[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
+        apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_entropy[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_qt[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
         apply_nudging(&Gr.dims,&self.nudge_coeff_velocities[0],&self.initial_u[0],&PV.values[u_shift],&PV.tendencies[u_shift])
         apply_nudging(&Gr.dims,&self.nudge_coeff_velocities[0],&self.initial_v[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
-        apply_ls_advection_entropy(&Gr.dims, &PV.tendencies[s_shift], &DV.values[t_shift], &self.ls_adv_Q[0])
-        apply_ls_advection_qt(&Gr.dims, &PV.tendencies[qt_shift], &self.ls_adv_qt[0])
+        # apply_ls_advection_entropy(&Gr.dims, &PV.tendencies[s_shift], &DV.values[t_shift], &self.ls_adv_Q[0])
+        # apply_ls_advection_qt(&Gr.dims, &PV.tendencies[qt_shift], &self.ls_adv_qt[0])
 
         return
 
@@ -767,15 +767,15 @@ cdef class ForcingIsdac:
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('v_nudging_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        tmp_tendency[:] = 0.0
-        apply_ls_advection_entropy(&Gr.dims, &tmp_tendency[0], &DV.values[t_shift], &self.ls_adv_Q[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('s_ls_adv_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
-
-        tmp_tendency[:] = 0.0
-        apply_ls_advection_qt(&Gr.dims, &tmp_tendency[0], &self.ls_adv_qt[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('qt_ls_adv_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        # tmp_tendency[:] = 0.0
+        # apply_ls_advection_entropy(&Gr.dims, &tmp_tendency[0], &DV.values[t_shift], &self.ls_adv_Q[0])
+        # mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        # NS.write_profile('s_ls_adv_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        #
+        # tmp_tendency[:] = 0.0
+        # apply_ls_advection_qt(&Gr.dims, &tmp_tendency[0], &self.ls_adv_qt[0])
+        # mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        # NS.write_profile('qt_ls_adv_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
         return
 
 
