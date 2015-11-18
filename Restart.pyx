@@ -66,8 +66,9 @@ cdef class Restart:
     cpdef write(self, ParallelMPI.ParallelMPI Pa):
 
         self.restart_data['last_restart_time'] = self.last_restart_time
+
         #Set up path for writing restar files
-        path = self.restart_path + '/' + str(np.int(self.last_restart_time + self.frequency))
+        path = self.restart_path + '/' + str(np.int(self.last_restart_time))
 
         if Pa.rank == 0:
             if os.path.exists(path):
