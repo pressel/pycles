@@ -234,7 +234,7 @@ cdef class NetCDFIO_Fields:
         return
 
     cpdef create_fields_file(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
-
+        Pa.root_print(self.path_plus_file)
         rootgrp = nc.Dataset(self.path_plus_file, 'w', format='NETCDF4')
         dimgrp = rootgrp.createGroup('dims')
         fieldgrp = rootgrp.createGroup('fields')
