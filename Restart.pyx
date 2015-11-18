@@ -97,7 +97,7 @@ cdef class Restart:
 
     cpdef free_memory(self):
         '''
-        Free memoery associated with restart_data dictionary.
+        Free memory associated with restart_data dictionary.
         :return:
         '''
 
