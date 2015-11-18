@@ -794,6 +794,10 @@ def InitIsdac(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             thetal[k] = 271.0 + (Gr.zl_half[k] - 2000.0) ** 0.33
             qt[k] = 0.5 - 0.000075 * (Gr.zl_half[k] - 2045.0)
 
+        #Change units to kg/kg
+        qt[k]/= 1000.0
+
+        #Set v profile
         v[k] = -2.0 + 0.003 * Gr.zl_half[k]
 
     #Set velocities for Galilean transformation

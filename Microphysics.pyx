@@ -6,19 +6,13 @@
 
 cimport numpy as np
 import numpy as np
-cimport Grid
 cimport Lookup
-cimport PrognosticVariables
-cimport DiagnosticVariables
-cimport ReferenceState
 cimport ParallelMPI
-from Thermodynamics cimport LatentHeat
-from MicrophysicsArctic cimport MicrophysicsArctic
+from Microphysics_Arctic_1M cimport Microphysics_Arctic_1M
 cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
-from NetCDFIO cimport NetCDFIO_Stats
 cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
@@ -480,4 +474,4 @@ def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
     elif(namelist['microphysics']['scheme'] == 'SB_Liquid'):
         return Microphysics_SB_Liquid(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'Arctic_1M'):
-        return MicrophysicsArctic(namelist, LH, Par)
+        return Microphysics_Arctic_1M(namelist, LH, Par)

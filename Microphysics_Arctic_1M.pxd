@@ -51,7 +51,7 @@ cdef inline double latent_heat_variable_Arctic(double T, double Lambda) nogil:
     return (2500.8 - 2.36 * TC + 0.0016 * TC *
             TC - 0.00006 * TC * TC * TC) * 1000.0
 
-cdef extern from "micro_parameters.h":
+cdef extern from "microphysics_arctic_1m.h":
     struct hm_parameters:
         double a
         double b
@@ -79,7 +79,7 @@ cdef extern from "micro_parameters.h":
         double dyl
         double dyi
 
-cdef class MicrophysicsArctic:
+cdef class Microphysics_Arctic_1M:
 
 
     cdef public:
@@ -125,7 +125,7 @@ cdef class MicrophysicsArctic:
         double [:] evap_rate
 
 
-    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,

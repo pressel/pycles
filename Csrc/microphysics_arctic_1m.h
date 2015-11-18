@@ -2,11 +2,48 @@
 #include "grid.h"
 #include "lookup.h"
 #include "parameters.h"
-#include "micro_parameters.h"
 #include "entropies.h"
 #include "thermodynamic_functions.h"
 #include <stdio.h>
 #include <math.h>
+
+double rho_liq = 1000.0;
+double visc_air = 2.0e-5;
+double lhf = 3.34e5;
+double small = 1.0e-10;
+double cvl = 4190.0;
+double cvi = 2106.0;
+double lf0= 3.34e5;
+
+struct hm_parameters{
+    double a;
+    double b;
+    double c;
+    double d;
+    double gb1;
+    double gbd1;
+    double gd3;
+    double gd6;
+    double gamstar;
+    double alpha_acc;
+    double d_min;
+    double d_max;
+};
+
+struct hm_properties{
+    double mf;
+    double diam;
+    double vel;
+    double lam;
+    double n0;
+};
+
+struct ret_acc{
+    double dyr;
+    double dys;
+    double dyl;
+    double dyi;
+};
 
 double vapor_diffusivity(const double temp_, const double p0_){
     double val = 2.11e-5 * pow((temp_ / 273.15), 1.94) * (p0_ / 101325.0);
@@ -357,9 +394,6 @@ double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm_parame
     return vel_snow;
 };
 
-double get_wet_bulb_c(const double T){
-    return T;
-};
 
 double entropy_src_precipitation_c(const double p0, const double T, const double qt, const double qv, const double L, const double precip_rate){
     double pd = pd_c(p0, qt, qv);
@@ -371,8 +405,7 @@ double entropy_src_precipitation_c(const double p0, const double T, const double
     return (sd - sv + sc) * precip_rate;
 };
 
-double entropy_src_evaporation_c(const double p0, const double T, const double qt, const double qv, const double L, const double evap_rate){
-    double Tw = get_wet_bulb_c(T);
+double entropy_src_evaporation_c(const double p0, const double T, double Tw, const double qt, const double qv, const double L, const double evap_rate){
     double pd = pd_c(p0, qt, qv);
     double pv = pv_c(p0, qt, qv);
     double sd = sd_c(pd, T);

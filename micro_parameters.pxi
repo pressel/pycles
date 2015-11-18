@@ -1,10 +1,9 @@
 import numpy as np
 cimport numpy as np
-
-#Below are microphysical parameters corresponding to Grabowski, JAS, 1998 microphysics scheme
-
 include 'parameters.pxi'
 
+#Below are microphysical parameters corresponding to Grabowski, JAS, 1998 microphysics scheme
+#following Kaul et al. 2015
 
 '''some parameters held in common by microphysics schemes'''
 cdef double rho_liq = 1000.0 #[kg/m^3]
