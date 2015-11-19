@@ -719,6 +719,7 @@ def Isdac():
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 5
+    namelist['scalar_transport']['order_sedimentation'] = 1
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'

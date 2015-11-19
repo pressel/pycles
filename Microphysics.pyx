@@ -474,4 +474,4 @@ def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
     elif(namelist['microphysics']['scheme'] == 'SB_Liquid'):
         return Microphysics_SB_Liquid(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'Arctic_1M'):
-        return Microphysics_Arctic_1M(namelist, LH, Par)
+        return Microphysics_Arctic_1M(Par, LH, namelist)

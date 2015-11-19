@@ -88,6 +88,7 @@ cdef class Microphysics_Arctic_1M:
     cdef:
         double ccn
         double n0_ice_input
+        Py_ssize_t order
 
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
@@ -106,12 +107,12 @@ cdef class Microphysics_Arctic_1M:
         double [:] accretion
         double [:] melting
 
-        double [:] qrain_flux
-        double [:] qsnow_flux
-        double [:] qrain_tendency
-        double [:] qsnow_tendency
-        double [:] qrain_vel
-        double [:] qsnow_vel
+        # double [:] qrain_flux
+        # double [:] qsnow_flux
+        # double [:] qrain_tendency
+        # double [:] qsnow_tendency
+        # double [:] qrain_vel
+        # double [:] qsnow_vel
 
         double [:] rain_number_density
         double [:] snow_number_density
