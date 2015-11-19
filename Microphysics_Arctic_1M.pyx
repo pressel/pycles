@@ -377,6 +377,11 @@ cdef class Microphysics_Arctic_1M:
                         vel_cols_s[k] = get_snow_vel_c(Ref.alpha0_half[k], qsnow_pencils_ghosted[pi, k], &snow_param, &snow_prop)
                         dt_ = fmin(dt_, 0.5 * Gr.dims.dx[2] / fmax( fmax(vel_cols_r[k], vel_cols_s[k]), 1.0e-10) )
 
+                    #Increment the local time variable
+                    time_added += dt_
+                    iter_count += 1
+
+
         #Fill in the velocities
         with nogil:
             for i in xrange(imin,imax):
@@ -436,9 +441,6 @@ cdef class Microphysics_Arctic_1M:
                     #
                     #     qsnow_vel_pencils[pi, k-kmin] = -vel_cols_s[k]
                     #
-                    # #Increment the local time variable
-                    # time_added += dt_
-                    # iter_count += 1
 
                     # if iter_count > 20 and (TS.dt - time_added) > 0.0:
                     #     with gil:
