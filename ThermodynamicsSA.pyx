@@ -158,7 +158,7 @@ cdef class ThermodynamicsSA:
         return T, ql, qi
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         # Get relevant variables shifts
         cdef:

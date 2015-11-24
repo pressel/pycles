@@ -273,19 +273,19 @@ def Bomex():
     namelist['grid']['nx'] = 64
     namelist['grid']['ny'] = 64
     namelist['grid']['nz'] = 75
-    namelist['grid']['gw'] = 7
+    namelist['grid']['gw'] = 5
     namelist['grid']['dx'] = 100.0
     namelist['grid']['dy'] = 100.0
     namelist['grid']['dz'] = 100 / 2.5
 
     namelist['mpi'] = {}
-    namelist['mpi']['nprocx'] = 1
-    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocx'] = 4 
+    namelist['mpi']['nprocy'] = 6
     namelist['mpi']['nprocz'] = 1
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['ts_type'] = 3
-    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['cfl_limit'] = 0.33
     namelist['time_stepping']['dt_initial'] = 10.0
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 21600.0
@@ -299,15 +299,19 @@ def Bomex():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['sgs_condensation'] = True
+    namelist['sgs']['condensation'] = {}
+    namelist['sgs']['condensation']['quadrature_order'] = 5
+    namelist['sgs']['condensation']['c_variance'] = 0.2857
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 7
+    namelist['momentum_transport']['order'] = 5
 
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 7
+    namelist['scalar_transport']['order'] = 5
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
@@ -327,7 +331,7 @@ def Bomex():
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = 'Cumulus'
-    namelist['stats_io']['frequency'] = 100.0
+    namelist['stats_io']['frequency'] = 30.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'

@@ -22,8 +22,37 @@ cdef class No_Microphysics_SA:
         return
 
 
+cdef class No_Microphysics_DrySGS:
+    def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
+        LH.Lambda_fp = lambda_constant
+        LH.L_fp = latent_heat_constant
+        self.thermodynamics_type = 'dry_sgs'
+        return
+
+cdef class No_Microphysics_SA_SGS:
+    def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
+        LH.Lambda_fp = lambda_constant
+        LH.L_fp = latent_heat_constant
+        self.thermodynamics_type = 'SA_sgs'
+        return
+
+
 def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
+    try:
+        sgs_flag = namelist['sgs']['sgs_condensation']
+    except:
+        sgs_flag = False
+
+
     if(namelist['microphysics']['scheme'] == 'None_Dry'):
-        return No_Microphysics_Dry(Par, LH, namelist)
+        if sgs_flag:
+            return No_Microphysics_DrySGS(Par, LH, namelist)
+        else:
+            return No_Microphysics_Dry(Par, LH, namelist)
+
     elif(namelist['microphysics']['scheme'] == 'None_SA'):
-        return No_Microphysics_SA(Par, LH, namelist)
+        if sgs_flag:
+            return No_Microphysics_SA_SGS(Par, LH, namelist)
+        else:
+            return No_Microphysics_SA(Par, LH, namelist)
+

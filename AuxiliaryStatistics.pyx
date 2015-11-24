@@ -91,7 +91,7 @@ class CumulusStatistics:
                     jshift = j * jstride
                     for k in range(kmin,kmax):
                         ijk = ishift + jshift + k
-                        if DV.values[ql_shift+ijk] > 0.0:
+                        if DV.values[ql_shift+ijk] > ql_threshold:
                             cloudmask[ijk] = 1.0
                             if DV.values[b_shift+ijk] > mean_buoyancy[k]:
                                 coremask[ijk] = 1.0

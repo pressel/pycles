@@ -20,7 +20,7 @@ cdef class ThermodynamicsDry:
     cpdef eos(self, double p0, double s, double qt)
     cpdef alpha(self, double p0, double T, double qt, double qv)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
     cpdef get_pv_star(self,t)
     cpdef get_lh(self,t)
     cpdef write_fields(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,

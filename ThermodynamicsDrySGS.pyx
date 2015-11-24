@@ -15,6 +15,8 @@ cimport PrognosticVariables
 from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
 from thermodynamic_functions cimport thetas_c
 import cython
+from libc.math cimport sqrt
+include "parameters.pxi"
 
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 cdef extern from "entropies.h":
@@ -24,19 +26,29 @@ cdef extern from "entropies.h":
 cdef extern from "thermodynamics_dry.h":
     inline double eos_c(double p0, double s) nogil
     inline double alpha_c(double p0, double T, double qt, double qv) nogil
-    void eos_update(Grid.DimStruct *dims, double *pd, double *s, double *T,
-                    double *alpha)
     void buoyancy_update(Grid.DimStruct *dims, double *alpha0, double *alpha,double *buoyancy,
                          double *wt)
     void bvf_dry(Grid.DimStruct* dims,  double* p0, double* T, double* theta, double* bvf)
 
 
-cdef class ThermodynamicsDry:
+cdef class ThermodynamicsDrySGS:
     def __init__(self,namelist,LatentHeat LH, ParallelMPI.ParallelMPI Pa):
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist,LH,Pa)
+        self.quadrature_order = 20
+
+        try:
+            self.quadrature_order = namelist['sgs']['condensation']['quadrature_order']
+        except:
+            self.quadrature_order = 5
+
+        try:
+            self.c_variance = namelist['sgs']['condensation']['c_variance']
+        except:
+            self.c_variance = 0.2857
+
 
         return
 
@@ -51,6 +63,7 @@ cdef class ThermodynamicsDry:
         DV.add_variables('buoyancy_frequency','1/s','sym',Pa)
         DV.add_variables('theta','K','sym',Pa)
 
+        self.s_variance = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
 
         #Add statistical output
         NS.add_profile('thetas_mean',Gr,Pa)
@@ -91,8 +104,16 @@ cdef class ThermodynamicsDry:
         cdef Py_ssize_t w_shift  = PV.get_varshift(Gr,'w')
         cdef Py_ssize_t theta_shift = DV.get_varshift(Gr,'theta')
         cdef Py_ssize_t bvf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
+        cdef double coeff = 1.0
 
-        eos_update(&Gr.dims,&RS.p0_half[0],&PV.values[s_shift],&DV.values[t_shift],&DV.values[alpha_shift])
+        compute_sgs_variance(&Gr.dims, &PV.values[s_shift], &self.s_variance[0], coeff)
+        eos_update_dry_sgs(&Gr.dims,&RS.p0_half[0],&PV.values[s_shift], &self.s_variance[0], &DV.values[t_shift],&DV.values[alpha_shift], self.quadrature_order)
+
+        temperature_nv = DV.name_index['temperature']
+        alpha_nv = DV.name_index['alpha']
+        DV.communicate_variable(Gr,Pa,temperature_nv)
+        DV.communicate_variable(Gr,Pa,alpha_nv )
+
         buoyancy_update(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
         bvf_dry(&Gr.dims,&RS.p0_half[0],&DV.values[t_shift],&DV.values[theta_shift],&DV.values[bvf_shift])
 
@@ -193,3 +214,81 @@ cdef class ThermodynamicsDry:
         return
 
 
+cdef eos_update_dry_sgs(Grid.DimStruct *dims, double *p0, double *s, double *s_var, double *T, double *alpha, Py_ssize_t order):
+
+    a, w = np.polynomial.hermite.hermgauss(order)
+    cdef:
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] -dims.gw
+        Py_ssize_t jmax = dims.nlg[1] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k, m
+        double [:] abscissas = a
+        double [:] weights = w
+        double T_integral = 0.0
+        double alpha_integral = 0.0
+        double s_hat, sd_s_factor
+        double sqpi_inv = 1.0/sqrt(pi)
+        double temp_m, alpha_m
+
+    with nogil:
+        for i in xrange(imin,imax):
+            ishift = i*istride
+            for j in xrange(jmin,jmax):
+                jshift = j*jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    T_integral = 0.0
+                    alpha_integral = 0.0
+                    sd_s_factor = sqrt(2.0 * s_var[ijk])
+                    for m in xrange(order):
+                        s_hat = sd_s_factor * abscissas[m] + s[ijk]
+                        temp_m = eos_c(p0[k], s_hat)
+                        alpha_m = alpha_c(p0[k], temp_m, 0.0, 0.0)
+                        T_integral += temp_m * weights[m]
+                        alpha_integral += alpha_m * weights[m]
+                    T[ijk] = T_integral * sqpi_inv
+                    alpha[ijk] = alpha_integral * sqpi_inv
+
+
+
+
+
+
+
+cdef compute_sgs_variance(Grid.DimStruct *dims,  double *s, double *s_var, double coeff):
+
+
+    cdef:
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] -dims.gw
+        Py_ssize_t jmax = dims.nlg[1] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k
+        double delta2 = (dims.dx[0] * dims.dx[1] * dims.dx[2])**(2.0/3.0)
+        double dsdx, dsdy, dsdz
+        double dxi = 1.0/dims.dx[0]
+        double dyi = 1.0/dims.dx[1]
+        double dzi = 1.0/dims.dx[2]
+
+    with nogil:
+        for i in xrange(imin,imax):
+            ishift = i*istride
+            for j in xrange(jmin,jmax):
+                jshift = j*jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    dsdx = (s[ijk + istride] - s[ijk - istride]) * dxi
+                    dsdy = (s[ijk + jstride] - s[ijk - jstride]) * dyi
+                    dsdz = (s[ijk + 1] - s[ijk - 1]) * dzi
+                    s_var[ijk] = coeff * delta2 * (dsdx * dsdx + dsdy * dsdy + dsdz * dsdz)
+
+    return

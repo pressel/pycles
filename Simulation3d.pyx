@@ -126,7 +126,7 @@ class Simulation3d:
         cdef ParallelMPI.ParallelMPI PA_ = self.Pa
         cdef int rk_step
         # DO First Output
-        self.Th.update(self.Gr, self.Ref, PV_, DV_)
+        self.Th.update(self.Gr, self.Ref, PV_, DV_, PA_)
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
@@ -136,7 +136,7 @@ class Simulation3d:
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
-                self.Th.update(self.Gr,self.Ref,PV_,DV_)
+                self.Th.update(self.Gr,self.Ref,PV_,DV_, self.Pa)
                 self.SA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)

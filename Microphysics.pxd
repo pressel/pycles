@@ -13,6 +13,16 @@ cdef class No_Microphysics_SA:
     cdef public:
         str thermodynamics_type
 
+cdef class No_Microphysics_DrySGS:
+    # Make the thermodynamics_type member available from Python-Space
+    cdef public:
+        str thermodynamics_type
+
+cdef class No_Microphysics_SA_SGS:
+    # Make the thermodynamics_type member available from Python-Space
+    cdef public:
+        str thermodynamics_type
+
 cdef inline double lambda_constant(double T) nogil:
     return 1.0
 
