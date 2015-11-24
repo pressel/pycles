@@ -41,7 +41,7 @@ class Simulation3d:
         self.Pr = PressureSolver.PressureSolver()
         self.LH = LatentHeat(namelist, self.Pa)
         self.Micro = MicrophysicsFactory(namelist, self.LH, self.Pa)
-        self.SA = ScalarAdvection.ScalarAdvection(namelist, self.Pa)
+        self.SA = ScalarAdvection.ScalarAdvection(namelist, self.LH, self.Pa)
         self.MA = MomentumAdvection.MomentumAdvection(namelist, self.Pa)
         self.SGS = SGS.SGS(namelist)
         self.SD = ScalarDiffusion.ScalarDiffusion(namelist, self.LH, self.DV, self.Pa)
@@ -72,9 +72,10 @@ class Simulation3d:
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist, self.Pa)
         self.Restart.initialize()
+
         self.VO.initialize()
-        self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.StatsIO, self.Pa)
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Micro.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
         self.PV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ke.initialize(self.Gr, self.StatsIO, self.Pa)
@@ -101,6 +102,7 @@ class Simulation3d:
             self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']
             self.FieldsIO.last_output_time = self.Restart.restart_data['last_fields_output']
             self.Restart.last_restart_time = self.Restart.restart_data['last_restart_time']
+            self.VO.last_vis_time = self.Restart.restart_data['last_vis_time']
             self.Restart.free_memory()
         else:
             self.Pa.root_print('This is not a restart run!')
@@ -115,6 +117,8 @@ class Simulation3d:
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Damping.initialize(self.Gr)
+        self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+
         return
 
     def run(self):
@@ -137,7 +141,8 @@ class Simulation3d:
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
-                self.SA.update(self.Gr,self.Ref,PV_,self.Pa)
+                self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
+                self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
@@ -150,7 +155,7 @@ class Simulation3d:
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
-                self.TS.adjust_timestep(self.Gr, self.PV, self.Pa)
+                self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
             time2 = time.time()
@@ -177,7 +182,8 @@ class Simulation3d:
 
 
             dts = np.array([fields_dt, stats_dt, restart_dt, vis_dt,
-                            self.TS.dt, self.TS.dt_max ])
+                            self.TS.dt, self.TS.dt_max, self.VO.frequency, self.Restart.frequency,
+                            self.StatsIO.frequency, self.FieldsIO.frequency])
 
             self.TS.dt = np.amin(dts[dts > 0.0])
             # If time to ouptut fields do output
@@ -194,10 +200,13 @@ class Simulation3d:
                 self.Pa.root_print('Doing StatsIO')
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
+                self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa) # do Micro.stats_io prior to DV.stats_io to get sedimentation velocity only in output
                 self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
+
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.Fo.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
                 self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
@@ -213,6 +222,7 @@ class Simulation3d:
                 self.Restart.last_restart_time = self.TS.t
                 self.Restart.restart_data['last_stats_output'] = self.StatsIO.last_output_time
                 self.Restart.restart_data['last_fields_output'] = self.FieldsIO.last_output_time
+                self.Restart.restart_data['last_vis_time'] = self.VO.last_vis_time
                 self.Gr.restart(self.Restart)
                 self.Ref.restart(self.Gr, self.Restart)
                 self.PV.restart(self.Gr, self.Restart)
@@ -238,10 +248,12 @@ class Simulation3d:
 
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
         self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
+
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
         self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
