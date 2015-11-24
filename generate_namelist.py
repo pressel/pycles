@@ -454,6 +454,8 @@ def DYCOMS_RF01():
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'None_SA'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['cloud_sedimentation'] = False
+    namelist['microphysics']['ccn'] = 100.0e6
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -620,12 +622,13 @@ def Rico():
     namelist['microphysics'] = {}
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     namelist['microphysics']['cloud_sedimentation'] = False
+    namelist['microphysics']['ccn'] = 70.0e6
     namelist['microphysics']['scheme'] = 'SB_Liquid'
     namelist['microphysics']['SB_Liquid'] = {}
 
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
-    namelist['microphysics']['SB_Liquid']['ccn'] = 70.0e6
+
 
 
     namelist['sgs'] = {}
