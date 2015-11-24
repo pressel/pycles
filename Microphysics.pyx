@@ -163,7 +163,7 @@ cdef class Microphysics_SB_Liquid:
             self.order = namelist['scalar_transport']['order']
 
         try:
-            self.cloud_sedimentation = namelist['microphysics']['SB_Liquid']['cloud_sedimentation']
+            self.cloud_sedimentation = namelist['microphysics']['cloud_sedimentation']
         except:
             self.cloud_sedimentation = False
 

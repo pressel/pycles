@@ -70,6 +70,7 @@ cdef class ScalarAdvection:
             Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
             Py_ssize_t qv_shift =  DV.get_varshift(Gr,'qv')
             Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
+            Py_ssize_t ql_shift
 
         for i in xrange(PV.nv): #Loop over the prognostic variables
             if PV.var_type[i] == 1: #Only compute advection if variable i is a scalar
@@ -83,17 +84,27 @@ cdef class ScalarAdvection:
                     #Check for a scalar-specific velocity
                     sc_vel_name = PV.velocity_names_directional[d] + '_' + PV.index_name[i]
                     if sc_vel_name in DV.name_index:
-                        # print(sc_vel_name, ' detected as sedimentation velocity')
-                        #First get the tendency associated with the sedimentation velocity
                         vel_shift = DV.get_varshift(Gr, sc_vel_name)
-                        compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
-                                                   &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order_sedimentation)
-                        scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
-                                               &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
+                        print('sc_vel_name', sc_vel_name)
                         if sc_vel_name == 'w_qt':
+                            ql_shift = DV.get_varshift(Gr, 'ql')
+
+                            compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
+                                                   &DV.values[ql_shift],&self.flux[flux_shift],d,self.order_sedimentation)
+                            scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
+                                               &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
+
                             compute_qt_sedimentation_s_source(&Gr.dims, &Rs.p0_half[0],  &Rs.rho0_half[0], &self.flux[flux_shift],
                                                               &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[t_shift],
                                                               &PV.tendencies[s_shift], self.Lambda_fp,self.L_fp, Gr.dims.dx[d],d)
+                        else:
+
+                            # print(sc_vel_name, ' detected as sedimentation velocity')
+                            #First get the tendency associated with the sedimentation velocity
+                            compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
+                                                   &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order_sedimentation)
+                            scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
+                                               &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
 
 
                     # now the advective flux for all scalars

@@ -619,9 +619,10 @@ def Rico():
 
     namelist['microphysics'] = {}
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['cloud_sedimentation'] = False
     namelist['microphysics']['scheme'] = 'SB_Liquid'
     namelist['microphysics']['SB_Liquid'] = {}
-    namelist['microphysics']['SB_Liquid']['cloud_sedimentation'] = False
+
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
     namelist['microphysics']['SB_Liquid']['ccn'] = 70.0e6
