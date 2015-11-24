@@ -85,7 +85,6 @@ cdef class ScalarAdvection:
                     sc_vel_name = PV.velocity_names_directional[d] + '_' + PV.index_name[i]
                     if sc_vel_name in DV.name_index:
                         vel_shift = DV.get_varshift(Gr, sc_vel_name)
-                        print('sc_vel_name', sc_vel_name)
                         if sc_vel_name == 'w_qt':
                             ql_shift = DV.get_varshift(Gr, 'ql')
 
