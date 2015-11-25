@@ -57,6 +57,8 @@ cdef class Surface:
             self.scheme = SurfaceGabls()
         elif casename == 'DYCOMS_RF01':
             self.scheme = SurfaceDYCOMS_RF01(namelist, LH)
+        elif casename == 'DYCOMS_RF02':
+            self.scheme = SurfaceDYCOMS_RF02(namelist, LH)
         elif casename == 'Rico':
             self.scheme= SurfaceRico()
         else:
@@ -501,6 +503,107 @@ cdef class SurfaceDYCOMS_RF01:
 
         return
 
+cdef class SurfaceDYCOMS_RF02:
+    def __init__(self,namelist, LatentHeat LH):
+        self.ft = 15.0
+        self.fq = 115.0
+        self.gustiness = 0.0
+        self.cm = 0.0011
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+        sst = 292.5 # K
+        psurface = 1017.8e2 # Pa
+        theta_surface = sst/exner(psurface)
+        qt_surface = 13.84e-3 # qs(sst) using Teten's formula
+        density_surface = 1.22 #kg/m^3
+        theta_flux = self.ft/(density_surface*cpm(qt_surface)*exner(psurface))
+        qt_flux_ = self.fq/self.L_fp(sst,self.Lambda_fp(sst))
+        self.buoyancy_flux = g * ((theta_flux + (eps_vi-1.0)*(theta_surface*qt_flux_ + qt_surface * theta_flux))
+                              /(theta_surface*(1.0 + (eps_vi-1)*qt_surface)))
+
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+        self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+        self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+        self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+        self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+
+        NS.add_ts('uw_surface_mean', Gr, Pa)
+        NS.add_ts('vw_surface_mean', Gr, Pa)
+        NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        NS.add_ts('qt_flux_surface_mean', Gr, Pa)
+
+        return
+
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+
+        if Pa.sub_z_rank != 0:
+            return
+
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
+
+
+
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.windspeed[0],Ref.u0, Ref.v0,self.gustiness)
+
+        cdef:
+            Py_ssize_t i,j, ijk, ij
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t istride_2d = Gr.dims.nlg[1]
+
+            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]/Gr.dims.dx[2]
+            double lam
+            double lv
+            double pv
+            double pd
+            double sv
+            double sd
+
+            double [:] windspeed = self.windspeed
+            Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
+            Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
+
+
+        with nogil:
+            for i in xrange(gw-1, imax-gw+1):
+                for j in xrange(gw-1, jmax-gw+1):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+
+                    DV.values_2d[ustar_shift + ij] = sqrt(self.cm) * self.windspeed[ij]
+                    DV.values_2d[lmo_shift + ij] = -DV.values_2d[ustar_shift + ij]**3.0/self.buoyancy_flux/vkb
+                    lam = self.Lambda_fp(DV.values[t_shift+ijk])
+                    lv = self.L_fp(DV.values[t_shift+ijk],lam)
+                    pv = pv_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                    pd = pd_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                    sv = sv_c(pv,DV.values[t_shift+ijk])
+                    sd = sd_c(pd,DV.values[t_shift+ijk])
+                    self.qt_flux[ij] = self.fq / lv / 1.22
+                    self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ijk] + self.fq*(sv - sd)/lv)
+            for i in xrange(gw, imax-gw):
+                for j in xrange(gw, jmax-gw):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    self.u_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    PV.tendencies[u_shift  + ijk] +=  self.u_flux[ij] * tendency_factor
+                    PV.tendencies[v_shift  + ijk] +=  self.v_flux[ij] * tendency_factor
+                    PV.tendencies[s_shift  + ijk] +=  self.s_flux[ij] * tendency_factor
+                    PV.tendencies[qt_shift + ijk] +=  self.qt_flux[ij] * tendency_factor
+
+        return
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef double tmp
