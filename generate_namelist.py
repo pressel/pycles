@@ -511,12 +511,12 @@ def DYCOMS_RF02():
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 3
-    namelist['grid']['nx'] = 96
-    namelist['grid']['ny'] = 96
+    namelist['grid']['nx'] = 128
+    namelist['grid']['ny'] = 128
     namelist['grid']['nz'] = 300
     namelist['grid']['gw'] = 5
-    namelist['grid']['dx'] = 35.0
-    namelist['grid']['dy'] = 35.0
+    namelist['grid']['dx'] = 50.0
+    namelist['grid']['dy'] = 50.0
     namelist['grid']['dz'] = 5.0
 
     namelist['mpi'] = {}
