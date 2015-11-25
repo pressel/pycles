@@ -583,8 +583,8 @@ def InitDYCOMS_RF02(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         if Gr.zl_half[k] > 795.0:
             thetal[k] = 295.0 + (Gr.zl_half[k] - 795.0)**(1.0/3.0)
             qt[k] = (5.0 - 3.0 * (1.0 - np.exp((Gr.zl_half[k] - 795.0)/500.0)))/1000.0
-        v[k] = -9.0 + 5.6 * Gr.zl_half[k]/1000.0 - RS.u0
-        u[k] = 3.0 + 4.3*Gr.zl_half[k]/1000.0 - RS.v0
+        v[k] = -9.0 + 5.6 * Gr.zl_half[k]/1000.0 - RS.v0
+        u[k] = 3.0 + 4.3*Gr.zl_half[k]/1000.0 - RS.u0
 
     def compute_thetal(p_,T_,ql_):
         theta_ = T_ / (p_/p_tilde)**(287.0/cp_ref)
