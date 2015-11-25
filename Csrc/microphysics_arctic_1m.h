@@ -474,7 +474,7 @@ void sedimentation_velocity_snow(const struct DimStruct *dims, double* restrict 
                 const ssize_t ijk = ishift + jshift + k;
 
                 double swc = fmax(qsnow[ijk]*density[k], SMALL);
-                double n0_snow = yi*pow(swc*1000.0, y2);
+                double n0_snow = y1*pow(swc*1000.0, y2);
                 double n0_max = swc*N_MAX_SNOW;
                 double n0_min = swc*N_MIN_SNOW;
 
