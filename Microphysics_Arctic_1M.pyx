@@ -204,6 +204,7 @@ cdef class Microphysics_Arctic_1M:
 
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t qrain_shift = PV.get_varshift(Gr, 'qrain')
