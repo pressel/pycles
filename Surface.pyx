@@ -505,8 +505,8 @@ cdef class SurfaceDYCOMS_RF01:
 
 cdef class SurfaceDYCOMS_RF02:
     def __init__(self,namelist, LatentHeat LH):
-        self.ft = 15.0
-        self.fq = 115.0
+        self.ft = 16.0
+        self.fq = 93.0
         self.gustiness = 0.0
         self.cm = 0.0011
         self.L_fp = LH.L_fp
@@ -596,8 +596,8 @@ cdef class SurfaceDYCOMS_RF02:
                 for j in xrange(gw, jmax-gw):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    self.u_flux[ij] = -0.25 * 0.25 / interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -0.25 * 0.25 / interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
                     PV.tendencies[u_shift  + ijk] +=  self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift  + ijk] +=  self.v_flux[ij] * tendency_factor
                     PV.tendencies[s_shift  + ijk] +=  self.s_flux[ij] * tendency_factor

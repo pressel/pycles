@@ -535,10 +535,10 @@ def DYCOMS_RF02():
     namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'None_SA'
+    namelist['microphysics']['scheme'] = 'SB_Liquid'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
-    namelist['microphysics']['cloud_sedimentation'] = False
-    namelist['microphysics']['ccn'] = 100.0e6
+    namelist['microphysics']['cloud_sedimentation'] = True
+    namelist['microphysics']['ccn'] = 55.0e6
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -581,8 +581,8 @@ def DYCOMS_RF02():
     namelist['visualization']['frequency'] = 10.0
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'DYCOMS_RF01'
-    namelist['meta']['casename'] = 'DYCOMS_RF01'
+    namelist['meta']['simname'] = 'DYCOMS_RF02'
+    namelist['meta']['casename'] = 'DYCOMS_RF02'
 
     return namelist
 
