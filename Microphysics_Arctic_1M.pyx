@@ -52,6 +52,9 @@ cdef extern from "microphysics_arctic_1m.h":
                                      double* w_qsnow, double* w,  double* entropy_tendency) nogil
     void entropy_source_drag(Grid.DimStruct *dims, double* T,  double* qprec, double* w_qprec,
                              double* entropy_tendency) nogil
+    void get_virtual_potential_temperature(Grid.DimStruct *dims, double* p0, double* T, double* qv,
+                                       double* ql, double* qi, double* thetav) nogil
+
 
 
 cdef extern from "microphysics.h":
@@ -109,13 +112,6 @@ cdef class Microphysics_Arctic_1M:
         self.accretion = np.zeros(Gr.dims.npg*2, dtype=np.double, order='c')
         self.melting = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
 
-        # self.qrain_flux = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.qsnow_flux = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.qrain_tendency = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.qsnow_tendency = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.qrain_vel = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.qsnow_vel = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-
         # self.rain_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         # self.snow_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         # self.ice_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
@@ -160,15 +156,14 @@ cdef class Microphysics_Arctic_1M:
         NS.add_profile('snow_depo_mass', Gr, Pa)
         NS.add_profile('snow_melt_mass', Gr, Pa)
 
-        # NS.add_profile('rain_sedimentation_velocity', Gr, Pa)
-        # NS.add_profile('snow_sedimentation_velocity', Gr, Pa)
         NS.add_profile('rain_sedimentation_flux', Gr, Pa)
         NS.add_profile('snow_sedimentation_flux', Gr, Pa)
-        # NS.add_profile('rain_sedimentation_tendency', Gr, Pa)
-        # NS.add_profile('snow_sedimentation_tendency', Gr, Pa)
 
         NS.add_profile('micro_s_source_precipitation', Gr, Pa)
         NS.add_profile('micro_s_source_evaporation', Gr, Pa)
+
+        NS.add_profile('thetav_mean', Gr, Pa)
+        NS.add_profile('thetav_flux_z', Gr, Pa)
 
         NS.add_ts('iwp', Gr, Pa)
         NS.add_ts('rwp', Gr, Pa)
@@ -354,173 +349,6 @@ cdef class Microphysics_Arctic_1M:
         entropy_source_drag(&Gr.dims, &DV.values[t_shift], &PV.values[qsnow_shift], &DV.values[wqsnow_shift],
                             &PV.tendencies[s_shift])
 
-        # #Initialize pencils
-        # cdef:
-        #     Py_ssize_t nz = Gr.dims.n[2]
-        #     Py_ssize_t nlz = Gr.dims.nl[2]
-        #     double [:, :] qrain_pencils = self.z_pencil.forward_double(& Gr.dims, Pa, & PV.values[qrain_shift])
-        #     double [:, :] qsnow_pencils = self.z_pencil.forward_double(& Gr.dims, Pa, & PV.values[qsnow_shift])
-        #     double [:, :] qrain_pencils_ghosted = np.zeros((self.z_pencil.n_local_pencils, nz + 2*kmin), dtype=np.double, order='c')
-        #     double [:, :] qsnow_pencils_ghosted = np.zeros((self.z_pencil.n_local_pencils, nz + 2*kmin), dtype=np.double, order='c')
-        #
-        # #Fill the ghost points
-        # with nogil:
-        #     for pi in xrange(self.z_pencil.n_local_pencils):
-        #         for k in xrange(nz):
-        #             qrain_pencils_ghosted[pi, k+kmin] = qrain_pencils[pi, k]
-        #             qsnow_pencils_ghosted[pi, k+kmin] = qsnow_pencils[pi, k]
-        #
-        #         for k in xrange(kmin):
-        #             qrain_pencils_ghosted[pi, kmin-1-k] = qrain_pencils_ghosted[pi, kmin+k]
-        #             qsnow_pencils_ghosted[pi, kmin-1-k] = qsnow_pencils_ghosted[pi, kmin+k]
-        #             qrain_pencils_ghosted[pi, nz+kmin+k] = qrain_pencils_ghosted[pi, nz+kmin-k-1]
-        #             qsnow_pencils_ghosted[pi, nz+kmin+k] = qsnow_pencils_ghosted[pi, nz+kmin-k-1]
-        #
-        # cdef:
-        #     double [:] vel_cols_r = np.zeros((nz + 2*kmin), dtype=np.double, order='c')
-        #     double [:] vel_cols_s = np.zeros((nz + 2*kmin), dtype=np.double, order='c')
-        #
-        #     double [:,:] qrain_flux_pencils = np.zeros((self.z_pencil.n_local_pencils, nz),dtype=np.double, order='c')
-        #     double [:,:] qsnow_flux_pencils = np.zeros((self.z_pencil.n_local_pencils, nz),dtype=np.double, order='c')
-        #     double [:,:] qrain_tendency_pencils = np.zeros((self.z_pencil.n_local_pencils, nz),dtype=np.double, order='c')
-        #     double [:,:] qsnow_tendency_pencils = np.zeros((self.z_pencil.n_local_pencils, nz),dtype=np.double, order='c')
-        #     double [:,:] qrain_vel_pencils = np.zeros((self.z_pencil.n_local_pencils, nz),dtype=np.double, order='c')
-        #     double [:,:] qsnow_vel_pencils = np.zeros((self.z_pencil.n_local_pencils, nz),dtype=np.double, order='c')
-        #
-        #     double [:] qrain_tmp = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        #     double [:] qsnow_tmp = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        #
-        #     double [:] a = np.zeros((nz + 2*kmin), dtype=np.double, order='c')
-        #     double [:] a_bar_i = np.zeros((nz + 2*kmin), dtype=np.double, order='c')
-        #
-        #     double xx, vel_i_m, vel_i_p
-        #
-        # with nogil:
-        #     for pi in xrange(self.z_pencil.n_local_pencils):
-        #         time_added = 0.0
-        #         iter_count = 0
-        #         while time_added < TS.dt:
-        #             dt_ = TS.dt - time_added
-        #             #First fill/update ghost cells
-        #             for k in xrange(kmin):
-        #                 qrain_pencils_ghosted[pi, kmin-1-k] = qrain_pencils_ghosted[pi, kmin+k]
-        #                 qsnow_pencils_ghosted[pi, kmin-1-k] = qsnow_pencils_ghosted[pi, kmin+k]
-        #                 qrain_pencils_ghosted[pi, nz+kmin+k] = qrain_pencils_ghosted[pi, nz+kmin-k-1]
-        #                 qsnow_pencils_ghosted[pi, nz+kmin+k] = qsnow_pencils_ghosted[pi, nz+kmin-k-1]
-        #             #Then compute velocities
-        #             for k in xrange(nz+2*kmin):
-        #                 rain_prop.mf = qrain_pencils_ghosted[pi, k]
-        #                 vel_cols_r[k] = get_rain_vel_c(Ref.alpha0_half[k], qrain_pencils_ghosted[pi, k], &rain_param, &rain_prop)
-        #                 snow_prop.mf = qsnow_pencils_ghosted[pi, k]
-        #                 vel_cols_s[k] = get_snow_vel_c(Ref.alpha0_half[k], qsnow_pencils_ghosted[pi, k], &snow_param, &snow_prop)
-        #                 dt_ = fmin(dt_, 0.5 * Gr.dims.dx[2] / fmax( fmax(vel_cols_r[k], vel_cols_s[k]), 1.0e-10) )
-        #
-        #             #Increment the local time variable
-        #             time_added += dt_
-        #             iter_count += 1
-        #
-        #
-        # #Fill in the velocities (not working!!)
-        # with nogil:
-        #     for i in xrange(imin,imax):
-        #         ishift = i * istride
-        #         for j in xrange(jmin,jmax):
-        #             jshift = j * jstride
-        #             for k in xrange(kmin,kmax):
-        #                 ijk = ishift + jshift + k
-        #                 DV.values[wqrain_shift+ijk] = interp_2(vel_cols_r[k], vel_cols_r[k+1])
-        #                 DV.values[wqsnow_shift+ijk] = interp_2(vel_cols_s[k], vel_cols_s[k+1])
-
-
-                    #Now do advection (first order upwind scheme)
-
-                    # #First for RAIN
-                    # for k in xrange(nz+2*kmin):
-                    #     a[k] = qrain_pencils_ghosted[pi, k]
-                    #     vel_cols_r[k] = -vel_cols_r[k]
-                    #
-                    # # for k in xrange(2, nz+2*kmin-2):
-                    # #     a_bar_i[k] = a[k+1]
-                    #
-                    # for k in xrange(kmin, kmax):
-                    #     vel_i_m = 0.5*(vel_cols_r[k-1] + vel_cols_r[k])
-                    #     vel_i_p = 0.5*(vel_cols_r[k] + vel_cols_r[k+1])
-                    #     xx = Gr.dims.dxi[2] * (vel_i_m*a[k]*Ref.rho0[k-1] - vel_i_p*a[k+1]*Ref.rho0[k]) * Ref.alpha0_half[k]
-                    #
-                    #     qrain_tendency_pencils[pi, k-kmin] += xx*dt_/TS.dt
-                    #     qrain_flux_pencils[pi, k-kmin] += Ref.alpha0_half[k]*0.5\
-                    #                                     *(vel_i_m*a[k]*Ref.rho0[k-1] +
-                    #                                       vel_i_p*a[k+1]*Ref.rho0[k])*dt_/TS.dt
-                    #     qrain_pencils_ghosted[pi, k] = fmax(qrain_pencils_ghosted[pi, k] + xx*dt_, 0.0)
-                    #     qrain_pencils[pi, k-kmin] = qrain_pencils_ghosted[pi, k]
-                    #
-                    #     qrain_vel_pencils[pi, k-kmin] = -vel_cols_r[k]
-                    #
-                    #
-                    # #Then for SNOW
-                    # for k in xrange(nz+2*kmin):
-                    #     a[k] = qsnow_pencils_ghosted[pi, k]
-                    #     vel_cols_s[k] = -vel_cols_s[k]
-                    #
-                    # # for k in xrange(2, nz+2*kmin-2):
-                    # #     a_bar_i[k] = a[k+1]
-                    #
-                    # for k in xrange(kmin, kmax):
-                    #     vel_i_m = 0.5*(vel_cols_s[k-1] + vel_cols_s[k])
-                    #     vel_i_p = 0.5*(vel_cols_s[k] + vel_cols_s[k+1])
-                    #     xx = Gr.dims.dxi[2] * (vel_i_m*a[k]*Ref.rho0[k-1] - vel_i_p*a[k+1]*Ref.rho0[k]) * Ref.alpha0_half[k]
-                    #
-                    #     qsnow_tendency_pencils[pi, k-kmin] += xx*dt_/TS.dt
-                    #     qsnow_flux_pencils[pi, k-kmin] += Ref.alpha0_half[k]*0.5\
-                    #                                     *(vel_i_m*a[k]*Ref.rho0[k-1] +
-                    #                                       vel_i_p*a[k+1]*Ref.rho0[k])*dt_/TS.dt
-                    #     qsnow_pencils_ghosted[pi, k] = fmax(qsnow_pencils_ghosted[pi, k] + xx*dt_, 0.0)
-                    #     qsnow_pencils[pi, k-kmin] = qsnow_pencils_ghosted[pi, k]
-                    #
-                    #     qsnow_vel_pencils[pi, k-kmin] = -vel_cols_s[k]
-                    #
-
-                    # if iter_count > 20 and (TS.dt - time_added) > 0.0:
-                    #     with gil:
-                    #         print " ******  "
-                    #         print "Substeps: ", iter_count, (TS.dt - time_added), snow_prop.mf, qsnow_pencils
-
-
-        # self.z_pencil.reverse_double(&Gr.dims, Pa, qrain_pencils, &qrain_tmp[0])
-        # self.z_pencil.reverse_double(&Gr.dims, Pa, qsnow_pencils, &qsnow_tmp[0])
-        #
-        # cdef:
-        #     double rain_dt, snow_dt
-        #
-        # with nogil:
-        #     for i in xrange(imin,imax):
-        #         ishift = i * istride
-        #         for j in xrange(jmin,jmax):
-        #             jshift = j * jstride
-        #             for k in xrange(kmin,kmax):
-        #                 ijk = ishift + jshift + k
-        #
-        #                 #Sedimentation only affect precipitation tendencies
-        #                 rain_dt = (qrain_tmp[ijk] - PV.values[qrain_shift + ijk])/TS.dt
-        #                 PV.tendencies[qrain_shift + ijk] += rain_dt
-        #
-        #                 snow_dt = (qsnow_tmp[ijk] - PV.values[qsnow_shift + ijk])/TS.dt
-        #                 PV.tendencies[qsnow_shift + ijk] += snow_dt
-        #
-        #                 #For DEBUG: 07/27/2015
-        #                 # if fabs(snow_dt) > 1.0e-3:
-        #                 #     with gil:
-        #                 #         print(i, j, k, TS.dt, qsnow_tmp[ijk], snow_dt, PV.tendencies[qsnow_shift+ijk])
-        #                 # #
-
-        # #Now prepare for output
-        #
-        # self.z_pencil.reverse_double(&Gr.dims, Pa, qrain_flux_pencils, &self.qrain_flux[0])
-        # self.z_pencil.reverse_double(&Gr.dims, Pa, qsnow_flux_pencils, &self.qsnow_flux[0])
-        # self.z_pencil.reverse_double(&Gr.dims, Pa, qrain_tendency_pencils, &self.qrain_tendency[0])
-        # self.z_pencil.reverse_double(&Gr.dims, Pa, qsnow_tendency_pencils, &self.qsnow_tendency[0])
-        # self.z_pencil.reverse_double(&Gr.dims, Pa, qrain_vel_pencils, &self.qrain_vel[0])
-        # self.z_pencil.reverse_double(&Gr.dims, Pa, qsnow_vel_pencils, &self.qsnow_vel[0])
 
         # #Get number density for output
         # cdef:
@@ -567,7 +395,10 @@ cdef class Microphysics_Arctic_1M:
                    DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
+            Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t tw_shift = DV.get_varshift(Gr, 'temperature_wb')
             double [:] tmp = np.zeros((Gr.dims.npg), dtype=np.double, order='c')
@@ -623,31 +454,23 @@ cdef class Microphysics_Arctic_1M:
         # NS.write_profile('n0_ice', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         #compute sedimentation flux only of qrain and qsnow
-        compute_advective_fluxes_a(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &DV.values[wqrain_shift], &PV.values[qrain_shift], &dummy[0], 2, self.order)
+        compute_advective_fluxes_a(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &DV.values[wqrain_shift],
+                                   &PV.values[qrain_shift], &dummy[0], 2, self.order)
         tmp = Pa.HorizontalMean(Gr, &dummy[0])
         NS.write_profile('rain_sedimentation_flux', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        compute_advective_fluxes_a(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &DV.values[wqsnow_shift], &PV.values[qsnow_shift], &dummy[0], 2, self.order)
+        compute_advective_fluxes_a(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &DV.values[wqsnow_shift],
+                                   &PV.values[qsnow_shift], &dummy[0], 2, self.order)
         tmp = Pa.HorizontalMean(Gr, &dummy[0])
         NS.write_profile('snow_sedimentation_flux', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        # tmp = Pa.HorizontalMean(Gr, &self.qrain_flux[0])
-        # NS.write_profile('rain_sedimentation_flux', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.qrain_tendency[0])
-        # NS.write_profile('rain_sedimentation_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.qrain_vel[0])
-        # NS.write_profile('rain_sedimentation_velocity', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.qsnow_flux[0])
-        # NS.write_profile('snow_sedimentation_flux', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.qsnow_tendency[0])
-        # NS.write_profile('snow_sedimentation_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.qsnow_vel[0])
-        # NS.write_profile('snow_sedimentation_velocity', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        get_virtual_potential_temperature(&Gr.dims, &RS.p0_half[0], &DV.values[t_shift], &DV.values[qv_shift],
+                                          &DV.values[ql_shift], &DV.values[qi_shift], &dummy[0])
+        tmp = Pa.HorizontalMean(Gr, &dummy[0])
+        NS.write_profile('thetav_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanofSquares(&Gr.dims, &PV.values[w_shift], &dummy[0])
+        NS.write_profile('thetav_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         #Output entropy source terms due to microphysics
 
