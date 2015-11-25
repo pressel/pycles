@@ -31,6 +31,8 @@ def InitializationFactory(namelist):
             return InitGabls
         elif casename == 'DYCOMS_RF01':
             return InitDYCOMS_RF01
+        elif casename == 'DYCOMS_RF02':
+            return InitDYCOMS_RF02
         elif casename == 'SMOKE':
             return InitSmoke
         elif casename == 'Rico':
@@ -537,6 +539,121 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
+
+
+def InitDYCOMS_RF02(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+
+
+    # Generate Reference Profiles
+    RS.Pg = 1017.8 * 100.0
+    RS.qtg = 9.0/1000.0
+    RS.u0 = 5.0
+    RS.v0 = -5.5
+    cdef double cp_ref = 1004.0
+    cdef double L_ref = 2.5e6
+
+    # Use an exner function with values for Rd, and cp given in Stevens 2004 to compute temperature given $\theta_l$
+    RS.Tg = 288.3 * (RS.Pg/p_tilde)**(287.0/cp_ref)
+
+    RS.initialize(Gr ,Th, NS, Pa)
+
+    #Set up $\tehta_l$ and $\qt$ profiles
+    cdef:
+        Py_ssize_t i
+        Py_ssize_t j
+        Py_ssize_t k
+        Py_ssize_t ijk, ishift, jshift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+
+    for k in xrange(Gr.dims.nlg[2]):
+        if Gr.zl_half[k] <=795.0:
+            thetal[k] = 288.3
+            qt[k] = 9.45/1000.0
+        if Gr.zl_half[k] > 795.0:
+            thetal[k] = 295.0 + (Gr.zl_half[k] - 795.0)**(1.0/3.0)
+            qt[k] = (5.0 - 3.0 * (1.0 - np.exp((Gr.zl_half[k] - 795.0)/500.0)))/1000.0
+        v[k] = -9.0 + 5.6 * Gr.zl_half[k]/1000.0 - RS.u0
+        u[k] = 3.0 + 4.3*Gr.zl_half[k]/1000.0 - RS.v0
+
+    def compute_thetal(p_,T_,ql_):
+        theta_ = T_ / (p_/p_tilde)**(287.0/cp_ref)
+        return theta_ * exp(L_ref * ql_ / (cp_ref * T_))
+
+    def sat_adjst(p_,thetal_,qt_):
+        '''
+        Use saturation adjustment scheme to compute temperature and ql given thetal and qt.
+        :param p: pressure [Pa]
+        :param thetal: liquid water potential temperature  [K]
+        :param qt:  total water specific humidity
+        :return: T, ql
+        '''
+
+        #Compute temperature
+        t_1 = thetal_ * (p_/p_tilde)**(287.0/cp_ref)
+        #Compute saturation vapor pressure
+        pv_star_1 = Th.get_pv_star(t_1)
+        #Compute saturation mixing ratio
+        qs_1 = qv_star_c(p_,qt_,pv_star_1)
+
+        if qt_ <= qs_1:
+            #If not saturated return temperature and ql = 0.0
+            return t_1, 0.0
+        else:
+            ql_1 = qt_ - qs_1
+            f_1 = thetal_ - compute_thetal(p_,t_1,ql_1)
+            t_2 = t_1 + L_ref*ql_1/cp_ref
+            pv_star_2 = Th.get_pv_star(t_2)
+            qs_2 = qv_star_c(p_,qt_,pv_star_2)
+            ql_2 = qt_ - qs_2
+
+            while fabs(t_2 - t_1) >= 1e-9:
+                pv_star_2 = Th.get_pv_star(t_2)
+                qs_2 = qv_star_c(p_,qt_,pv_star_2)
+                ql_2 = qt_ - qs_2
+                f_2 = thetal_ - compute_thetal(p_, t_2, ql_2)
+                t_n = t_2 - f_2 * (t_2 - t_1)/(f_2 - f_1)
+                t_1 = t_2
+                t_2 = t_n
+                f_1 = f_2
+
+            return t_2, ql_2
+
+    #Generate initial perturbations (here we are generating more than we need)
+    np.random.seed(Pa.rank)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef double theta_pert_
+
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift = istride * i
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = jstride * j
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[ijk + u_varshift] = 0.0
+                PV.values[ijk + v_varshift] = 0.0
+                PV.values[ijk + w_varshift] = 0.0
+                PV.values[ijk + qt_varshift]  = qt[k]
+
+                #Now set the entropy prognostic variable including a potential temperature perturbation
+                if Gr.zl_half[k] < 200.0:
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                else:
+                    theta_pert_ = 0.0
+                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
+                PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+
+    return
 
 def InitSmoke(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
