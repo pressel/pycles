@@ -469,7 +469,7 @@ cdef class Microphysics_Arctic_1M:
         tmp = Pa.HorizontalMean(Gr, &dummy[0])
         NS.write_profile('thetav_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        tmp = Pa.HorizontalMeanofSquares(&Gr.dims, &PV.values[w_shift], &dummy[0])
+        tmp = Pa.HorizontalMeanofSquares(Gr, &PV.values[w_shift], &dummy[0])
         NS.write_profile('thetav_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         #Output entropy source terms due to microphysics
