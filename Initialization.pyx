@@ -588,7 +588,7 @@ def InitDYCOMS_RF02(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     def compute_thetal(p_,T_,ql_):
         theta_ = T_ / (p_/p_tilde)**(287.0/cp_ref)
-        return theta_ * exp(L_ref * ql_ / (cp_ref * T_))
+        return theta_ * exp(-L_ref * ql_ / (cp_ref * T_))
 
     def sat_adjst(p_,thetal_,qt_):
         '''
@@ -640,8 +640,8 @@ def InitDYCOMS_RF02(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             jshift = jstride * j
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
-                PV.values[ijk + u_varshift] = 0.0
-                PV.values[ijk + v_varshift] = 0.0
+                PV.values[ijk + u_varshift] = u[k]
+                PV.values[ijk + v_varshift] = v[k]
                 PV.values[ijk + w_varshift] = 0.0
                 PV.values[ijk + qt_varshift]  = qt[k]
 
