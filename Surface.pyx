@@ -501,7 +501,20 @@ cdef class SurfaceDYCOMS_RF01:
                     PV.tendencies[s_shift  + ijk] +=  self.s_flux[ij] * tendency_factor
                     PV.tendencies[qt_shift + ijk] +=  self.qt_flux[ij] * tendency_factor
 
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef double tmp
+
+        tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
+        NS.write_ts('uw_surface_mean',tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.v_flux[0])
+        NS.write_ts('vw_surface_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.s_flux[0])
+        NS.write_ts('s_flux_surface_mean', tmp, Pa)
+        tmp = Pa.HorizontalMeanSurface(Gr,&self.qt_flux[0])
+        NS.write_ts('qt_flux_surface_mean', tmp, Pa)
+
         return
+
 
 cdef class SurfaceDYCOMS_RF02:
     def __init__(self,namelist, LatentHeat LH):
