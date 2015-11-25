@@ -114,13 +114,13 @@ cdef class Microphysics_Arctic_1M:
         # double [:] qrain_vel
         # double [:] qsnow_vel
 
-        double [:] rain_number_density
-        double [:] snow_number_density
-        double [:] ice_number_density
-        double [:] snow_lambda
-        double [:] ice_lambda
-        double [:] n0_snow
-        double [:] n0_ice
+        # double [:] rain_number_density
+        # double [:] snow_number_density
+        # double [:] ice_number_density
+        # double [:] snow_lambda
+        # double [:] ice_lambda
+        # double [:] n0_snow
+        # double [:] n0_ice
 
         double [:] precip_rate
         double [:] evap_rate

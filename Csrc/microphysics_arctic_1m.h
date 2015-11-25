@@ -6,6 +6,8 @@
 #include "thermodynamic_functions.h"
 #include <stdio.h>
 #include <math.h>
+#include "parameters_micro.h"
+#include "advection_interpolation.h"
 
 double rho_liq = 1000.0;
 double visc_air = 2.0e-5;
@@ -394,6 +396,116 @@ double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm_parame
     return vel_snow;
 };
 
+void sedimentation_velocity_rain(const struct DimStruct *dims, double* restrict density, double* restrict nrain,
+                                    double* restrict qrain, double* restrict qrain_velocity){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+    const double b1 = 650.1466922699631;
+    const double b2 = -1.222222222222222;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin-1; k<kmax+1; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double rwc = fmax(qrain[ijk]*density[k], small);
+                double n0_rain = b1*pow(rwc, b2);
+                double n0_max = rwc*N_MAX_RAIN;
+                double n0_min = rwc*N_MIN_RAIN;
+
+                nrain[ijk] = fmax(fmin(n0_rain,n0_max),n0_min);
+
+                double lam = pow((A_RAIN*n0_rain*GB1_RAIN/rwc), (1.0/(B_RAIN+1.0)));
+                qrain_velocity[ijk] = C_RAIN*GBD1_RAIN/GB1_RAIN/pow(lam, D_RAIN);
+
+            }
+        }
+    }
+
+
+     for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax-1 ; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                qrain_velocity[ijk] = interp_2(qrain_velocity[ijk], qrain_velocity[ijk+1]) ;
+
+            }
+        }
+    }
+
+
+    return;
+
+}
+
+void sedimentation_velocity_snow(const struct DimStruct *dims, double* restrict density, double* restrict nsnow,
+                                    double* restrict qsnow, double* restrict qsnow_velocity){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+    const double y1 = 5.62e7;
+    const double y2 = 0.63;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin-1; k<kmax+1; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double swc = fmax(qsnow[ijk]*density[k], SMALL);
+                double n0_snow = yi*pow(swc*1000.0, y2);
+                double n0_max = swc*N_MAX_SNOW;
+                double n0_min = swc*N_MIN_SNOW;
+
+                nsnow[ijk] = fmax(fmin(n0_snow,n0_max),n0_min);
+
+                double lam = pow((A_SNOW*n0_snow*GB1_SNOW/swc), (1.0/(B_SNOW+1.0)));
+                qsnow_velocity[ijk] = C_SNOW*GBD1_SNOW/GB1_SNOW/pow(lam, D_SNOW);
+
+            }
+        }
+    }
+
+
+     for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax-1 ; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                qsnow_velocity[ijk] = interp_2(qsnow_velocity[ijk], qsnow_velocity[ijk+1]) ;
+
+            }
+        }
+    }
+
+
+    return;
+
+}
+
 
 double entropy_src_precipitation_c(const double p0, const double T, const double qt, const double qv, const double L, const double precip_rate){
     double pd = pd_c(p0, qt, qv);
@@ -414,3 +526,98 @@ double entropy_src_evaporation_c(const double p0, const double T, double Tw, con
 
     return (sv - sc - sd) * evap_rate;
 };
+
+void entropy_source_heating_rain(const struct DimStruct *dims, double* restrict T, double* restrict Twet, double* restrict qrain,
+                               double* restrict w_qrain, double* restrict w,  double* restrict entropy_tendency){
+
+
+    //derivative of Twet is upwinded
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+    const double dzi = 1.0/dims->dx[2];
+
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                entropy_tendency[ijk]+= qrain[ijk]*(fabs(w_qrain[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk])* dzi/T[ijk];
+            }
+        }
+    }
+
+    return;
+
+}
+
+void entropy_source_heating_snow(const struct DimStruct *dims, double* restrict T, double* restrict Twet, double* restrict qsnow,
+                               double* restrict w_qsnow, double* restrict w,  double* restrict entropy_tendency){
+
+
+    //derivative of Twet is upwinded
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+    const double dzi = 1.0/dims->dx[2];
+
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                entropy_tendency[ijk]+= qsnow[ijk]*(fabs(w_qsnow[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk])* dzi/T[ijk];
+            }
+        }
+    }
+
+    return;
+
+}
+
+
+void entropy_source_drag(const struct DimStruct *dims, double* restrict T,  double* restrict qprec,
+                            double* restrict w_qprec, double* restrict entropy_tendency){
+
+
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                entropy_tendency[ijk]+= g * qprec[ijk]* fabs(w_qprec[ijk])/ T[ijk];
+            }
+        }
+    }
+
+    return;
+
+}
