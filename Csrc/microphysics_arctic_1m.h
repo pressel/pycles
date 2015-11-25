@@ -640,7 +640,7 @@ void get_virtual_potential_temperature(const struct DimStruct *dims, double* res
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                thetav[ijk] = theta_c(p0[k], T[ijk]) * (1.0 + 0.608 * qv[ijk] - ql[ijk] - qi[ijk])
+                thetav[ijk] = theta_c(p0[k], T[ijk]) * (1.0 + 0.608 * qv[ijk] - ql[ijk] - qi[ijk]);
             }
         }
     }
