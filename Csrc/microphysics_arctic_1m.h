@@ -426,7 +426,7 @@ void sedimentation_velocity_rain(const struct DimStruct *dims, double* restrict 
                 nrain[ijk] = fmax(fmin(n0_rain,n0_max),n0_min);
 
                 double lam = pow((A_RAIN*n0_rain*GB1_RAIN/rwc), (1.0/(B_RAIN+1.0)));
-                qrain_velocity[ijk] = C_RAIN*GBD1_RAIN/GB1_RAIN/pow(lam, D_RAIN);
+                qrain_velocity[ijk] = -C_RAIN*GBD1_RAIN/GB1_RAIN/pow(lam, D_RAIN);
 
             }
         }
@@ -481,7 +481,7 @@ void sedimentation_velocity_snow(const struct DimStruct *dims, double* restrict 
                 nsnow[ijk] = fmax(fmin(n0_snow,n0_max),n0_min);
 
                 double lam = pow((A_SNOW*n0_snow*GB1_SNOW/swc), (1.0/(B_SNOW+1.0)));
-                qsnow_velocity[ijk] = C_SNOW*GBD1_SNOW/GB1_SNOW/pow(lam, D_SNOW);
+                qsnow_velocity[ijk] = -C_SNOW*GBD1_SNOW/GB1_SNOW/pow(lam, D_SNOW);
 
             }
         }
