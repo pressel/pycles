@@ -24,6 +24,8 @@ def main():
         namelist = Gabls()
     elif case_name == 'DYCOMS_RF01':
         namelist = DYCOMS_RF01()
+    elif case_name == 'DYCOMS_RF02':
+        namelist = DYCOMS_RF02()
     elif case_name == 'SMOKE':
         namelist = SMOKE()
     elif case_name == 'Rico':
