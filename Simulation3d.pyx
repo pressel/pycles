@@ -5,6 +5,7 @@ from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
 from AuxiliaryStatistics import AuxiliaryStatisticsFactory
+from AuxiliaryStatistics import AuxiliaryStatistics
 from Thermodynamics cimport LatentHeat
 cimport ParallelMPI
 cimport Grid
@@ -71,6 +72,7 @@ class Simulation3d:
 
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist, self.Pa)
+        self.Aux = AuxiliaryStatistics(namelist)
         self.Restart.initialize()
 
         self.VO.initialize()
@@ -117,7 +119,8 @@ class Simulation3d:
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Damping.initialize(self.Gr)
-        self.Aux = AuxiliaryStatisticsFactory(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+
 
         return
 

@@ -18,37 +18,48 @@ from libc.math cimport sqrt
 from thermodynamic_functions cimport thetas_c
 include "parameters.pxi"
 
-
-def AuxiliaryStatisticsFactory(namelist, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
-                               DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-    try:
-        auxiliary_statistics = namelist['stats_io']['auxiliary']
-    except:
-        auxiliary_statistics = 'None'
-
-
-    if auxiliary_statistics == 'Cumulus':
-        return CumulusStatistics(Gr,PV, DV, NS, Pa)
-    elif auxiliary_statistics == 'StableBL':
-        return StableBLStatistics(Gr, NS, Pa)
-    elif auxiliary_statistics == 'SMOKE':
-        return SmokeStatistics(Gr, NS, Pa)
-    elif auxiliary_statistics == 'DYCOMS':
-        return DYCOMSStatistics(Gr, NS, Pa)
-    elif auxiliary_statistics == 'None':
-        return AuxiliaryStatisticsNone()
-    else:
-        if Pa.rank == 0:
-            print('Auxiliary statistics class provided by namelist is not recognized.')
-        return AuxiliaryStatisticsNone()
-
-
-class AuxiliaryStatisticsNone:
-    def __init__(self):
+class AuxiliaryStatistics:
+    def __init__(self, namelist):
+        self.AuxStatsClasses = []
         return
+
+
+
+    def initialize(self, namelist, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+                               DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        try:
+            auxiliary_statistics = namelist['stats_io']['auxiliary']
+        except:
+            return
+
+        #Convert whatever is in auxiliary_statistics to list if not already
+        if not type(auxiliary_statistics) == list:
+            auxiliary_statistics = [auxiliary_statistics]
+
+
+        #Build list of auxilary statistics class instances
+        if 'Cumulus' in auxiliary_statistics:
+            self.AuxStatsClasses.append(CumulusStatistics(Gr,PV, DV, NS, Pa))
+        if 'StableBL' in auxiliary_statistics:
+            self.AuxStatsClasses.append(StableBLStatistics(Gr, NS, Pa))
+        if 'SMOKE' in auxiliary_statistics:
+            self.AuxStatsClasses.append(SmokeStatistics(Gr, NS, Pa))
+        if 'DYCOMS' in auxiliary_statistics:
+            self.AuxStatsClasses.append(DYCOMSStatistics(Gr, NS, Pa))
+
+
+        return
+
     def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        #loop over class instances and class stats_io
+        for aux_class in self.AuxStatsClasses:
+            aux_class.stats_io(Gr, PV, DV, MA, MD, NS, Pa)
+
         return
+
 
 class CumulusStatistics:
     def __init__(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,

@@ -99,7 +99,7 @@ def SullivanPatton():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['auxiliary'] = ['None']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -176,7 +176,7 @@ def SaturatedBubble():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['auxiliary'] = ['None']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -253,7 +253,7 @@ def StableBubble():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['auxiliary'] = ['None']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -330,7 +330,7 @@ def Bomex():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'Cumulus'
+    namelist['stats_io']['auxiliary'] = ['Cumulus']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -410,7 +410,7 @@ def Gabls():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'StableBL'
+    namelist['stats_io']['auxiliary'] = ['StableBL']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
@@ -488,7 +488,7 @@ def DYCOMS_RF01():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'DYCOMS'
+    namelist['stats_io']['auxiliary'] = ['DYCOMS']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
@@ -569,7 +569,7 @@ def DYCOMS_RF02():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'DYCOMS'
+    namelist['stats_io']['auxiliary'] = ['DYCOMS']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
@@ -658,7 +658,7 @@ def SMOKE():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'SMOKE'
+    namelist['stats_io']['auxiliary'] = ['SMOKE']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
@@ -737,7 +737,7 @@ def Rico():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'Cumulus'
+    namelist['stats_io']['auxiliary'] = ['Cumulus']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
