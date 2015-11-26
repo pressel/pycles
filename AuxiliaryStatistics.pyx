@@ -23,8 +23,6 @@ class AuxiliaryStatistics:
         self.AuxStatsClasses = []
         return
 
-
-
     def initialize(self, namelist, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                                DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -37,7 +35,6 @@ class AuxiliaryStatistics:
         if not type(auxiliary_statistics) == list:
             auxiliary_statistics = [auxiliary_statistics]
 
-
         #Build list of auxilary statistics class instances
         if 'Cumulus' in auxiliary_statistics:
             self.AuxStatsClasses.append(CumulusStatistics(Gr,PV, DV, NS, Pa))
@@ -48,8 +45,8 @@ class AuxiliaryStatistics:
         if 'DYCOMS' in auxiliary_statistics:
             self.AuxStatsClasses.append(DYCOMSStatistics(Gr, NS, Pa))
 
-
         return
+
 
     def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -59,7 +56,6 @@ class AuxiliaryStatistics:
             aux_class.stats_io(Gr, PV, DV, MA, MD, NS, Pa)
 
         return
-
 
 class CumulusStatistics:
     def __init__(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
@@ -78,7 +74,6 @@ class CumulusStatistics:
             scalars.append('thetali')
         print('Aux scalars', scalars)
 
-
         for cond in conditions:
             NS.add_profile('fraction_'+cond,Gr,Pa)
             NS.add_profile('w_'+cond,Gr,Pa)
@@ -86,8 +81,6 @@ class CumulusStatistics:
             for scalar in scalars:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
-
-
 
     def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -426,12 +419,3 @@ class DYCOMSStatistics:
         NS.write_ts('boundary_layer_height', blh_mean, Pa)
 
         return
-
-
-
-
-
-
-
-
-
