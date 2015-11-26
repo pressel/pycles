@@ -26,12 +26,15 @@ def AuxiliaryStatisticsFactory(namelist, Grid.Grid Gr, PrognosticVariables.Progn
     except:
         auxiliary_statistics = 'None'
 
+
     if auxiliary_statistics == 'Cumulus':
         return CumulusStatistics(Gr,PV, DV, NS, Pa)
     elif auxiliary_statistics == 'StableBL':
         return StableBLStatistics(Gr, NS, Pa)
     elif auxiliary_statistics == 'SMOKE':
         return SmokeStatistics(Gr, NS, Pa)
+    elif auxiliary_statistics == 'DYCOMS':
+        return DYCOMSStatistics(Gr, NS, Pa)
     elif auxiliary_statistics == 'None':
         return AuxiliaryStatisticsNone()
     else:
@@ -308,7 +311,8 @@ class StableBLStatistics:
 
 class SmokeStatistics:
     def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-            NS.add_ts('boundary_layer_height', Gr, Pa)
+        NS.add_ts('boundary_layer_height', Gr, Pa)
+        return
 
 
     def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
@@ -358,7 +362,59 @@ class SmokeStatistics:
 
         return
 
+class DYCOMSStatistics:
 
+    def __init__(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts('boundary_layer_height', Gr, Pa)
+        return
+
+
+    def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+             DiagnosticVariables.DiagnosticVariables DV,
+             MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
+             ParallelMPI.ParallelMPI Pa):
+
+        #Here we compute the boundary layer height consistent with Bretherton et al. 1999
+        cdef:
+            Py_ssize_t i, j, k, ij, ij2d, ijk
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t level_1
+            Py_ssize_t level_2
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            double [:] blh = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+            double blh_mean
+            double qt_1
+            double qt_2
+            double z1
+            double z2
+            double dz
+
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                for j in xrange(Gr.dims.nlg[1]):
+                    ij = i * istride + j * jstride
+                    ij2d = i * Gr.dims.nlg[1] + j
+                    level_1 = 0
+                    level_2 = 0
+                    for k in xrange(Gr.dims.nlg[2]):
+                        ijk = ij + k
+                        if PV.values[qt_shift+ ijk] >= 0.008:
+                            level_1 = k
+                    level_2 = level_1 + 1
+                    qt_1 = PV.values[qt_shift + ij + level_1]
+                    qt_2 = PV.values[qt_shift+ ij + level_2]
+                    z1 = Gr.zl_half[level_1]
+                    z2 = Gr.zl_half[level_2]
+                    dz = (0.008 - qt_1)/(qt_2 - qt_1)*(z2 - z1)
+
+                    blh[ij2d] = z1 + dz
+
+        blh_mean = Pa.HorizontalMeanSurface(Gr, &blh[0])
+
+        NS.write_ts('boundary_layer_height', blh_mean, Pa)
+
+        return
 
 
 
