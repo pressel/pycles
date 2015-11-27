@@ -4,7 +4,6 @@ cimport numpy as np
 from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
-from AuxiliaryStatistics import AuxiliaryStatisticsFactory
 from AuxiliaryStatistics import AuxiliaryStatistics
 from Thermodynamics cimport LatentHeat
 cimport ParallelMPI
