@@ -428,8 +428,15 @@ class TKEStatistics:
     def __init__(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         NS.add_ts('tke_int_z', Gr, Pa)
         NS.add_ts('tke_nd_int_z', Gr, Pa)
+
         NS.add_profile('tke_mean', Gr, Pa)
         NS.add_profile('tke_nd_mean', Gr, Pa)
+        NS.add_profile('tke_prod_B', Gr, Pa)
+        NS.add_profile('tke_prod_S', Gr, Pa)
+        NS.add_profile('tke_prod_P', Gr, Pa)
+        NS.add_profile('tke_prod_T', Gr, Pa)
+        NS.add_profile('tke_prod_A', Gr, Pa)
+        NS.add_profile('tke_prod_D', Gr, Pa)
 
         return
 
@@ -448,19 +455,51 @@ class TKEStatistics:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
-
+            Py_ssize_t b_shift = DV.get_varshift(Gr,'buoyancy')
+            Py_ssize_t p_shift = DV.get_varshift(Gr, 'dynamic_pressure')
+            Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
 
             double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] wc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
 
+            double [:] up = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
             double [:] ucp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] vcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] wcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
 
+            double [:] upup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] upvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] upwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] vpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] wpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] uppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] wpep = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wpbp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
             double [:] tke = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] tke_nd = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
 
+            #double [:] epup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            #double [:] epvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] epwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] e_adv = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] e_dis = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] tke_S = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] tke_P = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] tke_T = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
 
         #Interpolate to cell centers
         with nogil:
@@ -479,8 +518,9 @@ class TKEStatistics:
             double [:] ucmean = Pa.HorizontalMean(Gr, &uc[0])
             double [:] vcmean = Pa.HorizontalMean(Gr, &vc[0])
             double [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
-            double up, vp, wp
-            double upup, vpvp, wpwp
+            double [:] bmean = Pa.HorizontalMean(Gr, &DV.values[b_shift])
+            double [:] pmean = Pa.HorizontalMean(Gr, &DV.values[p_shift])
+            double  bp, pp
 
         #Compute the TKE
         with nogil:
@@ -492,26 +532,119 @@ class TKEStatistics:
                         ijk = ishift + jshift + k
 
                         #Compute fluctuations
-                        up = uc[ijk] - ucmean[k]
-                        vp = vc[ijk] - vcmean[k]
-                        wp = wc[ijk] - wcmean[k]
+                        up[ijk] = uc[ijk] - ucmean[k]
+                        vp[ijk] = vc[ijk] - vcmean[k]
+                        wp[ijk] = wc[ijk] - wcmean[k]
+                        bp  = DV.values[b_shift + ijk] - bmean[k]
+                        pp  = DV.values[p_shift + ijk] - pmean[k]
 
                         #Coumpute fluctuation products
-                        upup = up * up
-                        vpvp = vp * vp
-                        wpwp = wp * wp
+                        upup[ijk] = up[ijk] * up[ijk]
+                        upvp[ijk] = up[ijk] * vp[ijk]
+                        upwp[ijk] = up[ijk] * wp[ijk]
 
-                        tke_nd[ijk] =  0.5 * (upup + vpvp + wpwp)
+                        vpvp[ijk] = vp[ijk] * vp[ijk]
+                        vpwp[ijk] = vp[ijk] * wp[ijk]
+                        wpwp[ijk] = wp[ijk] * wp[ijk]
+
+
+                        uppp[ijk] = up[ijk] * pp
+                        vppp[ijk] = vp[ijk] * pp
+                        wppp[ijk] = wp[ijk] * pp
+
+                        tke_nd[ijk] =  0.5 * (upup[ijk] + vpvp[ijk] + wpwp[ijk])
                         tke[ijk] = RS.rho0[k] * tke_nd[ijk]
 
+                        wpbp[ijk] = wp[ijk] * bp
+
+
         cdef:
+
+            double [:] upup_mean = Pa.HorizontalMean(Gr, &upup[0])
+            double [:] upvp_mean = Pa.HorizontalMean(Gr, &upvp[0])
+            double [:] upwp_mean = Pa.HorizontalMean(Gr, &upwp[0])
+            double [:] vpvp_mean = Pa.HorizontalMean(Gr, &vpvp[0])
+            double [:] vpwp_mean = Pa.HorizontalMean(Gr, &vpwp[0])
+            double [:] wpwp_mean = Pa.HorizontalMean(Gr, &wpwp[0])
+            double [:] wppp_mean = Pa.HorizontalMean(Gr, &wppp[0])
+            double [:] tke_mean = Pa.HorizontalMean(Gr, &tke_nd[0])
             double [:] tkemean = Pa.HorizontalMean(Gr, &tke[0])
-            double [:] tkendmean = Pa.HorizontalMean(Gr, & tke_nd[0])
+            double [:] tkendmean = Pa.HorizontalMean(Gr, &tke_nd[0])
+            double [:] tke_B = Pa.HorizontalMean(Gr, &wpbp[0])
+
+
+        #Compute the Shear Production
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2]-1):
+                tke_S[k] -= upwp_mean[k] * (ucmean[k+1] - ucmean[k-1]) * 0.5 * Gr.dims.dxi[2]
+                tke_S[k] -= vpwp_mean[k] * (vcmean[k+1] - vcmean[k-1]) * 0.5 * Gr.dims.dxi[2]
+
+        #Compute Pressure Work
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2]-1):
+                tke_P[k] -= (wppp_mean[k+1] * RS.alpha0[k+1] - wppp_mean[k-1]* RS.alpha0[k-1])* 0.5 * Gr.dims.dxi[2]
+
+        #Compute the Turbulent transport
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        epwp[ijk] = (wc[ijk] - wcmean[k])*(tke_nd[ijk] - tke_mean[k])
+
+        cdef:
+            double [:] epwp_mean = Pa.HorizontalMean(Gr, &epwp[0])
+
+        #Compute Turbulent Transport
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2] -1):
+                tke_T[k] -= (epwp_mean[k+1] - epwp_mean[k-1]) * 0.5 * Gr.dims.dxi[2]
+
+
+        #Compute Mean Advection
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        e_adv[ijk] -= ucmean[k] * (tke_nd[ijk+istride] - tke_nd[ijk-istride])*0.5*Gr.dims.dxi[0]
+                        e_adv[ijk] -= vcmean[k] * (tke_nd[ijk+jstride] - tke_nd[ijk-jstride])*0.5*Gr.dims.dxi[1]
+
+        cdef:
+            double [:] tke_A = Pa.HorizontalMean(Gr, &e_adv[0])
+            double nu
+
+        #Compute the dissipation of TKE
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        nu = DV.values[visc_shift + ijk]
+                        e_dis[ijk] += (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0] * (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0]
+                        e_dis[ijk] += (vp[ijk + jstride] - vp[ijk-jstride]) * 0.5 * Gr.dims.dxi[1] * (vp[ijk + jstride] - vp[ijk-jstride]) * 0.5 * Gr.dims.dxi[1]
+                        e_dis[ijk] += (wp[ijk + 1] - wp[ijk-1]) * 0.5 * Gr.dims.dxi[2] * (wp[ijk + 1] - wp[ijk-1]) * 0.5 * Gr.dims.dxi[2]
+                        e_dis[ijk] -= nu
+
+        cdef:
+            double [:] tke_D = Pa.HorizontalMean(Gr, &e_dis[0])
 
         #Write data
         NS.write_profile('tke_mean', tkemean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('tke_nd_mean', tkendmean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('tke_int_z', np.sum(tkemean[Gr.dims.gw:-Gr.dims.gw])*Gr.dims.dx[2], Pa)
         NS.write_ts('tke_nd_int_z', np.sum(tkendmean[Gr.dims.gw:-Gr.dims.gw])*Gr.dims.dx[2],Pa)
+        NS.write_profile('tke_prod_B', tke_B[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_S', tke_S[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_P', tke_P[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_T', tke_T[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_A', tke_A[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_D', tke_D[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
