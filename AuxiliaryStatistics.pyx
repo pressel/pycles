@@ -186,7 +186,6 @@ class CumulusStatistics:
             NS.write_profile('qr2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
 
-
         if 'nr' in PV.name_index:
             shift = PV.get_varshift(Gr, 'nr')
             tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
@@ -197,7 +196,6 @@ class CumulusStatistics:
             NS.write_profile('nr_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
             tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
             NS.write_profile('nr2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-
 
         if 'theta_rho' in DV.name_index:
             shift = DV.get_varshift(Gr, 'theta_rho')
@@ -547,7 +545,6 @@ class TKEStatistics:
                         vpwp[ijk] = vp[ijk] * wp[ijk]
                         wpwp[ijk] = wp[ijk] * wp[ijk]
 
-
                         uppp[ijk] = up[ijk] * pp
                         vppp[ijk] = vp[ijk] * pp
                         wppp[ijk] = wp[ijk] * pp
@@ -557,9 +554,7 @@ class TKEStatistics:
 
                         wpbp[ijk] = wp[ijk] * bp
 
-
         cdef:
-
             double [:] upup_mean = Pa.HorizontalMean(Gr, &upup[0])
             double [:] upvp_mean = Pa.HorizontalMean(Gr, &upvp[0])
             double [:] upwp_mean = Pa.HorizontalMean(Gr, &upwp[0])
@@ -571,7 +566,6 @@ class TKEStatistics:
             double [:] tkemean = Pa.HorizontalMean(Gr, &tke[0])
             double [:] tkendmean = Pa.HorizontalMean(Gr, &tke_nd[0])
             double [:] tke_B = Pa.HorizontalMean(Gr, &wpbp[0])
-
 
         #Compute the Shear Production
         with nogil:
@@ -601,7 +595,6 @@ class TKEStatistics:
         with nogil:
             for k in xrange(1, Gr.dims.nlg[2] -1):
                 tke_T[k] -= (epwp_mean[k+1] - epwp_mean[k-1]) * 0.5 * Gr.dims.dxi[2]
-
 
         #Compute Mean Advection
         with nogil:
