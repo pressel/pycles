@@ -216,7 +216,7 @@ class Simulation3d:
                 self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
                 self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
                 self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
-                self.Aux.stats_io(self.Gr, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
+                self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
                 self.Pa.root_print('Finished Doing StatsIO')
 
             if self.Restart.last_restart_time + self.Restart.frequency == self.TS.t:
@@ -257,12 +257,12 @@ class Simulation3d:
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
-        self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
+        self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke ,self.StatsIO, self.Pa)
         self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
         self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
-        self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
-        self.Aux.stats_io(self.Gr, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
+        self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
+        self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         return
 

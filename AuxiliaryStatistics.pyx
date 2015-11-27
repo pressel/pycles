@@ -5,6 +5,7 @@
 #cython: cdivision=True
 
 cimport Grid
+cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 cimport ParallelMPI
@@ -44,16 +45,18 @@ class AuxiliaryStatistics:
             self.AuxStatsClasses.append(SmokeStatistics(Gr, NS, Pa))
         if 'DYCOMS' in auxiliary_statistics:
             self.AuxStatsClasses.append(DYCOMSStatistics(Gr, NS, Pa))
+        if 'TKE' in auxiliary_statistics:
+            self.AuxStatsClasses.append(TKEStatistics(Gr, NS, Pa))
 
         return
 
 
-    def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         #loop over class instances and class stats_io
         for aux_class in self.AuxStatsClasses:
-            aux_class.stats_io(Gr, PV, DV, MA, MD, NS, Pa)
+            aux_class.stats_io(Gr, RS, PV, DV, MA, MD, NS, Pa)
 
         return
 
@@ -82,7 +85,7 @@ class CumulusStatistics:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
 
-    def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -265,7 +268,7 @@ class StableBLStatistics:
         return
 
 
-    def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, MomentumAdvection.MomentumAdvection MA,
                  MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -319,7 +322,7 @@ class SmokeStatistics:
         return
 
 
-    def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
                  ParallelMPI.ParallelMPI Pa):
@@ -373,7 +376,7 @@ class DYCOMSStatistics:
         return
 
 
-    def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
              DiagnosticVariables.DiagnosticVariables DV,
              MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
              ParallelMPI.ParallelMPI Pa):
@@ -417,5 +420,98 @@ class DYCOMSStatistics:
         blh_mean = Pa.HorizontalMeanSurface(Gr, &blh[0])
 
         NS.write_ts('boundary_layer_height', blh_mean, Pa)
+
+        return
+
+class TKEStatistics:
+
+    def __init__(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts('tke_int_z', Gr, Pa)
+        NS.add_ts('tke_nd_int_z', Gr, Pa)
+        NS.add_profile('tke_mean', Gr, Pa)
+        NS.add_profile('tke_nd_mean', Gr, Pa)
+
+        return
+
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+             DiagnosticVariables.DiagnosticVariables DV,
+             MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
+             ParallelMPI.ParallelMPI Pa):
+
+        #Here we compute the boundary layer height consistent with Bretherton et al. 1999
+        cdef:
+            Py_ssize_t i, j, k, ij, ij2d, ijk
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t ishift
+            Py_ssize_t jshift
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
+
+
+            double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] ucp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] tke = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] tke_nd = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+
+        #Interpolate to cell centers
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        uc[ijk] = 0.5 * (PV.values[u_shift + ijk - istride] + PV.values[u_shift + ijk])
+                        vc[ijk] = 0.5 * (PV.values[v_shift + ijk - jstride] + PV.values[v_shift + ijk])
+                        wc[ijk] = 0.5 * (PV.values[w_shift + ijk - 1] + PV.values[w_shift + ijk])
+
+        #Compute the horizontal means of the cell centered velocities
+        cdef:
+            double [:] ucmean = Pa.HorizontalMean(Gr, &uc[0])
+            double [:] vcmean = Pa.HorizontalMean(Gr, &vc[0])
+            double [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
+            double up, vp, wp
+            double upup, vpvp, wpwp
+
+        #Compute the TKE
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+
+                        #Compute fluctuations
+                        up = uc[ijk] - ucmean[k]
+                        vp = vc[ijk] - vcmean[k]
+                        wp = wc[ijk] - wcmean[k]
+
+                        #Coumpute fluctuation products
+                        upup = up * up
+                        vpvp = vp * vp
+                        wpwp = wp * wp
+
+                        tke_nd[ijk] =  0.5 * (upup + vpvp + wpwp)
+                        tke[ijk] = RS.rho0[k] * tke_nd[ijk]
+
+        cdef:
+            double [:] tkemean = Pa.HorizontalMean(Gr, &tke[0])
+            double [:] tkendmean = Pa.HorizontalMean(Gr, & tke_nd[0])
+
+        #Write data
+        NS.write_profile('tke_mean', tkemean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_nd_mean', tkendmean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('tke_int_z', np.sum(tkemean[Gr.dims.gw:-Gr.dims.gw])*Gr.dims.dx[2], Pa)
+        NS.write_ts('tke_nd_int_z', np.sum(tkendmean[Gr.dims.gw:-Gr.dims.gw])*Gr.dims.dx[2],Pa)
 
         return
