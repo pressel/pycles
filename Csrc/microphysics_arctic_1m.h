@@ -55,7 +55,8 @@ double rain_dmean(double density, double qrain, double nrain){
 
 double snow_dmean(double density, double qsnow, double nsnow){
     double wc = fmax(qsnow * density, SMALL);
-    double val = pow((wc*GSTAR_SNOW/A_SNOW/nsnow), (1.0/(B_SNOW+1.0)));
+//    double val = pow((wc*GSTAR_SNOW/A_SNOW/nsnow), (1.0/(B_SNOW+1.0)));
+    double val = cbrt(wc*GSTAR_SNOW/A_SNOW/nsnow);
 
     return val;
 };
@@ -97,7 +98,8 @@ double rain_lambda(double density, double qrain, double nrain){
 
 double snow_lambda(double density, double qsnow, double nsnow){
     double wc = fmax(qsnow * density, SMALL);
-    double val = pow((A_SNOW*nsnow*GB1_SNOW/wc), (1.0/(B_SNOW+1.0)));
+    //double val = pow((A_SNOW*nsnow*GB1_SNOW/wc), (1.0/(B_SNOW+1.0)));
+    double val = cbrt(A_SNOW*nsnow*GB1_SNOW/wc);
 
     return val;
 };
@@ -469,8 +471,8 @@ void sedimentation_velocity_rain(const struct DimStruct *dims, double* restrict 
 
                 nrain[ijk] = fmax(fmin(n0_rain,n0_max),n0_min);
 
-                double lam = rain_lambda(density[k], qrain[ijk], nrain[ijk]);
-                qrain_velocity[ijk] = -C_RAIN*GBD1_RAIN/GB1_RAIN/pow(lam, D_RAIN);
+                double rain_lam = rain_lambda(density[k], qrain[ijk], nrain[ijk]);
+                qrain_velocity[ijk] = -C_RAIN*GBD1_RAIN/GB1_RAIN/pow(rain_lam, D_RAIN);
 
             }
         }
@@ -524,8 +526,8 @@ void sedimentation_velocity_snow(const struct DimStruct *dims, double* restrict 
 
                 nsnow[ijk] = fmax(fmin(n0_snow,n0_max),n0_min);
 
-                double lam = snow_lambda(density[k], qsnow[ijk], nsnow[ijk]);
-                qsnow_velocity[ijk] = -C_SNOW*GBD1_SNOW/GB1_SNOW/pow(lam, D_SNOW);
+                double snow_lam = snow_lambda(density[k], qsnow[ijk], nsnow[ijk]);
+                qsnow_velocity[ijk] = -C_SNOW*GBD1_SNOW/GB1_SNOW/pow(snow_lam, D_SNOW);
 
             }
         }
@@ -748,5 +750,113 @@ void get_virtual_potential_temperature(const struct DimStruct *dims, double* res
 
     return;
 
+
+}
+
+///==========================To facilitate output=============================
+
+void autoconversion_snow_wrapper(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double),
+                                 double (*L_fp)(double, double), double n0_ice, double* density, double* p0, double* temperature,
+                                 double* qt, double* qi, double* qsnow_tendency){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double qi_tmp = fmax(qi[ijk], 0.0);
+                double iwc = fmax(qi_tmp * density[k], SMALL);
+                double ni = fmax(fmin(n0_ice, iwc*N_MAX_ICE),iwc*N_MIN_ICE);
+                double qt_tmp = qt[ijk];
+
+                autoconversion_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp,
+                                    qi_tmp, ni, &qsnow_tendency[ijk]);
+
+            }
+        }
+    }
+    return;
+};
+
+void evaporation_snow_wrapper(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double),
+                              double (*L_fp)(double, double), double* density, double* p0, double* temperature,
+                              double* qt, double* qsnow, double* nsnow, double* qsnow_tendency){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double qsnow_tmp = fmax(qsnow[ijk],0.0); //clipping
+                double qt_tmp = qt[ijk];
+
+                evaporation_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp, qsnow_tmp,
+                                 nsnow[ijk], &qsnow_tendency[ijk]);
+
+            }
+        }
+    }
+    return;
+
+}
+
+void accretion_all_wrapper(const struct DimStruct *dims, double* density, double* p0, double* temperature, double n0_ice,
+                           double ccn, double* ql, double* qi, double* qrain, double* nrain, double* qsnow, double* nsnow,
+                           double* ql_tendency, double* qi_tendency, double* qrain_tendency, double* qsnow_tendency){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double qi_tmp = fmax(qi[ijk], 0.0);
+                double iwc = fmax(qi_tmp * density[k], SMALL);
+                double ni = fmax(fmin(n0_ice, iwc*N_MAX_ICE),iwc*N_MIN_ICE);
+
+                double qrain_tmp = fmax(qrain[ijk],0.0); //clipping
+                double qsnow_tmp = fmax(qsnow[ijk],0.0); //clipping
+                double ql_tmp = fmax(ql[ijk],0.0);
+
+                accretion_all(density[k], p0[k], temperature[ijk], ccn, ql_tmp, qi_tmp, ni, qrain_tmp, nrain[ijk],
+                              qsnow_tmp, nsnow[ijk], &ql_tendency[ijk], &qi_tendency[ijk], &qrain_tendency[ijk],
+                              &qsnow_tendency[ijk]);
+
+            }
+        }
+    }
+    return;
 
 }
