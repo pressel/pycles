@@ -8,6 +8,7 @@
 #include <math.h>
 #include "parameters_micro.h"
 #include "advection_interpolation.h"
+#include "microphysics.h"
 
 double rho_liq = 1000.0;
 double visc_air = 2.0e-5;
@@ -17,263 +18,56 @@ double cvl = 4190.0;
 double cvi = 2106.0;
 double lf0= 3.34e5;
 
-struct hm_parameters{
-    double a;
-    double b;
-    double c;
-    double d;
-    double gb1;
-    double gbd1;
-    double gd3;
-    double gd6;
-    double gamstar;
-    double alpha_acc;
-    double d_min;
-    double d_max;
-};
-
-struct hm_properties{
-    double mf;
-    double diam;
-    double vel;
-    double lam;
-    double n0;
-};
-
-struct ret_acc{
-    double dyr;
-    double dys;
-    double dyl;
-    double dyi;
-};
-
-double vapor_diffusivity(const double temp_, const double p0_){
-    double val = 2.11e-5 * pow((temp_ / 273.15), 1.94) * (p0_ / 101325.0);
+double vapor_diffusivity(const double temperature, const double p0){
+    double val = 2.11e-5 * pow((temperature / 273.15), 1.94) * (p0 / 101325.0);
     return val;
 };
 
-double thermal_conductivity(const double temp_){
-    double val = 2.591e-2 * pow((temp_ / 296.0), 1.5) * (416.0 / (temp_ - 120.0));
+double thermal_conductivity(const double temperature){
+    double val = 2.591e-2 * pow((temperature / 296.0), 1.5) * (416.0 / (temperature - 120.0));
     return val;
 };
 
-double pv_star_ice_c(const double temp_){
+double pv_star_ice_c(const double temperature){
     double t0 = 273.16;
     double a3i = 22.587;
     double a4i = -0.7;
     double es0 = 611.21;
-    return es0 * exp(a3i * (temp_ - t0)/(temp_ - a4i));
+    return es0 * exp(a3i * (temperature - t0)/(temperature - a4i));
 }
 
-double get_aut_rain_c(const double alpha_, const double ccn, struct hm_properties *liquid_prop){
-    /* Berry-Reinhardt 74 rain autoconversion model*/
-    double l2, t2;
-    const double ccn_ = ccn*1.0e-6;
-    double varm6, val;
+double microphysics_g_arctic(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                             double temperature, double dvap, double kt){
+    double lam = lam_fp(temperature);
+    double L = L_fp(temperature,lam);
+    double pv_sat = lookup(LT, temperature);
+    double g_therm = 1.0/(Rv*temperature/dvap/pv_sat + L/kt/temperature * (L/Rv/temperature - 1.0));
+    return g_therm;
 
-    if(ccn_ > 300.0){
-        varm6 = 1.189633;
-    }
-    else{
-        varm6 = 1.055572;
-    }
+}
 
-    double lwc = liquid_prop->mf/alpha_;
-    double df = liquid_prop->diam;
-    double db = df*varm6;
-
-    if(db <= 15.0e-6){
-        val = 0.0;
-    }
-    else{
-        l2 = 2.7e-2*(1.0e20/16.0*(db*db*db)*df - 0.4)*lwc;
-        t2 = 3.72/(5.0e5*db - 7.5)/lwc;
-        val = fmax(l2,0.0)/fmax(t2,1.0e-20)*alpha_;
-    }
+double rain_dmean(double density, double qrain, double nrain){
+    double wc = fmax(qrain * density, SMALL);
+    double val = pow((wc*GSTAR_RAIN/A_RAIN/nrain), (1.0/(B_RAIN+1.0)));
 
     return val;
 };
 
-
-double get_aut_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_, const double qt_, const double qi_, const double temp_, struct hm_properties *ice_prop){
-    /* Harrington 1995 snow autoconversion model */
-    double pv_star = lookup(LT, temp_);
-    //double pv_star = pv_star_ice_c(temp_);
-    double qv_star = qv_star_c(p0_, qt_, pv_star);
-    //double satratio = qt_/qv_star;
-    double satratio = (qt_-qi_)/qv_star;
-    double db_ice = 125.0e-6;
-    double val = 0.0;
-    double gtherm, psi;
-    double vapor_diff = vapor_diffusivity(temp_, p0_);
-    double therm_cond = thermal_conductivity(temp_);
-
-    if( ice_prop->mf > 1.0e-10 && satratio > 1.0){
-        //gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
-        gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temp_*temp_)) );
-        psi = 4.0*pi*(satratio - 1.0)*gtherm;
-        val = (psi*ice_prop->n0*exp(-ice_prop->lam*db_ice)
-               *(db_ice*db_ice/3.0 + (1.0+ice_prop->lam*db_ice)/(ice_prop->lam*ice_prop->lam))*alpha_);
-    }
+double snow_dmean(double density, double qsnow, double nsnow){
+    double wc = fmax(qsnow * density, SMALL);
+    double val = pow((wc*GSTAR_SNOW/A_SNOW/nsnow), (1.0/(B_SNOW+1.0)));
 
     return val;
 };
 
-double get_evp_rain_c(struct LookupStruct *LT, const double alpha_, const double p0_, const double qt_,
-                             const double temp_, struct hm_properties *_prop){
-    double beta = 2.0;
-    double pv_star = lookup(LT, temp_);
-    double qv_star = qv_star_c(p0_, qt_, pv_star);
-    double satratio = qt_/qv_star;
-    double vapor_diff = vapor_diffusivity(temp_, p0_);
-    double therm_cond = thermal_conductivity(temp_);
-
-    double re, vent, gtherm;
-    double val = 0.0;
-
-    if( satratio < 1.0 && _prop->mf > 1.0e-15){
-        re = _prop->diam*_prop->vel/visc_air;
-        vent = 0.78 + 0.27*sqrt(re);
-        //gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
-        gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temp_*temp_)) );
-        val = 4.0*pi/beta*(satratio - 1.0)*vent*gtherm*_prop->n0/_prop->lam/_prop->lam*alpha_;
-    }
+double ice_dmean(double density, double qi, double ni){
+    double wc = fmax(qi * density, SMALL);
+    double val = pow((wc*GSTAR_ICE/A_ICE/ni), (1.0/(B_ICE+1.0)));
 
     return val;
 };
 
-double get_evp_snow_c(struct LookupStruct *LT, const double alpha_, const double p0_,
-                           const double qt_, double const temp_, struct hm_properties *_prop){
-    double beta = 3.0;
-    double pv_star = lookup(LT, temp_);
-    //double pv_star = pv_star_ice_c(temp_);
-    double qv_star = qv_star_c(p0_, qt_, pv_star);
-    double satratio = qt_/qv_star;
-
-    double vapor_diff = vapor_diffusivity(temp_, p0_);
-    double therm_cond = thermal_conductivity(temp_);
-    double re = _prop->diam*_prop->vel/visc_air;
-    double vent = 0.65 + 0.39*sqrt(re);
-    //double gtherm = 1.0e-7/(2.2*temp_/pv_star + 220.0/temp_);
-    double gtherm = 1.0 / ( (Rv*temp_/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temp_*temp_)) );
-    double val = 0.0;
-
-    if( _prop->mf > 1.0e-15 ){
-        val = 4.0*pi/beta*(satratio - 1.0)*vent*gtherm*_prop->n0/_prop->lam/_prop->lam*alpha_;
-    }
-
-    return val;
-};
-
-void get_acc_c(const double alpha_, const double temp_, const double ccn_, struct hm_parameters *rain_param,
-             struct hm_parameters *snow_param, struct hm_parameters *liquid_param, struct hm_parameters *ice_param,
-             struct hm_properties *rain_prop, struct hm_properties *snow_prop, struct hm_properties *liquid_prop,
-             struct hm_properties *ice_prop, struct ret_acc *_ret ){
-
-    double factor_r = 0.0;
-    double factor_s = 0.0;
-    double piacr = 0.0;
-
-    double e_ri = 1.0;
-    double e_si = exp(9.0e-2*(temp_ - 273.15));
-    double e_rl = 0.85;
-    double e_sl = 0.8;
-
-    double d_drop = liquid_prop->diam;
-    double rho_ = 1.0/alpha_;
-
-    if( snow_prop->diam < 150.0e-6 ){
-        e_sl = 0.0;
-    }
-    else{
-        if( d_drop < 15.0e-6 ){
-            e_sl = 0.0;
-        }
-        else if( d_drop < 40.0e-6 ){
-            e_sl = (d_drop - 15.0e-6)/25.0e-6*e_sl;
-        }
-    }
-
-    if( rain_prop->mf > small ){
-        factor_r = rho_*rain_param->gd3*rain_prop->n0*pi*rain_param->alpha_acc*rain_param->c*0.25*pow(rain_prop->lam, (-rain_param->d - 3.0));
-        if( ice_prop->mf > 1.0e-10 ){
-            piacr = rain_prop->n0*ice_prop->n0/ice_prop->lam*e_ri*pi*0.25*rain_param->a*rain_param->c*rain_param->gd6*pow(rain_prop->lam, (-rain_param->d - 6.0));
-        }
-    }
-
-    if( snow_prop->mf > small ){
-        factor_s = rho_*snow_param->gd3*snow_prop->n0*pi*snow_param->alpha_acc*snow_param->c*0.25*pow(snow_prop->lam, (-snow_param->d-3.0));
-    }
-
-    double src_ri = -piacr/rho_;
-    double src_rl = factor_r*e_rl*liquid_prop->mf/rho_;
-    double src_si = factor_s*e_si*ice_prop->mf/rho_;
-    double rime_sl = factor_s*e_sl*liquid_prop->mf/rho_;
-    double src_sl = 0.0;
-
-    if( temp_ > 273.16 ){
-        src_sl = -cvl/lf0*(temp_-273.16)*rime_sl;
-        src_rl = src_rl + rime_sl - src_sl;
-    }
-    else{
-        src_sl = rime_sl + (factor_r*e_ri*ice_prop->mf + piacr)/rho_;
-    }
-
-    /* Now precip-precip interactions */
-    double src_r = 0.0;
-    double src_s = 0.0;
-    double dv, k_2s, k_2r;
-
-    if( rain_prop->mf > small && snow_prop->mf > small ){
-        dv = fabs(rain_prop->vel - snow_prop->vel);
-        k_2s = (30.0/(pow(rain_prop->lam, 6.0)*snow_prop->lam) + 12.0/(pow(rain_prop->lam, 5.0)*pow(snow_prop->lam, 2.0))
-                + 3.0/(pow(rain_prop->lam, 4.0)*pow(snow_prop->lam, 3.0)));
-        k_2r = (1.0/(pow(rain_prop->lam, 3.0)*pow(snow_prop->lam, 3.0)) + 3.0/(pow(rain_prop->lam, 2.0)*pow(snow_prop->lam, 4.0))
-                + 6.0/(rain_prop->lam*pow(snow_prop->lam, 5.0)));
-        if( temp_ < 273.16 ){
-            src_s = pi*dv*snow_prop->n0*rain_prop->n0*rain_param->a*k_2s*alpha_;
-            src_r = -src_s;
-        }
-        else{
-            src_r = pi*dv*snow_prop->n0*rain_prop->n0*rain_param->a*k_2r*alpha_;
-            src_s = -src_r;
-        }
-    }
-
-    _ret->dyr = src_r + src_rl + src_ri;
-    _ret->dys = src_s + src_sl + src_si;
-    _ret->dyl = -(src_rl + rime_sl);
-    _ret->dyi = -(src_ri + src_si);
-
-    return;
-};
-
-double get_melt_snow_c(const double alpha_, const double temp_, struct hm_properties *snow_prop){
-    double snow_loss = 0.0;
-    double ka = 2.43e-2;
-    double fvent = 0.65 + 0.39*sqrt(snow_prop->vel*snow_prop->diam/visc_air);
-
-    if( temp_ > 273.16 && snow_prop->mf > small ){
-        snow_loss = 2.0*pi*snow_prop->n0*ka/lhf*(temp_ - 273.16)*fvent/(snow_prop->lam*snow_prop->lam)*alpha_;
-    }
-    return snow_loss;
-};
-
-double get_lambda_c(const double alpha_, struct hm_properties *_prop, struct hm_parameters *_param){
-    double wc = fmax(_prop->mf/alpha_, small);
-    double val = pow((_param->a*_prop->n0*_param->gb1/wc), (1.0/(_param->b+1.0)));
-
-    return val;
-};
-
-double get_dmean_c(const double alpha_, struct hm_properties *_prop, struct hm_parameters *_param){
-    double wc = _prop->mf/alpha_ + small;
-    double val = pow((wc*_param->gamstar/_param->a/_prop->n0), (1.0/(_param->b+1.0)));
-
-    return val;
-};
-
-double get_droplet_dmean_c(const double alpha_, const double liq_, const double ccn){
+double liquid_dmean(double density, double ql, double ccn){
     /* Martin et al. 1994 ???*/
     double varm6, ntot;
     double ccn_ = ccn*1.0e-6;
@@ -287,113 +81,371 @@ double get_droplet_dmean_c(const double alpha_, const double liq_, const double 
         ntot = (-1.15e-3*ccn_*ccn_ + 0.963*ccn_ + 5.3)*1.0e6;
     };
 
-    double lwc = liq_/alpha_;
-    double df = pow((6.0*lwc/(pi*rho_liq*ntot)), (1.0/3.0));
+    double lwc = fmax(ql * density, SMALL);
+    //double df = pow((6.0*lwc/(pi*DENSITY_LIQUID*ntot)), (1.0/3.0));
+    double df = cbrt(6.0*lwc/(pi*DENSITY_LIQUID*ntot));
 
     return df;
 };
 
-double get_velmean_c(const double dmean, struct hm_parameters *_param){
-    double val = _param->c*pow(dmean, _param->d);
+double rain_lambda(double density, double qrain, double nrain){
+    double wc = fmax(qrain * density, SMALL);
+    double val = pow((A_RAIN*nrain*GB1_RAIN/wc), (1.0/(B_RAIN+1.0)));
 
     return val;
 };
 
-double get_n0_rain_c(const double alpha_, const double mf, struct hm_parameters *_param){
-    double rwc = fmax(mf/alpha_, small);
-    double b1 = 650.1466922699631;
-    double b2 = -1.222222222222222;
-    double n0_rain = b1*pow(rwc, b2);
+double snow_lambda(double density, double qsnow, double nsnow){
+    double wc = fmax(qsnow * density, SMALL);
+    double val = pow((A_SNOW*nsnow*GB1_SNOW/wc), (1.0/(B_SNOW+1.0)));
 
-    double n0_max = rwc*(_param->gamstar)/(_param->a)/pow(_param->d_min, (_param->b+1.0));
-    double n0_min = rwc*(_param->gamstar)/(_param->a)/pow(_param->d_max, (_param->b+1.0));
-
-    n0_rain = fmax(fmin(n0_rain,n0_max),n0_min);
-
-    return n0_rain;
+    return val;
 };
 
-double get_n0_snow_c(const double alpha_, const double mf, struct hm_parameters *_param){
-    /* Morrison et al. (2011a) */
-    double swc = fmax(mf/alpha_, small);
-    double y1 = 5.62e7;
-    double y2 = 0.63;
-    double n0_snow = y1*pow((swc*1000.0), y2);
-    double n0_max = swc*_param->gamstar/_param->a/pow(_param->d_min, (_param->b+1.0));
-    double n0_min = swc*_param->gamstar/_param->a/pow(_param->d_max, (_param->b+1.0));
+double ice_lambda(double density, double qi, double ni){
+    double wc = fmax(qi * density, SMALL);
+    double val = pow((A_ICE*ni*GB1_ICE/wc), (1.0/(B_ICE+1.0)));
 
-    //n0_snow = 1.0e6;
-    n0_snow = fmax(fmin(n0_snow,n0_max),n0_min);
-
-    return n0_snow;
+    return val;
 };
 
-double get_n0_ice_c(const double alpha_, const double mf, const double n0_input, struct hm_parameters *_param){
-    double iwc = fmax(mf/alpha_, small);
-    double n0_ice = n0_input;
-    double n0_max = iwc*_param->gamstar/_param->a/pow(_param->d_min, (_param->b+1.0));
-    double n0_min = iwc*_param->gamstar/_param->a/pow(_param->d_max, (_param->b+1.0));
+void autoconversion_rain(double density, double ccn, double ql, double qrain, double nrain,
+                         double* qrain_tendency){
+    /* Berry-Reinhardt 74 rain autoconversion model*/
+    double l2, t2;
+    const double ccn_ = ccn*1.0e-6;
+    double varm6;
 
-    n0_ice = fmax(fmin(n0_ice,n0_max),n0_min);
+    if(ccn_ > 300.0){
+        varm6 = 1.189633;
+    }
+    else{
+        varm6 = 1.055572;
+    }
 
-    return n0_ice;
-};
+    double lwc = ql*density;
+    double df = liquid_dmean(density, ql, ccn);
+    double db = df*varm6;
 
-void micro_substep_c(struct LookupStruct *LT, const double alpha, const double p0, const double qt, const double qi, const double T, const double ccn, const double n0_ice,
-                     struct hm_parameters *rain_param, struct hm_parameters *snow_param, struct hm_parameters *liquid_param, struct hm_parameters *ice_param,
-                     struct hm_properties *rain_prop, struct hm_properties *snow_prop, struct hm_properties *liquid_prop, struct hm_properties *ice_prop,
-                     double* aut_rain, double* aut_snow, struct ret_acc *_ret, double* evp_rain,
-                     double* evp_snow, double* melt_snow){
-
-    rain_prop->n0   = get_n0_rain_c(alpha, rain_prop->mf, rain_param);
-    rain_prop->lam  = get_lambda_c(alpha,rain_prop, rain_param);
-    rain_prop->diam = get_dmean_c(alpha, rain_prop, rain_param);
-    rain_prop->vel  = get_velmean_c(rain_prop->diam, rain_param);
-
-    snow_prop->n0   = get_n0_snow_c(alpha, snow_prop->mf, snow_param);
-    snow_prop->lam  = get_lambda_c(alpha, snow_prop, snow_param);
-    snow_prop->diam = get_dmean_c(alpha, snow_prop, snow_param);
-    snow_prop->vel  = get_velmean_c(snow_prop->diam, snow_param);
-
-    liquid_prop->diam = get_droplet_dmean_c(alpha, liquid_prop->mf, ccn);
-
-    ice_prop->n0  = get_n0_ice_c(alpha, ice_prop->mf, n0_ice, ice_param);
-    ice_prop->lam = get_lambda_c(alpha, ice_prop, ice_param);
-    ice_prop->diam = get_dmean_c(alpha, ice_prop, ice_param);
-
-    *aut_rain = get_aut_rain_c(alpha, ccn, liquid_prop);
-    *aut_snow = get_aut_snow_c(LT, alpha, p0, qt, qi, T, ice_prop);
-
-    get_acc_c(alpha, T, ccn, rain_param, snow_param, liquid_param,
-              ice_param, rain_prop, snow_prop, liquid_prop, ice_prop, _ret);
-
-    *evp_rain = get_evp_rain_c(LT, alpha, p0, qt, T, rain_prop);
-    *evp_snow = get_evp_snow_c(LT, alpha, p0, qt, T, snow_prop);
-
-    *melt_snow = get_melt_snow_c(alpha, T, snow_prop);
+    if(db <= 15.0e-6){
+        *qrain_tendency = 0.0;
+    }
+    else{
+        l2 = 2.7e-2*(1.0e20/16.0*(db*db*db)*df - 0.4)*lwc;
+        t2 = 3.72/(5.0e5*db - 7.5)/lwc;
+        *qrain_tendency = fmax(l2,0.0)/fmax(t2,1.0e-20)/density;
+    }
 
     return;
 };
 
-double get_rain_vel_c(const double alpha_, const double qrain_, struct hm_parameters *rain_param,
-                             struct hm_properties *rain_prop){
-    rain_prop->n0 = get_n0_rain_c(alpha_, qrain_, rain_param);
-    rain_prop->lam = get_lambda_c(alpha_, rain_prop, rain_param);
+void autoconversion_snow(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                         double density, const double p0, double temperature, double qt,
+                         double qi, double ni, double* qsnow_tendency){
+    /* Harrington 1995 snow autoconversion model */
+    double pv_star = lookup(LT, temperature);
+    //double pv_star = pv_star_ice_c(temperature);
+    double qv_star = qv_star_c(p0, qt, pv_star);
+    //double satratio = qt_/qv_star;
+    double satratio = (qt-qi)/qv_star;
+    double db_ice = 125.0e-6;
+    double gtherm, psi;
+    double vapor_diff = vapor_diffusivity(temperature, p0);
+    double therm_cond = thermal_conductivity(temperature);
+    double ice_lam = ice_lambda(density, qi, ni);
 
-    double vel_rain = rain_param->c*rain_param->gbd1/rain_param->gb1/pow(rain_prop->lam, rain_param->d);
+    if( qi > 1.0e-10 && satratio > 1.0){
+        //gtherm = 1.0e-7/(2.2*temperature/pv_star + 220.0/temperature);
+        //gtherm = 1.0 / ( (Rv*temperature/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temperature*temperature)) );
+        gtherm = microphysics_g_arctic(LT, lam_fp, L_fp, temperature, vapor_diff, therm_cond);
+        psi = 4.0*pi*(satratio - 1.0)*gtherm;
+        *qsnow_tendency = (psi*ni*exp(-ice_lam*db_ice)
+                           *(db_ice*db_ice/3.0 + (1.0+ice_lam*db_ice)/(ice_lam*ice_lam))/density);
+    }
 
-    return vel_rain;
+    return;
 };
 
-double get_snow_vel_c(const double alpha_, const double qsnow_, struct hm_parameters *snow_param,
-                             struct hm_properties *snow_prop){
-    snow_prop->n0 = get_n0_snow_c(alpha_, qsnow_, snow_param);
-    snow_prop->lam = get_lambda_c(alpha_, snow_prop, snow_param);
-    //snow_prop->lam = 3.81e3 * pow(fmax(qsnow_/alpha_, small), -0.147); //alternative from Morrison 2011
+void evaporation_rain(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                      double density, const double p0, double temperature,
+                      double qt, double qrain, double nrain, double* qrain_tendency){
+    double beta = 2.0;
+    double pv_star = lookup(LT, temperature);
+    double qv_star = qv_star_c(p0, qt, pv_star);
+    double satratio = qt/qv_star;
+    double vapor_diff = vapor_diffusivity(temperature, p0);
+    double therm_cond = thermal_conductivity(temperature);
+    double rain_diam = rain_dmean(density, qrain, nrain);
+    double rain_vel = C_RAIN*pow(rain_diam, D_RAIN);
+    double rain_lam = rain_lambda(density, qrain, nrain);
 
-    double vel_snow = snow_param->c*snow_param->gbd1/snow_param->gb1/pow(snow_prop->lam, snow_param->d);
+    double re, vent, gtherm;
 
-    return vel_snow;
+    if( satratio < 1.0 && qrain > 1.0e-15){
+        re = rain_diam*rain_vel/VISC_AIR;
+        vent = 0.78 + 0.27*sqrt(re);
+        //gtherm = 1.0e-7/(2.2*temperature/pv_star + 220.0/temperature);
+        //gtherm = 1.0 / ( (Rv*temperature/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temperature*temperature)) );
+        gtherm = microphysics_g_arctic(LT, lam_fp, L_fp, temperature, vapor_diff, therm_cond);
+        *qrain_tendency = 4.0*pi/beta*(satratio - 1.0)*vent*gtherm*nrain/(rain_lam*rain_lam)/density;
+    }
+
+    return;
+};
+
+void evaporation_snow(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                        double density, double p0, double temperature, double qt,
+                        double qsnow, double nsnow, double* qsnow_tendency){
+    double beta = 3.0;
+    double pv_star = lookup(LT, temperature);
+    //double pv_star = pv_star_ice_c(temperature);
+    double qv_star = qv_star_c(p0, qt, pv_star);
+    double satratio = qt/qv_star;
+
+    double vapor_diff = vapor_diffusivity(temperature, p0);
+    double therm_cond = thermal_conductivity(temperature);
+    double snow_diam = snow_dmean(density, qsnow, nsnow);
+    double snow_vel = C_SNOW*pow(snow_diam, D_SNOW);
+    double snow_lam = snow_lambda(density, qsnow, nsnow);
+
+    double re = snow_diam*snow_vel/VISC_AIR;
+    double vent = 0.65 + 0.39*sqrt(re);
+    //double gtherm = 1.0e-7/(2.2*temperature/pv_star + 220.0/temperature);
+    //double gtherm = 1.0 / ( (Rv*temperature/vapor_diff/pv_star) + (8.028e12/therm_cond/Rv/(temperature*temperature)) );
+
+    if( qsnow > 1.0e-15 ){
+        double gtherm = microphysics_g_arctic(LT, lam_fp, L_fp, temperature, vapor_diff, therm_cond);
+        *qsnow_tendency = 4.0*pi/beta*(satratio - 1.0)*vent*gtherm*nsnow/(snow_lam*snow_lam)/density;
+    }
+
+    return;
+};
+
+void accretion_all(double density, double p0, double temperature, double ccn, double ql, double qi, double ni,
+                   double qrain, double nrain, double qsnow, double nsnow,
+                   double* ql_tendency, double* qi_tendency, double* qrain_tendency, double* qsnow_tendency){
+
+    double factor_r = 0.0;
+    double factor_s = 0.0;
+    double piacr = 0.0;
+
+    double e_ri = 1.0;
+    double e_si = exp(9.0e-2*(temperature - 273.15));
+    double e_rl = 0.85;
+    double e_sl = 0.8;
+
+    double liq_diam = liquid_dmean(density, ql, ccn);
+    double snow_diam = snow_dmean(density, qsnow, nsnow);
+    double rain_diam = rain_dmean(density, qrain, nrain);
+    double rain_lam = rain_lambda(density, qrain, nrain);
+    double snow_lam = snow_lambda(density, qsnow, nsnow);
+    double ice_lam = ice_lambda(density, qi, ni);
+    double rain_vel = C_RAIN*pow(rain_diam, D_RAIN);
+    double snow_vel = C_SNOW*pow(snow_diam, D_SNOW);
+
+    if( snow_diam < 150.0e-6 ){
+        e_sl = 0.0;
+    }
+    else{
+        if( liq_diam < 15.0e-6 ){
+            e_sl = 0.0;
+        }
+        else if( liq_diam < 40.0e-6 ){
+            e_sl = (liq_diam - 15.0e-6) * e_sl / 25.0e-6;
+        }
+    }
+
+    if( qrain > SMALL ){
+        factor_r = density*GD3_RAIN*nrain*pi*ALPHA_ACC_RAIN*C_RAIN*0.25*pow(rain_lam, (-D_RAIN - 3.0));
+        if( qi > SMALL ){
+            piacr = nrain*ni/ice_lam*e_ri*pi*0.25*A_RAIN*C_RAIN*GD6_RAIN*pow(rain_lam, (-D_RAIN - 6.0));
+        }
+    }
+
+    if( qsnow > SMALL ){
+        factor_s = density*GD3_SNOW*nsnow*pi*ALPHA_ACC_SNOW*C_SNOW*0.25*pow(snow_lam, (-D_SNOW-3.0));
+    }
+
+    double src_ri = -piacr/density;
+    double src_rl = factor_r*e_rl*ql/density;
+    double src_si = factor_s*e_si*qi/density;
+    double rime_sl = factor_s*e_sl*ql/density;
+    double src_sl = 0.0;
+
+    if( temperature > 273.16 ){
+        src_sl = -cvl/lf0*(temperature-273.16)*rime_sl;
+        src_rl = src_rl + rime_sl - src_sl;
+    }
+    else{
+        src_sl = rime_sl + (factor_r*e_ri*qi + piacr)/density;
+    }
+
+    /* Now precip-precip interactions */
+    double src_r = 0.0;
+    double src_s = 0.0;
+    double dv, k_2s, k_2r;
+
+    if( qrain > small && qsnow > small ){
+        dv = fabs(rain_vel - snow_vel);
+        k_2s = (30.0/(pow(rain_lam, 6.0)*snow_lam) + 12.0/(pow(rain_lam, 5.0)*pow(snow_lam, 2.0))
+                + 3.0/(pow(rain_lam, 4.0)*pow(snow_lam, 3.0)));
+        k_2r = (1.0/(pow(rain_lam, 3.0)*pow(snow_lam, 3.0)) + 3.0/(pow(rain_lam, 2.0)*pow(snow_lam, 4.0))
+                + 6.0/(rain_lam*pow(snow_lam, 5.0)));
+        if( temperature < 273.16 ){
+            src_s = pi*dv*nsnow*nrain*A_RAIN*k_2s/density;
+            src_r = -src_s;
+        }
+        else{
+            src_r = pi*dv*nsnow*nrain*A_RAIN*k_2r/density;
+            src_s = -src_r;
+        }
+    }
+
+    *qrain_tendency = src_r + src_rl + src_ri;
+    *qsnow_tendency = src_s + src_sl + src_si;
+    *ql_tendency = -(src_rl + rime_sl);
+    *qi_tendency = -(src_ri + src_si);
+
+    return;
+};
+
+void melt_snow(double density, double temperature, double qsnow, double nsnow, double* qsnow_tendency){
+    double ka = 2.43e-2;
+    double snow_diam = snow_dmean(density, qsnow, nsnow);
+    double snow_vel = C_SNOW*pow(snow_diam, D_SNOW);
+    double snow_lam = snow_lambda(density, qsnow, nsnow);
+    double fvent = 0.65 + 0.39*sqrt(snow_vel*snow_diam/VISC_AIR);
+
+    if( temperature > 273.16 && qsnow > small ){
+        *qsnow_tendency = 2.0*pi*nsnow*ka/lhf*(temperature - 273.16)*fvent/(snow_lam*snow_lam)/density;
+    }
+    return;
+};
+
+void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double),
+                             double (*L_fp)(double, double), double* restrict density, double* restrict p0,
+                             double* restrict temperature,  double* restrict qt, double ccn, double n0_ice,
+                             double* restrict ql, double* restrict qi, double* restrict qrain, double* restrict nrain,
+                             double* restrict qsnow, double* restrict nsnow, double dt,
+                             double* restrict qrain_tendency_micro, double* restrict qrain_tendency,
+                             double* restrict qsnow_tendency_micro, double* restrict qsnow_tendency,
+                             double* restrict precip_rate, double* restrict evap_rate){
+
+    const double b1 = 650.1466922699631;
+    const double b2 = -1.222222222222222;
+    const double y1 = 5.62e7;
+    const double y2 = 0.63;
+
+    double rwc, swc, iwc, ni;
+    double qrain_tendency_aut=0.0, qrain_tendency_acc=0.0, qrain_tendency_evp=0.0;
+    double qsnow_tendency_aut=0.0, qsnow_tendency_acc=0.0, qsnow_tendency_evp=0.0, qsnow_tendency_melt=0.0;
+    double ql_tendency_acc=0.0, qi_tendency_acc=0.0;
+    double ql_tendency_tmp=0.0, qi_tendency_tmp=0.0, qrain_tendency_tmp=0.0, qsnow_tendency_tmp=0.0;
+    double qt_tmp, ql_tmp, qi_tmp, qrain_tmp, qsnow_tmp;
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                // First get number concentartion N_0 for micro species
+                qi_tmp = fmax(qi[ijk], 0.0);
+                iwc = fmax(qi_tmp * density[k], SMALL);
+                ni = fmax(fmin(n0_ice, iwc*N_MAX_ICE),iwc*N_MIN_ICE);
+
+                qrain_tmp = fmax(qrain[ijk],0.0); //clipping
+                rwc = fmax(qrain_tmp * density[k], SMALL);
+                nrain[ijk] = fmax(fmin(b1*pow(rwc, b2), rwc*N_MAX_RAIN),rwc*N_MIN_RAIN);
+
+                qsnow_tmp = fmax(qsnow[ijk],0.0); //clipping
+                swc = fmax(qsnow_tmp * density[k], SMALL);
+                nsnow[ijk] = fmax(fmin(y1*pow(swc*1000.0, y2),swc*N_MAX_SNOW),swc*N_MIN_SNOW);
+
+                qt_tmp = qt[ijk];
+                ql_tmp = fmax(ql[ijk],0.0);
+//                qi_tmp = fmax(qi[ijk], 0.0);
+//                qrain_tmp = fmax(qrain[ijk],0.0);
+//                qsnow_tmp = fmax(qsnow[ijk],0.0);
+
+                // Now do sub-timestepping
+                double time_added = 0.0, dt_, rate;
+                ssize_t iter_count = 0;
+                do{
+                    iter_count += 1;
+                    dt_ = dt - time_added;
+
+                    if ((ql_tmp + qi_tmp) < SMALL && (qrain_tmp + qsnow_tmp) < small)
+                        break;
+
+                    autoconversion_rain(density[k], ccn, ql_tmp, qrain_tmp, nrain[ijk], &qrain_tendency_aut);
+                    autoconversion_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp,
+                                        qi_tmp, ni, &qsnow_tendency_aut);
+                    accretion_all(density[k], p0[k], temperature[ijk], ccn, ql_tmp, qi_tmp, ni,
+                                  qrain_tmp, nrain[ijk], qsnow_tmp, nsnow[ijk],
+                                  &ql_tendency_acc, &qi_tendency_acc, &qrain_tendency_acc, &qsnow_tendency_acc);
+                    evaporation_rain(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp, qrain_tmp, nrain[ijk],
+                                     &qrain_tendency_evp);
+                    evaporation_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp, qsnow_tmp,
+                                     nsnow[ijk], &qsnow_tendency_evp);
+                    melt_snow(density[k], temperature[ijk], qsnow_tmp, nsnow[ijk], &qsnow_tendency_melt);
+
+                    qrain_tendency_tmp = qrain_tendency_aut + qrain_tendency_acc + qrain_tendency_evp - qsnow_tendency_melt;
+                    qsnow_tendency_tmp = qsnow_tendency_aut + qsnow_tendency_acc + qsnow_tendency_evp + qsnow_tendency_melt;
+                    ql_tendency_tmp = ql_tendency_acc - qrain_tendency_aut;
+                    qi_tendency_tmp = qi_tendency_acc - qsnow_tendency_aut;
+
+                    rate = 1.05 * qrain_tendency_tmp * dt_ / (-fmax(qrain_tmp, SMALL));
+                    rate = fmax(1.05 * qsnow_tendency_tmp * dt_ /(-fmax(qsnow_tmp, SMALL)), rate);
+                    rate = fmax(1.05 * ql_tendency_tmp * dt_ /(-fmax(ql_tmp, SMALL)), rate);
+                    rate = fmax(1.05 * qi_tendency_tmp * dt_ /(-fmax(qi_tmp, SMALL)), rate);
+
+                    if(rate > 1.0 && iter_count < MAX_ITER){
+                        //Limit the timestep, but don't allow it to become vanishingly small
+                        //Don't adjust if we have reached the maximum iteration number
+                        dt_ = fmax(dt_/rate, 1.0e-3);
+                    }
+
+                    precip_rate[ijk] = -qrain_tendency_aut + ql_tendency_acc - qsnow_tendency_aut + qi_tendency_acc;
+                    evap_rate[ijk] = qrain_tendency_evp + qsnow_tendency_evp;
+
+                    //Integrate forward in time
+                    ql_tmp += ql_tendency_tmp * dt_;
+                    qi_tmp += qi_tendency_tmp * dt_;
+                    qrain_tmp += qrain_tendency_tmp * dt_;
+                    qsnow_tmp += qsnow_tendency_tmp * dt_;
+                    qt_tmp += (precip_rate[ijk] - evap_rate[ijk]) * dt_;
+
+                    qrain_tmp = fmax(qrain_tmp, 0.0);
+                    qsnow_tmp = fmax(qsnow_tmp, 0.0);
+                    ql_tmp = fmax(ql_tmp, 0.0);
+                    qi_tmp = fmax(qi_tmp, 0.0);
+                    qt_tmp = fmax(qt_tmp, 0.0);
+
+                    time_added += dt_;
+                    }while(time_added < dt);
+
+                qrain_tendency_micro[ijk] = (qrain_tmp - qrain[ijk])/dt;
+                qrain_tendency[ijk] += qrain_tendency_micro[ijk];
+                qsnow_tendency_micro[ijk] = (qsnow_tmp - qsnow[ijk])/dt;
+                qsnow_tendency[ijk] += qsnow_tendency_micro[ijk];
+
+            }
+        }
+    }
+
+
+    return;
 };
 
 void sedimentation_velocity_rain(const struct DimStruct *dims, double* restrict density, double* restrict nrain,
@@ -506,28 +558,85 @@ void sedimentation_velocity_snow(const struct DimStruct *dims, double* restrict 
 
 }
 
+void qt_source_formation(const struct DimStruct *dims, double* restrict qt_tendency,
+                         double* restrict precip_rate, double* restrict evap_rate){
 
-double entropy_src_precipitation_c(const double p0, const double T, const double qt, const double qv, const double L, const double precip_rate){
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                qt_tendency[ijk] += precip_rate[ijk] - evap_rate[ijk];
+            }
+        }
+    }
+    return;
+}
+
+double entropy_src_precipitation_c(const double p0, const double temperature, const double qt, const double qv, const double L, const double precip_rate){
     double pd = pd_c(p0, qt, qv);
     double pv = pv_c(p0, qt, qv);
-    double sd = sd_c(pd, T);
-    double sv = sv_c(pv, T);
-    double sc = sc_c(L, T);
+    double sd = sd_c(pd, temperature);
+    double sv = sv_c(pv, temperature);
+    double sc = sc_c(L, temperature);
 
     return (sd - sv + sc) * precip_rate;
 };
 
-double entropy_src_evaporation_c(const double p0, const double T, double Tw, const double qt, const double qv, const double L, const double evap_rate){
+double entropy_src_evaporation_c(const double p0, const double temperature, double Tw, const double qt, const double qv, const double L, const double evap_rate){
     double pd = pd_c(p0, qt, qv);
     double pv = pv_c(p0, qt, qv);
-    double sd = sd_c(pd, T);
+    double sd = sd_c(pd, temperature);
     double sv = sv_c(pv, Tw);
     double sc = sc_c(L, Tw);
 
     return (sv - sc - sd) * evap_rate;
 };
 
-void entropy_source_heating_rain(const struct DimStruct *dims, double* restrict T, double* restrict Twet, double* restrict qrain,
+void entropy_source_formation(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double),
+                              double (*L_fp)(double, double), double* restrict p0, double* restrict T,
+                              double* restrict Twet, double* restrict qt, double* restrict qv,
+                              double* restrict qrain_tendency, double* restrict qsnow_tendency,
+                              double* restrict precip_rate, double* restrict evap_rate, double* restrict entropy_tendency){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    //entropy tendencies from formation or evaporation of precipitation
+    //we use fact that P = d(qr)/dt > 0, E =  d(qr)/dt < 0
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+
+
+
+            }
+        }
+    }
+    return;
+};
+
+void entropy_source_heating_rain(const struct DimStruct *dims, double* restrict temperature, double* restrict Twet, double* restrict qrain,
                                double* restrict w_qrain, double* restrict w,  double* restrict entropy_tendency){
 
 
@@ -550,7 +659,7 @@ void entropy_source_heating_rain(const struct DimStruct *dims, double* restrict 
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                entropy_tendency[ijk]+= qrain[ijk]*(fabs(w_qrain[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk])* dzi/T[ijk];
+                entropy_tendency[ijk]+= qrain[ijk]*(fabs(w_qrain[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk])* dzi/temperature[ijk];
             }
         }
     }
@@ -559,7 +668,7 @@ void entropy_source_heating_rain(const struct DimStruct *dims, double* restrict 
 
 }
 
-void entropy_source_heating_snow(const struct DimStruct *dims, double* restrict T, double* restrict Twet, double* restrict qsnow,
+void entropy_source_heating_snow(const struct DimStruct *dims, double* restrict temperature, double* restrict Twet, double* restrict qsnow,
                                double* restrict w_qsnow, double* restrict w,  double* restrict entropy_tendency){
 
 
@@ -582,7 +691,7 @@ void entropy_source_heating_snow(const struct DimStruct *dims, double* restrict 
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                entropy_tendency[ijk]+= qsnow[ijk]*(fabs(w_qsnow[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk])* dzi/T[ijk];
+                entropy_tendency[ijk]+= qsnow[ijk]*(fabs(w_qsnow[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk])* dzi/temperature[ijk];
             }
         }
     }
@@ -592,7 +701,7 @@ void entropy_source_heating_snow(const struct DimStruct *dims, double* restrict 
 }
 
 
-void entropy_source_drag(const struct DimStruct *dims, double* restrict T,  double* restrict qprec,
+void entropy_source_drag(const struct DimStruct *dims, double* restrict temperature,  double* restrict qprec,
                             double* restrict w_qprec, double* restrict entropy_tendency){
 
 
@@ -613,7 +722,7 @@ void entropy_source_drag(const struct DimStruct *dims, double* restrict T,  doub
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                entropy_tendency[ijk]+= g * qprec[ijk]* fabs(w_qprec[ijk])/ T[ijk];
+                entropy_tendency[ijk]+= g * qprec[ijk]* fabs(w_qprec[ijk])/ temperature[ijk];
             }
         }
     }
@@ -622,7 +731,7 @@ void entropy_source_drag(const struct DimStruct *dims, double* restrict T,  doub
 
 }
 
-void get_virtual_potential_temperature(const struct DimStruct *dims, double* restrict p0, double* restrict T, double* restrict qv,
+void get_virtual_potential_temperature(const struct DimStruct *dims, double* restrict p0, double* restrict temperature, double* restrict qv,
                                        double* restrict ql, double* restrict qi, double* restrict thetav){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -640,7 +749,7 @@ void get_virtual_potential_temperature(const struct DimStruct *dims, double* res
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                thetav[ijk] = theta_c(p0[k], T[ijk]) * (1.0 + 0.608 * qv[ijk] - ql[ijk] - qi[ijk]);
+                thetav[ijk] = theta_c(p0[k], temperature[ijk]) * (1.0 + 0.608 * qv[ijk] - ql[ijk] - qi[ijk]);
             }
         }
     }

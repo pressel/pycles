@@ -23,21 +23,7 @@ cimport ParallelMPI
 
 from libc.math cimport fmax, fmin, fabs
 
-include 'micro_parameters.pxi'
-
 cdef extern from "microphysics_arctic_1m.h":
-    void micro_substep_c(Lookup.LookupStruct *LT, double alpha, double p0, double qt, double qi, double T, double cnn, double n0_ice,
-                         hm_parameters *rain_param, hm_parameters *snow_param, hm_parameters *liquid_param, hm_parameters *ice_param,
-                         hm_properties *rain_prop, hm_properties *snow_prop, hm_properties *liquid_prop, hm_properties *ice_prop,
-                         double* aut_rain, double* aut_snow, ret_acc *src_acc, double* evp_rain,
-                         double* evp_snow, double* melt_snow) nogil
-
-    inline double get_rain_vel_c(double alpha, double qrain, hm_parameters *rain_param, hm_properties *rain_prop) nogil
-    inline double get_snow_vel_c(double alpha, double qsnow, hm_parameters *snow_param, hm_properties *snow_prop) nogil
-    inline double get_n0_snow_c(double alpha, double qsnow, hm_parameters *snow_param) nogil
-    inline double get_n0_rain_c(double alpha, double qrain, hm_parameters *rain_param) nogil
-    inline double get_n0_ice_c(double alpha, double qi, double ice_n0, hm_parameters *ice_param) nogil
-    inline double get_lambda_c(double alpha, hm_properties *_prop, hm_parameters *_param) nogil
     inline double entropy_src_precipitation_c(double p0, double T, double qt, double qv,
                                               double L, double precip_rate) nogil
     inline double entropy_src_evaporation_c(double p0, double T, double Tw, double qt, double qv,
@@ -50,10 +36,21 @@ cdef extern from "microphysics_arctic_1m.h":
                                      double* w_qrain, double* w,  double* entropy_tendency) nogil
     void entropy_source_heating_snow(Grid.DimStruct *dims, double* T, double* Twet, double* qsnow,
                                      double* w_qsnow, double* w,  double* entropy_tendency) nogil
-    void entropy_source_drag(Grid.DimStruct *dims, double* T,  double* qprec, double* w_qprec,
+    void entropy_source_drag(Grid.DimStruct *dims, double* T, double* qprec, double* w_qprec,
                              double* entropy_tendency) nogil
     void get_virtual_potential_temperature(Grid.DimStruct *dims, double* p0, double* T, double* qv,
                                        double* ql, double* qi, double* thetav) nogil
+    void microphysics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double),
+                             double (*L_fp)(double, double), double* density, double* p0,
+                             double* temperature, double* qt, double ccn, double n0_ice,
+                             double* ql, double* qi, double* qrain, double* nrain,
+                             double* qsnow, double* nsnow, double dt,
+                             double* qrain_tendency_micro, double* qrain_tendency,
+                             double* qsnow_tendency_micro, double* qsnow_tendency,
+                             double* precip_rate, double* evap_rate) nogil
+    void qt_source_formation(Grid.DimStruct *dims, double* qt_tendency, double* precip_rate, double* evap_rate) nogil
+
+
 
 
 
@@ -65,7 +62,8 @@ cdef extern from "advection_interpolation.h":
     double interp_2(double phi, double phip1) nogil
 
 cdef extern from "scalar_advection.h":
-    void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme) nogil
+    void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity,
+                                    double *scalar, double* flux, int d, int scheme) nogil
 
 cdef class Microphysics_Arctic_1M:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
@@ -93,8 +91,8 @@ cdef class Microphysics_Arctic_1M:
         except:
             self.order = namelist['scalar_transport']['order']
 
-        # self.L_fp = LH.L_fp
-        # self.Lambda_fp = LH.Lambda_fp
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 
@@ -178,24 +176,6 @@ cdef class Microphysics_Arctic_1M:
 
         #Get parameters
         cdef:
-            #struct pointers???
-            hm_properties rain_prop
-            hm_properties snow_prop
-            hm_properties ice_prop
-            hm_properties liquid_prop
-
-            ret_acc src_acc
-
-            Py_ssize_t imin = Gr.dims.gw
-            Py_ssize_t jmin = Gr.dims.gw
-            Py_ssize_t kmin = Gr.dims.gw
-            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
-            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            Py_ssize_t jstride = Gr.dims.nlg[2]
-            Py_ssize_t i,j,k,ishift,jshift,ijk, pi
-            Py_ssize_t allshift = Gr.dims.npg
 
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -214,111 +194,26 @@ cdef class Microphysics_Arctic_1M:
             Py_ssize_t wqrain_shift = DV.get_varshift(Gr, 'w_qrain')
             Py_ssize_t wqsnow_shift = DV.get_varshift(Gr, 'w_qsnow')
 
-            double [:] aut = self.autoconversion
-            double [:] evp = self.evaporation
-            double [:] acc = self.accretion
-            double [:] melt = self.melting
+            double [:] qrain_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] qsnow_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] precip_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] evap_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
-            double aut_rain, aut_snow, evp_rain, evp_snow, melt_snow
-            double qt_micro
+        # Microphysics source terms
+        microphysics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.rho0_half[0],
+                             &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], self.ccn, self.n0_ice_input,
+                             &DV.values[ql_shift], &DV.values[qi_shift], &PV.values[qrain_shift], &DV.values[nrain_shift],
+                             &PV.values[qsnow_shift], &DV.values[nsnow_shift], TS.dt,
+                             &qrain_tend_micro[0], &PV.tendencies[qrain_shift],
+                             &qsnow_tend_micro[0], &PV.tendencies[qsnow_shift], &precip_rate[0], &evap_rate[0])
 
-            double iter_count, time_added, dt_, rate, rate1, rate2, rate3, rate4
-            double machine_eps = np.finfo(np.float64).eps
-            double Tw, L
+        sedimentation_velocity_rain(&Gr.dims, &Ref.rho0_half[0], &DV.values[nrain_shift], &PV.values[qrain_shift],
+                                    &DV.values[wqrain_shift])
 
-            double [:] precip_rate = self.precip_rate
-            double [:] evap_rate = self.evap_rate
+        sedimentation_velocity_snow(&Gr.dims, &Ref.rho0_half[0], &DV.values[nsnow_shift], &PV.values[qsnow_shift],
+                                    &DV.values[wqsnow_shift])
 
-
-
-
-        #Start the Main loop
-        with nogil:
-            for i in xrange(imin,imax):
-                ishift = i * istride
-                for j in xrange(jmin,jmax):
-                    jshift = j * jstride
-                    for k in xrange(kmin,kmax):
-                        ijk = ishift + jshift + k
-
-                        #Initialize all source terms to be zeros
-                        aut[ijk] = 0.0
-                        aut[ijk+allshift] = 0.0
-                        evp[ijk] = 0.0
-                        evp[ijk+allshift] = 0.0
-                        acc[ijk] = 0.0
-                        acc[ijk+allshift] = 0.0
-                        melt[ijk] = 0.0
-
-                        #Prepare for substepping
-                        #Assign mass fraction of each species to property structs
-                        rain_prop.mf = PV.values[qrain_shift + ijk]
-                        snow_prop.mf = PV.values[qsnow_shift + ijk]
-                        liquid_prop.mf = DV.values[ql_shift + ijk]
-                        ice_prop.mf = DV.values[qi_shift + ijk]
-                        qt_micro = PV.values[qt_shift + ijk]
-
-                        #Do substepping (iterations < 20)
-
-                        iter_count = 0
-                        time_added = 0.0
-
-                        while time_added < TS.dt and iter_count < 1:
-                            if (liquid_prop.mf+ice_prop.mf) < small and (rain_prop.mf+snow_prop.mf) < small:
-                                break
-
-                            micro_substep_c(&self.CC.LT.LookupStructC, Ref.alpha0_half[k], Ref.p0_half[k], qt_micro, DV.values[qi_shift + ijk], DV.values[t_shift + ijk],
-                                            self.ccn, self.n0_ice_input, &rain_param, &snow_param, &liquid_param, &ice_param,
-                                            &rain_prop, &snow_prop, &liquid_prop, &ice_prop, &aut_rain, &aut_snow,
-                                            &src_acc, &evp_rain, &evp_snow, &melt_snow)
-
-                            dt_ = TS.dt - time_added
-                            rate1 = 1.05 * (aut_rain + src_acc.dyr +  evp_rain - melt_snow)/(-fmax(rain_prop.mf,machine_eps)/dt_)
-                            rate2 = 1.05 * (aut_snow + src_acc.dys +  evp_snow + melt_snow)/(-fmax(snow_prop.mf,machine_eps)/dt_)
-                            rate3 = 1.05 * (-aut_rain + src_acc.dyl)/(-fmax(liquid_prop.mf,machine_eps)/dt_)
-                            rate4 = 1.05 * (-aut_snow + src_acc.dyi)/(-fmax(ice_prop.mf,machine_eps)/dt_)
-
-                            rate = fmax(fmax(fmax(rate1,rate2),rate3),rate4)
-                            if rate > 1.0:
-                                # Limit the timestep, but don't let it get too small
-                                dt_ = fmax(dt_/rate,1e-10)
-
-
-                            # Integrate forward in time
-                            rain_prop.mf = fmax(rain_prop.mf + (aut_rain + src_acc.dyr + evp_rain - melt_snow)* dt_,0.0)
-                            snow_prop.mf = fmax(snow_prop.mf + (aut_snow + src_acc.dys + evp_snow + melt_snow)* dt_,0.0)
-                            liquid_prop.mf = fmax(liquid_prop.mf + (-aut_rain + src_acc.dyl) * dt_,0.0)
-                            ice_prop.mf = fmax(ice_prop.mf + (-aut_snow + src_acc.dyi) * dt_,0.0)
-                            #vapor_star = fmax(vapor_star + (-evp_rain - evp_snow) * dt_,0.0)
-
-                            precip_rate[ijk] = -aut_rain + src_acc.dyl - aut_snow + src_acc.dyi
-                            evap_rate[ijk] = evp_rain + evp_snow
-                            qt_micro = fmax(qt_micro + (precip_rate[ijk] - evap_rate[ijk])*dt_, 0.0)
-                            #qt_micro = fmax(qt_micro + (-aut_rain + src_acc.dyl - aut_snow + src_acc.dyi - evp_rain - evp_snow)*dt_, 0.0)
-
-                            # Update the contributions of each source term
-                            aut[ijk] = aut[ijk] + aut_rain * dt_/TS.dt
-                            acc[ijk] = acc[ijk] + src_acc.dyr * dt_/TS.dt
-                            evp[ijk] = evp[ijk] + evp_rain * dt_/TS.dt
-                            aut[ijk+allshift] = aut[ijk+allshift] + aut_snow * dt_/TS.dt
-                            acc[ijk+allshift] = acc[ijk+allshift] + src_acc.dys * dt_/TS.dt
-                            evp[ijk+allshift] = evp[ijk+allshift] + evp_snow * dt_/TS.dt
-                            melt[ijk] = melt[ijk] + melt_snow * dt_/TS.dt
-
-                            # Increment the local time variables
-                            time_added = time_added + dt_
-                            iter_count += 1
-
-                            # if iter_count > 19:
-                            #     with gil:
-                            #         print " ******  "
-                            #         print "Substeps: ", iter_count, dt_, rain_prop.mf, snow_prop.mf
-
-                        PV.tendencies[qrain_shift + ijk] = PV.tendencies[qrain_shift + ijk] + (rain_prop.mf - PV.values[qrain_shift + ijk])/TS.dt
-                        PV.tendencies[qsnow_shift + ijk] = PV.tendencies[qsnow_shift + ijk] + (snow_prop.mf - PV.values[qsnow_shift + ijk])/TS.dt
-
-                        #Add tendency of qt due to microphysics
-                        PV.tendencies[qt_shift + ijk] += (qt_micro - PV.values[qt_shift + ijk])/TS.dt
+        qt_source_formation(&Gr.dims, &PV.tendencies[qt_shift], &precip_rate[0], &evap_rate[0])
 
         #Add entropy tendency due to microphysics (precipitation and evaporation only)
         microphysics_wetbulb_temperature(&Gr.dims, &self.CC.LT.LookupStructC, &Ref.p0_half[0], &PV.values[s_shift],
@@ -328,14 +223,6 @@ cdef class Microphysics_Arctic_1M:
                             &precip_rate[0], &PV.tendencies[s_shift])
         get_s_source_evap(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qt_shift], &DV.values[qv_shift],
                             &evap_rate[0], &PV.tendencies[s_shift])
-
-
-        #*************************** Now add sedimentation **************************
-
-        sedimentation_velocity_rain(&Gr.dims, &Ref.rho0_half[0], &DV.values[nrain_shift], &PV.values[qrain_shift],
-                                    &DV.values[wqrain_shift])
-        sedimentation_velocity_snow(&Gr.dims, &Ref.rho0_half[0], &DV.values[nsnow_shift], &PV.values[qsnow_shift],
-                                    &DV.values[wqsnow_shift])
 
         entropy_source_heating_rain(&Gr.dims, &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qrain_shift],
                                   &DV.values[wqrain_shift],  &PV.values[w_shift], &PV.tendencies[s_shift])
@@ -348,45 +235,6 @@ cdef class Microphysics_Arctic_1M:
 
         entropy_source_drag(&Gr.dims, &DV.values[t_shift], &PV.values[qsnow_shift], &DV.values[wqsnow_shift],
                             &PV.tendencies[s_shift])
-
-
-        # #Get number density for output
-        # cdef:
-        #     double [:] rain_number = self.rain_number_density
-        #     double [:] snow_number = self.snow_number_density
-        #     double [:] ice_number = self.ice_number_density
-        #     double [:] snow_lambda = self.snow_lambda
-        #     double [:] ice_lambda = self.ice_lambda
-        #     double [:] n0_snow = self.n0_snow
-        #     double [:] n0_ice = self.n0_ice
-        #
-        # #with nogil:
-        # for i in xrange(imin,imax):
-        #     ishift = i * istride
-        #     for j in xrange(jmin,jmax):
-        #         jshift = j * jstride
-        #         for k in xrange(kmin,kmax):
-        #             ijk = ishift + jshift + k
-        #
-        #             snow_prop.mf = PV.values[qsnow_shift + ijk]
-        #             snow_prop.n0 = get_n0_snow_c(Ref.alpha0_half[k], PV.values[qsnow_shift+ijk], &snow_param)
-        #             snow_prop.lam = get_lambda_c(Ref.alpha0_half[k], &snow_prop, &snow_param)
-        #             snow_number[ijk] = snow_prop.n0/snow_prop.lam
-        #             snow_lambda[ijk] = snow_prop.lam
-        #             n0_snow[ijk] = snow_prop.n0
-        #
-        #             rain_prop.mf = PV.values[qrain_shift + ijk]
-        #             rain_prop.n0 = get_n0_rain_c(Ref.alpha0_half[k], PV.values[qrain_shift+ijk], &rain_param)
-        #             rain_prop.lam = get_lambda_c(Ref.alpha0_half[k], &rain_prop, &rain_param)
-        #             rain_number[ijk] = rain_prop.n0/rain_prop.lam
-        #
-        #             ice_prop.mf = DV.values[qi_shift + ijk]
-        #             ice_prop.n0 = get_n0_ice_c(Ref.alpha0_half[k], DV.values[qi_shift+ijk], self.n0_ice_input, &ice_param)
-        #             ice_prop.lam = get_lambda_c(Ref.alpha0_half[k], &ice_prop, &ice_param)
-        #             ice_number[ijk] = ice_prop.n0/ice_prop.lam
-        #             ice_lambda[ijk] = ice_prop.lam
-        #             n0_ice[ijk] = ice_prop.n0
-
 
 
         return

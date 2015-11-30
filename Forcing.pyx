@@ -625,10 +625,10 @@ cdef class ForcingIsdac:
             if Gr.zl_half[k] < 400.0:
                 thetal[k] = 265.0 + 0.004 * (Gr.zl_half[k] - 400.0)
                 self.initial_qt[k] = 1.5 - 0.00075 * (Gr.zl_half[k] - 400.0)
-            if Gr.zl_half[k] >= 400.0 and Gr.zl_half[k] < 825.0:
+            if 400.0 <= Gr.zl_half[k] < 825.0:
                 thetal[k] = 265.0
                 self.initial_qt[k] = 1.5
-            if Gr.zl_half[k] >= 825.0 and Gr.zl_half[k] < 2045.0:
+            if 825.0 <= Gr.zl_half[k] < 2045.0:
                 thetal[k] = 266.0 + (Gr.zl_half[k] - 825.0) ** 0.3
                 self.initial_qt[k] = 1.2
             if Gr.zl_half[k] >= 2045.0:
@@ -650,7 +650,7 @@ cdef class ForcingIsdac:
             #Nudging coefficients
             if Gr.zl_half[k] <= 1200.0:
                 self.nudge_coeff_scalars[k] = 0.0
-            if Gr.zl_half[k] > 1200.0 and Gr.zl_half[k] <= 1500.0:
+            if 1200.0 < Gr.zl_half[k] <= 1500.0:
                 self.nudge_coeff_scalars[k] = (1/3600.0)*0.5*(1.0 - cos(pi * (Gr.zl_half[k] - 1200.0)/300.0))
             if Gr.zl_half[k] > 1500.0:
                 self.nudge_coeff_scalars[k] = 1/3600.0

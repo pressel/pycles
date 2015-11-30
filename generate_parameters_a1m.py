@@ -17,6 +17,7 @@ def main():
     parameters['SMALL'] = 1.0e-10
     parameters['DENSITY_ICE'] = 900.0  # density of ice, kg/m^3
     parameters['DENSITY_LIQUID'] = 1000.0  # density of liquid, km/m^3
+    parameters['MAX_ITER'] = 15 # max interation of micro source terms
 
     # Rain parameters
     parameters['A_RAIN'] = np.pi/6.0*parameters['DENSITY_LIQUID']
