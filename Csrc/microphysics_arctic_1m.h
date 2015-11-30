@@ -336,7 +336,7 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
     const double y1 = 5.62e7;
     const double y2 = 0.63;
 
-    double rwc, swc, iwc, ni;
+    double iwc, ni;
     double qrain_tendency_aut=0.0, qrain_tendency_acc=0.0, qrain_tendency_evp=0.0;
     double qsnow_tendency_aut=0.0, qsnow_tendency_acc=0.0, qsnow_tendency_evp=0.0, qsnow_tendency_melt=0.0;
     double ql_tendency_acc=0.0, qi_tendency_acc=0.0;
@@ -365,18 +365,10 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                 ni = fmax(fmin(n0_ice, iwc*N_MAX_ICE),iwc*N_MIN_ICE);
 
                 qrain_tmp = fmax(qrain[ijk],0.0); //clipping
-                rwc = fmax(qrain_tmp * density[k], SMALL);
-                nrain[ijk] = fmax(fmin(b1*pow(rwc, b2), rwc*N_MAX_RAIN),rwc*N_MIN_RAIN);
-
                 qsnow_tmp = fmax(qsnow[ijk],0.0); //clipping
-                swc = fmax(qsnow_tmp * density[k], SMALL);
-                nsnow[ijk] = fmax(fmin(y1*pow(swc*1000.0, y2),swc*N_MAX_SNOW),swc*N_MIN_SNOW);
-
                 qt_tmp = qt[ijk];
                 ql_tmp = fmax(ql[ijk],0.0);
-//                qi_tmp = fmax(qi[ijk], 0.0);
-//                qrain_tmp = fmax(qrain[ijk],0.0);
-//                qsnow_tmp = fmax(qsnow[ijk],0.0);
+
 
                 // Now do sub-timestepping
                 double time_added = 0.0, dt_, rate;
@@ -477,7 +469,7 @@ void sedimentation_velocity_rain(const struct DimStruct *dims, double* restrict 
 
                 nrain[ijk] = fmax(fmin(n0_rain,n0_max),n0_min);
 
-                double lam = pow((A_RAIN*n0_rain*GB1_RAIN/rwc), (1.0/(B_RAIN+1.0)));
+                double lam = rain_lambda(density[k], qrain[ijk], nrain[ijk]);
                 qrain_velocity[ijk] = -C_RAIN*GBD1_RAIN/GB1_RAIN/pow(lam, D_RAIN);
 
             }
@@ -532,7 +524,7 @@ void sedimentation_velocity_snow(const struct DimStruct *dims, double* restrict 
 
                 nsnow[ijk] = fmax(fmin(n0_snow,n0_max),n0_min);
 
-                double lam = pow((A_SNOW*n0_snow*GB1_SNOW/swc), (1.0/(B_SNOW+1.0)));
+                double lam = snow_lambda(density[k], qsnow[ijk], nsnow[ijk]);
                 qsnow_velocity[ijk] = -C_SNOW*GBD1_SNOW/GB1_SNOW/pow(lam, D_SNOW);
 
             }
