@@ -47,14 +47,16 @@ double microphysics_g_arctic(struct LookupStruct *LT, double (*lam_fp)(double), 
 }
 
 double rain_dmean(double density, double qrain, double nrain){
-    double wc = fmax(qrain * density, SMALL);
+//    double wc = fmax(qrain * density, SMALL);
+    double wc = qrain * density + SMALL;
     double val = pow((wc*GSTAR_RAIN/A_RAIN/nrain), (1.0/(B_RAIN+1.0)));
 
     return val;
 };
 
 double snow_dmean(double density, double qsnow, double nsnow){
-    double wc = fmax(qsnow * density, SMALL);
+//    double wc = fmax(qsnow * density, SMALL);
+    double wc = qsnow * density + SMALL;
 //    double val = pow((wc*GSTAR_SNOW/A_SNOW/nsnow), (1.0/(B_SNOW+1.0)));
     double val = cbrt(wc*GSTAR_SNOW/A_SNOW/nsnow);
 
@@ -62,7 +64,8 @@ double snow_dmean(double density, double qsnow, double nsnow){
 };
 
 double ice_dmean(double density, double qi, double ni){
-    double wc = fmax(qi * density, SMALL);
+//    double wc = fmax(qi * density, SMALL);
+    double wc = qi * density + SMALL;
     double val = pow((wc*GSTAR_ICE/A_ICE/ni), (1.0/(B_ICE+1.0)));
 
     return val;
