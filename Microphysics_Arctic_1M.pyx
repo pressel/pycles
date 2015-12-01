@@ -58,6 +58,9 @@ cdef extern from "microphysics_arctic_1m.h":
     void autoconversion_snow_wrapper(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double),
                                  double (*L_fp)(double, double), double n0_ice, double* density, double* p0, double* temperature,
                                  double* qt, double* qi, double* qsnow_tendency) nogil
+    void get_rain_n0(Grid.DimStruct *dims, double* density, double* qrain, double* nrain) nogil
+    void get_snow_n0(Grid.DimStruct *dims, double* density, double* qsnow, double* nsnow) nogil
+
 
 
 
@@ -213,11 +216,8 @@ cdef class Microphysics_Arctic_1M:
 
         # Calculate sedimentation before anything else to get N0
 
-        sedimentation_velocity_rain(&Gr.dims, &Ref.rho0_half[0], &DV.values[nrain_shift], &PV.values[qrain_shift],
-                                    &DV.values[wqrain_shift])
-
-        sedimentation_velocity_snow(&Gr.dims, &Ref.rho0_half[0], &DV.values[nsnow_shift], &PV.values[qsnow_shift],
-                                    &DV.values[wqsnow_shift])
+        get_rain_n0(&Gr.dims, &Ref.rho0_half[0], &PV.values[qrain_shift], &DV.values[nrain_shift])
+        get_snow_n0(&Gr.dims, &Ref.rho0_half[0], &PV.values[qsnow_shift], &DV.values[nsnow_shift])
 
         # Microphysics source terms
 
@@ -227,6 +227,12 @@ cdef class Microphysics_Arctic_1M:
                              &PV.values[qsnow_shift], &DV.values[nsnow_shift], TS.dt,
                              &qrain_tend_micro[0], &PV.tendencies[qrain_shift],
                              &qsnow_tend_micro[0], &PV.tendencies[qsnow_shift], &precip_rate[0], &evap_rate[0])
+
+        # sedimentation_velocity_rain(&Gr.dims, &Ref.rho0_half[0], &DV.values[nrain_shift], &PV.values[qrain_shift],
+        #                             &DV.values[wqrain_shift])
+        #
+        # sedimentation_velocity_snow(&Gr.dims, &Ref.rho0_half[0], &DV.values[nsnow_shift], &PV.values[qsnow_shift],
+        #                             &DV.values[wqsnow_shift])
 
         qt_source_formation(&Gr.dims, &PV.tendencies[qt_shift], &precip_rate[0], &evap_rate[0])
 
