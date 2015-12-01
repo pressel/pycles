@@ -61,6 +61,8 @@ cdef class Surface:
             self.scheme= SurfaceRico()
         elif casename == 'Isdac':
             self.scheme = SurfaceIsdac(namelist, LH)
+        elif casename == 'IsdacCC':
+            self.scheme = SurfaceIsdac(namelist, LH)
         else:
             self.scheme= SurfaceNone()
         return

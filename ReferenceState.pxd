@@ -19,6 +19,11 @@ cdef class ReferenceState:
         double u0 #u velocity removed in Galilean transformation
         double v0 #v velocity removed in Galilean transformation
 
+        #These are initial condition profiles set in case initialization, stored for forcing
+        double [:] ic_rh
+        double [:] ic_thetal
+        double [:] ic_qt
+
     cpdef restart(self, Grid.Grid Gr, Restart.Restart Re)
     cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re)
 

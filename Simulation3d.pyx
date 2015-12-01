@@ -106,11 +106,11 @@ class Simulation3d:
         else:
             self.Pa.root_print('This is not a restart run!')
             SetInitialConditions = InitializationFactory(namelist)
-            SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa)
+            SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa, namelist)
             del SetInitialConditions
 
         self.Sur.initialize(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
-        self.Fo.initialize(self.Gr, self.Ref, self.Th, self.StatsIO, self.Pa)
+        self.Fo.initialize(self.Gr, self.Ref, self.Th, self.StatsIO, self.Pa, namelist)
         self.Ra.initialize(self.Gr,self.StatsIO,self.Pa)
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)

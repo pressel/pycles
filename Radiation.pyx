@@ -26,6 +26,8 @@ cdef class Radiation:
             self.scheme = RadiationSmoke()
         elif casename == 'Isdac':
             self.scheme = RadiationIsdac()
+        elif casename == 'IsdacCC':
+            self.scheme = RadiationIsdac()
         else:
             self.scheme = RadiationNone()
         return
