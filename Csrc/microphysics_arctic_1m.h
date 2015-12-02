@@ -458,8 +458,8 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                         break;
 
 //                    autoconversion_rain(density[k], ccn, ql_tmp, qrain_tmp, nrain[ijk], &qrain_tendency_aut);
-//                    autoconversion_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp,
-//                                        qi_tmp, ni, &qsnow_tendency_aut);
+                    autoconversion_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp,
+                                        qi_tmp, ni, &qsnow_tendency_aut);
 //                    accretion_all(density[k], p0[k], temperature[ijk], ccn, ql_tmp, qi_tmp, ni,
 //                                  qrain_tmp, nrain[ijk], qsnow_tmp, nsnow[ijk],
 //                                  &ql_tendency_acc, &qi_tendency_acc, &qrain_tendency_acc, &qsnow_tendency_acc);
