@@ -454,20 +454,20 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                     iter_count += 1;
                     dt_ = dt - time_added;
 
-                    if ((ql_tmp + qi_tmp) < SMALL && (qrain_tmp + qsnow_tmp) < small)
+                    if ((ql_tmp + qi_tmp) < SMALL && (qrain_tmp + qsnow_tmp) < SMALL)
                         break;
 
-//                    autoconversion_rain(density[k], ccn, ql_tmp, qrain_tmp, nrain[ijk], &qrain_tendency_aut);
+                    autoconversion_rain(density[k], ccn, ql_tmp, qrain_tmp, nrain[ijk], &qrain_tendency_aut);
                     autoconversion_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp,
                                         qi_tmp, ni, &qsnow_tendency_aut);
-//                    accretion_all(density[k], p0[k], temperature[ijk], ccn, ql_tmp, qi_tmp, ni,
-//                                  qrain_tmp, nrain[ijk], qsnow_tmp, nsnow[ijk],
-//                                  &ql_tendency_acc, &qi_tendency_acc, &qrain_tendency_acc, &qsnow_tendency_acc);
-//                    evaporation_rain(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp, qrain_tmp, nrain[ijk],
-//                                     &qrain_tendency_evp);
-//                    evaporation_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp, qsnow_tmp,
-//                                     nsnow[ijk], &qsnow_tendency_evp);
-//                    melt_snow(density[k], temperature[ijk], qsnow_tmp, nsnow[ijk], &qsnow_tendency_melt);
+                    accretion_all(density[k], p0[k], temperature[ijk], ccn, ql_tmp, qi_tmp, ni,
+                                  qrain_tmp, nrain[ijk], qsnow_tmp, nsnow[ijk],
+                                  &ql_tendency_acc, &qi_tendency_acc, &qrain_tendency_acc, &qsnow_tendency_acc);
+                    evaporation_rain(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp, qrain_tmp, nrain[ijk],
+                                     &qrain_tendency_evp);
+                    evaporation_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp, qsnow_tmp,
+                                     nsnow[ijk], &qsnow_tendency_evp);
+                    melt_snow(density[k], temperature[ijk], qsnow_tmp, nsnow[ijk], &qsnow_tendency_melt);
 
                     qrain_tendency_tmp = qrain_tendency_aut + qrain_tendency_acc + qrain_tendency_evp - qsnow_tendency_melt;
                     qsnow_tendency_tmp = qsnow_tendency_aut + qsnow_tendency_acc + qsnow_tendency_evp + qsnow_tendency_melt;

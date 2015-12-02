@@ -228,11 +228,11 @@ cdef class Microphysics_Arctic_1M:
                              &qrain_tend_micro[0], &PV.tendencies[qrain_shift],
                              &qsnow_tend_micro[0], &PV.tendencies[qsnow_shift], &precip_rate[0], &evap_rate[0])
 
-        # sedimentation_velocity_rain(&Gr.dims, &Ref.rho0_half[0], &DV.values[nrain_shift], &PV.values[qrain_shift],
-        #                             &DV.values[wqrain_shift])
-        #
-        # sedimentation_velocity_snow(&Gr.dims, &Ref.rho0_half[0], &DV.values[nsnow_shift], &PV.values[qsnow_shift],
-        #                             &DV.values[wqsnow_shift])
+        sedimentation_velocity_rain(&Gr.dims, &Ref.rho0_half[0], &DV.values[nrain_shift], &PV.values[qrain_shift],
+                                    &DV.values[wqrain_shift])
+
+        sedimentation_velocity_snow(&Gr.dims, &Ref.rho0_half[0], &DV.values[nsnow_shift], &PV.values[qsnow_shift],
+                                    &DV.values[wqsnow_shift])
 
         qt_source_formation(&Gr.dims, &PV.tendencies[qt_shift], &precip_rate[0], &evap_rate[0])
 
