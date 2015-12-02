@@ -47,25 +47,21 @@ double microphysics_g_arctic(struct LookupStruct *LT, double (*lam_fp)(double), 
 }
 
 double rain_dmean(double density, double qrain, double nrain){
-//    double wc = fmax(qrain * density, SMALL);
-    double wc = qrain * density + SMALL;
+    double wc = fmax(qrain * density, SMALL);
     double val = pow((wc*GSTAR_RAIN/A_RAIN/nrain), (1.0/(B_RAIN+1.0)));
 
     return val;
 };
 
 double snow_dmean(double density, double qsnow, double nsnow){
-//    double wc = fmax(qsnow * density, SMALL);
-    double wc = qsnow * density + SMALL;
-//    double val = pow((wc*GSTAR_SNOW/A_SNOW/nsnow), (1.0/(B_SNOW+1.0)));
+    double wc = fmax(qsnow * density, SMALL);
     double val = cbrt(wc*GSTAR_SNOW/A_SNOW/nsnow);
 
     return val;
 };
 
 double ice_dmean(double density, double qi, double ni){
-//    double wc = fmax(qi * density, SMALL);
-    double wc = qi * density + SMALL;
+    double wc = fmax(qi * density, SMALL);
     double val = pow((wc*GSTAR_ICE/A_ICE/ni), (1.0/(B_ICE+1.0)));
 
     return val;
@@ -86,7 +82,6 @@ double liquid_dmean(double density, double ql, double ccn){
     };
 
     double lwc = fmax(ql * density, SMALL);
-    //double df = pow((6.0*lwc/(pi*DENSITY_LIQUID*ntot)), (1.0/3.0));
     double df = cbrt(6.0*lwc/(pi*DENSITY_LIQUID*ntot));
 
     return df;
@@ -101,7 +96,6 @@ double rain_lambda(double density, double qrain, double nrain){
 
 double snow_lambda(double density, double qsnow, double nsnow){
     double wc = fmax(qsnow * density, SMALL);
-    //double val = pow((A_SNOW*nsnow*GB1_SNOW/wc), (1.0/(B_SNOW+1.0)));
     double val = cbrt(A_SNOW*nsnow*GB1_SNOW/wc);
 
     return val;
@@ -466,6 +460,9 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                     qrain_tendency_acc = 0.0;
                     qrain_tendency_evp = 0.0;
 
+                    ql_tendency_acc = 0.0;
+                    qi_tendency_acc = 0.0;
+
                     autoconversion_rain(density[k], ccn, ql_tmp, qrain_tmp, nrain[ijk], &qrain_tendency_aut);
                     autoconversion_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp,
                                         qi_tmp, ni, &qsnow_tendency_aut);
@@ -491,7 +488,7 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                     if(rate > 1.0 && iter_count < MAX_ITER){
                         //Limit the timestep, but don't allow it to become vanishingly small
                         //Don't adjust if we have reached the maximum iteration number
-                        dt_ = fmax(dt_/rate, 1.0e-10);
+                        dt_ = fmax(dt_/rate, 1.0e-3);
                     }
 
                     precip_rate[ijk] = -qrain_tendency_aut + ql_tendency_acc - qsnow_tendency_aut + qi_tendency_acc;

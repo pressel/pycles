@@ -62,12 +62,6 @@ cdef extern from "microphysics_arctic_1m.h":
     void get_snow_n0(Grid.DimStruct *dims, double* density, double* qsnow, double* nsnow) nogil
 
 
-
-
-
-
-
-
 cdef extern from "microphysics.h":
     void microphysics_wetbulb_temperature(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double* p0, double* s,
                                           double* qt,  double* T, double* Twet )nogil
@@ -117,24 +111,6 @@ cdef class Microphysics_Arctic_1M:
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.z_pencil.initialize(Gr, Pa, 2)
 
-        #Define all source terms that need to be stored
-        #Ghosted or not???
-        self.autoconversion = np.zeros(Gr.dims.npg*2, dtype=np.double, order='c')
-        self.evaporation = np.zeros(Gr.dims.npg*2, dtype=np.double, order='c')
-        self.accretion = np.zeros(Gr.dims.npg*2, dtype=np.double, order='c')
-        self.melting = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-
-        # self.rain_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.snow_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.ice_number_density = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.ice_lambda = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.snow_lambda = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.n0_snow = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        # self.n0_ice = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-
-        self.precip_rate = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        self.evap_rate = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-
         #Add precipitation variables
         PV.add_variable('qrain', 'kg kg^-1', "sym", "scalar", Pa)
         PV.add_variable('qsnow', 'kg kg^-1', "sym", "scalar", Pa)
@@ -149,16 +125,6 @@ cdef class Microphysics_Arctic_1M:
 
         # add wet bulb temperature
         DV.add_variables('temperature_wb', 'K', 'sym', Pa)
-
-        # #Initialize Statistical Output
-        # NS.add_profile('n_rain_mean', Gr, Pa)
-        # NS.add_profile('n_snow_mean', Gr, Pa)
-        # NS.add_profile('n_ice_mean', Gr, Pa)
-        # NS.add_profile('snow_lambda', Gr, Pa)
-        # NS.add_profile('ice_lambda', Gr, Pa)
-        # NS.add_profile('n0_snow', Gr, Pa)
-        # NS.add_profile('n0_ice', Gr, Pa)
-
 
         # NS.add_profile('rain_auto_mass', Gr, Pa)
         NS.add_profile('snow_auto_mass', Gr, Pa)
@@ -180,7 +146,6 @@ cdef class Microphysics_Arctic_1M:
         NS.add_ts('iwp', Gr, Pa)
         NS.add_ts('rwp', Gr, Pa)
         NS.add_ts('swp', Gr, Pa)
-
 
         return
 
@@ -318,26 +283,6 @@ cdef class Microphysics_Arctic_1M:
         # tmp = Pa.HorizontalMean(Gr, &self.melting[0])
         # NS.write_profile('snow_melt_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        # tmp = Pa.HorizontalMean(Gr, &self.ice_number_density[0])
-        # NS.write_profile('n_ice_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.rain_number_density[0])
-        # NS.write_profile('n_rain_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.snow_number_density[0])
-        # NS.write_profile('n_snow_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.snow_lambda[0])
-        # NS.write_profile('snow_lambda', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.ice_lambda[0])
-        # NS.write_profile('ice_lambda', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.n0_snow[0])
-        # NS.write_profile('n0_snow', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        #
-        # tmp = Pa.HorizontalMean(Gr, &self.n0_ice[0])
-        # NS.write_profile('n0_ice', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         #compute sedimentation flux only of qrain and qsnow
         compute_advective_fluxes_a(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &DV.values[wqrain_shift],
