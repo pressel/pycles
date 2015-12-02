@@ -457,6 +457,15 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                     if ((ql_tmp + qi_tmp) < SMALL && (qrain_tmp + qsnow_tmp) < SMALL)
                         break;
 
+                    qsnow_tendency_aut = 0.0;
+                    qsnow_tendency_acc = 0.0;
+                    qsnow_tendency_evp = 0.0;
+                    qsnow_tendency_melt = 0.0;
+
+                    qrain_tendency_aut = 0.0;
+                    qrain_tendency_acc = 0.0;
+                    qrain_tendency_evp = 0.0;
+
                     autoconversion_rain(density[k], ccn, ql_tmp, qrain_tmp, nrain[ijk], &qrain_tendency_aut);
                     autoconversion_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp,
                                         qi_tmp, ni, &qsnow_tendency_aut);
@@ -502,7 +511,7 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                     qt_tmp = fmax(qt_tmp, 0.0);
 
                     time_added += dt_;
-                    }while(time_added < dt && iter_count < 1);
+                    }while(time_added < dt && iter_count < MAX_ITER);
 
                 qrain_tendency_micro[ijk] = (qrain_tmp - qrain[ijk])/dt;
                 qrain_tendency[ijk] += qrain_tendency_micro[ijk];
