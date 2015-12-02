@@ -482,7 +482,7 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                     if(rate > 1.0 && iter_count < MAX_ITER){
                         //Limit the timestep, but don't allow it to become vanishingly small
                         //Don't adjust if we have reached the maximum iteration number
-                        dt_ = fmax(dt_/rate, 1.0e-3);
+                        dt_ = fmax(dt_/rate, 1.0e-10);
                     }
 
                     precip_rate[ijk] = -qrain_tendency_aut + ql_tendency_acc - qsnow_tendency_aut + qi_tendency_acc;
@@ -502,7 +502,7 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                     qt_tmp = fmax(qt_tmp, 0.0);
 
                     time_added += dt_;
-                    }while(time_added < dt);
+                    }while(time_added < dt && iter_count < 1);
 
                 qrain_tendency_micro[ijk] = (qrain_tmp - qrain[ijk])/dt;
                 qrain_tendency[ijk] += qrain_tendency_micro[ijk];
