@@ -55,7 +55,6 @@ double rain_dmean(double density, double qrain, double nrain){
 
 double snow_dmean(double density, double qsnow, double nsnow){
     double wc = fmax(qsnow * density, SMALL);
-//    double val = pow((wc*GSTAR_SNOW/A_SNOW/nsnow), (1.0/(B_SNOW+1.0)));
     double val = cbrt(wc*GSTAR_SNOW/A_SNOW/nsnow);
 
     return val;
@@ -83,7 +82,6 @@ double liquid_dmean(double density, double ql, double ccn){
     };
 
     double lwc = fmax(ql * density, SMALL);
-    //double df = pow((6.0*lwc/(pi*DENSITY_LIQUID*ntot)), (1.0/3.0));
     double df = cbrt(6.0*lwc/(pi*DENSITY_LIQUID*ntot));
 
     return df;
@@ -98,7 +96,6 @@ double rain_lambda(double density, double qrain, double nrain){
 
 double snow_lambda(double density, double qsnow, double nsnow){
     double wc = fmax(qsnow * density, SMALL);
-    //double val = pow((A_SNOW*nsnow*GB1_SNOW/wc), (1.0/(B_SNOW+1.0)));
     double val = cbrt(A_SNOW*nsnow*GB1_SNOW/wc);
 
     return val;
@@ -110,6 +107,78 @@ double ice_lambda(double density, double qi, double ni){
 
     return val;
 };
+
+void get_rain_n0(const struct DimStruct *dims, double* restrict density, double* restrict qrain, double* restrict nrain){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+    const double b1 = 650.1466922699631;
+    const double b2 = -1.222222222222222;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin-1; k<kmax+1; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double rwc = fmax(qrain[ijk]*density[k], SMALL);
+                double n0_rain = b1*pow(rwc, b2);
+                double n0_max = rwc*N_MAX_RAIN;
+                double n0_min = rwc*N_MIN_RAIN;
+
+                nrain[ijk] = fmax(fmin(n0_rain,n0_max),n0_min);
+
+            }
+        }
+    }
+
+    return;
+
+}
+
+void get_snow_n0(const struct DimStruct *dims, double* restrict density, double* restrict qsnow, double* restrict nsnow){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+    const double y1 = 5.62e7;
+    const double y2 = 0.63;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin-1; k<kmax+1; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double swc = fmax(qsnow[ijk]*density[k], SMALL);
+                double n0_snow = y1*pow(swc*1000.0, y2);
+                double n0_max = swc*N_MAX_SNOW;
+                double n0_min = swc*N_MIN_SNOW;
+
+                nsnow[ijk] = fmax(fmin(n0_snow,n0_max),n0_min);
+
+            }
+        }
+    }
+
+    return;
+
+}
 
 void autoconversion_rain(double density, double ccn, double ql, double qrain, double nrain,
                          double* qrain_tendency){
@@ -379,8 +448,20 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                     iter_count += 1;
                     dt_ = dt - time_added;
 
-                    if ((ql_tmp + qi_tmp) < SMALL && (qrain_tmp + qsnow_tmp) < small)
+                    if ((ql_tmp + qi_tmp) < SMALL && (qrain_tmp + qsnow_tmp) < SMALL)
                         break;
+
+                    qsnow_tendency_aut = 0.0;
+                    qsnow_tendency_acc = 0.0;
+                    qsnow_tendency_evp = 0.0;
+                    qsnow_tendency_melt = 0.0;
+
+                    qrain_tendency_aut = 0.0;
+                    qrain_tendency_acc = 0.0;
+                    qrain_tendency_evp = 0.0;
+
+                    ql_tendency_acc = 0.0;
+                    qi_tendency_acc = 0.0;
 
                     autoconversion_rain(density[k], ccn, ql_tmp, qrain_tmp, nrain[ijk], &qrain_tendency_aut);
                     autoconversion_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp,
@@ -427,7 +508,7 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                     qt_tmp = fmax(qt_tmp, 0.0);
 
                     time_added += dt_;
-                    }while(time_added < dt);
+                    }while(time_added < dt && iter_count < MAX_ITER);
 
                 qrain_tendency_micro[ijk] = (qrain_tmp - qrain[ijk])/dt;
                 qrain_tendency[ijk] += qrain_tendency_micro[ijk];
@@ -454,22 +535,12 @@ void sedimentation_velocity_rain(const struct DimStruct *dims, double* restrict 
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2];
 
-    const double b1 = 650.1466922699631;
-    const double b2 = -1.222222222222222;
-
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin-1; k<kmax+1; k++){
                 const ssize_t ijk = ishift + jshift + k;
-
-                double rwc = fmax(qrain[ijk]*density[k], SMALL);
-                double n0_rain = b1*pow(rwc, b2);
-                double n0_max = rwc*N_MAX_RAIN;
-                double n0_min = rwc*N_MIN_RAIN;
-
-                nrain[ijk] = fmax(fmin(n0_rain,n0_max),n0_min);
 
                 double rain_lam = rain_lambda(density[k], qrain[ijk], nrain[ijk]);
                 qrain_velocity[ijk] = -C_RAIN*GBD1_RAIN/GB1_RAIN/pow(rain_lam, D_RAIN);
@@ -509,22 +580,12 @@ void sedimentation_velocity_snow(const struct DimStruct *dims, double* restrict 
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2];
 
-    const double y1 = 5.62e7;
-    const double y2 = 0.63;
-
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin-1; k<kmax+1; k++){
                 const ssize_t ijk = ishift + jshift + k;
-
-                double swc = fmax(qsnow[ijk]*density[k], SMALL);
-                double n0_snow = y1*pow(swc*1000.0, y2);
-                double n0_max = swc*N_MAX_SNOW;
-                double n0_min = swc*N_MIN_SNOW;
-
-                nsnow[ijk] = fmax(fmin(n0_snow,n0_max),n0_min);
 
                 double snow_lam = snow_lambda(density[k], qsnow[ijk], nsnow[ijk]);
                 qsnow_velocity[ijk] = -C_SNOW*GBD1_SNOW/GB1_SNOW/pow(snow_lam, D_SNOW);
