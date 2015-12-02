@@ -105,8 +105,8 @@ cdef class Microphysics_Arctic_1M:
         except:
             self.order = namelist['scalar_transport']['order']
 
-        self.L_fp = LH.L_fp
-        self.Lambda_fp = LH.Lambda_fp
+        self.L_fp = latent_heat_Arctic
+        self.Lambda_fp = lambda_Arctic
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 
