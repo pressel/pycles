@@ -108,6 +108,9 @@ cdef class Microphysics_Arctic_1M:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
+        self.precip_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.evap_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+
         #Add precipitation variables
         PV.add_variable('qrain', 'kg kg^-1', "sym", "scalar", Pa)
         PV.add_variable('qsnow', 'kg kg^-1', "sym", "scalar", Pa)
@@ -172,9 +175,6 @@ cdef class Microphysics_Arctic_1M:
 
             double [:] qrain_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double [:] qsnow_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-
-        self.precip_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-        self.evap_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
 
         # Calculate sedimentation before anything else to get N0
