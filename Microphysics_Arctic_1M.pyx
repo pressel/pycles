@@ -107,7 +107,6 @@ cdef class Microphysics_Arctic_1M:
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.z_pencil.initialize(Gr, Pa, 2)
 
         #Add precipitation variables
         PV.add_variable('qrain', 'kg kg^-1', "sym", "scalar", Pa)
