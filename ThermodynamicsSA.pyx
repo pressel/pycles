@@ -45,7 +45,7 @@ cdef extern from "entropies.h":
 
 
 cdef class ThermodynamicsSA:
-    def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
+    def __init__(self, dict namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         '''
         Init method saturation adjsutment thermodynamics.
 
@@ -59,6 +59,12 @@ cdef class ThermodynamicsSA:
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
+
+        #Check to see if qt clipping is to be done. By default qt_clipping is on.
+        try:
+            self.do_qt_clipping = namelist['thermodynamics']['do_qt_clipping']
+        except:
+            self.do_qt_clipping = True
 
         return
 
@@ -175,6 +181,14 @@ cdef class ThermodynamicsSA:
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t thl_shift = DV.get_varshift(Gr, 'thetali')
+
+
+        '''Apply qt clipping if requested. Defaults to on. Call this before other thermodynamic routines. Note that this
+        changes the values in the qt array directly. Perhaps we should eventually move this to the timestepping function
+        so that the output statistics correctly reflect clipping.
+        '''
+        if self.do_qt_clipping:
+            clip_qt(&Gr.dims, &PV.values[qt_shift], 1e-11)
 
 
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
