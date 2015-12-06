@@ -95,7 +95,7 @@ void weno_fifth_order_m_pt(struct DimStruct *dims, double* restrict rho0, double
                                                         vel_advecting[ijk + sp1_ing]*rho0[k+1],
                                                         vel_advecting[ijk + sp2_ing]*rho0[k+2]);
 
-                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv));
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv)));
                     }
                 }
             }
@@ -126,7 +126,7 @@ void weno_fifth_order_m_pt(struct DimStruct *dims, double* restrict rho0, double
                                                         vel_advecting[ijk + sp1_ing] * rho0_half[k+1],
                                                         vel_advecting[ijk + sp2_ing] * rho0_half[k+2]);
 
-                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv)));
 
                         //flux[ijk] = (interp_2(vel_advecting[ijk] * rho0_half[k],vel_advecting[ijk+sp1_ing]*rho0_half[k+1])
                         //    *interp_2(vel_advected[ijk],vel_advected[ijk + sp1_ed]) );
