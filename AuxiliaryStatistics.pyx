@@ -411,7 +411,7 @@ class DYCOMSStatistics:
                     qt_2 = PV.values[qt_shift+ ij + level_2]
                     z1 = Gr.zl_half[level_1]
                     z2 = Gr.zl_half[level_2]
-                    dz = (0.008 - qt_1)/(qt_2 - qt_1)*(z2 - z1)
+                    dz = (0.005 - qt_1)/(qt_2 - qt_1)*(z2 - z1)
 
                     blh[ij2d] = z1 + dz
 
