@@ -404,7 +404,7 @@ class DYCOMSStatistics:
                     level_2 = 0
                     for k in xrange(Gr.dims.nlg[2]):
                         ijk = ij + k
-                        if PV.values[qt_shift+ ijk] >= 0.008:
+                        if PV.values[qt_shift+ ijk] >= 0.005:
                             level_1 = k
                     level_2 = level_1 + 1
                     qt_1 = PV.values[qt_shift + ij + level_1]
