@@ -216,11 +216,13 @@ void weno_seventh_order_m_pt(struct DimStruct *dims, double* restrict rho0, doub
         const ssize_t sp3_ed = 3*stencil[d_advecting];
         const ssize_t sp4_ed = 4*stencil[d_advecting];
 
+        const ssize_t sm3_ing = -3*stencil[d_advected];
         const ssize_t sm2_ing = -2*stencil[d_advected];
         const ssize_t sm1_ing = -stencil[d_advected];
         const ssize_t sp1_ing = stencil[d_advected];
         const ssize_t sp2_ing = 2*stencil[d_advected];
         const ssize_t sp3_ing = 3*stencil[d_advected];
+        const ssize_t sp4_ing = 4*stencil[d_advected];
 
         if (d_advected != 2 && d_advecting !=2){
             for(ssize_t i=imin;i<imax;i++){
@@ -231,7 +233,8 @@ void weno_seventh_order_m_pt(struct DimStruct *dims, double* restrict rho0, doub
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno7(vel_advected[ijk + sm3_ed],
+                        const double phip = interp_weno7(
+                                                         vel_advected[ijk + sm3_ed],
                                                          vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
@@ -240,7 +243,8 @@ void weno_seventh_order_m_pt(struct DimStruct *dims, double* restrict rho0, doub
                                                          vel_advected[ijk + sp3_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno7(vel_advected[ijk + sp4_ed],
+                        const double phim = interp_weno7(
+                                                         vel_advected[ijk + sp4_ed],
                                                          vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
@@ -248,12 +252,16 @@ void weno_seventh_order_m_pt(struct DimStruct *dims, double* restrict rho0, doub
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk + sm2_ed]);
 
-                        const double vel_adv = interp_6_pt(vel_advecting[ijk + sm2_ing],
+                        const double vel_adv = interp_8_pt(
+                                                        vel_advecting[ijk + sm3_ing],
+                                                        vel_advecting[ijk + sm2_ing],
                                                         vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing],
-                                                        vel_advecting[ijk + sp3_ing]);
+                                                        vel_advecting[ijk + sp3_ing],
+                                                        vel_advecting[ijk + sp4_ing]);
+;
 
                         flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
                     }
@@ -269,7 +277,8 @@ void weno_seventh_order_m_pt(struct DimStruct *dims, double* restrict rho0, doub
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno7(vel_advected[ijk + sm3_ed],
+                        const double phip = interp_weno7(
+                                                         vel_advected[ijk + sm3_ed],
                                                          vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
@@ -278,7 +287,8 @@ void weno_seventh_order_m_pt(struct DimStruct *dims, double* restrict rho0, doub
                                                          vel_advected[ijk + sp3_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno7(vel_advected[ijk + sp4_ed],
+                        const double phim = interp_weno7(
+                                                         vel_advected[ijk + sp4_ed],
                                                          vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
@@ -286,14 +296,18 @@ void weno_seventh_order_m_pt(struct DimStruct *dims, double* restrict rho0, doub
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk + sm2_ed]);
 
-                        const double vel_adv = interp_6_pt(vel_advecting[ijk + sm2_ing],
-                                                        vel_advecting[ijk + sm1_ing],
-                                                        vel_advecting[ijk],
-                                                        vel_advecting[ijk + sp1_ing],
-                                                        vel_advecting[ijk + sp2_ing],
-                                                        vel_advecting[ijk + sp3_ing]);
+                        const double vel_adv = interp_8_pt(
+                                                        vel_advecting[ijk + sm3_ing] * rho0[k-3],
+                                                        vel_advecting[ijk + sm2_ing] * rho0[k-2],
+                                                        vel_advecting[ijk + sm1_ing] * rho0[k-1],
+                                                        vel_advecting[ijk] * rho0[k],
+                                                        vel_advecting[ijk + sp1_ing]*rho0[k+1],
+                                                        vel_advecting[ijk + sp2_ing]*rho0[k+2],
+                                                        vel_advecting[ijk + sp3_ing]*rho0[k+3],
+                                                        vel_advecting[ijk + sp4_ing]*rho0[k+4]);
 
-                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim);
                     }
                 }
             }
@@ -306,7 +320,8 @@ void weno_seventh_order_m_pt(struct DimStruct *dims, double* restrict rho0, doub
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
                         //Upwind for positive velocity
-                        const double phip = interp_weno7(vel_advected[ijk + sm3_ed],
+                        const double phip = interp_weno7(
+                                                         vel_advected[ijk + sm3_ed],
                                                          vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
@@ -315,7 +330,8 @@ void weno_seventh_order_m_pt(struct DimStruct *dims, double* restrict rho0, doub
                                                          vel_advected[ijk + sp3_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno7(vel_advected[ijk + sp4_ed],
+                        const double phim = interp_weno7(
+                                                         vel_advected[ijk + sp4_ed],
                                                          vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
@@ -323,14 +339,17 @@ void weno_seventh_order_m_pt(struct DimStruct *dims, double* restrict rho0, doub
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk + sm2_ed]);
 
-                        const double vel_adv = interp_6_pt(vel_advecting[ijk + sm2_ing],
-                                                        vel_advecting[ijk + sm1_ing],
-                                                        vel_advecting[ijk],
-                                                        vel_advecting[ijk + sp1_ing],
-                                                        vel_advecting[ijk + sp2_ing],
-                                                        vel_advecting[ijk + sp3_ing]);
+                        const double vel_adv = interp_8_pt(
+                                                        vel_advecting[ijk + sm3_ing] * rho0_half[k-3],
+                                                        vel_advecting[ijk + sm2_ing] * rho0_half[k-2],
+                                                        vel_advecting[ijk + sm1_ing] * rho0_half[k-1],
+                                                        vel_advecting[ijk] * rho0_half[k],
+                                                        vel_advecting[ijk + sp1_ing]*rho0_half[k+1],
+                                                        vel_advecting[ijk + sp2_ing]*rho0_half[k+2],
+                                                        vel_advecting[ijk + sp3_ing]*rho0_half[k+3],
+                                                        vel_advecting[ijk + sp4_ing]*rho0_half[k+4]);
 
-                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim);
                     }
                 }
             }
