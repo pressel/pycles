@@ -58,6 +58,13 @@ cdef extern from "microphysics_arctic_1m.h":
     void autoconversion_snow_wrapper(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double),
                                  double (*L_fp)(double, double), double n0_ice, double* density, double* p0, double* temperature,
                                  double* qt, double* qi, double* qsnow_tendency) nogil
+    void melt_snow_wrapper(Grid.DimStruct *dims, double* density, double* temperature, double* qsnow, double* nsnow,
+                           double* qsnow_tendency) nogil
+    void autoconversion_rain_wrapper(Grid.DimStruct *dims, double* density, double ccn, double* ql, double* qrain,
+                                     double* nrain, double* qrain_tendency) nogil
+    void evaporation_rain_wrapper(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double (*lam_fp)(double),
+                                  double (*L_fp)(double, double), double* density, double* p0, double* temperature,
+                                  double* qt, double* qrain, double* nrain, double* qrain_tendency) nogil
     void get_rain_n0(Grid.DimStruct *dims, double* density, double* qrain, double* nrain) nogil
     void get_snow_n0(Grid.DimStruct *dims, double* density, double* qsnow, double* nsnow) nogil
 
@@ -126,13 +133,13 @@ cdef class Microphysics_Arctic_1M:
         # add wet bulb temperature
         DV.add_variables('temperature_wb', 'K', 'sym', Pa)
 
-        # NS.add_profile('rain_auto_mass', Gr, Pa)
+        NS.add_profile('rain_auto_mass', Gr, Pa)
         NS.add_profile('snow_auto_mass', Gr, Pa)
-        # NS.add_profile('rain_accr_mass', Gr, Pa)
+        NS.add_profile('rain_accr_mass', Gr, Pa)
         NS.add_profile('snow_accr_mass', Gr, Pa)
-        # NS.add_profile('rain_evap_mass', Gr, Pa)
+        NS.add_profile('rain_evap_mass', Gr, Pa)
         NS.add_profile('snow_depo_mass', Gr, Pa)
-        # NS.add_profile('snow_melt_mass', Gr, Pa)
+        NS.add_profile('snow_melt_mass', Gr, Pa)
 
         NS.add_profile('rain_sedimentation_flux', Gr, Pa)
         NS.add_profile('snow_sedimentation_flux', Gr, Pa)
@@ -247,18 +254,24 @@ cdef class Microphysics_Arctic_1M:
             double [:] dummy4 =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
 
-        # tmp = Pa.HorizontalMean(Gr, &self.autoconversion[0])
-        # NS.write_profile('rain_auto_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        autoconversion_rain_wrapper(&Gr.dims, &RS.rho0_half[0], self.ccn, &DV.values[ql_shift], &PV.values[qrain_shift],
+                                     &DV.values[nrain_shift], &dummy[0])
+        tmp = Pa.HorizontalMean(Gr, &dummy[0])
+        NS.write_profile('rain_auto_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-
+        dummy[:] = 0.0
         autoconversion_snow_wrapper(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, self.n0_ice_input,
                                     &RS.rho0_half[0], &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift],
                                     &DV.values[qi_shift], &dummy[0])
         tmp = Pa.HorizontalMean(Gr, &dummy[0])
         NS.write_profile('snow_auto_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        # tmp = Pa.HorizontalMean(Gr, &self.evaporation[0])
-        # NS.write_profile('rain_evap_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        dummy[:] = 0.0
+        evaporation_rain_wrapper(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.rho0_half[0],
+                                 &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &PV.values[qrain_shift],
+                                 &DV.values[nrain_shift], &dummy[0])
+        tmp = Pa.HorizontalMean(Gr, &dummy[0])
+        NS.write_profile('rain_evap_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         dummy[:] = 0.0
         evaporation_snow_wrapper(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.rho0_half[0],
@@ -266,9 +279,6 @@ cdef class Microphysics_Arctic_1M:
                                  &DV.values[nsnow_shift], &dummy[0])
         tmp = Pa.HorizontalMean(Gr, &dummy[0])
         NS.write_profile('snow_depo_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        # tmp = Pa.HorizontalMean(Gr, &self.accretion[0])
-        # NS.write_profile('rain_accr_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         dummy[:] = 0.0
         accretion_all_wrapper(&Gr.dims, &RS.rho0_half[0], &RS.p0_half[0], &DV.values[t_shift], self.n0_ice_input, self.ccn,
@@ -278,8 +288,14 @@ cdef class Microphysics_Arctic_1M:
         tmp = Pa.HorizontalMean(Gr, &dummy[0])
         NS.write_profile('snow_accr_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        # tmp = Pa.HorizontalMean(Gr, &self.melting[0])
-        # NS.write_profile('snow_melt_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMean(Gr, &dummy4[0])
+        NS.write_profile('rain_accr_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        dummy[:] = 0.0
+        melt_snow_wrapper(&Gr.dims, &RS.rho0_half[0], &DV.values[t_shift], &PV.values[qsnow_shift],
+                          &DV.values[nsnow_shift], &dummy[0])
+        tmp = Pa.HorizontalMean(Gr, &dummy[0])
+        NS.write_profile('snow_melt_mass', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
         #compute sedimentation flux only of qrain and qsnow

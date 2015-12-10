@@ -817,8 +817,9 @@ void get_virtual_potential_temperature(const struct DimStruct *dims, double* res
 ///==========================To facilitate output=============================
 
 void autoconversion_snow_wrapper(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double),
-                                 double (*L_fp)(double, double), double n0_ice, double* density, double* p0, double* temperature,
-                                 double* qt, double* qi, double* qsnow_tendency){
+                                 double (*L_fp)(double, double), double n0_ice, double* restrict density,
+                                 double* restrict p0, double* restrict temperature,
+                                 double* restrict qt, double* restrict qi, double* restrict qsnow_tendency){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -851,8 +852,9 @@ void autoconversion_snow_wrapper(const struct DimStruct *dims, struct LookupStru
 };
 
 void evaporation_snow_wrapper(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double),
-                              double (*L_fp)(double, double), double* density, double* p0, double* temperature,
-                              double* qt, double* qsnow, double* nsnow, double* qsnow_tendency){
+                              double (*L_fp)(double, double), double* restrict density, double* restrict p0,
+                              double* restrict temperature, double* restrict qt, double* restrict qsnow,
+                              double* restrict nsnow, double* restrict qsnow_tendency){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -876,6 +878,71 @@ void evaporation_snow_wrapper(const struct DimStruct *dims, struct LookupStruct 
                 evaporation_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp, qsnow_tmp,
                                  nsnow[ijk], &qsnow_tendency[ijk]);
 
+            }
+        }
+    }
+    return;
+
+}
+
+
+void autoconversion_rain_wrapper(const struct DimStruct *dims, double* restrict density, double ccn,
+                                 double* restrict ql, double* restrict qrain, double* restrict nrain,
+                                 double* restrict qrain_tendency){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double ql_tmp = fmax(ql[ijk], 0.0);
+                double qrain_tmp = fmax(qrain[ijk], 0.0);
+
+                autoconversion_rain(density[k], ccn, ql_tmp, qrain_tmp, nrain[ijk], &qrain_tendency[ijk]);
+
+            }
+        }
+    }
+    return;
+};
+
+void evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double),
+                              double (*L_fp)(double, double), double* restrict density, double* restrict p0,
+                              double* restrict temperature, double* restrict qt, double* restrict qrain,
+                              double* restrict nrain, double* restrict qrain_tendency){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double qrain_tmp = fmax(qrain[ijk],0.0); //clipping
+                double qt_tmp = qt[ijk];
+
+                evaporation_rain(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp, qrain_tmp,
+                                 nrain[ijk], &qrain_tendency[ijk]);
             }
         }
     }
@@ -914,6 +981,35 @@ void accretion_all_wrapper(const struct DimStruct *dims, double* density, double
                 accretion_all(density[k], p0[k], temperature[ijk], ccn, ql_tmp, qi_tmp, ni, qrain_tmp, nrain[ijk],
                               qsnow_tmp, nsnow[ijk], &ql_tendency[ijk], &qi_tendency[ijk], &qrain_tendency[ijk],
                               &qsnow_tendency[ijk]);
+
+            }
+        }
+    }
+    return;
+
+}
+
+void melt_snow_wrapper(const struct DimStruct *dims, double* density, double* temperature, double* qsnow, double* nsnow, double* qsnow_tendency){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double qsnow_tmp = fmax(qsnow[ijk], 0.0);
+
+                melt_snow(density[k], temperature[ijk], qsnow_tmp, nsnow[ijk], &qsnow_tendency[ijk]);
 
             }
         }
