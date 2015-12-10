@@ -4,6 +4,7 @@ try:
     import cPickle as pickle
 except:
     import pickle as pickle # for Python 3 users
+
 cimport ParallelMPI
 
 cdef class Restart:
@@ -65,8 +66,9 @@ cdef class Restart:
     cpdef write(self, ParallelMPI.ParallelMPI Pa):
 
         self.restart_data['last_restart_time'] = self.last_restart_time
+
         #Set up path for writing restar files
-        path = self.restart_path + '/' + str(np.int(self.last_restart_time + self.frequency))
+        path = self.restart_path + '/' + str(np.int(self.last_restart_time))
 
         if Pa.rank == 0:
             if os.path.exists(path):
@@ -96,7 +98,7 @@ cdef class Restart:
 
     cpdef free_memory(self):
         '''
-        Free memoery associated with restart_data dictionary.
+        Free memory associated with restart_data dictionary.
         :return:
         '''
 

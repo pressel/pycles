@@ -22,6 +22,9 @@ cdef class Radiation:
         casename = namelist['meta']['casename']
         if casename == 'DYCOMS_RF01':
             self.scheme = RadiationDyCOMS_RF01()
+        elif casename == 'DYCOMS_RF02':
+            #Dycoms RF01 and RF02 use the same radiation
+            self.scheme = RadiationDyCOMS_RF01()
         elif casename == 'SMOKE':
             self.scheme = RadiationSmoke()
         else:

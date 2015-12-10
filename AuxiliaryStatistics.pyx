@@ -5,6 +5,7 @@
 #cython: cdivision=True
 
 cimport Grid
+cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 cimport ParallelMPI
@@ -18,38 +19,64 @@ from libc.math cimport sqrt
 from thermodynamic_functions cimport thetas_c
 include "parameters.pxi"
 
-
-def AuxiliaryStatisticsFactory(namelist, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-    try:
-        auxiliary_statistics = namelist['stats_io']['auxiliary']
-    except:
-        auxiliary_statistics = 'None'
-
-    if auxiliary_statistics == 'Cumulus':
-        return CumulusStatistics(Gr, NS, Pa)
-    elif auxiliary_statistics == 'StableBL':
-        return StableBLStatistics(Gr, NS, Pa)
-    elif auxiliary_statistics == 'SMOKE':
-        return SmokeStatistics(Gr, NS, Pa)
-    elif auxiliary_statistics == 'None':
-        return AuxiliaryStatisticsNone()
-    else:
-        if Pa.rank == 0:
-            print('Auxiliary statistics class provided by namelist is not recognized.')
-        return AuxiliaryStatisticsNone()
-
-
-class AuxiliaryStatisticsNone:
-    def __init__(self):
+class AuxiliaryStatistics:
+    def __init__(self, namelist):
+        self.AuxStatsClasses = []
         return
-    def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+
+    def initialize(self, namelist, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+                               DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        try:
+            auxiliary_statistics = namelist['stats_io']['auxiliary']
+        except:
+            return
+
+        #Convert whatever is in auxiliary_statistics to list if not already
+        if not type(auxiliary_statistics) == list:
+            auxiliary_statistics = [auxiliary_statistics]
+
+        #Build list of auxilary statistics class instances
+        if 'Cumulus' in auxiliary_statistics:
+            self.AuxStatsClasses.append(CumulusStatistics(Gr,PV, DV, NS, Pa))
+        if 'StableBL' in auxiliary_statistics:
+            self.AuxStatsClasses.append(StableBLStatistics(Gr, NS, Pa))
+        if 'SMOKE' in auxiliary_statistics:
+            self.AuxStatsClasses.append(SmokeStatistics(Gr, NS, Pa))
+        if 'DYCOMS' in auxiliary_statistics:
+            self.AuxStatsClasses.append(DYCOMSStatistics(Gr, NS, Pa))
+        if 'TKE' in auxiliary_statistics:
+            self.AuxStatsClasses.append(TKEStatistics(Gr, NS, Pa))
+
+        return
+
+
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        #loop over class instances and class stats_io
+        for aux_class in self.AuxStatsClasses:
+            aux_class.stats_io(Gr, RS, PV, DV, MA, MD, NS, Pa)
+
         return
 
 class CumulusStatistics:
-    def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    def __init__(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         conditions = ['cloud','core']
-        scalars = ['theta_rho','thetali','thetas','qt','ql','s']
+        scalars = ['qt','ql','s', 'thetas']
+        print('PV.name_index', PV.name_index)
+
+        if 'qr' in PV.name_index:
+            scalars.append('qr')
+        if 'nr' in PV.name_index:
+            scalars.append('nr')
+        if 'theta_rho' in DV.name_index:
+            scalars.append('theta_rho')
+        if 'thetali' in DV.name_index:
+            scalars.append('thetali')
+        print('Aux scalars', scalars)
+
         for cond in conditions:
             NS.add_profile('fraction_'+cond,Gr,Pa)
             NS.add_profile('w_'+cond,Gr,Pa)
@@ -58,10 +85,7 @@ class CumulusStatistics:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
 
-        NS.add_profile('ql_flux_mean',Gr,Pa)
-        NS.add_profile('theta_rho_flux_mean',Gr,Pa)
-
-    def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -138,18 +162,6 @@ class CumulusStatistics:
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
         NS.write_profile('ql2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        #--theta_rho
-        shift = DV.get_varshift(Gr, 'theta_rho')
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
-        NS.write_profile('theta_rho_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
-        NS.write_profile('theta_rho2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
-        NS.write_profile('theta_rho_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
-        NS.write_profile('theta_rho2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-
-
         #-s
         shift = PV.get_varshift(Gr,'s')
         tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[shift],&cloudmask[0])
@@ -161,42 +173,89 @@ class CumulusStatistics:
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift], &PV.values[shift], &coremask[0])
         NS.write_profile('s2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        #--theta_s
-        shift = DV.get_varshift(Gr,'thetali')
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
-        NS.write_profile('thetali_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
-        NS.write_profile('thetali2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
-        NS.write_profile('thetali_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
-        NS.write_profile('thetali2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        #--theta_s
+        if 'qr' in PV.name_index:
+            shift = PV.get_varshift(Gr, 'qr')
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+            NS.write_profile('qr_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
+            NS.write_profile('qr2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+            NS.write_profile('qr_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
+            NS.write_profile('qr2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+
+        if 'nr' in PV.name_index:
+            shift = PV.get_varshift(Gr, 'nr')
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+            NS.write_profile('nr_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
+            NS.write_profile('nr2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+            NS.write_profile('nr_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
+            NS.write_profile('nr2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        if 'theta_rho' in DV.name_index:
+            shift = DV.get_varshift(Gr, 'theta_rho')
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+            NS.write_profile('theta_rho_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
+            NS.write_profile('theta_rho2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+            NS.write_profile('theta_rho_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
+            NS.write_profile('theta_rho2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+
+        if 'thetali' in DV.name_index:
+            shift = DV.get_varshift(Gr,'thetali')
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+            NS.write_profile('thetali_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
+            NS.write_profile('thetali2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+            NS.write_profile('thetali_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
+            NS.write_profile('thetali2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
         cdef:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
 
-        with nogil:
-            count = 0
-            for i in range(imin, imax):
-                ishift = i * istride
-                for j in range(jmin, jmax):
-                    jshift = j * jstride
-                    for k in range(kmin, kmax):
-                        ijk = ishift + jshift + k
-                        data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
 
-                        count += 1
-        tmp = Pa.HorizontalMeanConditional(Gr, &data[0], &cloudmask[0])
-        NS.write_profile('thetas_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &data[0], &data[0], &cloudmask[0])
-        NS.write_profile('thetas2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &data[0], &coremask[0])
-        NS.write_profile('thetas_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &data[0], &data[0], &coremask[0])
-        NS.write_profile('thetas2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        if 'thetas' in DV.name_index:
+            shift = DV.get_varshift(Gr,'thetas')
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+            NS.write_profile('thetas_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &cloudmask[0])
+            NS.write_profile('thetas2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+            NS.write_profile('thetas_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
+            NS.write_profile('thetas2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        else:
+            with nogil:
+                count = 0
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
+
+                            count += 1
+            tmp = Pa.HorizontalMeanConditional(Gr, &data[0], &cloudmask[0])
+            NS.write_profile('thetas_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &data[0], &data[0], &cloudmask[0])
+            NS.write_profile('thetas2_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &data[0], &coremask[0])
+            NS.write_profile('thetas_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &data[0], &data[0], &coremask[0])
+            NS.write_profile('thetas2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
 
@@ -207,9 +266,10 @@ class StableBLStatistics:
         return
 
 
-    def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, MomentumAdvection.MomentumAdvection MA,
                  MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
         # cdef:
         #     double [:] total_flux = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
         #     Py_ssize_t d=2, i1, i,j,k, shift_flux
@@ -250,15 +310,17 @@ class StableBLStatistics:
         #     h0 = 0.0
         #
         # NS.write_ts('boundary_layer_height', h0, Pa)
+
         return
 
 
 class SmokeStatistics:
     def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-            NS.add_ts('boundary_layer_height', Gr, Pa)
+        NS.add_ts('boundary_layer_height', Gr, Pa)
+        return
 
 
-    def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
                  ParallelMPI.ParallelMPI Pa):
@@ -305,13 +367,277 @@ class SmokeStatistics:
 
         return
 
+class DYCOMSStatistics:
+
+    def __init__(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts('boundary_layer_height', Gr, Pa)
+        return
 
 
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+             DiagnosticVariables.DiagnosticVariables DV,
+             MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
+             ParallelMPI.ParallelMPI Pa):
 
+        #Here we compute the boundary layer height consistent with Bretherton et al. 1999
+        cdef:
+            Py_ssize_t i, j, k, ij, ij2d, ijk
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t level_1
+            Py_ssize_t level_2
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            double [:] blh = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+            double blh_mean
+            double qt_1
+            double qt_2
+            double z1
+            double z2
+            double dz
 
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                for j in xrange(Gr.dims.nlg[1]):
+                    ij = i * istride + j * jstride
+                    ij2d = i * Gr.dims.nlg[1] + j
+                    level_1 = 0
+                    level_2 = 0
+                    for k in xrange(Gr.dims.nlg[2]):
+                        ijk = ij + k
+                        if PV.values[qt_shift+ ijk] >= 0.005:
+                            level_1 = k
+                    level_2 = level_1 + 1
+                    qt_1 = PV.values[qt_shift + ij + level_1]
+                    qt_2 = PV.values[qt_shift+ ij + level_2]
+                    z1 = Gr.zl_half[level_1]
+                    z2 = Gr.zl_half[level_2]
+                    dz = (0.005 - qt_1)/(qt_2 - qt_1)*(z2 - z1)
 
+                    blh[ij2d] = z1 + dz
 
+        blh_mean = Pa.HorizontalMeanSurface(Gr, &blh[0])
 
+        NS.write_ts('boundary_layer_height', blh_mean, Pa)
 
+        return
 
+class TKEStatistics:
 
+    def __init__(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts('tke_int_z', Gr, Pa)
+        NS.add_ts('tke_nd_int_z', Gr, Pa)
+
+        NS.add_profile('tke_mean', Gr, Pa)
+        NS.add_profile('tke_nd_mean', Gr, Pa)
+        NS.add_profile('tke_prod_B', Gr, Pa)
+        NS.add_profile('tke_prod_S', Gr, Pa)
+        NS.add_profile('tke_prod_P', Gr, Pa)
+        NS.add_profile('tke_prod_T', Gr, Pa)
+        NS.add_profile('tke_prod_A', Gr, Pa)
+        NS.add_profile('tke_prod_D', Gr, Pa)
+
+        return
+
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+             DiagnosticVariables.DiagnosticVariables DV,
+             MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
+             ParallelMPI.ParallelMPI Pa):
+
+        #Here we compute the boundary layer height consistent with Bretherton et al. 1999
+        cdef:
+            Py_ssize_t i, j, k, ij, ij2d, ijk
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t ishift
+            Py_ssize_t jshift
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
+            Py_ssize_t b_shift = DV.get_varshift(Gr,'buoyancy')
+            Py_ssize_t p_shift = DV.get_varshift(Gr, 'dynamic_pressure')
+            Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
+
+            double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] up = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] ucp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] upup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] upvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] upwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] vpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] wpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] uppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] wpep = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wpbp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] tke = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] tke_nd = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            #double [:] epup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            #double [:] epvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] epwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] e_adv = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] e_dis = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] tke_S = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] tke_P = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] tke_T = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+
+        #Interpolate to cell centers
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        uc[ijk] = 0.5 * (PV.values[u_shift + ijk - istride] + PV.values[u_shift + ijk])
+                        vc[ijk] = 0.5 * (PV.values[v_shift + ijk - jstride] + PV.values[v_shift + ijk])
+                        wc[ijk] = 0.5 * (PV.values[w_shift + ijk - 1] + PV.values[w_shift + ijk])
+
+        #Compute the horizontal means of the cell centered velocities
+        cdef:
+            double [:] ucmean = Pa.HorizontalMean(Gr, &uc[0])
+            double [:] vcmean = Pa.HorizontalMean(Gr, &vc[0])
+            double [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
+            double [:] bmean = Pa.HorizontalMean(Gr, &DV.values[b_shift])
+            double [:] pmean = Pa.HorizontalMean(Gr, &DV.values[p_shift])
+            double  bp, pp
+
+        #Compute the TKE
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+
+                        #Compute fluctuations
+                        up[ijk] = uc[ijk] - ucmean[k]
+                        vp[ijk] = vc[ijk] - vcmean[k]
+                        wp[ijk] = wc[ijk] - wcmean[k]
+                        bp  = DV.values[b_shift + ijk] - bmean[k]
+                        pp  = DV.values[p_shift + ijk] - pmean[k]
+
+                        #Coumpute fluctuation products
+                        upup[ijk] = up[ijk] * up[ijk]
+                        upvp[ijk] = up[ijk] * vp[ijk]
+                        upwp[ijk] = up[ijk] * wp[ijk]
+
+                        vpvp[ijk] = vp[ijk] * vp[ijk]
+                        vpwp[ijk] = vp[ijk] * wp[ijk]
+                        wpwp[ijk] = wp[ijk] * wp[ijk]
+
+                        uppp[ijk] = up[ijk] * pp
+                        vppp[ijk] = vp[ijk] * pp
+                        wppp[ijk] = wp[ijk] * pp
+
+                        tke_nd[ijk] =  0.5 * (upup[ijk] + vpvp[ijk] + wpwp[ijk])
+                        tke[ijk] = RS.rho0[k] * tke_nd[ijk]
+
+                        wpbp[ijk] = wp[ijk] * bp
+
+        cdef:
+            double [:] upup_mean = Pa.HorizontalMean(Gr, &upup[0])
+            double [:] upvp_mean = Pa.HorizontalMean(Gr, &upvp[0])
+            double [:] upwp_mean = Pa.HorizontalMean(Gr, &upwp[0])
+            double [:] vpvp_mean = Pa.HorizontalMean(Gr, &vpvp[0])
+            double [:] vpwp_mean = Pa.HorizontalMean(Gr, &vpwp[0])
+            double [:] wpwp_mean = Pa.HorizontalMean(Gr, &wpwp[0])
+            double [:] wppp_mean = Pa.HorizontalMean(Gr, &wppp[0])
+            double [:] tke_mean = Pa.HorizontalMean(Gr, &tke_nd[0])
+            double [:] tkemean = Pa.HorizontalMean(Gr, &tke[0])
+            double [:] tkendmean = Pa.HorizontalMean(Gr, &tke_nd[0])
+            double [:] tke_B = Pa.HorizontalMean(Gr, &wpbp[0])
+
+        #Compute the Shear Production
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2]-1):
+                tke_S[k] -= upwp_mean[k] * (ucmean[k+1] - ucmean[k-1]) * 0.5 * Gr.dims.dxi[2]
+                tke_S[k] -= vpwp_mean[k] * (vcmean[k+1] - vcmean[k-1]) * 0.5 * Gr.dims.dxi[2]
+
+        #Compute Pressure Work
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2]-1):
+                tke_P[k] -= (wppp_mean[k+1] * RS.alpha0[k+1] - wppp_mean[k-1]* RS.alpha0[k-1])* 0.5 * Gr.dims.dxi[2]
+
+        #Compute the Turbulent transport
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        epwp[ijk] = (wc[ijk] - wcmean[k])*(tke_nd[ijk] - tke_mean[k])
+
+        cdef:
+            double [:] epwp_mean = Pa.HorizontalMean(Gr, &epwp[0])
+
+        #Compute Turbulent Transport
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2] -1):
+                tke_T[k] -= (epwp_mean[k+1] - epwp_mean[k-1]) * 0.5 * Gr.dims.dxi[2]
+
+        #Compute Mean Advection
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        e_adv[ijk] -= ucmean[k] * (tke_nd[ijk+istride] - tke_nd[ijk-istride])*0.5*Gr.dims.dxi[0]
+                        e_adv[ijk] -= vcmean[k] * (tke_nd[ijk+jstride] - tke_nd[ijk-jstride])*0.5*Gr.dims.dxi[1]
+
+        cdef:
+            double [:] tke_A = Pa.HorizontalMean(Gr, &e_adv[0])
+            double nu
+
+        #Compute the dissipation of TKE
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        nu = DV.values[visc_shift + ijk]
+                        e_dis[ijk] += (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0] * (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0]
+                        e_dis[ijk] += (vp[ijk + jstride] - vp[ijk-jstride]) * 0.5 * Gr.dims.dxi[1] * (vp[ijk + jstride] - vp[ijk-jstride]) * 0.5 * Gr.dims.dxi[1]
+                        e_dis[ijk] += (wp[ijk + 1] - wp[ijk-1]) * 0.5 * Gr.dims.dxi[2] * (wp[ijk + 1] - wp[ijk-1]) * 0.5 * Gr.dims.dxi[2]
+                        e_dis[ijk] *= nu
+
+        cdef:
+            double [:] tke_D = Pa.HorizontalMean(Gr, &e_dis[0])
+
+        #Write data
+        NS.write_profile('tke_mean', tkemean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_nd_mean', tkendmean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('tke_int_z', np.sum(tkemean[Gr.dims.gw:-Gr.dims.gw])*Gr.dims.dx[2], Pa)
+        NS.write_ts('tke_nd_int_z', np.sum(tkendmean[Gr.dims.gw:-Gr.dims.gw])*Gr.dims.dx[2],Pa)
+        NS.write_profile('tke_prod_B', tke_B[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_S', tke_S[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_P', tke_P[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_T', tke_T[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_A', tke_A[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_D', tke_D[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        return
