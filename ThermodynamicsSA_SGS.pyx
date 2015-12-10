@@ -71,12 +71,7 @@ cdef class ThermodynamicsSA_SGS:
         except:
             self.c_variance = 0.2857
 
-        try:
-            self.use_lognormal = namelist['sgs']['condensation']['lognormal_qt']
-        except:
-            self.use_lognormal = False
 
-        print('Use_lognormal', self.use_lognormal)
 
         return
 
@@ -209,18 +204,10 @@ cdef class ThermodynamicsSA_SGS:
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t thl_shift = DV.get_varshift(Gr, 'thetali')
 
-        PV.val_nan(Pa, 'PV nan before thermo')
-
         compute_sgs_variance(&Gr.dims,  &PV.values[s_shift],  &self.s_variance[0], self.c_variance)
         compute_sgs_variance(&Gr.dims,  &PV.values[qt_shift], &self.qt_variance[0], self.c_variance)
         compute_sgs_covariance(&Gr.dims, &PV.values[s_shift],  &PV.values[qt_shift], &self.covariance[0], self.c_variance)
-        if self.use_lognormal:
-            eos_update_SA_sgs_lognormal(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],  &PV.values[s_shift],
-                            &self.s_variance[0], &PV.values[qt_shift], &self.qt_variance[0], &self.covariance[0], &DV.values[t_shift],
-                            &DV.values[alpha_shift], &DV.values[qv_shift], &DV.values[ql_shift], &DV.values[qi_shift],
-                            &self.cloud_fraction[0],  self.quadrature_order, &self.correlation[0], &self.qt_variance_clip[0])
-        else:
-            eos_update_SA_sgs(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],  &PV.values[s_shift],
+        eos_update_SA_sgs(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],  &PV.values[s_shift],
                             &self.s_variance[0], &PV.values[qt_shift], &self.qt_variance[0], &self.covariance[0], &DV.values[t_shift],
                             &DV.values[alpha_shift], &DV.values[qv_shift], &DV.values[ql_shift], &DV.values[qi_shift],
                             &self.cloud_fraction[0],  self.quadrature_order, &self.correlation[0], &self.qt_variance_clip[0])
@@ -241,42 +228,6 @@ cdef class ThermodynamicsSA_SGS:
 
         ndv = DV.name_index['alpha']
         DV.communicate_variable(Gr, Pa, ndv)
-
-
-
-        print('T_MAX', np.max(DV.values[t_shift:t_shift+Gr.dims.npg]))
-        print('T_MIN', np.min(DV.values[t_shift:t_shift+Gr.dims.npg]))
-
-        print('QT_MAX', np.max(PV.values[qt_shift:qt_shift+Gr.dims.npg]))
-        print('QT_MIN', np.min(PV.values[qt_shift:qt_shift+Gr.dims.npg]))
-
-
-        print('QV_MAX', np.max(DV.values[qv_shift:qv_shift+Gr.dims.npg]))
-        print('QV_MIN', np.min(DV.values[qv_shift:qv_shift+Gr.dims.npg]))
-
-        print('QL_MAX', np.max(DV.values[ql_shift:ql_shift+Gr.dims.npg]))
-        print('QL_MIN', np.min(DV.values[ql_shift:ql_shift+Gr.dims.npg]))
-
-        # print('QI_MAX', np.max(DV.values[qi_shift:qi_shift+Gr.dims.npg]))
-        # print('QI_MIN', np.min(DV.values[qi_shift:qi_shift+Gr.dims.npg]))
-
-        print('ALPHA_MAX', np.max(DV.values[alpha_shift:alpha_shift+Gr.dims.npg]))
-        print('ALPHA_MIN', np.min(DV.values[alpha_shift:alpha_shift+Gr.dims.npg]))
-
-        print('S_MAX', np.max(PV.values[s_shift:s_shift+Gr.dims.npg]))
-        print('S_MIN', np.min(PV.values[s_shift:s_shift+Gr.dims.npg]))
-
-        print('QTvar_MAX', np.max(self.qt_variance[:]))
-        print('QTvar_MIN', np.min(self.qt_variance[:]))
-
-        print('clipQTvar_MAX', np.max(self.qt_variance_clip[:]))
-        print('clipQTvar_MIN', np.min(self.qt_variance_clip[:]))
-
-        print('Svar_MAX', np.max(self.s_variance[:]))
-        print('Svar_MIN', np.min(self.s_variance[:]))
-
-        DV.val_nan(Pa, 'nan after thermo')
-
 
         buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
 
@@ -542,8 +493,8 @@ cdef eos_update_SA_sgs(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*la
         Py_ssize_t ishift, jshift, ijk, i,j,k, m_q, m1
         double [:] abscissas = a
         double [:] weights = w
-        double outer_int_qv, outer_int_ql, outer_int_qi, outer_int_T, outer_int_alpha, outer_int_cf, outer_int_thl
-        double inner_int_qv, inner_int_T, inner_int_ql, inner_int_qi, inner_int_alpha, inner_int_cf, inner_int_thl
+        double  outer_int_ql, outer_int_qi, outer_int_T, outer_int_alpha, outer_int_cf
+        double  inner_int_ql, inner_int_qi, inner_int_T, inner_int_alpha, inner_int_cf
         double s_hat, qt_hat, sd_s, sd_q, corr, mu_s_star, sigma_s_star
         double sqpi_inv = 1.0/sqrt(pi)
         double temp_m, alpha_m, qv_m, ql_m, qi_m
@@ -558,9 +509,10 @@ cdef eos_update_SA_sgs(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*la
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
+
                     sd_q = sqrt(qt_var[ijk])
                     sd_s = sqrt(s_var[ijk])
-                    corr = fmax(fmin(covar[ijk]/fmax(sd_s*sd_q, 1e-13),1.0),0.0)
+                    corr = fmax(fmin(covar[ijk]/fmax(sd_s*sd_q, 1e-13),1.0),-1.0)
                     correlation[ijk] = corr
                     # limit sd_q to prevent negative qt_hat
                     sd_q_lim = (1e-10 - qt[ijk])/(sqrt2 * abscissas[0])
@@ -574,10 +526,7 @@ cdef eos_update_SA_sgs(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*la
                     outer_int_cf = 0.0
                     for m_q in xrange(order):
                         qt_hat    = qt[ijk] + sqrt2 * sd_q * abscissas[m_q]
-                        if qt_hat < 1.0e-11:
-                            with gil:
-                                print(qt[ijk], qt_hat)
-                        mu_s_star = s[ijk]  + sqrt2 *  corr * sd_s * abscissas[m_q]
+                        mu_s_star = s[ijk]  + sqrt2 * corr * sd_s * abscissas[m_q]
                         inner_int_T     = 0.0
                         inner_int_qi    = 0.0
                         inner_int_ql    = 0.0
@@ -585,16 +534,14 @@ cdef eos_update_SA_sgs(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*la
                         inner_int_cf    = 0.0
                         for m_s in xrange(order):
                             s_hat = sqrt2 * sigma_s_star * abscissas[m_s] + mu_s_star
-                            if s_hat < 1e-15:
-                                with gil:
-                                    print(s_hat, s[ijk])
+
                             eos_c(LT, lam_fp, L_fp, p0[k], s_hat, qt_hat, &temp_m,  &qv_m, &ql_m, &qi_m)
                             alpha_m = alpha_c(p0[k], temp_m, qt_hat, qv_m)
                             inner_int_ql    += ql_m    * weights[m_s] * sqpi_inv
                             inner_int_qi    += qi_m    * weights[m_s] * sqpi_inv
                             inner_int_T     += temp_m  * weights[m_s] * sqpi_inv
                             inner_int_alpha += alpha_m * weights[m_s] * sqpi_inv
-                            if ql_m > 1.0e-15 or qi_m > 1.0e-15:
+                            if ql_m  + qi_m > ql_threshold:
                                 inner_int_cf += weights[m_s] * sqpi_inv
                         outer_int_ql    += inner_int_ql    * weights[m_q] * sqpi_inv
                         outer_int_qi    += inner_int_qi    * weights[m_q] * sqpi_inv
@@ -626,9 +573,9 @@ cdef compute_sgs_variance(Grid.DimStruct *dims,  double *s, double *s_var, doubl
         Py_ssize_t ishift, jshift, ijk, i,j,k
         double delta2 = (dims.dx[0] * dims.dx[1] * dims.dx[2])**(2.0/3.0)
         double dsdx, dsdy, dsdz
-        double dxi = 1.0/dims.dx[0]
-        double dyi = 1.0/dims.dx[1]
-        double dzi = 1.0/dims.dx[2]
+        double dxi = 1.0/(2.0*dims.dx[0])
+        double dyi = 1.0/(2.0*dims.dx[1])
+        double dzi = 1.0/(2.0*dims.dx[2])
 
     with nogil:
         for i in xrange(imin,imax):
@@ -641,7 +588,7 @@ cdef compute_sgs_variance(Grid.DimStruct *dims,  double *s, double *s_var, doubl
                     dsdy = (s[ijk + jstride] - s[ijk - jstride]) * dyi
                     dsdz = (s[ijk + 1] - s[ijk - 1]) * dzi
                     s_var[ijk] = coeff * delta2 * (dsdx * dsdx + dsdy * dsdy + dsdz * dsdz)
-                    # s_var[ijk] = fmin(s_var[ijk], 0.0625*s[ijk]*s[ijk])
+
 
     return
 
@@ -663,9 +610,9 @@ cdef compute_sgs_covariance(Grid.DimStruct *dims,  double *a, double *b, double 
         double delta2 = (dims.dx[0] * dims.dx[1] * dims.dx[2])**(2.0/3.0)
         double dadx, dady, dadz
         double dbdx, dbdy, dbdz
-        double dxi = 1.0/dims.dx[0]
-        double dyi = 1.0/dims.dx[1]
-        double dzi = 1.0/dims.dx[2]
+        double dxi = 1.0/(2.0*dims.dx[0])
+        double dyi = 1.0/(2.0*dims.dx[1])
+        double dzi = 1.0/(2.0*dims.dx[2])
 
     with nogil:
         for i in xrange(imin,imax):
@@ -685,93 +632,4 @@ cdef compute_sgs_covariance(Grid.DimStruct *dims,  double *a, double *b, double 
     return
 
 
-
-cdef eos_update_SA_sgs_lognormal(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double),
-                       double *p0, double *s, double *s_var, double *qt, double *qt_var, double *covar,
-                       double *T, double *alpha, double *qv, double *ql, double *qi, double *cf, Py_ssize_t order,
-                       double *correlation, double *qt_variance_clip):
-    print('LOGNORMAL')
-
-    a, w = np.polynomial.hermite.hermgauss(order)
-    cdef:
-        Py_ssize_t imin = dims.gw
-        Py_ssize_t jmin = dims.gw
-        Py_ssize_t kmin = dims.gw
-        Py_ssize_t imax = dims.nlg[0] -dims.gw
-        Py_ssize_t jmax = dims.nlg[1] -dims.gw
-        Py_ssize_t kmax = dims.nlg[2] -dims.gw
-        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
-        Py_ssize_t jstride = dims.nlg[2]
-        Py_ssize_t ishift, jshift, ijk, i,j,k, m_q, m1
-        double [:] abscissas = a
-        double [:] weights = w
-        double outer_int_qv, outer_int_ql, outer_int_qi, outer_int_T, outer_int_alpha, outer_int_cf, outer_int_thl
-        double inner_int_qv, inner_int_T, inner_int_ql, inner_int_qi, inner_int_alpha, inner_int_cf, inner_int_thl
-        double s_hat, qt_hat, sd_s, sd_q, corr, mu_s_star, sigma_s_star
-        double sqpi_inv = 1.0/sqrt(pi)
-        # double [:] temp_m=np.zeros(1,dtype=np.double,order='c')
-        # double [:] alpha_m=np.zeros(1,dtype=np.double,order='c')
-        # double [:]ql_m=np.zeros(1,dtype=np.double,order='c')
-        # double [:] qi_m=np.zeros(1,dtype=np.double,order='c')
-        # double [:] qv_m=np.zeros(1,dtype=np.double,order='c')
-        double temp_m, alpha_m, ql_m, qi_m, qv_m
-
-        double sqrt2 = sqrt(2.0)
-        double logqt_var, logqt_sd, logqt_mean, logqt_hat, logqt_sd_lim
-
-
-    with nogil:
-        for i in xrange(imin,imax):
-            ishift = i*istride
-            for j in xrange(jmin,jmax):
-                jshift = j*jstride
-                for k in xrange(kmin,kmax):
-                    ijk = ishift + jshift + k
-                    sd_q = sqrt(fmax(qt_var[ijk],0.0))
-                    sd_s = sqrt(fmax(s_var[ijk],0.0))
-                    corr = 1.0 #fmax(fmin(covar[ijk]/fmax(sd_s*sd_q, 1e-13),1.0),0.0)
-                    correlation[ijk] = fmax(fmin(covar[ijk]/fmax(sd_s*sd_q, 1e-13),1.0),0.0) # actual correlation
-
-
-                    sigma_s_star = 0.0  #sqrt(fmax(1.0-corr*corr,0.0)) * sd_s
-                    logqt_var = log((sd_q/fmax(qt[ijk],1e-7))*(sd_q/fmax(qt[ijk],1e-7)) + 1.0 )
-                    logqt_sd = sqrt(fmax(logqt_var,0.0))
-                    qt_variance_clip[ijk] = logqt_var
-                    logqt_mean = log(fmax(qt[ijk],1e-7)) - 0.5 * logqt_var
-                    outer_int_alpha = 0.0
-                    outer_int_T     = 0.0
-                    outer_int_ql    = 0.0
-                    outer_int_qi    = 0.0
-                    outer_int_cf    = 0.0
-                    for m_q in xrange(order):
-                        logqt_hat = sqrt2 * logqt_sd * abscissas[m_q] + logqt_mean
-                        qt_hat    = fmax(exp(logqt_hat),1e-7) #sqrt2 * sd_q * abscissas[m_q] + qt[ijk]
-                        mu_s_star = s[ijk] + sqrt2 * corr * sd_s * abscissas[m_q]
-                        s_hat = mu_s_star
-
-
-                        eos_c(LT, lam_fp, L_fp, p0[k], s_hat, qt_hat, &temp_m,  &qv_m, &ql_m, &qi_m)
-
-                        if ql_m > qt_hat:
-                            with gil:
-                                print(ql_m, qt_hat, s_hat, temp_m, qv_m, qt[ijk], s[ijk], qt_var[ijk], s_var[ijk])
-
-                        alpha_m = alpha_c(p0[k], temp_m, qt_hat, qv_m)
-
-                        outer_int_ql    += ql_m   * weights[m_q]
-                        outer_int_qi    += qi_m    * weights[m_q]
-                        outer_int_T     += temp_m  * weights[m_q]
-                        outer_int_alpha += alpha_m * weights[m_q]
-                        if ql_m + qi_m > ql_threshold:
-                            outer_int_cf    += 1.0  * weights[m_q]
-
-                    ql[ijk]    = outer_int_ql    * sqpi_inv
-                    qi[ijk]    = outer_int_qi    * sqpi_inv
-                    alpha[ijk] = outer_int_alpha * sqpi_inv
-                    T[ijk]     = outer_int_T     * sqpi_inv
-                    cf[ijk]    = outer_int_cf    * sqpi_inv
-                    qv[ijk]    = qt[ijk] - ql[ijk] - qi[ijk] #outer_int_qv
-
-
-    return
 

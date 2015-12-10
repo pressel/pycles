@@ -114,6 +114,9 @@ cdef class ThermodynamicsSA:
         NS.add_ts('cloud_base', Gr, Pa)
         NS.add_ts('lwp', Gr, Pa)
 
+        for temperature in np.arange(280.0,306.0, 0.5):
+            print(temperature,self.get_pv_star(temperature), pv_sat_magnus(temperature))
+
 
         return
 
@@ -419,3 +422,9 @@ cdef class ThermodynamicsSA:
         NS.write_ts('lwp', lwp_weighted_sum, Pa)
 
         return
+
+
+cpdef double pv_sat_magnus(double temperature):
+    cdef double Tc = temperature - 273.15
+    cdef double esat = 6.1094 * np.exp(17.625*Tc/(Tc + 243.04)) * 100.0
+    return esat

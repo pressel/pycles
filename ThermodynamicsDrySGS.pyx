@@ -275,9 +275,9 @@ cdef compute_sgs_variance(Grid.DimStruct *dims,  double *s, double *s_var, doubl
         Py_ssize_t ishift, jshift, ijk, i,j,k
         double delta2 = (dims.dx[0] * dims.dx[1] * dims.dx[2])**(2.0/3.0)
         double dsdx, dsdy, dsdz
-        double dxi = 1.0/dims.dx[0]
-        double dyi = 1.0/dims.dx[1]
-        double dzi = 1.0/dims.dx[2]
+        double dxi = 1.0/(2.0*dims.dx[0])
+        double dyi = 1.0/(2.0*dims.dx[1])
+        double dzi = 1.0/(2.0*dims.dx[2])
 
     with nogil:
         for i in xrange(imin,imax):

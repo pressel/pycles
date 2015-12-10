@@ -20,7 +20,7 @@ cdef class ThermodynamicsSA_SGS:
         double [:] correlation
         double [:] cloud_fraction
         double c_variance
-        bint  use_lognormal
+
 
 
     cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
