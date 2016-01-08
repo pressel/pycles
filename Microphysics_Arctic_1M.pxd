@@ -51,33 +51,6 @@ cdef inline double latent_heat_variable_Arctic(double T, double Lambda) nogil:
     return (2500.8 - 2.36 * TC + 0.0016 * TC *
             TC - 0.00006 * TC * TC * TC) * 1000.0
 
-# cdef extern from "microphysics_arctic_1m.h":
-#     struct hm_parameters:
-#         double a
-#         double b
-#         double c
-#         double d
-#         double gb1
-#         double gbd1
-#         double gd3
-#         double gd6
-#         double gamstar
-#         double alpha_acc
-#         double d_min
-#         double d_max
-#
-#     struct hm_properties:
-#         double mf
-#         double diam
-#         double vel
-#         double lam
-#         double n0
-#
-#     struct ret_acc:
-#         double dyr
-#         double dys
-#         double dyl
-#         double dyi
 
 cdef class Microphysics_Arctic_1M:
 
@@ -94,36 +67,9 @@ cdef class Microphysics_Arctic_1M:
         double (*Lambda_fp)(double T) nogil
 
         ClausiusClapeyron CC
-        ParallelMPI.Pencil z_pencil
 
-        # hm_properties rain_prop
-        # hm_properties snow_prop
-        # hm_properties ice_prop
-        # hm_properties liquid_prop
-        # ret_acc src_acc
-
-        double [:] autoconversion
-        double [:] evaporation
-        double [:] accretion
-        double [:] melting
-
-        # double [:] qrain_flux
-        # double [:] qsnow_flux
-        # double [:] qrain_tendency
-        # double [:] qsnow_tendency
-        # double [:] qrain_vel
-        # double [:] qsnow_vel
-
-        # double [:] rain_number_density
-        # double [:] snow_number_density
-        # double [:] ice_number_density
-        # double [:] snow_lambda
-        # double [:] ice_lambda
-        # double [:] n0_snow
-        # double [:] n0_ice
-
-        double [:] precip_rate
         double [:] evap_rate
+        double [:] precip_rate
 
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
