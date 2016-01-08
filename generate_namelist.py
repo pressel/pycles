@@ -818,6 +818,9 @@ def IsdacCC():
     namelist['initial']['dSST'] = 0.0 #SST change (climate change)
     namelist['initial']['divergence'] = 5.0e-6 # LS divergence
 
+    namelist['surface'] = {}
+    namelist['surface']['sensible'] = 2.0 #surface sensible heat flux Wm-2
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -838,7 +841,7 @@ def IsdacCC():
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'IsdacCC'
+    namelist['meta']['simname'] = 'IsdacCC_sh'
     namelist['meta']['casename'] = 'IsdacCC'
 
     return namelist

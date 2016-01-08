@@ -133,5 +133,21 @@ cdef class SurfaceIsdac:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
+cdef class SurfaceIsdacCC:
+    cdef:
+        double gustiness
+        double z0
+        double ft
+        # double buoyancy_flux
+        double [:] windspeed
+        double [:] u_flux
+        double [:] v_flux
+        double [:] s_flux
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+
 cdef inline double compute_z0(double z1, double windspeed) nogil
 
