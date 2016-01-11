@@ -294,9 +294,16 @@ cdef class SurfaceBomex:
 
 
 cdef class SurfaceGabls:
-    def __init__(self):
+    def __init__(self, namelist):
         self.gustiness = 0.001
         self.z0 = 0.1
+        # Rate of change of surface temperature, in K/hour
+        # GABLS1 IC (Beare et al) value is 0.25 (given as default)
+        try:
+            self.cooling_rate = namelist['surface']['cooling_rate']
+        except:
+            self.cooling_rate = 0.25
+
 
         return
 
@@ -347,7 +354,7 @@ cdef class SurfaceGabls:
             double ch=0.0
 
 
-            double sst = 265.0 - 0.25 * TS.t/3600.0 # sst = theta_surface also
+            double sst = 265.0 - self.cooling_rate * TS.t/3600.0 # sst = theta_surface also
 
 
             double theta_rho_g = theta_rho_c(Ref.Pg, sst, 0.0, 0.0)
