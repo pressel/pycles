@@ -54,7 +54,7 @@ cdef class Surface:
         elif casename == 'Bomex':
             self.scheme = SurfaceBomex()
         elif casename == 'Gabls':
-            self.scheme = SurfaceGabls()
+            self.scheme = SurfaceGabls(namelist)
         elif casename == 'DYCOMS_RF01':
             self.scheme = SurfaceDYCOMS_RF01(namelist, LH)
         elif casename == 'DYCOMS_RF02':
