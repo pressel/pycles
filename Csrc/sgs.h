@@ -17,6 +17,47 @@ double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double 
     return;
 }
 
+
+void smagorinsky_update_wall(const struct DimStruct *dims, double* restrict zl_half, double* restrict visc,
+double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double prt){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+
+    double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
+    double z0 = 0.1; //fixing it to gabls value just for the moment
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i*istride ;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j*jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                double ell = delta * vkb * (zl_half[k] + z0)/(delta + vkb * (zl_half[k] + z0) );
+
+                visc[ijk] = cs*cs*ell*ell*strain_rate_mag[ijk];
+                if(buoy_freq[ijk] > 0.0){
+                    double fb = sqrt(fmax(1.0 - buoy_freq[ijk]/(prt*strain_rate_mag[ijk]*strain_rate_mag[ijk]),0.0));
+                    visc[ijk] = visc[ijk] * fb;
+                }
+                diff[ijk] = visc[ijk]/prt;
+            }
+        }
+    }
+    return;
+}
+
+
+
 double tke_ell(double cn, double e, double buoy_freq, double delta){
     double ell;
     if(buoy_freq> 1.0e-10){
