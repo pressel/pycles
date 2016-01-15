@@ -528,7 +528,7 @@ cdef class SurfaceDYCOMS_RF02:
         self.ft = 16.0
         self.fq = 93.0
         self.gustiness = 0.0
-        self.cm = 0.0011
+        self.ustar = 0.25
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
         sst = 292.5 # K
@@ -602,22 +602,22 @@ cdef class SurfaceDYCOMS_RF02:
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
 
-                    DV.values_2d[ustar_shift + ij] = sqrt(self.cm) * self.windspeed[ij]
-                    DV.values_2d[lmo_shift + ij] = -DV.values_2d[ustar_shift + ij]**3.0/self.buoyancy_flux/vkb
+                    DV.values_2d[ustar_shift + ij] = self.ustar
+                    DV.values_2d[lmo_shift + ij] = -self.ustar**3.0/ self.buoyancy_flux /vkb
                     lam = self.Lambda_fp(DV.values[t_shift+ijk])
                     lv = self.L_fp(DV.values[t_shift+ijk],lam)
                     pv = pv_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
                     pd = pd_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
                     sv = sv_c(pv,DV.values[t_shift+ijk])
                     sd = sd_c(pd,DV.values[t_shift+ijk])
-                    self.qt_flux[ij] = self.fq / lv / 1.22
+                    self.qt_flux[ij] = self.fq / lv / 1.21
                     self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ijk] + self.fq*(sv - sd)/lv)
             for i in xrange(gw, imax-gw):
                 for j in xrange(gw, jmax-gw):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -0.25 * 0.25 / interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -0.25 * 0.25 / interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    self.u_flux[ij] = -self.ustar*self.ustar / interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -self.ustar*self.ustar / interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
                     PV.tendencies[u_shift  + ijk] +=  self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift  + ijk] +=  self.v_flux[ij] * tendency_factor
                     PV.tendencies[s_shift  + ijk] +=  self.s_flux[ij] * tendency_factor

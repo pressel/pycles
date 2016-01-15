@@ -27,10 +27,10 @@ cdef class Forcing:
         elif casename == 'Gabls':
             self.scheme = ForcingGabls()
         elif casename == 'DYCOMS_RF01':
-            self.scheme = ForcingDyCOMS_RF01()
+            self.scheme = ForcingDyCOMS_RF01(casename)
         elif casename == 'DYCOMS_RF02':
             #Forcing for DYCOMS_RF02 is same as DYCOMS_RF01
-            self.scheme = ForcingDyCOMS_RF01()
+            self.scheme = ForcingDyCOMS_RF01(casename)
         elif casename == 'SMOKE':
             self.scheme = ForcingNone()
         elif casename == 'Rico':
@@ -328,9 +328,14 @@ cdef class ForcingGabls:
 
 
 cdef class ForcingDyCOMS_RF01:
-    def __init__(self):
+    def __init__(self,casename):
         self.divergence = 3.75e-6
         self.coriolis_param = 2.0 * omega * sin(31.5 * pi / 180.0 )
+        if casename == 'DYCOMS_RF02':
+            self.rf02_flag = True
+        else:
+            self.rf02_flag = False
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -341,11 +346,20 @@ cdef class ForcingDyCOMS_RF01:
         self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
         self.ug = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
         self.vg = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
-        with nogil:
-            for k in range(Gr.dims.nlg[2]):
-                self.subsidence[k] = -Gr.zl_half[k] * self.divergence
-                self.ug[k] = 7.0
-                self.vg[k] = -5.5
+
+        if self.rf02_flag:
+            with nogil:
+                for k in range(Gr.dims.nlg[2]):
+                    self.subsidence[k] = -Gr.zl_half[k] * self.divergence
+                    self.ug[k] = 3.0 + 4.3*Gr.zl_half[k]/1000.0
+                    self.vg[k] = -9.0 + 5.6 * Gr.zl_half[k]/1000.0
+        else:
+            with nogil:
+                for k in range(Gr.dims.nlg[2]):
+                    self.subsidence[k] = -Gr.zl_half[k] * self.divergence
+                    self.ug[k] = 7.0
+                    self.vg[k] = -5.5
+
 
         #Initialize Statistical Output
         NS.add_profile('s_subsidence_tendency', Gr, Pa)

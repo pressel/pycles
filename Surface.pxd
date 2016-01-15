@@ -98,7 +98,7 @@ cdef class SurfaceDYCOMS_RF02:
         double lv
         double ft
         double fq
-        double cm
+        double ustar
         double buoyancy_flux
         double gustiness
         double (*L_fp)(double T, double Lambda) nogil
