@@ -657,6 +657,8 @@ class FluxStatistics:
         if 'buoyancy' in DV.name_index:
             scalar_list.append('buoyancy')
 
+        print('Diagnostic fluxes for scalars :', scalar_list)
+
         for name in scalar_list:
             NS.add_profile('resolved_x_flux_'+name, Gr, Pa)
             NS.add_profile('resolved_y_flux_'+name, Gr, Pa)
