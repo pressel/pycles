@@ -582,7 +582,7 @@ def InitDYCOMS_RF02(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             qt[k] = 9.45/1000.0
         if Gr.zl_half[k] > 795.0:
             thetal[k] = 295.0 + (Gr.zl_half[k] - 795.0)**(1.0/3.0)
-            qt[k] = (5.0 - 3.0 * (1.0 - np.exp((Gr.zl_half[k] - 795.0)/500.0)))/1000.0
+            qt[k] = (5.0 - 3.0 * (1.0 - np.exp(-(Gr.zl_half[k] - 795.0)/500.0)))/1000.0
         v[k] = -9.0 + 5.6 * Gr.zl_half[k]/1000.0 - RS.v0
         u[k] = 3.0 + 4.3*Gr.zl_half[k]/1000.0 - RS.u0
 
@@ -646,7 +646,7 @@ def InitDYCOMS_RF02(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[ijk + qt_varshift]  = qt[k]
 
                 #Now set the entropy prognostic variable including a potential temperature perturbation
-                if Gr.zl_half[k] < 200.0:
+                if Gr.zl_half[k] < 795.0:
                     theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
                 else:
                     theta_pert_ = 0.0

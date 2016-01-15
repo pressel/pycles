@@ -24,7 +24,8 @@ cdef extern from "sgs.h":
     void tke_buoyant_production(Grid.DimStruct *dims,  double* e_tendency, double* diff, double* buoy_freq)
     void tke_surface(Grid.DimStruct *dims, double* e, double* lmo, double* ustar, double h_bl, double zb) nogil
     double tke_ell(double cn, double e, double buoy_freq, double delta) nogil
-
+    void smagorinsky_update_wall(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
+                            double* strain_rate_mag, double cs, double prt)
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
@@ -107,6 +108,11 @@ cdef class Smagorinsky:
         except:
             self.prt = 1.0/3.0
 
+        try:
+            self.adjust_wall = namelist['sgs']['Smagorinsky']['wall']
+        except:
+            self.adjust_wall = False
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -121,8 +127,14 @@ cdef class Smagorinsky:
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
             Py_ssize_t bf_shift =DV.get_varshift(Gr, 'buoyancy_frequency')
 
-        smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
-                           &Ke.strain_rate_mag[0],self.cs,self.prt)
+        if self.adjust_wall:
+            smagorinsky_update_wall(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                                    &Ke.strain_rate_mag[0],self.cs,self.prt)
+
+        else:
+            smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                               &Ke.strain_rate_mag[0],self.cs,self.prt)
+
 
         return
 
