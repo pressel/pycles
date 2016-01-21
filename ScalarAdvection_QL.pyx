@@ -21,6 +21,7 @@ cdef extern from "scalar_advection.h":
     void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme) nogil
 cdef extern from "scalar_advection_ql.h":
     void compute_eddy_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme) nogil
+
 cdef class ScalarAdvection:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         try:
