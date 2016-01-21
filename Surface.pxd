@@ -60,13 +60,11 @@ cdef class SurfaceGabls:
     cdef:
         double gustiness
         double z0
-        double (*L_fp)(double T, double Lambda) nogil
-        double (*Lambda_fp)(double T) nogil
-        ClausiusClapeyron CC
         double [:] u_flux
         double [:] v_flux
         double [:] b_flux
         double [:] s_flux
+        double cooling_rate
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
@@ -94,6 +92,47 @@ cdef class SurfaceDYCOMS_RF01:
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+cdef class SurfaceDYCOMS_RF02:
+    cdef:
+        double lv
+        double ft
+        double fq
+        double ustar
+        double buoyancy_flux
+        double gustiness
+        double (*L_fp)(double T, double Lambda) nogil
+        double (*Lambda_fp)(double T) nogil
+        double [:] windspeed
+        double [:] u_flux
+        double [:] qt_flux
+        double [:] v_flux
+        double [:] s_flux
+
+
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+cdef class SurfaceRico:
+    cdef:
+        double cm
+        double ch
+        double cq
+        double z0
+        double gustiness
+        double s_star
+        double [:] qt_flux
+        double [:] s_flux
+        double [:] u_flux
+        double [:] v_flux
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+
 
 cdef inline double compute_z0(double z1, double windspeed) nogil
 

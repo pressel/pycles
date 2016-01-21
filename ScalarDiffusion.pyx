@@ -110,7 +110,9 @@ cdef class ScalarDiffusion:
                     diff_shift_n = DV.get_varshift(Gr,'viscosity')
                     flux_factor = 1.0
                 for d in xrange(Gr.dims.dims):
-                    flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
+
+                    flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + d* Gr.dims.npg
+
 
                     compute_diffusive_flux(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],
                                            &DV.values[diff_shift],&PV.values[scalar_shift],
@@ -165,7 +167,7 @@ cdef class ScalarDiffusion:
         d = 2
         for i in xrange(PV.nv):
             if PV.var_type[i] == 1:
-                flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
+                flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + d* Gr.dims.npg
                 tmp = Pa.HorizontalMean(Gr, &self.flux[flux_shift])
                 for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
                     tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])
@@ -183,7 +185,7 @@ cdef class ScalarDiffusion:
                         scalar_count += 1
 
                 for d in xrange(Gr.dims.dims):
-                    flux_shift = scalar_count * Gr.dims.npg + d * Gr.dims.npg
+                    flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + d* Gr.dims.npg
 
                     compute_qt_diffusion_s_source(&Gr.dims, &RS.p0_half[0], &RS.alpha0[0],&RS.alpha0_half[0],
                                                   &self.flux[flux_shift],&PV.values[qt_shift], &DV.values[qv_shift],

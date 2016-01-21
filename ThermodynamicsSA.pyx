@@ -20,12 +20,13 @@ from libc.math cimport fmax, fmin
 
 cdef extern from "thermodynamics_sa.h":
     inline double alpha_c(double p0, double T, double qt, double qv) nogil
-    void eos_c(Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double * T, double * qv, double * ql, double * qi) nogil
-    void eos_update(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double * p0, double * s, double * qt, double * T,
+    void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
+    void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
                     double * qv, double * ql, double * qi, double * alpha)
-    void buoyancy_update_sa(Grid.DimStruct * dims, double * alpha0, double * alpha, double * buoyancy, double * wt)
-    void bvf_sa(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double * p0, double * T, double * qt, double * qv, double * theta_rho, double * bvf)
-    void thetali_update(Grid.DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double*  p0, double*  T, double*  qt, double*  ql, double*  qi, double*  thetali)
+    void buoyancy_update_sa(Grid.DimStruct *dims, double *alpha0, double *alpha, double *buoyancy, double *wt)
+    void bvf_sa(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *T, double *qt, double *qv, double *theta_rho, double *bvf)
+    void thetali_update(Grid.DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double *p0, double *T, double *qt, double *ql, double *qi, double *thetali)
+    void clip_qt(Grid.DimStruct *dims, double  *qt, double clip_value)
 
 cdef extern from "thermodynamic_functions.h":
     # Dry air partial pressure
@@ -44,7 +45,7 @@ cdef extern from "entropies.h":
 
 
 cdef class ThermodynamicsSA:
-    def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
+    def __init__(self, dict namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         '''
         Init method saturation adjsutment thermodynamics.
 
@@ -58,6 +59,12 @@ cdef class ThermodynamicsSA:
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
+
+        #Check to see if qt clipping is to be done. By default qt_clipping is on.
+        try:
+            self.do_qt_clipping = namelist['thermodynamics']['do_qt_clipping']
+        except:
+            self.do_qt_clipping = True
 
         return
 
@@ -119,7 +126,7 @@ cdef class ThermodynamicsSA:
 
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
         '''
-        Provide a python rapper for the c function that computes the specific entropy
+        Provide a python wrapper for the c function that computes the specific entropy
         consistent with Pressel et al. 2015 equation (40)
         :param p0: reference state pressure [Pa]
         :param T: thermodynamic temperature [K]
@@ -174,6 +181,14 @@ cdef class ThermodynamicsSA:
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t thl_shift = DV.get_varshift(Gr, 'thetali')
+
+
+        '''Apply qt clipping if requested. Defaults to on. Call this before other thermodynamic routines. Note that this
+        changes the values in the qt array directly. Perhaps we should eventually move this to the timestepping function
+        so that the output statistics correctly reflect clipping.
+        '''
+        if self.do_qt_clipping:
+            clip_qt(&Gr.dims, &PV.values[qt_shift], 1e-11)
 
 
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],

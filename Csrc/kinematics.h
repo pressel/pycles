@@ -102,7 +102,7 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
                 for(ssize_t k=kmin+1;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k;
                     const ssize_t total_shift = shift_s + ijk - stencil[d];
-                    strain_rate_mag[ijk] = strain_rate_mag[ijk] + strain_rate[total_shift]*strain_rate[total_shift];
+                    strain_rate_mag[ijk] += strain_rate[total_shift]*strain_rate[total_shift];
                 }
             }
         }
@@ -124,7 +124,7 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
                         const ssize_t sp3 = shift_s + ijk - stencil[d] ;
                         const ssize_t sp4 = shift_s + ijk - stencil[d] - stencil[vi1] ;
                         const double s_interp = 0.25*(strain_rate[sp1]+strain_rate[sp2]+strain_rate[sp3]+strain_rate[sp4]);
-                        strain_rate_mag[ijk] = strain_rate_mag[ijk] + 2.0*s_interp*s_interp;
+                        strain_rate_mag[ijk] += 2.0*s_interp*s_interp;
                     }
                 }
             }

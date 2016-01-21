@@ -16,6 +16,7 @@ import numpy as np
 cimport numpy as np
 from libc.math cimport cos
 
+import cython
 include 'parameters.pxi'
 
 
@@ -67,7 +68,6 @@ cdef class PressureFFTParallel:
         :return:
         '''
 
-        #Initialize storage for x any y wavenumbers squared
         self.kx2 = np.zeros(Gr.dims.nl[0],dtype=np.double,order='c')
         self.ky2 = np.zeros(Gr.dims.nl[1],dtype=np.double,order='c')
         cdef:
@@ -162,9 +162,9 @@ cdef class PressureFFTParallel:
             Py_ssize_t p, pencil_i, pencil_j
             Py_ssize_t count = 0
             Py_ssize_t pencil_shift = 0 #self.Z_Pencil.n_pencil_map[self.Z_Pencil.rank - 1]
-            double [:,:] x_pencil,
+            double [:,:] x_pencil
             complex [:,:] x_pencil_fft, x_pencil_ifft, x_pencil_complex
-            complex [:,:] y_pencil, z_pencil
+            complex [:,:] y_pencil, y_pencil_fft, z_pencil
             complex [:] div_fft= np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
             complex [:] pres = np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
 

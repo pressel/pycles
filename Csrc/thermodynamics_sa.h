@@ -79,6 +79,7 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2];
 
+
     for (i=imin; i<imax; i++){
        const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
@@ -87,6 +88,7 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
                     const ssize_t ijk = ishift + jshift + k;
                     eos_c(LT, lam_fp, L_fp, p0[k], s[ijk],qt[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk],qt[ijk],qv[ijk]);
+
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -180,7 +182,6 @@ void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(do
 }
 
 
-
 void thetali_update(struct DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double* restrict p0, double* restrict T, double* restrict qt, double* restrict ql, double* restrict qi, double* restrict thetali){
 
     ssize_t i,j,k;
@@ -209,3 +210,11 @@ void thetali_update(struct DimStruct *dims, double (*lam_fp)(double), double (*L
     return;
 }
 
+void clip_qt(struct DimStruct *dims, double* restrict qt, double clip_value){
+    size_t i;
+    const size_t npg = dims->npg;
+    for (i=0; i<npg; i++){
+        qt[i] = fmax(qt[i], clip_value);
+    }
+    return;
+}
