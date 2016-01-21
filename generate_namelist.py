@@ -338,6 +338,11 @@ def Bomex():
     namelist['fields_io']['frequency'] = 1800.0
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 30.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Bomex'
     namelist['meta']['casename'] = 'Bomex'

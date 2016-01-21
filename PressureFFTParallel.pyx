@@ -164,7 +164,7 @@ cdef class PressureFFTParallel:
             Py_ssize_t pencil_shift = 0 #self.Z_Pencil.n_pencil_map[self.Z_Pencil.rank - 1]
             double [:,:] x_pencil,
             complex [:,:] x_pencil_fft, x_pencil_ifft, x_pencil_complex
-            complex [:,:] y_pencil, z_pencil
+            complex [:,:] y_pencil, y_pencil_fft, z_pencil
             complex [:] div_fft= np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
             complex [:] pres = np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
 
