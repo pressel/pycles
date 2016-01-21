@@ -25,7 +25,7 @@ cdef class ParallelMPI:
             int is_initialized
             int ierr = 0
 
-        #Check to see if MPI_Init has been called if not do so 
+        #Check to see if MPI_Init has been called if not do so
         ierr = mpi.MPI_Initialized(&is_initialized)
         if not is_initialized:
             from mpi4py import MPI
@@ -75,7 +75,7 @@ cdef class ParallelMPI:
             print(txt_output)
         return
 
-    cdef void kill(self):
+    cpdef kill(self):
         '''
         Call MPI_Abort.
         :return:
@@ -761,7 +761,6 @@ cdef class Pencil:
             if self.dim == 0:
                 mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,
                             &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_x)
-
             elif self.dim==1:
                 mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,
                             &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_y)
@@ -1066,3 +1065,4 @@ cdef class Pencil:
                         ijk_no_gw = ishift_nogw + jshift_nogw+ (k-dims.gw)*kstride_nogw
                         data[ijk] = recv_buffer[ijk_no_gw]
         return
+

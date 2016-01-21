@@ -5,6 +5,7 @@
 # cython: cdivision=True
 
 cimport Grid
+cimport Restart
 cimport numpy as np
 import numpy as np
 from NetCDFIO cimport NetCDFIO_Stats
@@ -37,6 +38,9 @@ cdef class ReferenceState:
         :param Pa:  ParallelMPI class
         :return:
         '''
+
+
+
 
         self.sg = Thermodynamics.entropy(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
 
@@ -86,7 +90,6 @@ cdef class ReferenceState:
         cdef double[:] qi_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         cdef double[:] qv_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
 
-
         # Compute reference state thermodynamic profiles
         for k in xrange(Gr.dims.ng[2]):
             temperature[k], ql[k], qi[k] = Thermodynamics.eos(p_[k], self.sg, self.qtg)
@@ -134,3 +137,40 @@ cdef class ReferenceState:
         NS.write_reference_profile('qi0', qi_half[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
+
+    cpdef restart(self, Grid.Grid Gr, Restart.Restart Re):
+        Re.restart_data['Ref'] = {}
+
+        Re.restart_data['Ref']['p0'] = np.array(self.p0)
+        Re.restart_data['Ref']['p0_half'] = np.array(self.p0_half)
+        Re.restart_data['Ref']['alpha0'] = np.array(self.alpha0)
+        Re.restart_data['Ref']['alpha0_half'] = np.array(self.alpha0_half)
+
+        Re.restart_data['Ref']['Tg'] = self.Tg
+        Re.restart_data['Ref']['Pg'] = self.Pg
+        Re.restart_data['Ref']['sg'] = self.sg
+        Re.restart_data['Ref']['qtg'] = self.qtg
+        Re.restart_data['Ref']['u0'] = self.u0
+        Re.restart_data['Ref']['v0'] = self.v0
+
+        return
+
+
+    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re):
+
+        self.Tg = Re.restart_data['Ref']['Tg']
+        self.Pg = Re.restart_data['Ref']['Pg']
+        self.sg = Re.restart_data['Ref']['sg']
+        self.qtg = Re.restart_data['Ref']['qtg']
+        self.u0 = Re.restart_data['Ref']['u0']
+        self.v0 = Re.restart_data['Ref']['v0']
+
+        self.p0 = Re.restart_data['Ref']['p0']
+        self.p0_half = Re.restart_data['Ref']['p0_half']
+        self.alpha0 = Re.restart_data['Ref']['alpha0']
+        self.alpha0_half = Re.restart_data['Ref']['alpha0_half']
+        self.rho0 = 1.0 / Re.restart_data['Ref']['alpha0']
+        self.rho0_half = 1.0 / Re.restart_data['Ref']['alpha0_half']
+
+        return
+

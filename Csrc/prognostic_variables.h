@@ -44,7 +44,6 @@ void build_buffer(long nv, long dim, long s ,struct DimStruct *dims,
             };
         };
 
-
         return;
     }
     else if (dim == 1){

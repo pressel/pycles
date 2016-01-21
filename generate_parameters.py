@@ -18,6 +18,8 @@ def main():
     parameters['eps_vi'] = 1.0 / parameters['eps_v']
     parameters['cpd'] = 1004.0
     parameters['cpv'] = 1859.0
+    parameters['cl'] = 4218.0
+    parameters['ci'] = 2106.0
     parameters['kappa'] = parameters['Rd'] / parameters['cpd']
     parameters['Tf'] = 273.15
     parameters['Tt'] = 273.16
@@ -36,11 +38,22 @@ def main():
     parameters['gamma_m'] = 15.0
     parameters['gamma_h'] = 9.0
 
+
+    # Surface Monin-Obukhov related parameters
+    parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
+    parameters['Pr0'] = 0.74
+    parameters['beta_m'] = 4.7
+    parameters['beta_h'] = parameters['beta_m']/parameters['Pr0']
+    parameters['gamma_m'] = 15.0
+    parameters['gamma_h'] = 9.0
+
     # if GABLS use these values:
-    # parameters['vkb'] = 0.4   
-    # parameters['Pr0'] = 1.0 
-    # parameters['beta_m'] = 4.8 
+    # parameters['vkb'] = 0.4
+    # parameters['Pr0'] = 1.0
+    # parameters['beta_m'] = 4.8
     # parameters['beta_h'] = 7.8
+
+
     #############################
     # Users shouldn't modify below
     #############################

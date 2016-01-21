@@ -37,7 +37,7 @@ cdef class TDMA:
                 x[i] = (x[i] - a[i] * x[i-1])*m
 
 
-            for i in xrange(self.n-1,-1,-1):
+            for i in xrange(self.n-2,-1,-1):
                 x[i] = x[i] - self.scratch[i] * x[i+1]
 
         return
@@ -48,13 +48,13 @@ cdef class TDMA:
 
     def test(self):
         n = 4
-        cdef double [:] a = np.array([0,-1,-1,-1],dtype=np.double)
-        cdef double [:] b = np.array([4,4,4,4],dtype=np.double)
-        cdef double [:] c = np.array([-1,-1,-1,0],dtype=np.double)
-        cdef double [:] d = np.array([5,5,10,23],dtype=np.double)
+        cdef double [:] a = np.array([0, -1, -1, -1], dtype=np.double)
+        cdef double [:] b = np.array([4, 4, 4, 4], dtype=np.double)
+        cdef double [:] c = np.array([-1, -1, -1, 0], dtype=np.double)
+        cdef double [:] d = np.array([5, 5, 10, 23], dtype=np.double)
 
         self.initialize(4)
-        self.solve(&d[0],&a[0],&b[0],&c[0])
+        self.solve(&d[0], &a[0], &b[0], &c[0])
 
         print(np.array(d))
 

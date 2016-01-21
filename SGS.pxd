@@ -34,6 +34,7 @@ cdef class Smagorinsky:
     cdef:
         double cs
         double prt
+        bint adjust_wall
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,

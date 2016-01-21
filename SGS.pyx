@@ -24,7 +24,8 @@ cdef extern from "sgs.h":
     void tke_buoyant_production(Grid.DimStruct *dims,  double* e_tendency, double* diff, double* buoy_freq)
     void tke_surface(Grid.DimStruct *dims, double* e, double* lmo, double* ustar, double h_bl, double zb) nogil
     double tke_ell(double cn, double e, double buoy_freq, double delta) nogil
-
+    void smagorinsky_update_wall(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
+                            double* strain_rate_mag, double cs, double prt)
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
@@ -107,6 +108,11 @@ cdef class Smagorinsky:
         except:
             self.prt = 1.0/3.0
 
+        try:
+            self.adjust_wall = namelist['sgs']['Smagorinsky']['wall']
+        except:
+            self.adjust_wall = False
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -121,8 +127,14 @@ cdef class Smagorinsky:
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
             Py_ssize_t bf_shift =DV.get_varshift(Gr, 'buoyancy_frequency')
 
-        smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
-                           &Ke.strain_rate_mag[0],self.cs,self.prt)
+        if self.adjust_wall:
+            smagorinsky_update_wall(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                                    &Ke.strain_rate_mag[0],self.cs,self.prt)
+
+        else:
+            smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                               &Ke.strain_rate_mag[0],self.cs,self.prt)
+
 
         return
 
@@ -221,33 +233,33 @@ cdef class TKE:
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
             Py_ssize_t bf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
             Py_ssize_t e_shift = PV.get_varshift(Gr,'e')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
             double [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
-
-        tke_dissipation(&Gr.dims, &PV.values[e_shift], &tmp_tendency[0], &DV.values[bf_shift], self.cn, self.ck)
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        cdef double [:] tmp_tendency1  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+        tke_dissipation(&Gr.dims, &PV.values[e_shift], &tmp_tendency1[0], &DV.values[bf_shift], self.cn, self.ck)
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency1[0])
         NS.write_profile('tke_dissipation_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        tke_shear_production(&Gr.dims,   &tmp_tendency[0], &DV.values[visc_shift], &Ke.strain_rate_mag[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        cdef double [:] tmp_tendency2  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+        tke_shear_production(&Gr.dims,   &tmp_tendency2[0], &DV.values[visc_shift], &Ke.strain_rate_mag[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency2[0])
         NS.write_profile('tke_shear_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        tke_buoyant_production(&Gr.dims,  &tmp_tendency[0], &DV.values[diff_shift], &DV.values[bf_shift])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        cdef double [:] tmp_tendency3  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+        tke_buoyant_production(&Gr.dims,  &tmp_tendency3[0], &DV.values[diff_shift], &DV.values[bf_shift])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency3[0])
         NS.write_profile('tke_buoyancy_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         cdef:
             Py_ssize_t i
-            Py_ssize_t npg = Gr.dims.npg
             double delta = (Gr.dims.dx[0] * Gr.dims.dx[1] * Gr.dims.dx[2])**(1.0/3.0)
             double [:] prt  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] mixing_length = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
 
         with nogil:
-            for i in xrange(npg):
+            for i in xrange(Gr.dims.npg):
                 mixing_length[i] = tke_ell(self.cn, PV.values[e_shift+i], DV.values[bf_shift+i], delta)
                 prt[i] = delta/(delta + 2.0*mixing_length[i])
 
