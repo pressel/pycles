@@ -37,6 +37,8 @@ def InitializationFactory(namelist):
             return InitSmoke
         elif casename == 'Rico':
             return InitRico
+        elif casename == 'Soares':
+            return InitSoares
         else:
             pass
 
@@ -848,6 +850,80 @@ def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                         PV.values[e_varshift + ijk] = 0.1
 
 
+    return
+
+
+    def InitSoares(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+
+    #Generate the reference profiles
+    RS.Pg = 1.0e5  #Pressure at ground (Soares)
+    RS.Tg = 300.0  #Temperature at ground (Soares)
+    RS.qtg = 0.0   #Total water mixing ratio at surface (Soares)
+    RS.u0 = 0.0  # velocities removed in Galilean transformation (Soares: u = 0.01 m/s, IOP: 0.0 m/s)
+    RS.v0 = 0.0  # (Soares: v = 0.0 m/s)
+
+
+    ## only updated down to here!!!
+
+    
+    RS.initialize(Gr, Th, NS, Pa)
+
+    #Get the variable number for each of the velocity components
+    np.random.seed(Pa.rank)
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift, e_varshift
+        Py_ssize_t ijk
+        double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double t
+
+        #Generate initial perturbations (here we are generating more than we need)
+        cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+        cdef double theta_pert_
+
+    for k in xrange(Gr.dims.nlg[2]):
+        if Gr.zl_half[k] <=  974.0:
+            theta[k] = 300.0
+        elif Gr.zl_half[k] <= 1074.0:
+            theta[k] = 300.0 + (Gr.zl_half[k] - 974.0) * 0.08
+        else:
+            theta[k] = 308.0 + (Gr.zl_half[k] - 1074.0) * 0.003
+
+    cdef double [:] p0 = RS.p0_half
+
+    #Now loop and set the initial condition
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = 1.0 - RS.u0
+                PV.values[v_varshift + ijk] = 0.0 - RS.v0
+                PV.values[w_varshift + ijk] = 0.0
+
+                #Now set the entropy prognostic variable including a potential temperature perturbation
+                if Gr.zl_half[k] < 200.0:
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                else:
+                    theta_pert_ = 0.0
+                t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
+
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[e_varshift + ijk] = 0.0
     return
 
 def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
