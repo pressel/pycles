@@ -10,6 +10,7 @@ cimport DiagnosticVariables
 cimport Kinematics
 cimport ParallelMPI
 from NetCDFIO cimport NetCDFIO_Stats
+from libc.math cimport exp, sqrt
 cimport numpy as np
 import numpy as np
 import cython
@@ -34,6 +35,18 @@ cdef class SGS:
             self.scheme = Smagorinsky(namelist)
         elif(namelist['sgs']['scheme'] == 'TKE'):
             self.scheme = TKE(namelist)
+
+        '''Determine if we want to run with implicit SGS scheme. This option should only be used with
+        non-oscillatory numerics '''
+        try:
+            self.iles = namelist['sgs']['iles']
+            try:
+                self.wall_model_ls = namelist['sgs']['iles']['wall_model_ls']
+            except:
+                self.wall_model_ls = 5.0
+        except:
+            self.iles = False
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -44,6 +57,9 @@ cdef class SGS:
                  PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
 
         self.scheme.update(Gr,DV,PV,Ke,Pa)
+
+        if self.iles:
+            iles_scale_sgs(Gr, DV, self.wall_model_ls)
 
         return
 
@@ -218,7 +234,6 @@ cdef class TKE:
             tke_surface(&Gr.dims, &PV.values[e_shift], &DV.values_2d[lmo_shift], &DV.values_2d[ustar_shift] , h_global, Gr.zl_half[Gr.dims.gw])
 
 
-
         return
 
 
@@ -272,3 +287,39 @@ cdef class TKE:
 
 
         return
+
+
+cdef void iles_scale_sgs(Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV, double scale_height):
+
+    cdef:
+        Py_ssize_t i, j, k, ijk
+        Py_ssize_t gw = Gr.dims.gw
+        Py_ssize_t ishift
+        Py_ssize_t jshift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
+        Py_ssize_t diff_shift = DV.get_varshift(Gr, 'diffusivity')
+        Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
+        double [:] z = Gr.zl_half
+        double dz = Gr.dims.dx[2]
+        double dz_half = 0.5 * dz
+        double scale_height_i = 1.0 / scale_height
+
+    with nogil:
+        for i in xrange(gw,Gr.dims.nlg[0]-gw):
+            ishift = i * istride
+            for j in xrange(gw,Gr.dims.nlg[1]-gw):
+                jshift = j * jstride
+                for k in xrange(gw,Gr.dims.nlg[2]-gw):
+                    ijk = ishift + jshift + k
+                    if z[k] - dz_half <= 10 * scale_height:
+                        factor = exp(-(z[k] - dz_half)*scale_height_i)
+                        with gil:
+                            print factor
+                        DV.values[diff_shift + ijk] *= factor
+                        DV.values[visc_shift + ijk] *= factor
+                    else:
+                        DV.values[diff_shift + ijk] = 0.0
+                        DV.values[visc_shift + ijk] = 0.0
+
+    return
