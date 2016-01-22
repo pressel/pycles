@@ -3,9 +3,6 @@
 #include "thermodynamic_functions.h"
 #include "entropies.h"
 
-
-
-
 inline double psi_m_unstable(double zeta, double zeta0){
     const double x = pow((1.0 - gamma_m * zeta),0.25);
     const double x0 = pow((1.0 - gamma_m * zeta0), 0.25);
@@ -13,7 +10,6 @@ inline double psi_m_unstable(double zeta, double zeta0){
 
     return psi_m;
 }
-
 
 inline double psi_h_unstable(double zeta, double zeta0){
     const double y = sqrt(1.0 - gamma_h * zeta );
@@ -34,8 +30,6 @@ inline double psi_h_stable(double zeta, double zeta0){
     double psi_h = -beta_h * (zeta - zeta0);
     return psi_h;
 }
-
-
 
 double compute_ustar(double windspeed, double buoyancy_flux, double z0, double zb){
     double lmo, zeta, zeta0, psi_m, ustar;
@@ -95,7 +89,6 @@ double compute_ustar(double windspeed, double buoyancy_flux, double z0, double z
         ustar = ustar0;
     }
 
-
     return ustar;
 }
 
@@ -111,7 +104,6 @@ inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux,
 
     return entropyflux;
 }
-
 
 void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch, double* lmo){
 
@@ -161,8 +153,6 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
     return;
 }
 
-
-
 void compute_windspeed(const struct DimStruct *dims, double* restrict u, double* restrict v, double* restrict speed, double u0, double v0, double gustiness ){
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -192,4 +182,3 @@ void compute_windspeed(const struct DimStruct *dims, double* restrict u, double*
 
     return;
 }
-
