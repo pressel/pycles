@@ -26,6 +26,7 @@ cdef class DiagnosticVariables:
     cpdef val_nan(self,PA,message)
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef add_variables_2d(self, name, units)
+
     cdef inline int get_nv_2d(self, str variable_name):
         return self.name_index_2d[variable_name]
     cdef inline int get_varshift_2d(self, Grid.Grid Gr, str variable_name):
