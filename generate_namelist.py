@@ -30,6 +30,8 @@ def main():
         namelist = SMOKE()
     elif case_name == 'Rico':
         namelist = Rico()
+    elif case_name == 'Soares':
+        namelist = Soares()
     else:
         print('Not a vaild case name')
         exit()
@@ -754,6 +756,89 @@ def Rico():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+
+    return namelist
+
+
+
+def Soares():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    # Soares (2004): domain size = 6400 x 6400 m, domain height = 3000 (?) m; dx = ?, dy = ?, dz = 20 m
+    # Nieuwstadt: domain size = ?, domain height = 2400m; dx = dy = 60 m, dz = 50-60 m
+    # IOP Paper, old code: domain size = 6400 x 6400 m, domain height = 3750 m
+    namelist['grid']['nx'] = 256    # IOP
+    namelist['grid']['ny'] = 256    # IOP
+    namelist['grid']['nz'] = 150    # IOP
+    namelist['grid']['gw'] = 3      # for 2nd order
+    namelist['grid']['dx'] = 25.0   # IOP
+    namelist['grid']['dy'] = 25.0   # IOP
+    namelist['grid']['dz'] = 25.0   # IOP
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3    # seems to be 3 in all cases???
+    namelist['time_stepping']['cfl_limit'] = 0.3    # default: 0.7; IOP: 0.3
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 6*3600.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'       # seems to be constant in all cases and NOWHERE called???
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_Dry'     # ???
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'  # seems to be this in all cases???
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False      # seems to be set to False for all cases???
+
+    # 2 = second_order_m
+    # 32 = second_order_ml_m
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 2
+    # 2 = second_order_a
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 2
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'  # no more 'DampingToDomainMean' ???
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
+    namelist['damping']['Rayleigh']['z_d'] = 800.0  # ??? depth of damping layer?
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['None']
+    namelist['stats_io']['frequency'] = 900.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['temperature','viscosity']   # defines diagnostic variable output fields (progn. variables output in restart files?!)
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Soares'
+    namelist['meta']['casename'] = 'Soares'
 
     return namelist
 
