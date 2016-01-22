@@ -314,8 +314,6 @@ cdef void iles_scale_sgs(Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables D
                     ijk = ishift + jshift + k
                     if z[k] - dz_half <= 10 * scale_height:
                         factor = exp(-(z[k] - dz_half)*scale_height_i)
-                        with gil:
-                            print factor
                         DV.values[diff_shift + ijk] *= factor
                         DV.values[visc_shift + ijk] *= factor
                     else:
