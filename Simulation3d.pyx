@@ -227,6 +227,22 @@ class Simulation3d:
                 self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
                 self.Pa.root_print('Finished Doing StatsIO')
 
+
+            # If time to ouput stats do output
+            if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
+                self.Pa.root_print('Doing CondStatsIO')
+                self.CondStatsIO.last_output_time = self.TS.t
+                self.CondStatsIO.write_condstat_time(self.TS.t, self.Pa)
+
+                self.CondStats.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.CondStatsIO, self.Pa)
+                self.Pa.root_print('Finished Doing CondStatsIO')
+
+
+            if self.VO.last_vis_time + self.VO.frequency == self.TS.t:
+                self.VO.last_vis_time = self.TS.t
+                self.VO.write(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+
+
             if self.Restart.last_restart_time + self.Restart.frequency == self.TS.t:
                 self.Pa.root_print('Dumping Restart Files!')
                 self.Restart.last_restart_time = self.TS.t
@@ -242,19 +258,7 @@ class Simulation3d:
                 self.Restart.write(self.Pa)
                 self.Pa.root_print('Finished Dumping Restart Files!')
 
-            if self.VO.last_vis_time + self.VO.frequency == self.TS.t:
-                self.VO.last_vis_time = self.TS.t
-                self.VO.write(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
 
-
-            # If time to ouput stats do output
-            if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
-                self.Pa.root_print('Doing CondStatsIO')
-                self.CondStatsIO.last_output_time = self.TS.t
-                self.CondStatsIO.write_condstat_time(self.TS.t, self.Pa)
-
-                self.CondStats.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.CondStatsIO, self.Pa)
-                self.Pa.root_print('Finished Doing CondStatsIO')
 
 
 
