@@ -27,6 +27,8 @@ cdef extern from "sgs.h":
     double tke_ell(double cn, double e, double buoy_freq, double delta) nogil
     void smagorinsky_update_wall(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
                             double* strain_rate_mag, double cs, double prt)
+    void smagorinsky_update_iles(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
+                            double* strain_rate_mag, double cs, double prt)
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
@@ -57,9 +59,6 @@ cdef class SGS:
                  PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
 
         self.scheme.update(Gr,DV,PV,Ke,Pa)
-
-        if self.iles:
-            iles_scale_sgs(Gr, DV, self.wall_model_ls)
 
         return
 
@@ -287,37 +286,3 @@ cdef class TKE:
 
 
         return
-
-
-cdef void iles_scale_sgs(Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV, double scale_height):
-
-    cdef:
-        Py_ssize_t i, j, k, ijk
-        Py_ssize_t gw = Gr.dims.gw
-        Py_ssize_t ishift
-        Py_ssize_t jshift
-        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        Py_ssize_t jstride = Gr.dims.nlg[2]
-        Py_ssize_t diff_shift = DV.get_varshift(Gr, 'diffusivity')
-        Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
-        double [:] z = Gr.zl_half
-        double dz = Gr.dims.dx[2]
-        double dz_half = 0.5 * dz
-        double scale_height_i = 1.0 / scale_height
-
-    with nogil:
-        for i in xrange(gw,Gr.dims.nlg[0]-gw):
-            ishift = i * istride
-            for j in xrange(gw,Gr.dims.nlg[1]-gw):
-                jshift = j * jstride
-                for k in xrange(gw,Gr.dims.nlg[2]-gw):
-                    ijk = ishift + jshift + k
-                    if z[k] - dz_half <= 10 * scale_height:
-                        factor = exp(-(z[k] - dz_half)*scale_height_i)
-                        DV.values[diff_shift + ijk] *= factor
-                        DV.values[visc_shift + ijk] *= factor
-                    else:
-                        DV.values[diff_shift + ijk] = 0.0
-                        DV.values[visc_shift + ijk] = 0.0
-
-    return
