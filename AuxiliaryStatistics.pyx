@@ -49,8 +49,6 @@ class AuxiliaryStatistics:
             self.AuxStatsClasses.append(TKEStatistics(Gr, NS, Pa))
         if 'Flux' in auxiliary_statistics:
             self.AuxStatsClasses.append(FluxStatistics(Gr,PV, DV, NS, Pa))
-
-
         return
 
 

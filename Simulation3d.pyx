@@ -5,6 +5,7 @@ from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
 from AuxiliaryStatistics import AuxiliaryStatistics
+from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
 cimport ParallelMPI
 cimport Grid
@@ -53,6 +54,7 @@ class Simulation3d:
         self.Ra = Radiation.Radiation(namelist, self.Pa)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
+        self.CondStatsIO = NetCDFIO.NetCDFIO_CondStats()
         self.Restart = Restart.Restart(namelist, self.Pa)
         self.VO = VisualizationOutput.VisualizationOutput(namelist, self.Pa)
         self.Damping = Damping.Damping(namelist, self.Pa)
@@ -71,7 +73,9 @@ class Simulation3d:
 
         self.StatsIO.initialize(namelist, self.Gr, self.Pa)
         self.FieldsIO.initialize(namelist, self.Pa)
+        self.CondStatsIO.initialize(namelist, self.Gr, self.Pa)
         self.Aux = AuxiliaryStatistics(namelist)
+        self.CondStats = ConditionalStatistics(namelist)
         self.Restart.initialize()
 
         self.VO.initialize()
@@ -101,6 +105,7 @@ class Simulation3d:
             self.Ref.init_from_restart(self.Gr, self.Restart)
             self.PV.init_from_restart(self.Gr, self.Restart)
             self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']
+            self.CondStatsIO.last_output_time = self.Restart.restart_data['last_condstats_output']
             self.FieldsIO.last_output_time = self.Restart.restart_data['last_fields_output']
             self.Restart.last_restart_time = self.Restart.restart_data['last_restart_time']
             self.VO.last_vis_time = self.Restart.restart_data['last_vis_time']
@@ -119,6 +124,7 @@ class Simulation3d:
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Damping.initialize(self.Gr)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
 
         return
@@ -171,6 +177,7 @@ class Simulation3d:
         cdef:
             double fields_dt = 0.0
             double stats_dt = 0.0
+            double condstats_dt = 0.0
             double restart_dt = 0.0
             double vis_dt = 0.0
             double min_dt = 0.0
@@ -179,13 +186,14 @@ class Simulation3d:
             # Adjust time step for output if necessary
             fields_dt = self.FieldsIO.last_output_time + self.FieldsIO.frequency - self.TS.t
             stats_dt = self.StatsIO.last_output_time + self.StatsIO.frequency - self.TS.t
+            condstats_dt = self.CondStatsIO.last_output_time + self.CondStatsIO.frequency - self.TS.t
             restart_dt = self.Restart.last_restart_time + self.Restart.frequency - self.TS.t
             vis_dt = self.VO.last_vis_time + self.VO.frequency - self.TS.t
 
 
-            dts = np.array([fields_dt, stats_dt, restart_dt, vis_dt,
+            dts = np.array([fields_dt, stats_dt, condstats_dt, restart_dt, vis_dt,
                             self.TS.dt, self.TS.dt_max, self.VO.frequency, self.Restart.frequency,
-                            self.StatsIO.frequency, self.FieldsIO.frequency])
+                            self.StatsIO.frequency, self.CondStatsIO.frequency, self.FieldsIO.frequency])
 
             self.TS.dt = np.amin(dts[dts > 0.0])
             # If time to ouptut fields do output
@@ -219,11 +227,28 @@ class Simulation3d:
                 self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
                 self.Pa.root_print('Finished Doing StatsIO')
 
+
+            # If time to ouput stats do output
+            if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
+                self.Pa.root_print('Doing CondStatsIO')
+                self.CondStatsIO.last_output_time = self.TS.t
+                self.CondStatsIO.write_condstat_time(self.TS.t, self.Pa)
+
+                self.CondStats.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.CondStatsIO, self.Pa)
+                self.Pa.root_print('Finished Doing CondStatsIO')
+
+
+            if self.VO.last_vis_time + self.VO.frequency == self.TS.t:
+                self.VO.last_vis_time = self.TS.t
+                self.VO.write(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+
+
             if self.Restart.last_restart_time + self.Restart.frequency == self.TS.t:
                 self.Pa.root_print('Dumping Restart Files!')
                 self.Restart.last_restart_time = self.TS.t
                 self.Restart.restart_data['last_stats_output'] = self.StatsIO.last_output_time
                 self.Restart.restart_data['last_fields_output'] = self.FieldsIO.last_output_time
+                self.Restart.restart_data['last_condstats_output'] = self.CondStatsIO.last_output_time
                 self.Restart.restart_data['last_vis_time'] = self.VO.last_vis_time
                 self.Gr.restart(self.Restart)
                 self.Ref.restart(self.Gr, self.Restart)
@@ -233,9 +258,10 @@ class Simulation3d:
                 self.Restart.write(self.Pa)
                 self.Pa.root_print('Finished Dumping Restart Files!')
 
-            if self.VO.last_vis_time + self.VO.frequency == self.TS.t:
-                self.VO.last_vis_time = self.TS.t
-                self.VO.write(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+
+
+
+
 
         return
 
