@@ -100,6 +100,9 @@ cdef class SpectraStatistics:
         if 'theta' in DV.name_index:
             NC.add_condstat('theta_spectrum', 'spectra', 'wavenumber', Gr, Pa)
 
+        if 's' in PV.name_index and 'qt' in PV.name_index:
+            NC.add_condstat('s_qt_cospectrum', 'spectra', 'wavenumber', Gr, Pa)
+
         #Instantiate classes used for Pencil communication/transposes
         self.X_Pencil = ParallelMPI.Pencil()
         self.Y_Pencil = ParallelMPI.Pencil()
@@ -127,6 +130,7 @@ cdef class SpectraStatistics:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             complex [:] data_fft= np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
+            complex [:] data_fft_s= np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
             double [:] uc = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
             double [:] vc = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
             double [:] wc = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
@@ -162,14 +166,18 @@ cdef class SpectraStatistics:
 
         if 's' in PV.name_index:
             var_shift = PV.get_varshift(Gr, 's')
-            self.fluctuation_forward_transform(Gr, Pa, PV.values[var_shift:var_shift+npg], data_fft[:])
-            spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
+            self.fluctuation_forward_transform(Gr, Pa, PV.values[var_shift:var_shift+npg], data_fft_s[:])
+            spec = self.compute_spectrum(Gr, Pa,  data_fft_s[:])
             NC.write_condstat('s_spectrum', 'spectra', spec[:,:], Pa)
         if 'qt' in PV.name_index:
             var_shift = PV.get_varshift(Gr, 'qt')
             self.fluctuation_forward_transform(Gr, Pa, PV.values[var_shift:var_shift+npg], data_fft[:])
             spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
             NC.write_condstat('qt_spectrum', 'spectra', spec[:,:], Pa)
+        if 's' in PV.name_index and 'qt' in PV.name_index:
+            spec = self.compute_cospectrum(Gr, Pa, data_fft_s[:], data_fft[:])
+            NC.write_condstat('s_qt_cospectrum', 'spectra', spec[:,:], Pa)
+
 
         if 'theta_rho' in DV.name_index:
             var_shift = DV.get_varshift(Gr, 'theta_rho')
@@ -250,6 +258,7 @@ cdef class SpectraStatistics:
 
 
 
+
     cpdef compute_spectrum(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, complex [:] data_fft ):
         cdef:
             Py_ssize_t i, j, k, ijk, ik, kg, ishift, jshift
@@ -280,3 +289,40 @@ cdef class SpectraStatistics:
                 spec[k, ik] = Pa.domain_scalar_sum(spec[k,ik])
 
         return spec
+
+
+
+
+    cpdef compute_cospectrum(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, complex [:] data_fft_1,  complex [:] data_fft_2):
+        cdef:
+            Py_ssize_t i, j, k, ijk, ik, kg, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t nwave = self.nwave
+            double [:] kx = self.kx
+            double [:] ky = self.ky
+            double dk = self.dk
+            double kmag, R1, R2
+            double [:,:] spec = np.zeros((Gr.dims.nl[2],self.nwave),dtype=np.double, order ='c')
+
+        with nogil:
+            for i in xrange(Gr.dims.nl[0]):
+                ishift = (i + gw) * istride
+                for j in xrange(Gr.dims.nl[1]):
+                    jshift = (j + gw) * jstride
+                    kmag = sqrt(kx[i]*kx[i] + ky[j]*ky[j])
+                    ik = int(ceil(kmag/dk + 0.5) - 1.0)
+                    for k in xrange(Gr.dims.nl[2]):
+                        kg = k + gw
+                        ijk = ishift + jshift + kg
+                        R1 = sqrt(data_fft_1[ijk].real *  data_fft_1[ijk].real +  data_fft_1[ijk].imag *  data_fft_1[ijk].imag)
+                        R2 = sqrt(data_fft_2[ijk].real *  data_fft_2[ijk].real +  data_fft_2[ijk].imag *  data_fft_2[ijk].imag)
+                        spec[k, ik] += R1*R2
+
+        for k in xrange(Gr.dims.nl[2]):
+            for ik in xrange(nwave):
+                spec[k, ik] = Pa.domain_scalar_sum(spec[k,ik])
+
+        return spec
+
