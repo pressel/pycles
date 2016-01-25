@@ -34,7 +34,6 @@ double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_m
 
 
     double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
-    double z0 = 0.1; //fixing it to gabls value just for the moment
 
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i*istride ;
@@ -42,7 +41,7 @@ double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_m
             const ssize_t jshift = j*jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                double ell = delta * vkb * (zl_half[k] + z0)/(delta + vkb * (zl_half[k] + z0) );
+                double ell = delta * vkb * (zl_half[k])/(delta + vkb * (zl_half[k] + z0) );
 
                 visc[ijk] = cs*cs*ell*ell*strain_rate_mag[ijk];
                 if(buoy_freq[ijk] > 0.0){
