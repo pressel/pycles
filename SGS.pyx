@@ -42,10 +42,6 @@ cdef class SGS:
         non-oscillatory numerics '''
         try:
             self.iles = namelist['sgs']['iles']
-            try:
-                self.wall_model_ls = namelist['sgs']['iles']['wall_model_ls']
-            except:
-                self.wall_model_ls = 5.0
         except:
             self.iles = False
 
