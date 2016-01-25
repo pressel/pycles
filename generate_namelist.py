@@ -30,8 +30,8 @@ def main():
         namelist = SMOKE()
     elif case_name == 'Rico':
         namelist = Rico()
-    elif case_name == 'Soares':
-        namelist = Soares()
+    elif case_name == 'DCBLSoares':
+        namelist = DCBLSoares()
     else:
         print('Not a vaild case name')
         exit()
@@ -761,7 +761,7 @@ def Rico():
 
 
 
-def Soares():
+def DCBLSoares():
 
     namelist = {}
 
@@ -837,8 +837,8 @@ def Soares():
     namelist['fields_io']['diagnostic_fields'] = ['temperature','viscosity']   # defines diagnostic variable output fields (progn. variables output in restart files?!)
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'Soares'
-    namelist['meta']['casename'] = 'Soares'
+    namelist['meta']['simname'] = 'DCBLSoares'
+    namelist['meta']['casename'] = 'DCBLSoares'
 
     return namelist
 

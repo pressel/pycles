@@ -37,7 +37,7 @@ def InitializationFactory(namelist):
             return InitSmoke
         elif casename == 'Rico':
             return InitRico
-        elif casename == 'Soares':
+        elif casename == 'DCBLSoares':
             return InitSoares
         else:
             pass
