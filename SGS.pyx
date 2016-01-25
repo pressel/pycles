@@ -38,13 +38,6 @@ cdef class SGS:
         elif(namelist['sgs']['scheme'] == 'TKE'):
             self.scheme = TKE(namelist)
 
-        '''Determine if we want to run with implicit SGS scheme. This option should only be used with
-        non-oscillatory numerics '''
-        try:
-            self.iles = namelist['sgs']['iles']
-        except:
-            self.iles = False
-
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -121,8 +114,18 @@ cdef class Smagorinsky:
 
         try:
             self.adjust_wall = namelist['sgs']['Smagorinsky']['wall']
+            if self.adjust_wall:
+                self.iles = False
         except:
             self.adjust_wall = False
+
+        try:
+            self.iles = namelist['sgs']['Smagorinsky']['iles']
+            if self.iles:
+                self.adjust_wall = False
+        except:
+            self.iles = False
+
 
         return
 
@@ -142,6 +145,9 @@ cdef class Smagorinsky:
             smagorinsky_update_wall(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
                                     &Ke.strain_rate_mag[0],self.cs,self.prt)
 
+        elif self.iles:
+            smagorinsky_update_wall(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                                    &Ke.strain_rate_mag[0],self.cs,self.prt)
         else:
             smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
                                &Ke.strain_rate_mag[0],self.cs,self.prt)
