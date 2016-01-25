@@ -853,6 +853,8 @@ def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 
+
+
 def InitSoares(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
@@ -882,17 +884,17 @@ def InitSoares(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double t
 
-        #Generate initial perturbations (here we are generating more than we need)
+        #Generate initial perturbations (here we are generating more than we need)      ??? where amplitude of perturbations given?
         cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
         cdef double theta_pert_
 
+    # Initial theta profile (potential temperature)
     for k in xrange(Gr.dims.nlg[2]):
-        if Gr.zl_half[k] <=  974.0:
-            theta[k] = 300.0
-        elif Gr.zl_half[k] <= 1074.0:
-            theta[k] = 300.0 + (Gr.zl_half[k] - 974.0) * 0.08
-        else:
-            theta[k] = 308.0 + (Gr.zl_half[k] - 1074.0) * 0.003
+        # if Gr.zl_half[k] <= 1350.0:
+        #     theta[k] = 300.0
+        # else:
+        #     theta[k] = 300.0 + 2.0/1000.0 * (Gr.zl_half[k] - 1350.0)
+        theta[k] = 297.3 + 2.0/1000.0 * (Gr.zl_half[k])
 
     cdef double [:] p0 = RS.p0_half
 
@@ -907,7 +909,8 @@ def InitSoares(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[v_varshift + ijk] = 0.0 - RS.v0
                 PV.values[w_varshift + ijk] = 0.0
 
-                #Now set the entropy prognostic variable including a potential temperature perturbation
+                # Set the entropy prognostic variable including a potential temperature perturbation
+                # fluctuation height = 200m; fluctuation amplitude = 0.1 K
                 if Gr.zl_half[k] < 200.0:
                     theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
                 else:
