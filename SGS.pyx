@@ -146,7 +146,7 @@ cdef class Smagorinsky:
                                     &Ke.strain_rate_mag[0],self.cs,self.prt)
 
         elif self.iles:
-            smagorinsky_update_wall(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+            smagorinsky_update_iles(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
                                     &Ke.strain_rate_mag[0],self.cs,self.prt)
         else:
             smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
