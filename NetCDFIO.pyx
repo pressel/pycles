@@ -353,3 +353,113 @@ cdef class NetCDFIO_Fields:
         var[:] = np.array(data)
         rootgrp.close()
         return
+
+
+
+
+
+
+cdef class NetCDFIO_CondStats:
+    def __init__(self):
+        return
+
+    @cython.wraparound(True)
+    cpdef initialize(self, dict namelist, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+
+        self.last_output_time = 0.0
+        self.uuid = str(namelist['meta']['uuid'])
+        self.frequency = namelist['conditional_stats']['frequency']
+
+
+        # Setup the statistics output path
+        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
+
+        if Pa.rank == 0:
+            try:
+                os.mkdir(outpath)
+            except:
+                pass
+
+        self.stats_path = str( os.path.join(outpath, namelist['conditional_stats']['stats_dir']))
+        if Pa.rank == 0:
+            try:
+                os.mkdir(self.stats_path)
+            except:
+                pass
+
+
+        self.path_plus_file = str( self.stats_path + '/' + 'CondStats.' + namelist['meta']['simname'] + '.nc')
+        if os.path.exists(self.path_plus_file):
+            for i in range(100):
+                res_name = 'Restart_'+str(i)
+                print "Here " + res_name
+                if os.path.exists(self.path_plus_file):
+                    self.path_plus_file = str( self.stats_path + '/' + 'CondStats.' + namelist['meta']['simname']
+                           + '.' + res_name + '.nc')
+                else:
+                    break
+
+        Pa.barrier()
+
+
+
+        if Pa.rank == 0:
+            shutil.copyfile(
+                os.path.join( './', namelist['meta']['simname'] + '.in'),
+                os.path.join( outpath, namelist['meta']['simname'] + '.in'))
+        return
+
+    cpdef create_condstats_group(self, str groupname, str dimname, double [:] dimval, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file, 'w', format='NETCDF4')
+            sub_grp = root_grp.createGroup(groupname)
+            sub_grp.createDimension('z', Gr.dims.n[2])
+            sub_grp.createDimension(dimname, len(dimval))
+            sub_grp.createDimension('t', None)
+            z = sub_grp.createVariable('z', 'f8', ('z'))
+            z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
+            dim = sub_grp.createVariable(dimname, 'f8', (dimname))
+            dim[:] = np.array(dimval[:])
+            sub_grp.createVariable('t', 'f8', ('t'))
+            del z
+            del dim
+            root_grp.close()
+        return
+
+    cpdef add_condstat(self, str varname, str groupname, str dimname, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            sub_grp = root_grp.groups[groupname]
+            new_var = sub_grp.createVariable(varname, 'f8', ('t', 'z', dimname))
+
+            root_grp.close()
+
+        return
+
+
+    cpdef write_condstat(self, varname, groupname, double [:,:] data, ParallelMPI.ParallelMPI Pa):
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            sub_grp = root_grp.groups[groupname]
+            var = sub_grp.variables[varname]
+
+            var[-1, :,:] = np.array(data)[:,:]
+
+            root_grp.close()
+        return
+
+
+    cpdef write_condstat_time(self, double t, ParallelMPI.ParallelMPI Pa):
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            for groupname in root_grp.groups:
+                sub_grp = root_grp.groups[groupname]
+
+                # Write to sub_grp
+                group_t = sub_grp.variables['t']
+                group_t[group_t.shape[0]] = t
+
+            root_grp.close()
+        return
