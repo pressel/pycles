@@ -3,6 +3,7 @@ cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ParallelMPI
+cimport Filter
 
 from Thermodynamics cimport ClausiusClapeyron
 from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
@@ -20,6 +21,8 @@ cdef class ThermodynamicsSA_SGS:
         double [:] correlation
         double [:] cloud_fraction
         double c_variance
+        Filter.Filter VarianceFilter
+        bint use_scale_sim
 
 
 
@@ -28,6 +31,7 @@ cdef class ThermodynamicsSA_SGS:
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi)
     cpdef alpha(self, double p0, double T, double qt, double qv)
     cpdef eos(self, double p0, double s, double qt)
+    cpdef compute_variances(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, PrognosticVariables.PrognosticVariables PV)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
               PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
     cpdef get_pv_star(self, t)

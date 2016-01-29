@@ -10,6 +10,7 @@ cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 cimport ParallelMPI
+cimport Filter
 
 from NetCDFIO cimport NetCDFIO_CondStats
 
@@ -29,7 +30,8 @@ cdef class SpectraStatistics:
         double [:] wavenumbers
         double [:] kx
         double [:] ky
-        cdef ParallelMPI.Pencil X_Pencil, Y_Pencil, Z_Pencil
+    cdef ParallelMPI.Pencil X_Pencil, Y_Pencil
+    cdef Filter.Filter Filter
 
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,

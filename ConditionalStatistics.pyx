@@ -10,8 +10,7 @@ cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 cimport ParallelMPI
-cimport MomentumAdvection
-cimport MomentumDiffusion
+cimport Filter
 from NetCDFIO cimport NetCDFIO_CondStats
 import cython
 cimport numpy as np
@@ -103,15 +102,21 @@ cdef class SpectraStatistics:
         if 's' in PV.name_index and 'qt' in PV.name_index:
             NC.add_condstat('s_qt_cospectrum', 'spectra', 'wavenumber', Gr, Pa)
 
+
+        NC.add_condstat('qt_filt2_spectrum', 'spectra', 'wavenumber', Gr, Pa)
+        NC.add_condstat('qt_filt4_spectrum', 'spectra', 'wavenumber', Gr, Pa)
+
         #Instantiate classes used for Pencil communication/transposes
         self.X_Pencil = ParallelMPI.Pencil()
         self.Y_Pencil = ParallelMPI.Pencil()
-        self.Z_Pencil = ParallelMPI.Pencil()
+
 
         #Initialize classes used for Pencil communication/tranposes (here dim corresponds to the pencil direction)
         self.X_Pencil.initialize(Gr,Pa,dim=0)
         self.Y_Pencil.initialize(Gr,Pa,dim=1)
-        self.Z_Pencil.initialize(Gr,Pa,dim=2)
+
+        self.Filter = Filter.Filter(Gr, Pa)
+
 
         return
 
@@ -194,6 +199,30 @@ cdef class SpectraStatistics:
             self.fluctuation_forward_transform(Gr, Pa, DV.values[var_shift:var_shift+npg], data_fft[:])
             spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
             NC.write_condstat('theta_spectrum', 'spectra', spec[:,:], Pa)
+
+
+
+
+        cdef double [:] qt_filtered = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+        var_shift = PV.get_varshift(Gr, 'qt')
+        cdef double filter_factor =2.0
+        qt_filtered = self.Filter.spectral_2d(Gr, Pa, &PV.values[var_shift], filter_factor)
+
+        self.fluctuation_forward_transform(Gr, Pa, qt_filtered[:], data_fft[:])
+        spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
+        NC.write_condstat('qt_filt2_spectrum', 'spectra', spec[:,:], Pa)
+
+
+        filter_factor =4.0
+        qt_filtered = self.Filter.spectral_2d(Gr, Pa, &PV.values[var_shift], filter_factor)
+
+        self.fluctuation_forward_transform(Gr, Pa, qt_filtered[:], data_fft[:])
+        spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
+        NC.write_condstat('qt_filt4_spectrum', 'spectra', spec[:,:], Pa)
+
+
+
+
 
         return
 

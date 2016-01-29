@@ -12,6 +12,7 @@ cimport Grid
 cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
+cimport Filter
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 from thermodynamic_functions cimport thetas_c, theta_c, thetali_c
 import cython
@@ -70,6 +71,12 @@ cdef class ThermodynamicsSA_SGS:
             self.c_variance = namelist['sgs']['condensation']['c_variance']
         except:
             self.c_variance = 0.2857
+
+        try:
+            self.use_scale_sim = namelist['sgs']['condensation']['scale_similarity_model']
+        except:
+            self.use_scale_sim = True
+
 
 
 
@@ -143,6 +150,9 @@ cdef class ThermodynamicsSA_SGS:
         NS.add_ts('cloud_base', Gr, Pa)
         NS.add_ts('lwp', Gr, Pa)
 
+        # Initialize the filter operator class
+        self.VarianceFilter = Filter.Filter(Gr, Pa)
+
 
         return
 
@@ -186,6 +196,134 @@ cdef class ThermodynamicsSA_SGS:
         eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
         return T, ql, qi
 
+    cpdef compute_variances(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, PrognosticVariables.PrognosticVariables PV):
+        cdef:
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            double [:] qt_t = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            double [:] s_t = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            double [:] qt_T = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            double [:] s_T = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            double [:] leonard_Tt = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            double [:] leonard_tg = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            double little_test_factor = 2.0
+            double big_test_factor = 4.0
+            double c_sim = 1.0/((big_test_factor/little_test_factor)**0.667 - 1.0)
+            Py_ssize_t i, j, k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+
+
+
+
+        print('c_sim = ', c_sim)
+
+
+        if self.use_scale_sim:
+            qt_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[qt_shift], little_test_factor)
+            s_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[s_shift], little_test_factor)
+            qt_T = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[qt_shift], big_test_factor)
+            s_T = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[s_shift], big_test_factor)
+
+            # First do qt variance, form the first part of the leonard terms that must be filtered
+            with nogil:
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            leonard_tg[ijk] =  PV.values[qt_shift + ijk] * PV.values[qt_shift + ijk]
+                            leonard_Tt[ijk] =  qt_t[ijk] * qt_t[ijk]
+
+            leonard_tg = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_tg[0], little_test_factor)
+            leonard_Tt = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_Tt[0], big_test_factor)
+
+
+            # Now get the variance
+            with nogil:
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            self.qt_variance[ijk] =  c_sim * (leonard_Tt[ijk]- qt_T[ijk] *qt_T[ijk]) - leonard_tg[ijk] + qt_t[ijk]*qt_t[ijk]
+                            self.qt_variance[ijk] = fmax(self.qt_variance[ijk],0.0)
+
+
+            # Now s variance, form the first part of the leonard terms that must be filtered
+            with nogil:
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            leonard_tg[ijk] =  PV.values[s_shift + ijk] * PV.values[s_shift + ijk]
+                            leonard_Tt[ijk] =  s_t[ijk] * s_t[ijk]
+
+            leonard_tg = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_tg[0], little_test_factor)
+            leonard_Tt = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_Tt[0], big_test_factor)
+
+
+            # Now get the variance
+            with nogil:
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            self.s_variance[ijk] =  c_sim * (leonard_Tt[ijk]- s_T[ijk] * s_T[ijk]) - leonard_tg[ijk] + s_t[ijk]* s_t[ijk]
+                            self.s_variance[ijk] = fmax(self.s_variance[ijk],0.0)
+
+
+
+            # Now co-variance, form the first part of the leonard terms that must be filtered
+            with nogil:
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            leonard_tg[ijk] =  PV.values[s_shift + ijk] * PV.values[qt_shift + ijk]
+                            leonard_Tt[ijk] =  s_t[ijk] * qt_t[ijk]
+
+            leonard_tg = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_tg[0], little_test_factor)
+            leonard_Tt = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_Tt[0], big_test_factor)
+
+
+            # Now get the variance
+            with nogil:
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            self.covariance[ijk] =  c_sim * (leonard_Tt[ijk]- qt_T[ijk] * s_T[ijk]) - leonard_tg[ijk] + qt_t[ijk]* s_t[ijk]
+                            self.covariance[ijk] = fmax(fmin(self.s_variance[ijk]*self.qt_variance[ijk],self.covariance[ijk]),-self.s_variance[ijk]*self.qt_variance[ijk])
+
+
+
+
+        else:
+            compute_sgs_variance_gradient(&Gr.dims,  &PV.values[s_shift],  &self.s_variance[0], self.c_variance)
+            compute_sgs_variance_gradient(&Gr.dims,  &PV.values[qt_shift], &self.qt_variance[0], self.c_variance)
+            compute_sgs_covariance_gradient(&Gr.dims, &PV.values[s_shift],  &PV.values[qt_shift], &self.covariance[0], self.c_variance)
+
+
+        return
+
+
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
@@ -204,9 +342,8 @@ cdef class ThermodynamicsSA_SGS:
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t thl_shift = DV.get_varshift(Gr, 'thetali')
 
-        compute_sgs_variance(&Gr.dims,  &PV.values[s_shift],  &self.s_variance[0], self.c_variance)
-        compute_sgs_variance(&Gr.dims,  &PV.values[qt_shift], &self.qt_variance[0], self.c_variance)
-        compute_sgs_covariance(&Gr.dims, &PV.values[s_shift],  &PV.values[qt_shift], &self.covariance[0], self.c_variance)
+        self.compute_variances(Gr, Pa, PV)
+
         eos_update_SA_sgs(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],  &PV.values[s_shift],
                             &self.s_variance[0], &PV.values[qt_shift], &self.qt_variance[0], &self.covariance[0], &DV.values[t_shift],
                             &DV.values[alpha_shift], &DV.values[qv_shift], &DV.values[ql_shift], &DV.values[qi_shift],
@@ -558,7 +695,7 @@ cdef eos_update_SA_sgs(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*la
 
 
 
-cdef compute_sgs_variance(Grid.DimStruct *dims,  double *s, double *s_var, double coeff):
+cdef compute_sgs_variance_gradient(Grid.DimStruct *dims,  double *s, double *s_var, double coeff):
 
 
     cdef:
@@ -594,7 +731,7 @@ cdef compute_sgs_variance(Grid.DimStruct *dims,  double *s, double *s_var, doubl
 
 
 
-cdef compute_sgs_covariance(Grid.DimStruct *dims,  double *a, double *b, double *covar, double coeff):
+cdef compute_sgs_covariance_gradient(Grid.DimStruct *dims,  double *a, double *b, double *covar, double coeff):
 
 
     cdef:

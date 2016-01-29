@@ -482,6 +482,12 @@ def DYCOMS_RF01():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['sgs_condensation'] = True
+
+    namelist['sgs']['condensation'] = {}
+    namelist['sgs']['condensation']['quadrature_order'] = 5
+    namelist['sgs']['condensation']['scale_similarity_model'] = True
+
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -519,7 +525,7 @@ def DYCOMS_RF01():
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
-    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['frequency'] = 100.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
 
