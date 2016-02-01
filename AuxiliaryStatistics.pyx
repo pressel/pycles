@@ -65,7 +65,6 @@ class CumulusStatistics:
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         conditions = ['cloud','core']
         scalars = ['qt','ql','s', 'thetas']
-        print('PV.name_index', PV.name_index)
 
         if 'qr' in PV.name_index:
             scalars.append('qr')
@@ -75,7 +74,6 @@ class CumulusStatistics:
             scalars.append('theta_rho')
         if 'thetali' in DV.name_index:
             scalars.append('thetali')
-        print('Aux scalars', scalars)
 
         for cond in conditions:
             NS.add_profile('fraction_'+cond,Gr,Pa)
@@ -655,7 +653,6 @@ class FluxStatistics:
         if 'buoyancy' in DV.name_index:
             scalar_list.append('buoyancy')
 
-        print('Diagnostic fluxes for scalars :', scalar_list)
 
         for name in scalar_list:
             NS.add_profile('resolved_x_flux_'+name, Gr, Pa)

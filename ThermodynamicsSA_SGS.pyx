@@ -220,11 +220,6 @@ cdef class ThermodynamicsSA_SGS:
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
 
 
-
-
-        print('c_sim = ', c_sim)
-
-
         if self.use_scale_sim:
             qt_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[qt_shift], little_test_factor)
             s_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[s_shift], little_test_factor)
@@ -311,9 +306,6 @@ cdef class ThermodynamicsSA_SGS:
                             ijk = ishift + jshift + k
                             self.covariance[ijk] =  c_sim * (leonard_Tt[ijk]- qt_T[ijk] * s_T[ijk]) - leonard_tg[ijk] + qt_t[ijk]* s_t[ijk]
                             self.covariance[ijk] = fmax(fmin(self.s_variance[ijk]*self.qt_variance[ijk],self.covariance[ijk]),-self.s_variance[ijk]*self.qt_variance[ijk])
-
-
-
 
         else:
             compute_sgs_variance_gradient(&Gr.dims,  &PV.values[s_shift],  &self.s_variance[0], self.c_variance)
