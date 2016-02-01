@@ -208,7 +208,6 @@ cdef class ThermodynamicsSA_SGS:
             double [:] leonard_tg = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
             double little_test_factor = 2.0
             double big_test_factor = 4.0
-            double c_sim = 1.0/((big_test_factor/little_test_factor)**0.667 - 1.0)
             Py_ssize_t i, j, k, ijk, ishift, jshift
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
@@ -218,14 +217,14 @@ cdef class ThermodynamicsSA_SGS:
             Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            # double c_sim = 1.0/((big_test_factor/little_test_factor)**0.667 - 1.0)
+            double c_sim = 1.0/(little_test_factor**0.667 - 1.0)
 
 
 
         if self.use_scale_sim:
             qt_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[qt_shift], little_test_factor)
             s_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[s_shift], little_test_factor)
-            qt_T = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[qt_shift], big_test_factor)
-            s_T = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[s_shift], big_test_factor)
 
             # First do qt variance, form the first part of the leonard terms that must be filtered
             with nogil:
@@ -236,10 +235,9 @@ cdef class ThermodynamicsSA_SGS:
                         for k in range(kmin, kmax):
                             ijk = ishift + jshift + k
                             leonard_tg[ijk] =  PV.values[qt_shift + ijk] * PV.values[qt_shift + ijk]
-                            leonard_Tt[ijk] =  qt_t[ijk] * qt_t[ijk]
+
 
             leonard_tg = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_tg[0], little_test_factor)
-            leonard_Tt = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_Tt[0], big_test_factor)
 
 
             # Now get the variance
@@ -250,7 +248,7 @@ cdef class ThermodynamicsSA_SGS:
                         jshift = j * jstride
                         for k in range(kmin, kmax):
                             ijk = ishift + jshift + k
-                            self.qt_variance[ijk] =  c_sim * (leonard_Tt[ijk]- qt_T[ijk] *qt_T[ijk]) - leonard_tg[ijk] + qt_t[ijk]*qt_t[ijk]
+                            self.qt_variance[ijk] =  c_sim * ( leonard_tg[ijk] - qt_t[ijk]*qt_t[ijk])
                             self.qt_variance[ijk] = fmax(self.qt_variance[ijk],0.0)
 
 
@@ -263,10 +261,9 @@ cdef class ThermodynamicsSA_SGS:
                         for k in range(kmin, kmax):
                             ijk = ishift + jshift + k
                             leonard_tg[ijk] =  PV.values[s_shift + ijk] * PV.values[s_shift + ijk]
-                            leonard_Tt[ijk] =  s_t[ijk] * s_t[ijk]
+
 
             leonard_tg = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_tg[0], little_test_factor)
-            leonard_Tt = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_Tt[0], big_test_factor)
 
 
             # Now get the variance
@@ -277,7 +274,7 @@ cdef class ThermodynamicsSA_SGS:
                         jshift = j * jstride
                         for k in range(kmin, kmax):
                             ijk = ishift + jshift + k
-                            self.s_variance[ijk] =  c_sim * (leonard_Tt[ijk]- s_T[ijk] * s_T[ijk]) - leonard_tg[ijk] + s_t[ijk]* s_t[ijk]
+                            self.s_variance[ijk] =  c_sim * ( leonard_tg[ijk] - s_t[ijk]* s_t[ijk])
                             self.s_variance[ijk] = fmax(self.s_variance[ijk],0.0)
 
 
@@ -291,10 +288,9 @@ cdef class ThermodynamicsSA_SGS:
                         for k in range(kmin, kmax):
                             ijk = ishift + jshift + k
                             leonard_tg[ijk] =  PV.values[s_shift + ijk] * PV.values[qt_shift + ijk]
-                            leonard_Tt[ijk] =  s_t[ijk] * qt_t[ijk]
+
 
             leonard_tg = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_tg[0], little_test_factor)
-            leonard_Tt = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_Tt[0], big_test_factor)
 
 
             # Now get the variance
@@ -305,8 +301,98 @@ cdef class ThermodynamicsSA_SGS:
                         jshift = j * jstride
                         for k in range(kmin, kmax):
                             ijk = ishift + jshift + k
-                            self.covariance[ijk] =  c_sim * (leonard_Tt[ijk]- qt_T[ijk] * s_T[ijk]) - leonard_tg[ijk] + qt_t[ijk]* s_t[ijk]
+                            self.covariance[ijk] =  c_sim * ( leonard_tg[ijk] - qt_t[ijk]* s_t[ijk])
                             # trim the correlation in the eos_update
+
+
+
+        #
+        # if self.use_scale_sim:
+        #     qt_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[qt_shift], little_test_factor)
+        #     s_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[s_shift], little_test_factor)
+        #     qt_T = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[qt_shift], big_test_factor)
+        #     s_T = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[s_shift], big_test_factor)
+        #
+        #     # First do qt variance, form the first part of the leonard terms that must be filtered
+        #     with nogil:
+        #         for i in range(imin, imax):
+        #             ishift = i * istride
+        #             for j in range(jmin, jmax):
+        #                 jshift = j * jstride
+        #                 for k in range(kmin, kmax):
+        #                     ijk = ishift + jshift + k
+        #                     leonard_tg[ijk] =  PV.values[qt_shift + ijk] * PV.values[qt_shift + ijk]
+        #                     leonard_Tt[ijk] =  qt_t[ijk] * qt_t[ijk]
+        #
+        #     leonard_tg = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_tg[0], little_test_factor)
+        #     leonard_Tt = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_Tt[0], big_test_factor)
+        #
+        #
+        #     # Now get the variance
+        #     with nogil:
+        #         for i in range(imin, imax):
+        #             ishift = i * istride
+        #             for j in range(jmin, jmax):
+        #                 jshift = j * jstride
+        #                 for k in range(kmin, kmax):
+        #                     ijk = ishift + jshift + k
+        #                     self.qt_variance[ijk] =  c_sim * (leonard_Tt[ijk]- qt_T[ijk] *qt_T[ijk]) - leonard_tg[ijk] + qt_t[ijk]*qt_t[ijk]
+        #                     self.qt_variance[ijk] = fmax(self.qt_variance[ijk],0.0)
+        #
+        #
+        #     # Now s variance, form the first part of the leonard terms that must be filtered
+        #     with nogil:
+        #         for i in range(imin, imax):
+        #             ishift = i * istride
+        #             for j in range(jmin, jmax):
+        #                 jshift = j * jstride
+        #                 for k in range(kmin, kmax):
+        #                     ijk = ishift + jshift + k
+        #                     leonard_tg[ijk] =  PV.values[s_shift + ijk] * PV.values[s_shift + ijk]
+        #                     leonard_Tt[ijk] =  s_t[ijk] * s_t[ijk]
+        #
+        #     leonard_tg = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_tg[0], little_test_factor)
+        #     leonard_Tt = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_Tt[0], big_test_factor)
+        #
+        #
+        #     # Now get the variance
+        #     with nogil:
+        #         for i in range(imin, imax):
+        #             ishift = i * istride
+        #             for j in range(jmin, jmax):
+        #                 jshift = j * jstride
+        #                 for k in range(kmin, kmax):
+        #                     ijk = ishift + jshift + k
+        #                     self.s_variance[ijk] =  c_sim * (leonard_Tt[ijk]- s_T[ijk] * s_T[ijk]) - leonard_tg[ijk] + s_t[ijk]* s_t[ijk]
+        #                     self.s_variance[ijk] = fmax(self.s_variance[ijk],0.0)
+        #
+        #
+        #
+        #     # Now co-variance, form the first part of the leonard terms that must be filtered
+        #     with nogil:
+        #         for i in range(imin, imax):
+        #             ishift = i * istride
+        #             for j in range(jmin, jmax):
+        #                 jshift = j * jstride
+        #                 for k in range(kmin, kmax):
+        #                     ijk = ishift + jshift + k
+        #                     leonard_tg[ijk] =  PV.values[s_shift + ijk] * PV.values[qt_shift + ijk]
+        #                     leonard_Tt[ijk] =  s_t[ijk] * qt_t[ijk]
+        #
+        #     leonard_tg = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_tg[0], little_test_factor)
+        #     leonard_Tt = self.VarianceFilter.spectral_2d(Gr,Pa, &leonard_Tt[0], big_test_factor)
+        #
+        #
+        #     # Now get the variance
+        #     with nogil:
+        #         for i in range(imin, imax):
+        #             ishift = i * istride
+        #             for j in range(jmin, jmax):
+        #                 jshift = j * jstride
+        #                 for k in range(kmin, kmax):
+        #                     ijk = ishift + jshift + k
+        #                     self.covariance[ijk] =  c_sim * (leonard_Tt[ijk]- qt_T[ijk] * s_T[ijk]) - leonard_tg[ijk] + qt_t[ijk]* s_t[ijk]
+        #                     # trim the correlation in the eos_update
         else:
             compute_sgs_variance_gradient(&Gr.dims,  &PV.values[s_shift],  &self.s_variance[0], self.c_variance)
             compute_sgs_variance_gradient(&Gr.dims,  &PV.values[qt_shift], &self.qt_variance[0], self.c_variance)
