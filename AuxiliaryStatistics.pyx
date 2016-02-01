@@ -66,6 +66,7 @@ class CumulusStatistics:
         conditions = ['cloud','core']
         scalars = ['qt','ql','s', 'thetas']
 
+
         if 'qr' in PV.name_index:
             scalars.append('qr')
         if 'nr' in PV.name_index:
