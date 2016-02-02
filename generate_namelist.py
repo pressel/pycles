@@ -530,7 +530,7 @@ def DYCOMS_RF01():
 
 
     namelist['visualization'] = {}
-    namelist['visualization']['frequency'] = 10.0
+    namelist['visualization']['frequency'] = 1e6
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'DYCOMS_RF01'
@@ -611,7 +611,7 @@ def DYCOMS_RF02():
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['visualization'] = {}
-    namelist['visualization']['frequency'] = 10.0
+    namelist['visualization']['frequency'] = 1e6
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
