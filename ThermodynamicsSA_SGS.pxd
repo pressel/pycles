@@ -22,7 +22,7 @@ cdef class ThermodynamicsSA_SGS:
         double [:] cloud_fraction
         double c_variance
         Filter.Filter VarianceFilter
-        bint use_scale_sim
+        str variance_model
 
 
 

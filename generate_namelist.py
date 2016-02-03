@@ -307,11 +307,13 @@ def Bomex():
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
 
     namelist['sgs'] = {}
-    namelist['sgs']['scheme'] = 'Smagorinsky'
-    namelist['sgs']['sgs_condensation'] = True
+    namelist['sgs']['Smagorinsky'] ={}
     namelist['sgs']['condensation'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky']['iles'] = True
+    namelist['sgs']['sgs_condensation'] = False
     namelist['sgs']['condensation']['quadrature_order'] = 5
-    namelist['sgs']['condensation']['c_variance'] = 0.2857
+    namelist['sgs']['condensation']['variance_model'] = 'SS_1scale'
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -481,12 +483,13 @@ def DYCOMS_RF01():
     namelist['microphysics']['ccn'] = 100.0e6
 
     namelist['sgs'] = {}
-    namelist['sgs']['scheme'] = 'Smagorinsky'
-    namelist['sgs']['sgs_condensation'] = True
-
+    namelist['sgs']['Smagorinsky'] ={}
     namelist['sgs']['condensation'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky']['iles'] = True
+    namelist['sgs']['sgs_condensation'] = False
     namelist['sgs']['condensation']['quadrature_order'] = 5
-    namelist['sgs']['condensation']['scale_similarity_model'] = True
+    namelist['sgs']['condensation']['variance_model'] = 'SS_1scale'
 
 
     namelist['diffusion'] = {}
@@ -574,7 +577,13 @@ def DYCOMS_RF02():
     namelist['microphysics']['ccn'] = 55.0e6
 
     namelist['sgs'] = {}
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['condensation'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky']['iles'] = True
+    namelist['sgs']['sgs_condensation'] = False
+    namelist['sgs']['condensation']['quadrature_order'] = 5
+    namelist['sgs']['condensation']['variance_model'] = 'SS_1scale'
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
