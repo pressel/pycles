@@ -223,14 +223,11 @@ cdef class ThermodynamicsSA_SGS:
             Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            # double c_sim = 1.0/((big_test_factor/little_test_factor)**0.667 - 1.0)
-            double c_sim = 1.0/(little_test_factor**0.667 - 1.0)
-
-
-
+            double c_sim
 
 
         if self.variance_model == 'SS_1scale':
+            c_sim = 1.0/(little_test_factor**0.667 - 1.0)
             qt_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[qt_shift], little_test_factor)
             s_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[s_shift], little_test_factor)
 
@@ -316,6 +313,8 @@ cdef class ThermodynamicsSA_SGS:
 
 
         elif self.variance_model == 'SS_2scale':
+            c_sim = 1.0/((big_test_factor/little_test_factor)**0.667 - 1.0)
+
             qt_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[qt_shift], little_test_factor)
             s_t = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[s_shift], little_test_factor)
             qt_T = self.VarianceFilter.spectral_2d(Gr,Pa, &PV.values[qt_shift], big_test_factor)
