@@ -47,10 +47,11 @@ cdef class Restart:
             if namelist['restart']['init_from']:
                 self.input_path = str(namelist['restart']['input_path'])
                 self.is_restart_run = True
-                Pa.root_print('This is a restart run!')
+                Pa.root_print('This run is restarting from data :' + self.input_path )
+            else:
+                Pa.root_print('Not a restarted simulation.')
         except:
-            Pa.root_print('Not a restart run!')
-
+            Pa.root_print('Not a restarted simulation.')
 
         return
 
