@@ -487,7 +487,7 @@ cdef class ThermodynamicsSA_SGS:
             double[:] data = np.empty((Gr.dims.npl,), dtype=np.double, order='c')
 
 
-        # Add entropy potential temperature to 3d fields
+        # Add qt_variance
         with nogil:
             count = 0
             for i in range(imin, imax):
@@ -496,10 +496,67 @@ cdef class ThermodynamicsSA_SGS:
                     jshift = j * jstride
                     for k in range(kmin, kmax):
                         ijk = ishift + jshift + k
-                        data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
+                        data[count] = self.qt_variance[ijk]
                         count += 1
-        NF.add_field('thetas')
-        NF.write_field('thetas', data)
+        NF.add_field('qt_variance')
+        NF.write_field('qt_variance', data)
+
+        # Add qt_variance_clip
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        data[count] = self.qt_variance_clip[ijk]
+                        count += 1
+        NF.add_field('qt_variance_clip')
+        NF.write_field('qt_variance_clip', data)
+
+        # Add s_variance
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        data[count] = self.s_variance[ijk]
+                        count += 1
+        NF.add_field('s_variance')
+        NF.write_field('s_variance', data)
+
+        # Add covariance
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        data[count] = self.covariance[ijk]
+                        count += 1
+        NF.add_field('covariance')
+        NF.write_field('covariance', data)
+
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        data[count] = self.correlation[ijk]
+                        count += 1
+        NF.add_field('correlation')
+        NF.write_field('correlation', data)
+
+
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
