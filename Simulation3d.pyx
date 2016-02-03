@@ -205,7 +205,6 @@ class Simulation3d:
                 self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
                 self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
                 self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)
-                self.Th.write_fields(self.Gr, self.Ref, self.PV, self.DV, self.FieldsIO, self.Pa)
                 self.Pa.root_print('Finished Doing 3D FieldIO')
 
             # If time to ouput stats do output

@@ -112,6 +112,12 @@ cdef class ThermodynamicsSA_SGS:
         self.correlation  = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
         self.cloud_fraction  = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
 
+        DV.add_variables('qt_variance','---','sym', Pa)
+        DV.add_variables('qt_variance_clip','---','sym', Pa)
+
+        DV.add_variables('s_variance','---','sym', Pa)
+        DV.add_variables('covariance','---','sym', Pa)
+        DV.add_variables('correlation','---','sym', Pa)
 
 
         # Initialize class member arrays
@@ -408,6 +414,8 @@ cdef class ThermodynamicsSA_SGS:
             Pa.root_print('UNKNOWN VARIANCE MODEL!')
             Pa.kill()
 
+
+
         return
 
 
@@ -458,6 +466,37 @@ cdef class ThermodynamicsSA_SGS:
         bvf_sa( &Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[thr_shift], &DV.values[bvf_shift])
 
         thetali_update(&Gr.dims,self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift],&DV.values[qi_shift],&DV.values[thl_shift])
+
+
+
+
+        cdef:
+            Py_ssize_t qtv_shift = DV.get_varshift(Gr, 'qt_variance')
+            Py_ssize_t qtvc_shift = DV.get_varshift(Gr, 'qt_variance_clip')
+            Py_ssize_t svar_shift = DV.get_varshift(Gr, 's_variance')
+            Py_ssize_t cov_shift = DV.get_varshift(Gr, 'covariance')
+            Py_ssize_t cor_shift = DV.get_varshift(Gr, 'correlation')
+            Py_ssize_t i, j, k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t imin = 0
+            Py_ssize_t jmin = 0
+            Py_ssize_t kmin = 0
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t kmax = Gr.dims.nlg[2]
+        with nogil:
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        DV.values[qtv_shift  + ijk] = self.qt_variance[ijk]
+                        DV.values[qtvc_shift + ijk] = self.qt_variance_clip[ijk]
+                        DV.values[svar_shift + ijk] = self.s_variance[ijk]
+                        DV.values[cov_shift  + ijk] = self.covariance[ijk]
+                        DV.values[cor_shift  + ijk] = self.correlation[ijk]
 
         return
 
@@ -579,17 +618,17 @@ cdef class ThermodynamicsSA_SGS:
             double[:] tmp
 
 
-        tmp = Pa.HorizontalMean(Gr, &self.s_variance[0])
-        NS.write_profile('s_sgs_variance', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMean(Gr, &self.qt_variance[0])
-        NS.write_profile('qt_sgs_variance', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMean(Gr, &self.covariance[0])
-        NS.write_profile('sgs_covariance', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        tmp = Pa.HorizontalMean(Gr, &self.qt_variance_clip[0])
-        NS.write_profile('qt_sgs_variance_clip', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMean(Gr, &self.correlation[0])
-        NS.write_profile('sgs_correlation', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        # tmp = Pa.HorizontalMean(Gr, &self.s_variance[0])
+        # NS.write_profile('s_sgs_variance', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        # tmp = Pa.HorizontalMean(Gr, &self.qt_variance[0])
+        # NS.write_profile('qt_sgs_variance', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        # tmp = Pa.HorizontalMean(Gr, &self.covariance[0])
+        # NS.write_profile('sgs_covariance', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        #
+        # tmp = Pa.HorizontalMean(Gr, &self.qt_variance_clip[0])
+        # NS.write_profile('qt_sgs_variance_clip', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        # tmp = Pa.HorizontalMean(Gr, &self.correlation[0])
+        # NS.write_profile('sgs_correlation', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
         # Ouput profiles of thetas

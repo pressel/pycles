@@ -98,13 +98,18 @@ cdef class SpectraStatistics:
             NC.add_condstat('thetali_spectrum', 'spectra', 'wavenumber', Gr, Pa)
         if 'theta' in DV.name_index:
             NC.add_condstat('theta_spectrum', 'spectra', 'wavenumber', Gr, Pa)
+        if 'qt_variance' in DV.name_index:
+            NC.add_condstat('qtvar_spectrum', 'spectra', 'wavenumber', Gr, Pa)
+        if 'qt_variance_clip' in DV.name_index:
+            NC.add_condstat('qtvarclip_spectrum', 'spectra', 'wavenumber', Gr, Pa)
+        if 's_variance' in DV.name_index:
+            NC.add_condstat('svar_spectrum', 'spectra', 'wavenumber', Gr, Pa)
+        if 'covariance' in DV.name_index:
+            NC.add_condstat('covar_spectrum', 'spectra', 'wavenumber', Gr, Pa)
 
         if 's' in PV.name_index and 'qt' in PV.name_index:
             NC.add_condstat('s_qt_cospectrum', 'spectra', 'wavenumber', Gr, Pa)
 
-
-        NC.add_condstat('qt_filt2_spectrum', 'spectra', 'wavenumber', Gr, Pa)
-        NC.add_condstat('qt_filt4_spectrum', 'spectra', 'wavenumber', Gr, Pa)
 
         #Instantiate classes used for Pencil communication/transposes
         self.X_Pencil = ParallelMPI.Pencil()
@@ -200,27 +205,29 @@ cdef class SpectraStatistics:
             spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
             NC.write_condstat('theta_spectrum', 'spectra', spec[:,:], Pa)
 
+        if 'qt_variance' in DV.name_index:
+            var_shift = DV.get_varshift(Gr, 'qt_variance')
+            self.fluctuation_forward_transform(Gr, Pa, DV.values[var_shift:var_shift+npg], data_fft[:])
+            spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
+            NC.write_condstat('qtvar_spectrum', 'spectra', spec[:,:], Pa)
 
+        if 'qt_variance_clip' in DV.name_index:
+            var_shift = DV.get_varshift(Gr, 'qt_variance_clip')
+            self.fluctuation_forward_transform(Gr, Pa, DV.values[var_shift:var_shift+npg], data_fft[:])
+            spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
+            NC.write_condstat('qtvarclip_spectrum', 'spectra', spec[:,:], Pa)
 
+        if 's_variance' in DV.name_index:
+            var_shift = DV.get_varshift(Gr, 's_variance')
+            self.fluctuation_forward_transform(Gr, Pa, DV.values[var_shift:var_shift+npg], data_fft[:])
+            spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
+            NC.write_condstat('svar_spectrum', 'spectra', spec[:,:], Pa)
 
-        cdef double [:] qt_filtered = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
-        var_shift = PV.get_varshift(Gr, 'qt')
-        cdef double filter_factor =2.0
-        qt_filtered = self.Filter.spectral_2d(Gr, Pa, &PV.values[var_shift], filter_factor)
-
-        self.fluctuation_forward_transform(Gr, Pa, qt_filtered[:], data_fft[:])
-        spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
-        NC.write_condstat('qt_filt2_spectrum', 'spectra', spec[:,:], Pa)
-
-
-        filter_factor =4.0
-        qt_filtered = self.Filter.spectral_2d(Gr, Pa, &PV.values[var_shift], filter_factor)
-
-        self.fluctuation_forward_transform(Gr, Pa, qt_filtered[:], data_fft[:])
-        spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
-        NC.write_condstat('qt_filt4_spectrum', 'spectra', spec[:,:], Pa)
-
-
+        if 'covariance' in DV.name_index:
+            var_shift = DV.get_varshift(Gr, 'covariance')
+            self.fluctuation_forward_transform(Gr, Pa, DV.values[var_shift:var_shift+npg], data_fft[:])
+            spec = self.compute_spectrum(Gr, Pa,  data_fft[:])
+            NC.write_condstat('covar_spectrum', 'spectra', spec[:,:], Pa)
 
 
 
