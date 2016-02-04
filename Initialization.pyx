@@ -37,6 +37,8 @@ def InitializationFactory(namelist):
             return InitSmoke
         elif casename == 'Rico':
             return InitRico
+        elif casename == 'EUROCS_Sc':
+            return InitEUROCS_Sc
         else:
             pass
 
@@ -849,6 +851,139 @@ def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
     return
+
+
+def InitEUROCS_Sc(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+
+    '''
+    Initialize the EUROCS diurnal cycle of Sc case described in
+
+    Duynkerke, P. G., de Roode, S. R., van Zanten, M. C., Calvo, J., Cuxart, J., Cheinet, S., Chlond, A., Grenier,
+    H., Jonker, P. J., Köhler, M., Lenderink, G., Lewellen, D., Lappen, C.-l., Lock, A. P., Moeng, C.-h., Müller, F.,
+    Olmeda, D., Piriou, J.-m., Sánchez, E. and Sednev, I. (2004), Observations and numerical simulations of the diurnal
+    cycle of the EUROCS stratocumulus case. Q.J.R. Meteorol. Soc., 130: 3269–3296. doi: 10.1256/qj.03.139
+
+    :param Gr: Grid cdef extension class
+    :param PV: PrognosticVariables cdef extension class
+    :param RS: ReferenceState cdef extension class
+    :param Th: Thermodynamics class
+    :return: None
+    '''
+
+    # Generate Reference Profiles
+    RS.Pg = 1012.5 * 100.0
+    RS.qtg = 11.1/1000.0
+    RS.u0 = 6.0 * np.cos(305.0*pi/180.0)
+    RS.v0 = 6.0 * np.sin(305.0*pi/180.0)
+
+
+    RS.Tg = 289.0
+
+    RS.initialize(Gr ,Th, NS, Pa)
+
+    #Set up $\tehta_l$ and $\qt$ profiles
+    cdef:
+        Py_ssize_t i
+        Py_ssize_t j
+        Py_ssize_t k
+        Py_ssize_t ijk, ishift, jshift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+
+    for k in xrange(Gr.dims.nlg[2]):
+        if Gr.zl_half[k] <=595.0:
+            thetal[k] = 287.5
+            qt[k] = 9.6/1000.0
+        if Gr.zl_half[k] > 595.0:
+            thetal[k] = 299.5 + 0.0075*(Gr.zl_half[k] - 595.0)
+            qt[k] = (6.6-0.003*(Gr.zl_half[k] - 595.0))/1000.0
+
+    def compute_thetal(p_,T_,ql_):
+        theta_ = T_ / (p_/p_tilde)**(287.0/1015.0)
+        return theta_ * exp(-2.47e6 * ql_ / (1015.0 * T_))
+
+    def sat_adjst(p_,thetal_,qt_):
+        '''
+        Use saturation adjustment scheme to compute temperature and ql given thetal and qt.
+        :param p: pressure [Pa]
+        :param thetal: liquid water potential temperature  [K]
+        :param qt:  total water specific humidity
+        :return: T, ql
+        '''
+
+        #Compute temperature
+        t_1 = thetal_ * (p_/p_tilde)**(287.0/1015.0)
+        #Compute saturation vapor pressure
+        pv_star_1 = Th.get_pv_star(t_1)
+        #Compute saturation mixing ratio
+        qs_1 = qv_star_c(p_,qt_,pv_star_1)
+
+        if qt_ <= qs_1:
+            #If not saturated return temperature and ql = 0.0
+            return t_1, 0.0
+        else:
+            ql_1 = qt_ - qs_1
+            f_1 = thetal_ - compute_thetal(p_,t_1,ql_1)
+            t_2 = t_1 + 2.47e6*ql_1/1015.0
+            pv_star_2 = Th.get_pv_star(t_2)
+            qs_2 = qv_star_c(p_,qt_,pv_star_2)
+            ql_2 = qt_ - qs_2
+
+            while fabs(t_2 - t_1) >= 1e-9:
+                pv_star_2 = Th.get_pv_star(t_2)
+                qs_2 = qv_star_c(p_,qt_,pv_star_2)
+                ql_2 = qt_ - qs_2
+                f_2 = thetal_ - compute_thetal(p_, t_2, ql_2)
+                t_n = t_2 - f_2 * (t_2 - t_1)/(f_2 - f_1)
+                t_1 = t_2
+                t_2 = t_n
+                f_1 = f_2
+
+            return t_2, ql_2
+
+    #Generate initial perturbations (here we are generating more than we need)
+    np.random.seed(Pa.rank)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef double theta_pert_
+
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift = istride * i
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = jstride * j
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[ijk + u_varshift] = 0.0 # 0 because we have removed the mean (RS.u0)
+                PV.values[ijk + v_varshift] = 0.0
+                PV.values[ijk + w_varshift] = 0.0
+                PV.values[ijk + qt_varshift]  = qt[k]
+
+                #Now set the entropy prognostic variable including a potential temperature perturbation
+
+                theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+
+                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
+                PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+
+    return
+
+
+
+
+
+
+
+
+
+
+
 
 def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
                        DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
