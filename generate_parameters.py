@@ -29,7 +29,7 @@ def main():
     parameters['sd_tilde'] = 6864.8
     parameters['sv_tilde'] = 10513.6
     parameters['omega'] = 7.2921151467064e-5  # Earth's rotational rate (http://hpiers.obspm.fr/eop-pc/models/constants.html)
-
+    parameters['liquid_density'] = 1000.0 # density of liquid water
     # cut-off for ql threshold statistics
     parameters['ql_threshold'] = 1e-10
     

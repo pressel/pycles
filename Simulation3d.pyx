@@ -161,7 +161,7 @@ class Simulation3d:
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
-                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa, self.TS)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)

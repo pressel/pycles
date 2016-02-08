@@ -706,7 +706,7 @@ cdef class ForcingRico:
 
 
 
-cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):
+cdef void coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):
 
     cdef:
         Py_ssize_t imin = dims.gw
@@ -734,7 +734,7 @@ cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, doub
     return
 
 
-cdef large_scale_p_gradient(Grid.DimStruct *dims, double *umean, double *vmean, double *ut, double *vt, double *ug, double *vg,
+cdef void large_scale_p_gradient(Grid.DimStruct *dims, double *umean, double *vmean, double *ut, double *vt, double *ug, double *vg,
                           double coriolis_param, double u0, double v0 ):
 
     cdef:
@@ -765,7 +765,7 @@ cdef large_scale_p_gradient(Grid.DimStruct *dims, double *umean, double *vmean, 
 
     return
 
-cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double* values,  double *tendencies):
+cdef void apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double* values,  double *tendencies):
 
     cdef:
         Py_ssize_t imin = dims.gw

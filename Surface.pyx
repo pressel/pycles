@@ -835,7 +835,7 @@ cdef class SurfaceEUROCS_Sc:
                     self.s_flux[ij] = -ch * windspeed[ij] * (PV.values[s_shift+ijk] - s_star)
                     self.qt_flux[ij] = -ch * windspeed[ij] * (PV.values[qt_shift+ijk]-Ref.qtg)
                     self.lh_flux[ij] = self.qt_flux[ij] * 2.501e6 * Ref.rho0[gw-1]
-                    self.sh_flux[ij] =  (self.s_flux[ij]-self.qt_flux * (sv_g - sd_g)) * Ref.Tg * Ref.rho0[gw-1]
+                    self.sh_flux[ij] =  (self.s_flux[ij]-self.qt_flux[ij] * (sv_g - sd_g)) * Ref.Tg * Ref.rho0[gw-1]
                     DV.values_2d[ustar_shift + ij] = sqrt(cm[ij]) * windspeed[ij]
             for i in xrange(gw, imax-gw):
                 for j in xrange(gw, jmax-gw):
