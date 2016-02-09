@@ -28,6 +28,8 @@ cdef class Radiation:
             self.scheme = RadiationDyCOMS_RF01()
         elif casename == 'SMOKE':
             self.scheme = RadiationSmoke()
+        elif casename == 'EUROCS_Sc':
+            self.scheme = RadiationEUROCS_Sc()
         else:
             self.scheme = RadiationNone()
         return
@@ -302,6 +304,7 @@ cdef class RadiationEUROCS_Sc:
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.z_pencil.initialize(Gr, Pa, 2)
+        Pa.root_print('Initialized EUROCS_Sc radiation')
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -348,6 +351,7 @@ cdef class RadiationEUROCS_Sc:
         # Shortwave parameters depending on solar zenith angle
         cdef double amu0 = cosine_zenith_angle(self.year, self.month, self.day, self.hour, self.latitude, self.longitude)
         amu0 = fmax(amu0, 1.0e-5)
+        Pa.root_print('Day = ' + str(self.day) + ' Hour = ' + str(self.hour) + 'cos(zen) = ' + str(np.round(amu0, decimals=2)))
         cdef double F0 = self.F0_max * amu0
         cdef double gp = self.g_de /(1.0 + self.g_de)
         cdef double omp = (1.0 - self.g_de * self.g_de)* self.omega_de/(1.0- self.omega_de * self.g_de * self.g_de)
