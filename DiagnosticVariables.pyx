@@ -11,7 +11,7 @@ import numpy as np
 cimport numpy as np
 cimport ParallelMPI
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
-
+cimport mpi4py.libmpi as mpi
 
 cdef extern from "prognostic_variables.h":
         void build_buffer(int nv, int dim, int s ,Grid.DimStruct *dims, double* values, double* buffer)
