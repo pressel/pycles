@@ -865,13 +865,9 @@ def InitSoares(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.u0 = 0.0  # velocities removed in Galilean transformation (Soares: u = 0.01 m/s, IOP: 0.0 m/s)
     RS.v0 = 0.0  # (Soares: v = 0.0 m/s)
 
+    RS.initialize(Gr, Th, NS, Pa)       # initialize reference state; done for every case
 
-        ## only updated down to here!!!
-
-
-    RS.initialize(Gr, Th, NS, Pa)
-
-        #Get the variable number for each of the velocity components
+    #Get the variable number for each of the velocity components
     np.random.seed(Pa.rank)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
@@ -898,14 +894,14 @@ def InitSoares(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     cdef double [:] p0 = RS.p0_half
 
-    #Now loop and set the initial condition
+    # Now loop and set the initial condition
     for i in xrange(Gr.dims.nlg[0]):
         ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
         for j in xrange(Gr.dims.nlg[1]):
             jshift = j * Gr.dims.nlg[2]
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
-                PV.values[u_varshift + ijk] = 1.0 - RS.u0
+                PV.values[u_varshift + ijk] = 0.0 - RS.u0       # original Soares: u = 0.1
                 PV.values[v_varshift + ijk] = 0.0 - RS.v0
                 PV.values[w_varshift + ijk] = 0.0
 
