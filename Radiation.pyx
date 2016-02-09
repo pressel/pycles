@@ -299,6 +299,7 @@ cdef class RadiationEUROCS_Sc:
         self.F0_max = 1100.0
         self.reff = 1.0e-5 # assumed effective droplet radius of 10 micrometers
         self.asf = 0.06 # Surface albedo
+        self.g_de = 0.8112
 
         return
 
