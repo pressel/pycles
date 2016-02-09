@@ -27,6 +27,8 @@ cdef extern from "sgs.h":
     double tke_ell(double cn, double e, double buoy_freq, double delta) nogil
     void smagorinsky_update_wall(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
                             double* strain_rate_mag, double cs, double prt)
+    void smagorinsky_update_iles(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
+                            double* strain_rate_mag, double cs, double prt)
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
@@ -35,17 +37,6 @@ cdef class SGS:
             self.scheme = Smagorinsky(namelist)
         elif(namelist['sgs']['scheme'] == 'TKE'):
             self.scheme = TKE(namelist)
-
-        '''Determine if we want to run with implicit SGS scheme. This option should only be used with
-        non-oscillatory numerics '''
-        try:
-            self.iles = namelist['sgs']['iles']
-            try:
-                self.wall_model_ls = namelist['sgs']['iles']['wall_model_ls']
-            except:
-                self.wall_model_ls = 5.0
-        except:
-            self.iles = False
 
         return
 
@@ -57,9 +48,6 @@ cdef class SGS:
                  PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
 
         self.scheme.update(Gr,DV,PV,Ke,Pa)
-
-        if self.iles:
-            iles_scale_sgs(Gr, DV, self.wall_model_ls)
 
         return
 
@@ -126,8 +114,18 @@ cdef class Smagorinsky:
 
         try:
             self.adjust_wall = namelist['sgs']['Smagorinsky']['wall']
+            if self.adjust_wall:
+                self.iles = False
         except:
             self.adjust_wall = False
+
+        try:
+            self.iles = namelist['sgs']['Smagorinsky']['iles']
+            if self.iles:
+                self.adjust_wall = False
+        except:
+            self.iles = False
+
 
         return
 
@@ -147,6 +145,9 @@ cdef class Smagorinsky:
             smagorinsky_update_wall(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
                                     &Ke.strain_rate_mag[0],self.cs,self.prt)
 
+        elif self.iles:
+            smagorinsky_update_iles(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                                    &Ke.strain_rate_mag[0],self.cs,self.prt)
         else:
             smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
                                &Ke.strain_rate_mag[0],self.cs,self.prt)
@@ -287,39 +288,3 @@ cdef class TKE:
 
 
         return
-
-
-cdef void iles_scale_sgs(Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV, double scale_height):
-
-    cdef:
-        Py_ssize_t i, j, k, ijk
-        Py_ssize_t gw = Gr.dims.gw
-        Py_ssize_t ishift
-        Py_ssize_t jshift
-        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        Py_ssize_t jstride = Gr.dims.nlg[2]
-        Py_ssize_t diff_shift = DV.get_varshift(Gr, 'diffusivity')
-        Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
-        double [:] z = Gr.zl_half
-        double dz = Gr.dims.dx[2]
-        double dz_half = 0.5 * dz
-        double scale_height_i = 1.0 / scale_height
-
-    with nogil:
-        for i in xrange(gw,Gr.dims.nlg[0]-gw):
-            ishift = i * istride
-            for j in xrange(gw,Gr.dims.nlg[1]-gw):
-                jshift = j * jstride
-                for k in xrange(gw,Gr.dims.nlg[2]-gw):
-                    ijk = ishift + jshift + k
-                    if z[k] - dz_half <= 10 * scale_height:
-                        factor = exp(-(z[k] - dz_half)*scale_height_i)
-                        with gil:
-                            print factor
-                        DV.values[diff_shift + ijk] *= factor
-                        DV.values[visc_shift + ijk] *= factor
-                    else:
-                        DV.values[diff_shift + ijk] = 0.0
-                        DV.values[visc_shift + ijk] = 0.0
-
-    return
