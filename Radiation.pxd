@@ -74,6 +74,7 @@ cdef class RadiationEUROCS_Sc:
         double F0_max
         double reff
         double asf
+        double g_de
         ParallelMPI.Pencil z_pencil
 
 
