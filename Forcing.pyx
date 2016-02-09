@@ -35,8 +35,10 @@ cdef class Forcing:
             self.scheme = ForcingNone()
         elif casename == 'Rico':
             self.scheme = ForcingRico()
+        elif casename == 'DCBLSoares':
+            self.scheme = ForcingSoares()
         else:
-            Pa.root_print('No focing for casename: ' +  casename)
+            Pa.root_print('No forcing for casename: ' +  casename)
             Pa.root_print('Killing simulation now!!!')
             Pa.kill()
         return
@@ -531,6 +533,8 @@ cdef class ForcingRico:
 
         return
 
+
+
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
@@ -598,6 +602,31 @@ cdef class ForcingRico:
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
+
+
+cdef class ForcingSoares:
+    def __init__(self):
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        # self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
+        # self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
+        # self.coriolis_param = 0.0 #s^{-1}
+#         NS.add_profile('u_coriolis_tendency', Gr, Pa)
+#         NS.add_profile('v_coriolis_tendency',Gr, Pa)
+        return
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        
+        return
+
 
 
 
