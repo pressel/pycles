@@ -9,6 +9,7 @@ cimport PrognosticVariables as PrognosticVariables
 cimport DiagnosticVariables as DiagnosticVariables
 cimport Grid as Grid
 cimport Restart
+#cimport mpi4py.mpi_c as mpi
 cimport mpi4py.libmpi as mpi
 
 import numpy as np
