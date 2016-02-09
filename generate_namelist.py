@@ -864,19 +864,35 @@ def DCBLSoares():
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
+    # profile outputs
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['None']
+    namelist['stats_io']['auxiliary'] = ['None']    # AuxiliaryStatistics
     namelist['stats_io']['frequency'] = 900.0
 
+    # field outputs
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
     namelist['fields_io']['diagnostic_fields'] = ['temperature','viscosity']   # defines diagnostic variable output fields (progn. variables output in restart files?!)
 
+    # Conditional Statistics
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'DCBLSoares'
     namelist['meta']['casename'] = 'DCBLSoares'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = False
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+
 
     return namelist
 

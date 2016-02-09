@@ -106,6 +106,7 @@ cdef class PrognosticVariables:
             double [:] tmp
 
         for var_name in self.name_index.keys():
+            print('Prognostic Variables: write profile: ', var_name)
             var_shift = self.get_varshift(Gr,var_name)
 
 
