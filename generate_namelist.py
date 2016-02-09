@@ -791,7 +791,7 @@ def DCBLSoares():
     namelist['time_stepping']['t_max'] = 6*3600.0
 
     namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['latentheat'] = 'constant'       # seems to be constant in all cases and NOWHERE called???
+    namelist['thermodynamics']['latentheat'] = 'constant'       # 'constant' or 'variable', for Clausius Clapeyron calculation
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'None_Dry'     # ???

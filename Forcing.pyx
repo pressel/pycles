@@ -609,46 +609,27 @@ cdef class ForcingSoares:
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
-        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
-        # ???? how to turn off coriolis parameter?
-        self.coriolis_param = 0.0 #s^{-1}
-
+        # self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
+        # self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
+        # self.coriolis_param = 0.0 #s^{-1}
 #         NS.add_profile('u_coriolis_tendency', Gr, Pa)
 #         NS.add_profile('v_coriolis_tendency',Gr, Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
-        # cdef:
-        #     Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
-        #     Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
-#         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-#                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-
-        cdef:
-            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
-            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
-            # double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            # double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            # double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
-            # double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
-
-#         #Only need to output coriolis_forcing
-#         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
-#                        &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
-#         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-#         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
-#         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
-#         NS.write_profile('v_coriolis_tendency',mean_tendency_2[Gr.dims.gw:-Gr.dims.gw],Pa)
-#
+        
         return
+
+
+
+
 
 cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):
 
