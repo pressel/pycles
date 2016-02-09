@@ -390,7 +390,7 @@ cdef class RadiationEUROCS_Sc:
                                        + amu0 * F0 * exp(-tau/amu0))
 
                 for k in xrange(Gr.dims.n[2]):
-                    f_heat[ip, k] = -((f_rad_lw[ip, k+1] - f_rad_sw[ip, k+1]) - (f_rad_lw[ip, k+1] - f_rad_sw[ip, k+1])) * dzi / rho_half[k]
+                    f_heat[ip, k] = -((f_rad_lw[ip, k+1] - f_rad_sw[ip, k+1]) - (f_rad_lw[ip, k] - f_rad_sw[ip, k])) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
         self.z_pencil.reverse_double(&Gr.dims, Pa, f_heat, &heating_rate[0])
