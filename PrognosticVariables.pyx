@@ -7,7 +7,7 @@
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 import numpy as np
 cimport numpy as np
-cimport mpi4py.mpi_c as mpi
+cimport mpi4py.libmpi as mpi
 from NetCDFIO cimport NetCDFIO_Stats
 
 cimport Grid
