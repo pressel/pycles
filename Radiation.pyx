@@ -28,6 +28,8 @@ cdef class Radiation:
             self.scheme = RadiationDyCOMS_RF01()
         elif casename == 'SMOKE':
             self.scheme = RadiationSmoke()
+        elif casename == 'EUROCS_Sc':
+            self.scheme = RadiationEUROCS_Sc()
         else:
             self.scheme = RadiationNone()
         return
@@ -297,11 +299,13 @@ cdef class RadiationEUROCS_Sc:
         self.F0_max = 1100.0
         self.reff = 1.0e-5 # assumed effective droplet radius of 10 micrometers
         self.asf = 0.06 # Surface albedo
+        self.g_de = 0.8112
 
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.z_pencil.initialize(Gr, Pa, 2)
+        Pa.root_print('Initialized EUROCS_Sc radiation')
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -343,11 +347,12 @@ cdef class RadiationEUROCS_Sc:
             self.hour = self.hour + TS.dt/3600.0
             if self.hour > 24.0:
                 self.hour = self.hour - 24.0
-                self.day = self.day + 1
+                self.day = int(self.day + 1)
 
         # Shortwave parameters depending on solar zenith angle
         cdef double amu0 = cosine_zenith_angle(self.year, self.month, self.day, self.hour, self.latitude, self.longitude)
         amu0 = fmax(amu0, 1.0e-5)
+        Pa.root_print('Day = ' + str(self.day) + ' Hour = ' + str(np.round(self.hour, decimals=2)) + 'cos(zen) = ' + str(np.round(amu0, decimals=4)))
         cdef double F0 = self.F0_max * amu0
         cdef double gp = self.g_de /(1.0 + self.g_de)
         cdef double omp = (1.0 - self.g_de * self.g_de)* self.omega_de/(1.0- self.omega_de * self.g_de * self.g_de)
@@ -382,8 +387,10 @@ cdef class RadiationEUROCS_Sc:
                 C2 = (a11 * b2 - a21 * b1)/det
 
                 lwp_down = 0.0
+                tau = 0.0
+                f_rad_sw[ip, Gr.dims.n[2]] = (0.75 * F0 *(p * (C1 * exp(-kap*tau) - C2 * exp(kap * tau)) - beta * exp(-tau/amu0)) + amu0 * F0 * exp(-tau/amu0))
                 # Compute the net DOWNWARD shortwave
-                for k in xrange(Gr.dims.n[2], -1, -1):
+                for k in xrange(Gr.dims.n[2]-1, -1, -1):
                     lwp_down += self.density * ql_pencils[ip, k] * dz
                     tau = 1.5 * lwp_down / (self.reff * liquid_density)
                     f_rad_sw[ip, k] = (0.75 * F0 *(p * (C1 * exp(-kap*tau) - C2 * exp(kap * tau)) - beta * exp(-tau/amu0))
