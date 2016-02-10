@@ -97,6 +97,8 @@ cdef class TimeStepping:
         if self.rk_step == self.n_rk_steps - 1:
             self.compute_cfl_max(Gr, PV,DV, Pa)
             self.dt = self.cfl_time_step()
+            ##---DEBUGGING----#
+            self.dt = self.dt_max
 
             #Diffusive limiting not yet implemented
             if self.t + self.dt > self.t_max:

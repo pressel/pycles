@@ -369,7 +369,7 @@ cdef class RadiationEUROCS_Sc:
 
                 # Compute the net UPWARD longwave
                 lwp_down = 0.0
-                f_rad_lw[ip, Gr.dims.n[2]] = 0.0
+                f_rad_lw[ip, Gr.dims.n[2]] = self.deltaFL * exp(-self.a * lwp_down)
                 for k in xrange(Gr.dims.n[2] - 1, -1, -1):
                     lwp_down += self.density * ql_pencils[ip, k] * dz
                     f_rad_lw[ip, k] = self.deltaFL * exp(-self.a * lwp_down)
@@ -377,7 +377,7 @@ cdef class RadiationEUROCS_Sc:
                 column_lwp = lwp_down
                 tau_tot = 1.5 * column_lwp/ (self.reff * liquid_density)
                 a11 = (1.0 - self.asf - 2.0 * (1.0 + self.asf) * p / 3.0) * exp(-kap * tau_tot)
-                a12 = (1.0 - self.asf + 2.0 * (1.0 + self.asf) * p / 3.0) *exp( kap*tau_tot)
+                a12 = (1.0 - self.asf + 2.0 * (1.0 + self.asf) * p / 3.0) * exp( kap * tau_tot)
                 b1  = ((1.0 - self.asf) * alpha - 2.0 * (1.0 + self.asf) * beta/3.0  + self.asf * amu0) * exp(-tau_tot/amu0)
                 a21 = 1.0 + 2.0/3.0 * p
                 a22 = 1.0-2.0/3.0 * p
