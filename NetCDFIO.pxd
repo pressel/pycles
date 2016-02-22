@@ -5,6 +5,10 @@ cimport DiagnosticVariables
 cimport Grid
 cdef class NetCDFIO_Stats:
     cdef:
+        object root_grp
+        object profiles_grp
+        object ts_grp
+
         str stats_file_name
         str stats_path
         str output_path
@@ -20,6 +24,8 @@ cdef class NetCDFIO_Stats:
     cpdef add_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef add_reference_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef add_ts(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
+    cpdef open_files(self, ParallelMPI.ParallelMPI Pa)
+    cpdef close_files(self, ParallelMPI.ParallelMPI Pa)
     cpdef write_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa)
     cpdef write_reference_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa)
     cpdef write_ts(self, var_name, double data, ParallelMPI.ParallelMPI Pa)
