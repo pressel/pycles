@@ -30,7 +30,8 @@ cdef class ConditionalStatistics:
         try:
             conditional_statistics = namelist['conditional_stats']['classes']
         except:
-            return
+            conditional_statistics = ['Null']
+
 
         #Convert whatever is in twodimensional_statistics to list if not already
         if not type(conditional_statistics) == list:
@@ -39,6 +40,10 @@ cdef class ConditionalStatistics:
         #Build list of twodimensional statistics class instances
         if 'Spectra' in conditional_statistics:
             self.CondStatsClasses.append(SpectraStatistics(Gr,PV, DV, NC, Pa))
+        if 'Null' in conditional_statistics:
+            self.CondStatsClasses.append(NullCondStats())
+
+        print(self.CondStatsClasses)
 
         return
 
@@ -51,6 +56,15 @@ cdef class ConditionalStatistics:
             _class.stats_io(Gr, RS, PV, DV, NC, Pa)
 
         return
+
+cdef class NullCondStats:
+    def __init__(self) :
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,  NetCDFIO_CondStats NC, ParallelMPI.ParallelMPI Pa):
+        return
+
 
 cdef class SpectraStatistics:
     def __init__(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
