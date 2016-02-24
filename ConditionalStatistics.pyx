@@ -42,7 +42,6 @@ cdef class ConditionalStatistics:
         if 'Null' in conditional_statistics:
             self.CondStatsClasses.append(NullCondStats())
 
-        print(self.CondStatsClasses)
 
         return
 
