@@ -757,22 +757,26 @@ cdef class SurfaceRico:
 cdef class SurfaceSoares:
     def __init__(self):
         self.theta_flux = 0.06 # K m/s
-        self.qt_flux = 2.5e-5 # m/s
+        # self.qt_flux = 2.5e-5 # m/s
         self.z0 = 0.001 #m (Roughness length)
         self.gustiness = 0.001 #m/s, minimum surface windspeed for determination of u*
 
         self.theta_surface = 300.0 # K
-        self.qt_surface = 5.0e-3 # kg/kg
-        self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux + self.qt_surface *self.theta_flux))
-                              /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))     # adopted from Bomex ??
+        # self.qt_surface = 5.0e-3 # kg/kg
 
         return
 
 
-    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
-    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
-    @cython.cdivision(True)
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):     # Sullivan
+
+        # Bomex:
+        # self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux + self.qt_surface *self.theta_flux))
+        #                       /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))     # adopted from Bomex ??
+        # Sullivan:
+        T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
+        self.buoyancy_flux = self.theta_flux * exner(Ref.p0[Gr.dims.gw-1]) * g /T0
+
         self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
@@ -781,9 +785,11 @@ cdef class SurfaceSoares:
         NS.add_ts('vw_surface_mean',Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
 
+
         return
 
-# update adopted and modified from Sullivan + Bomex
+
+# # update adopted and modified from Sullivan + Bomex
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         # Since this case is completely dry, the computation of entropy flux from sensible heat flux is very simple
 
@@ -802,8 +808,8 @@ cdef class SurfaceSoares:
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
             Py_ssize_t temp_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
-            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+            # Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            # Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
             double dzi = 1.0/Gr.dims.dx[2]
             double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
@@ -813,10 +819,12 @@ cdef class SurfaceSoares:
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    # ??? ok to use entropy calc from qt??
-                    self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
+                    # Sullivan
+                    self.s_flux[ij] = cpd * self.theta_flux*exner_c(Ref.p0_half[gw])/DV.values[temp_shift+ijk]
+                    # Bomex (entropy flux includes qt flux)
+                    # self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
                     PV.tendencies[s_shift + ijk] += self.s_flux[ij] * tendency_factor
-                    PV.tendencies[qt_shift + ijk] += self.qt_flux * tendency_factor
+                    # PV.tendencies[qt_shift + ijk] += self.qt_flux * tendency_factor
 
         # Windspeed (adopted from Sullivan, equivalent to Bomex)
         cdef:
@@ -846,11 +854,7 @@ cdef class SurfaceSoares:
                     PV.tendencies[u_shift + ijk] += self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift + ijk] += self.v_flux[ij] * tendency_factor
 
-
         return
-
-
-
 
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -864,6 +868,7 @@ cdef class SurfaceSoares:
         NS.write_ts('s_flux_surface_mean', tmp, Pa)
 
         return
+
 
 
 

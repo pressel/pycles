@@ -706,7 +706,7 @@ def SMOKE():
 
     return namelist
 
-def Rico():
+def Rico():     # Rico = Rain in Cumulus Over the Ocean
 
     namelist = {}
 
@@ -800,6 +800,9 @@ def Rico():
 
 
 def DCBLSoares():
+    # adopted from: "An eddy-diffusivity/mass-flux parametrization for dry and shallow cumulus convection",
+    # By P. M. M. SOARES, P. M. A. MIRANDA, A. P. SIEBESMA and J. TEIXEIRA, Q. J. R. Meteorol. Soc. (2004)
+    # modifications: qt initial profile and flux set to zero, since no dry thermodynamics without condensation given
 
     namelist = {}
 
@@ -832,7 +835,7 @@ def DCBLSoares():
     namelist['thermodynamics']['latentheat'] = 'constant'       # 'constant' or 'variable', for Clausius Clapeyron calculation
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'None_Dry'     # ???
+    namelist['microphysics']['scheme'] = 'None_Dry'     # Bomex: 'None_SA'; options: 'None_Dry' (no qt as Progn. Var.), 'None_SA', 'SB_Liquid'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'  # seems to be this in all cases???
 
     namelist['sgs'] = {}
@@ -892,9 +895,8 @@ def DCBLSoares():
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
-
-
     return namelist
+
 
 
 def write_file(namelist):
