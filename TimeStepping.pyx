@@ -222,7 +222,7 @@ cdef class TimeStepping:
         return
 
     cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
-
+        Pa.root_print('Computing CFL Max')
         cdef:
             double cfl_max_local = -9999.0
             double [3] dxi = Gr.dims.dxi
@@ -253,6 +253,15 @@ cdef class TimeStepping:
                             w = fmax(fabs( DV.values[DV.sedv_index[isedv]*Gr.dims.npg + ijk ] + PV.values[w_shift+ijk]), w)
 
                         cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2]))
+                        # problem: second term is nan
+        Pa.root_print('cfl_max_local: '+ str(cfl_max_local))
+        Pa.root_print(str(self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2])))  # is a nan
+        Pa.root_print('u: '+str(PV.values[u_shift + ijk]))
+        Pa.root_print('v: '+str(PV.values[v_shift+ijk]))
+        Pa.root_print('w: '+str(w))
+        # Pa.root_print('u: '+str(fmax(PV.values)))
+        # Pa.root_print('w: '+str(fabs(w)))
+        # all three fields are nan
 
                         # cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + fabs(PV.values[w_shift+ijk])*dxi[2]))
 

@@ -126,6 +126,7 @@ class Simulation3d:
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
+        self.Pa.root_print('Initialization completed!')
 
         return
 
@@ -144,8 +145,11 @@ class Simulation3d:
         if not self.Restart.is_restart_run:
             self.force_io()
 
+        self.Pa.root_print('Run started')
+
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
+            self.Pa.root_print('time: '+str(self.TS.t))
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
@@ -163,9 +167,11 @@ class Simulation3d:
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
+                self.Pa.root_print('ok until here')
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
+                self.Pa.root_print('rk_step: '+str(self.TS.rk_step)+' (total steps: '+str(self.TS.n_rk_steps)+')')
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
