@@ -478,6 +478,8 @@ def DYCOMS_RF01():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    #namelist['sgs']['UniformViscosity']['diffusivity'] = 4.0
+    #namelist['sgs']['UniformViscosity']['viscosity'] = 3*4.0
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False

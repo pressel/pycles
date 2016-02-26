@@ -29,9 +29,16 @@ cdef extern from "sgs.h":
                             double* strain_rate_mag, double cs, double prt)
     void smagorinsky_update_iles(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
                             double* strain_rate_mag, double cs, double prt)
+    double buoyancy_adjust(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
+                            double* strain_rate_mag, double prt)
+
+
+
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
+            self.scheme = UniformViscosity(namelist)
+        elif(namelist['sgs']['scheme'] == 'UniformViscosity_cond'):
             self.scheme = UniformViscosity(namelist)
         elif(namelist['sgs']['scheme'] == 'Smagorinsky'):
             self.scheme = Smagorinsky(namelist)
@@ -100,6 +107,60 @@ cdef class UniformViscosity:
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
+
+
+cdef class UniformViscosity_cond:
+    def __init__(self,namelist):
+        try:
+            self.const_diffusivity = namelist['sgs']['UniformViscosity']['diffusivity']
+        except:
+            self.const_diffusivity = 0.0
+
+        try:
+            self.const_viscosity = namelist['sgs']['UniformViscosity']['viscosity']
+        except:
+            self.const_viscosity = 0.0
+
+        self.is_init = False
+        self.prt = 1.0/3.0
+
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+
+    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
+            Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
+            Py_ssize_t bf_shift =DV.get_varshift(Gr, 'buoyancy_frequency')
+
+        cdef double fb = buoyancy_adjust(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                               &Ke.strain_rate_mag[0],self.prt)
+
+        cdef:
+            #Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
+            #Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
+            Py_ssize_t i
+
+        with nogil:
+            if not self.is_init:
+                for i in xrange(Gr.dims.npg):
+                    DV.values[diff_shift + i] = self.const_diffusivity * fb
+                    DV.values[visc_shift + i] = self.const_viscosity * fb
+                    self.is_init = True
+
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+
 
 cdef class Smagorinsky:
     def __init__(self,namelist):
