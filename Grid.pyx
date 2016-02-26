@@ -17,6 +17,7 @@ cdef class Grid:
     '''
 
     # Gr.dims.n[i] = namelist['grid']['ni'] (e.g. n[0] = 'nx')      --> total number of pts
+    # Gr.dims.ng[i] = Gr.dims.n[i] + 2*gw                           --> total number of pts incl. ghost points
     # Gr.dims.nl[i] = Gr.dims.n[i] // mpi_dims[i]                   --> local number of pts (per processor)
     # Gr.dims.nlg[i] = Gr.dims.nl[i] + 2*gw                         --> local number of pts incl ghost points
     # i = 0,1,2

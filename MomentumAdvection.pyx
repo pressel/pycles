@@ -23,6 +23,7 @@ cdef class MomentumAdvection:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         try:
             self.order = namelist['momentum_transport']['order']
+            Pa.root_print('momentum transport: order: ' + np.str(self.order))
         except:
             Pa.root_print(
                 'momentum_transport order not given in namelist')

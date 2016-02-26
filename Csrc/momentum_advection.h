@@ -8,6 +8,8 @@
 #include "momentum_advection_central_ml.h"
 #include "momentum_advection_central_pt.h"
 #include "flux_divergence.h"
+
+#include "momentum_advection_central_ql.h"
 #include<stdio.h>
 
 
@@ -17,6 +19,7 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
                                 double* restrict tendency, ssize_t d_advected, ssize_t d_advecting, int scheme){
 
     switch(scheme){
+        printf("scheme !!!!!!!!!!");
         case 2:
             second_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
@@ -38,6 +41,7 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
                 tendency, d_advected, d_advecting);
             break;
         case 7:
+            //printf("hihihihi");
             weno_seventh_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
@@ -101,6 +105,17 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
             sixth_order_ml_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
+
+
+
+        case 102:
+            printf("hahaha");
+            second_order_m_ql(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
+
+
+
         default:
             // Default to second order scheme.
             second_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,

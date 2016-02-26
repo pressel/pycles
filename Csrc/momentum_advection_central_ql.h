@@ -2,6 +2,7 @@
 #include "grid.h"
 #include "advection_interpolation.h"
 #include "flux_divergence.h"
+#include "c_statistics"
 #include<stdio.h>
 
 // QUESTIONS / NOTES:
@@ -24,6 +25,8 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
     double* restrict alpha0, double* restrict alpha0_half,
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+        printf("QL Momentum Transport");
 
         // Dynamically allocate flux array
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);     // malloc allocates size of uninitialized storage; in this case allocates memory for (nlg[0]+nlg[1]+nlg[2])*sizeof(double))
@@ -71,15 +74,23 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
 
         // (2) average interpolated velocity fields
+        //vel_mean_ing = Pa.HorizontalMean(Gr, &vel_int_advecting);
+        if (d_advected != d_advecting){
+            vel_mean_ed = vel_mean_ing;
+            //vel_mean_ed = Pa.HorizontalMean(Gr, &vel_int_advected);
+            }
+        else {
+            vel_mean_ed = vel_mean_ing;
+            }
         // ??? call function per k or globally?
-        for(ssize_t k=kmin;k<kmax;k++){
+        /*for(ssize_t k=kmin;k<kmax;k++){
             //vel_mean_ing = mean(vel_int_advecting)
             if (d_advected != d_advecting)
                 //vel_mean_ed = mean(vel_int_advected)
                 vel_mean_ed[k] = 1;
             else
                 vel_mean_ed[k] = vel_mean_ing[k];
-        }
+        }*/
 
 
         // (3) compute eddy flux: (vel - mean_vel)**2 AND compute total flux
@@ -90,12 +101,10 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        // ... to be modified according to QL ...
                         // vel_fluc = vel_int - vel_mean
                         // eddy_flux[ijk] = vel_fluc[ijk]*vel_fluc[ijk]*rho0_half[k];       // need to be able to output eddy_flux???
                         eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k];
                         flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k];
-                        // ... to be modified according to QL ...
                     }
                 }
             }
@@ -107,12 +116,10 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        // ... to be modified according to QL ...
                         // vel_fluc = vel_int - vel_mean
                         // eddy_flux[ijk] = vel_fluc[ijk]*vel_fluc[ijk]*rho0_half[k];       // need to be able to output eddy_flux???
                         eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k];
                         flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k];
-                        // ... to be modified according to QL ..
                     }
                 }
             }
@@ -124,24 +131,17 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        // ... to be modified according to QL ...
                         // vel_fluc = vel_int - vel_mean
                         // eddy_flux[ijk] = vel_fluc[ijk]*vel_fluc[ijk]*rho0_half[k];       // need to be able to output eddy_flux???
                         eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k];
                         flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k];
-                        // ... to be modified according to QL ..
                     }
                 }
             }
         }
 
-
         // (4) compute mean eddy flux
-        // ??? call function per k or globally?
-        for(ssize_t k=kmin;k<kmax;k++){
-            //mean_eddy_flux = mean(eddy_flux)
-            mean_eddy_flux[k] = 1;
-        }
+        //mean_eddy_flux = Pa.HorizontalMean(Gr, &eddy_flux);
 
 
         // (5) compute QL flux: flux = flux - eddy_flux + mean_eddy_flux
@@ -161,10 +161,12 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                                 tendency, d_advected, d_advecting);
 
         //Free dynamically allocated array
-        free(flux);
+        /*free(flux);
+        free(eddy_flux);
+        free(mean_eddy_flux);
         free(vel_int_ing);
         free(vel_int_ed);
         free(vel_mean_ed);
-        free(vel_mean_ing);
+        free(vel_mean_ing);*/
         return;
     }
