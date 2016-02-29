@@ -18,6 +18,9 @@ import cython
 
 cdef class NetCDFIO_Stats:
     def __init__(self):
+        self.root_grp = None
+        self.profiles_grp = None
+        self.ts_grp = None
         return
 
     @cython.wraparound(True)
@@ -64,6 +67,18 @@ cdef class NetCDFIO_Stats:
                 os.path.join( './', namelist['meta']['simname'] + '.in'),
                 os.path.join( outpath, namelist['meta']['simname'] + '.in'))
             self.setup_stats_file(Gr, Pa)
+        return
+
+    cpdef open_files(self, ParallelMPI.ParallelMPI Pa):
+        if Pa.rank == 0:
+            self.root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            self.profiles_grp = self.root_grp.groups['profiles']
+            self.ts_grp = self.root_grp.groups['timeseries']
+        return
+
+    cpdef close_files(self, ParallelMPI.ParallelMPI Pa):
+        if Pa.rank == 0:
+            self.root_grp.close()
         return
 
     cpdef setup_stats_file(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
@@ -131,11 +146,11 @@ cdef class NetCDFIO_Stats:
 
     cpdef write_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
-            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
-            profile_grp = root_grp.groups['profiles']
-            var = profile_grp.variables[var_name]
+            #root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            #profile_grp = root_grp.groups['profiles']
+            var = self.profiles_grp.variables[var_name]
             var[-1, :] = np.array(data)
-            root_grp.close()
+            #root_grp.close()
         return
 
     cpdef write_reference_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa):
@@ -158,28 +173,28 @@ cdef class NetCDFIO_Stats:
     @cython.wraparound(True)
     cpdef write_ts(self, var_name, double data, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
-            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
-            ts_grp = root_grp.groups['timeseries']
-            var = ts_grp.variables[var_name]
+            #root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            #ts_grp = root_grp.groups['timeseries']
+            var = self.ts_grp.variables[var_name]
             var[-1] = data
-            root_grp.close()
+            #root_grp.close()
         return
 
     cpdef write_simulation_time(self, double t, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
-            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
-            profile_grp = root_grp.groups['profiles']
-            ts_grp = root_grp.groups['timeseries']
+            #root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            #profile_grp = root_grp.groups['profiles']
+            #ts_grp = root_grp.groups['timeseries']
 
             # Write to profiles group
-            profile_t = profile_grp.variables['t']
+            profile_t = self.profiles_grp.variables['t']
             profile_t[profile_t.shape[0]] = t
 
             # Write to timeseries group
-            ts_t = ts_grp.variables['t']
+            ts_t = self.ts_grp.variables['t']
             ts_t[ts_t.shape[0]] = t
 
-            root_grp.close()
+            #root_grp.close()
         return
 
 cdef class NetCDFIO_Fields:
@@ -356,11 +371,9 @@ cdef class NetCDFIO_Fields:
 
 
 
-
-
-
 cdef class NetCDFIO_CondStats:
     def __init__(self):
+
         return
 
     @cython.wraparound(True)

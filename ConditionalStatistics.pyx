@@ -134,7 +134,9 @@ cdef class SpectraStatistics:
         self.X_Pencil.initialize(Gr,Pa,dim=0)
         self.Y_Pencil.initialize(Gr,Pa,dim=1)
 
+
         self.Filter = Filter.Filter(Gr, Pa)
+
 
 
         return
