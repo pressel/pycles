@@ -61,20 +61,16 @@ cdef class RadiationSmoke:
 
 cdef class RadiationEUROCS_Sc:
     cdef:
-        double a
-        double density
-        double deltaFL
+
         Py_ssize_t year
         Py_ssize_t month
         Py_ssize_t day
         double hour
         double latitude
         double longitude
-        double omega_de
-        double F0_max
+
         double reff
         double asf
-        double g_de
         ParallelMPI.Pencil z_pencil
 
 
