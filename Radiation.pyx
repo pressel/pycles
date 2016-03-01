@@ -274,3 +274,55 @@ cdef class RadiationSmoke:
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
+
+
+# Note: the RRTM modules are compiled in the 'RRTMG' directory:
+cdef extern:
+    void c_rrtmg_lw_init(double *cpdair)
+    void c_rrtmg_lw (
+             int *ncol    ,int *nlay    ,int *icld    ,int *idrv    ,
+             double *play    ,double *plev    ,double *tlay    ,double *tlev    ,double *tsfc    ,
+             double *h2ovmr  ,double *o3vmr   ,double *co2vmr  ,double *ch4vmr  ,double *n2ovmr  ,double *o2vmr,
+             double *cfc11vmr,double *cfc12vmr,double *cfc22vmr,double *ccl4vmr ,double *emis    ,
+             int *inflglw ,int *iceflglw,int *liqflglw,double *cldfr   ,
+             double *taucld  ,double *cicewp  ,double *cliqwp  ,double *reice   ,double *reliq   ,
+             double *tauaer  ,
+             double *uflx    ,double *dflx    ,double *hr      ,double *uflxc   ,double *dflxc,  double *hrc,
+             double *duflx_dt,double *duflxc_dt )
+    void c_rrtmg_sw_init(double *cpdair)
+    void c_rrtmg_sw (int *ncol    ,int *nlay    ,int *icld    ,int *iaer    ,
+             double *play    ,double *plev    ,double *tlay    ,double *tlev    ,double *tsfc    ,
+             double *h2ovmr  ,double *o3vmr   ,double *co2vmr  ,double *ch4vmr  ,double *n2ovmr  ,double *o2vmr,
+             double *asdir   ,double *asdif   ,double *aldir   ,double *aldif   ,
+             double *coszen  ,double *adjes   ,int *dyofyr  ,double *scon    ,
+             int *inflgsw ,int *iceflgsw,int *liqflgsw,double *cldfr   ,
+             double *taucld  ,double *ssacld  ,double *asmcld  ,double *fsfcld  ,
+             double *cicewp  ,double *cliqwp  ,double *reice   ,double *reliq   ,
+             double *tauaer  ,double *ssaaer  ,double *asmaer  ,double *ecaer   ,
+             double *swuflx  ,double *swdflx  ,double *swhr    ,double *swuflxc ,double *swdflxc ,double *swhrc)
+
+
+
+
+
+cdef class RadiationRRTM:
+    def __init__(self, namelist):
+        try:
+            self.n_ext = namelist['radiation']['RRTM']['n_ext']
+        except:
+            self.n_ext = 50
+        try:
+            self.ref_aloft
+
+
+        return
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 ParallelMPI.ParallelMPI Pa):
+        return
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
