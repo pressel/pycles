@@ -390,7 +390,7 @@ cdef class RadiationFixedHeatingProfile:
         if Pa.rank == 0:
             plt.figure('Interp dFdz')
             plt.plot(self.dFdz, Gr.zl_half)
-            plt.show()
+            plt.savefig('dfdz.png')
 
         return
 
