@@ -81,3 +81,18 @@ cdef class RadiationEUROCS_Sc:
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                    PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+
+cdef class RadiationFixedHeatingProfile:
+    cdef:
+        double [:] dFdz_5m
+        double [:] h_5m
+        double [:] dFdz
+
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

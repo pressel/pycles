@@ -66,7 +66,7 @@ cdef class No_Microphysics_SA:
         except:
             self.cloud_sedimentation = False
 
-        if namelist['meta']['casename'] == 'DYCOMS_RF02':
+        if namelist['meta']['casename'] == 'DYCOMS_RF02' or namelist['meta']['casename'] == 'DYCOMS_RF01' :
             self.stokes_sedimentation = True
         else:
             self.stokes_sedimentation = False
