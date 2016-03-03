@@ -34,31 +34,31 @@ class Simulation3d:
         return
 
     def initialize(self, namelist):
-        self.Pa = ParallelMPI.ParallelMPI(namelist)
-        self.Gr = Grid.Grid(namelist, self.Pa)
-        self.PV = PrognosticVariables.PrognosticVariables(self.Gr)
-        self.Ke = Kinematics.Kinematics()
-        self.DV = DiagnosticVariables.DiagnosticVariables()
-        self.Pr = PressureSolver.PressureSolver()
-        self.LH = LatentHeat(namelist, self.Pa)
-        self.Micro = MicrophysicsFactory(namelist, self.LH, self.Pa)
-        self.SA = ScalarAdvection.ScalarAdvection(namelist, self.LH, self.Pa)
-        self.MA = MomentumAdvection.MomentumAdvection(namelist, self.Pa)
-        self.SGS = SGS.SGS(namelist)
-        self.SD = ScalarDiffusion.ScalarDiffusion(namelist, self.LH, self.DV, self.Pa)
-        self.MD = MomentumDiffusion.MomentumDiffusion(self.DV, self.Pa)
-        self.Th = ThermodynamicsFactory(namelist, self.Micro, self.LH, self.Pa)
-        self.Ref = ReferenceState.ReferenceState(self.Gr)
-        self.Sur = Surface.Surface(namelist, self.LH, self.Pa)
-        self.Fo = Forcing.Forcing(namelist, self.Pa)
-        self.Ra = Radiation.Radiation(namelist, self.Pa)
-        self.StatsIO = NetCDFIO.NetCDFIO_Stats()
-        self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
-        self.CondStatsIO = NetCDFIO.NetCDFIO_CondStats()
-        self.Restart = Restart.Restart(namelist, self.Pa)
-        self.VO = VisualizationOutput.VisualizationOutput(namelist, self.Pa)
-        self.Damping = Damping.Damping(namelist, self.Pa)
-        self.TS = TimeStepping.TimeStepping()
+        self.Pa = ParallelMPI.ParallelMPI(namelist)                    #Right now nothing to be done here for collocation
+        self.Gr = Grid.Grid(namelist, self.Pa)                         #Nothing to be done here for collocation
+        self.PV = PrognosticVariables.PrognosticVariables(self.Gr)     #Nothing to be done here for collocation
+        self.Ke = Kinematics.KinematicsCollocated()                    #For now this is empty
+        self.DV = DiagnosticVariables.DiagnosticVariables()            #Nothing to be done here for collocation
+        self.Pr = PressureSolver.PressureSolver()                      #Much to be done here
+        self.LH = LatentHeat(namelist, self.Pa)                        #Nothing to be done here
+        self.Micro = MicrophysicsFactory(namelist, self.LH, self.Pa)   #For now nothing to be done here
+        self.SA = ScalarAdvection.ScalarAdvection(namelist, self.LH, self.Pa) #Much to be done here
+        self.MA = MomentumAdvection.MomentumAdvection(namelist, self.Pa)      #Much to be done here
+        self.SGS = SGS.SGSCollocated(namelist)                                #Much to be done here
+        self.SD = ScalarDiffusion.ScalarDiffusion(namelist, self.LH, self.DV, self.Pa) #Much to be done here
+        self.MD = MomentumDiffusion.MomentumDiffusion(self.DV, self.Pa)  #Much to be done here
+        self.Th = ThermodynamicsFactory(namelist, self.Micro, self.LH, self.Pa) #Bouyancy only
+        self.Ref = ReferenceState.ReferenceState(self.Gr)                       #Nothin to be done here
+        self.Sur = Surface.Surface(namelist, self.LH, self.Pa) #Need to think about where to add fluxes
+        self.Fo = Forcing.Forcing(namelist, self.Pa)           #Much to be done here (but for now will avoid)
+        self.Ra = Radiation.Radiation(namelist, self.Pa)       #For now we will avoid
+        self.StatsIO = NetCDFIO.NetCDFIO_Stats()               #Nothing to be done here
+        self.FieldsIO = NetCDFIO.NetCDFIO_Fields()             #Nothing to be done here
+        self.CondStatsIO = NetCDFIO.NetCDFIO_CondStats()       #Nothing to be done here
+        self.Restart = Restart.Restart(namelist, self.Pa)      #Nothing to be done here
+        self.VO = VisualizationOutput.VisualizationOutput(namelist, self.Pa) #Nothing to be done here
+        self.Damping = Damping.Damping(namelist, self.Pa)   #Nothing to be done here
+        self.TS = TimeStepping.TimeStepping()               #Nothing to be done here
 
         # Add new prognostic variables
         self.PV.add_variable('u', 'm/s', "sym", "velocity", self.Pa)
@@ -153,10 +153,10 @@ class Simulation3d:
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
-                self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
+                #self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
                 self.Damping.update(self.Gr,self.PV,self.Pa)
-                self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
-                self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
+                #self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
+                #self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)

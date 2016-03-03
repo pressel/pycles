@@ -56,6 +56,30 @@ cdef class SGS:
         self.scheme.stats_io(Gr,DV,PV,Ke,NS,Pa)
         return
 
+
+cdef class SGSCollocated:
+    def __init__(self, namelist):
+
+        return
+
+
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+
+    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+
+    cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+
 cdef class UniformViscosity:
     def __init__(self,namelist):
         try:
