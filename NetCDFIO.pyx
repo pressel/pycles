@@ -371,11 +371,9 @@ cdef class NetCDFIO_Fields:
 
 
 
-
-
-
 cdef class NetCDFIO_CondStats:
     def __init__(self):
+
         return
 
     @cython.wraparound(True)
@@ -383,7 +381,11 @@ cdef class NetCDFIO_CondStats:
 
         self.last_output_time = 0.0
         self.uuid = str(namelist['meta']['uuid'])
-        self.frequency = namelist['conditional_stats']['frequency']
+        # if a frequency is not defined for the conditional statistics, set frequency to the maximum simulation time
+        try:
+            self.frequency = namelist['conditional_stats']['frequency']
+        except:
+            self.frequency = namelist['time_stepping']['t_max']
 
 
         # Setup the statistics output path
@@ -395,7 +397,12 @@ cdef class NetCDFIO_CondStats:
             except:
                 pass
 
-        self.stats_path = str( os.path.join(outpath, namelist['conditional_stats']['stats_dir']))
+        # Set a default name for the output directory if it is not defined in the namelist
+        try:
+            self.stats_path = str( os.path.join(outpath, namelist['conditional_stats']['stats_dir']))
+        except:
+            self.stats_path = str( os.path.join(outpath, 'cond_stats'))
+
         if Pa.rank == 0:
             try:
                 os.mkdir(self.stats_path)
@@ -407,7 +414,6 @@ cdef class NetCDFIO_CondStats:
         if os.path.exists(self.path_plus_file):
             for i in range(100):
                 res_name = 'Restart_'+str(i)
-                print "Here " + res_name
                 if os.path.exists(self.path_plus_file):
                     self.path_plus_file = str( self.stats_path + '/' + 'CondStats.' + namelist['meta']['simname']
                            + '.' + res_name + '.nc')
@@ -468,13 +474,16 @@ cdef class NetCDFIO_CondStats:
 
     cpdef write_condstat_time(self, double t, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
-            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
-            for groupname in root_grp.groups:
-                sub_grp = root_grp.groups[groupname]
+            try:
+                root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+                for groupname in root_grp.groups:
+                    sub_grp = root_grp.groups[groupname]
 
-                # Write to sub_grp
-                group_t = sub_grp.variables['t']
-                group_t[group_t.shape[0]] = t
+                    # Write to sub_grp
+                    group_t = sub_grp.variables['t']
+                    group_t[group_t.shape[0]] = t
 
-            root_grp.close()
+                root_grp.close()
+            except:
+                pass
         return
