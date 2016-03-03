@@ -35,6 +35,8 @@ cdef class Forcing:
             self.scheme = ForcingNone()
         elif casename == 'Rico':
             self.scheme = ForcingRico()
+        elif casename == 'StableBubble':
+            self.scheme = ForcingNone()
         else:
             Pa.root_print('No focing for casename: ' +  casename)
             Pa.root_print('Killing simulation now!!!')
