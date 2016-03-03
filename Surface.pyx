@@ -639,9 +639,6 @@ cdef class SurfaceDYCOMS_RF02:
 
         return
 
-
-
-
 cdef class SurfaceRico:
     def __init__(self):
         self.cm =0.001229
