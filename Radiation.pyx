@@ -21,8 +21,17 @@ include 'parameters.pxi'
 cdef class Radiation:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         casename = namelist['meta']['casename']
+        try:
+            fixed_heating = namelist['radiation']['fixed_heating']
+        except:
+            fixed_heating = False
         if casename == 'DYCOMS_RF01':
-            self.scheme = RadiationDyCOMS_RF01()
+            if fixed_heating:
+                self.scheme = RadiationFixedHeatingProfile()
+                Pa.root_print('FHP Radiation')
+            else:
+                self.scheme = RadiationDyCOMS_RF01()
+                Pa.root_print('Standard DYCOMS Radiation')
         elif casename == 'DYCOMS_RF02':
             #Dycoms RF01 and RF02 use the same radiation
             self.scheme = RadiationDyCOMS_RF01()

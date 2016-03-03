@@ -480,6 +480,9 @@ def DYCOMS_RF01():
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
 
+    namelist['radiation'] ={}
+    namelist['radiation']['fixed_heating'] = True
+
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'None_SA'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
