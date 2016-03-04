@@ -42,8 +42,8 @@ class Simulation3d:
         self.Pr = PressureSolver.PressureSolver()                      #Much to be done here
         self.LH = LatentHeat(namelist, self.Pa)                        #Nothing to be done here
         self.Micro = MicrophysicsFactory(namelist, self.LH, self.Pa)   #For now nothing to be done here
-        self.SA = ScalarAdvection.ScalarAdvection(namelist, self.LH, self.Pa) #Much to be done here
-        self.MA = MomentumAdvection.MomentumAdvection(namelist, self.Pa)      #Much to be done here
+        self.SA = ScalarAdvection.ScalarAdvectionCollocated(namelist, self.LH, self.Pa) #Much to be done here
+        self.MA = MomentumAdvection.MomentumAdvectionCollocated(namelist, self.Pa)      #Much to be done here
         self.SGS = SGS.SGSCollocated(namelist)                                #Much to be done here
         self.SD = ScalarDiffusion.ScalarDiffusion(namelist, self.LH, self.DV, self.Pa) #Much to be done here
         self.MD = MomentumDiffusion.MomentumDiffusion(self.DV, self.Pa)  #Much to be done here
