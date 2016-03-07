@@ -215,8 +215,8 @@ cdef class RadiationDyCOMS_RF01:
             double [:, :] qt_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[qt_shift])
             double[:, :] f_rad = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
             double[:, :] f_heat = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
-            double[:] heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-            double[:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double q_0
             double q_1
 

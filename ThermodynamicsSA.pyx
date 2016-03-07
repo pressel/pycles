@@ -121,9 +121,6 @@ cdef class ThermodynamicsSA:
         NS.add_ts('cloud_base', Gr, Pa)
         NS.add_ts('lwp', Gr, Pa)
 
-        for temperature in np.arange(280.0,306.0, 0.5):
-            print(temperature,self.get_pv_star(temperature), pv_sat_magnus(temperature))
-
 
         return
 

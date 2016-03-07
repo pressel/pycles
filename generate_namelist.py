@@ -531,19 +531,17 @@ def DYCOMS_RF01():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','qt_variance',
-                                                  'qt_variance_clip', 's_variance',
-                                                  'covariance', 'correlation']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature']
 
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
-    namelist['conditional_stats']['frequency'] = 100.0
+    namelist['conditional_stats']['frequency'] = 600.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
 
     namelist['visualization'] = {}
-    namelist['visualization']['frequency'] = 1e6
+    namelist['visualization']['frequency'] = 600.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'DYCOMS_RF01'
