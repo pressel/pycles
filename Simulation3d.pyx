@@ -2,7 +2,7 @@ import time
 import numpy as np
 cimport numpy as np
 from Initialization import InitializationFactory, AuxillaryVariables
-from Thermodynamics import ThermodynamicsFactory
+from Thermodynamics import ThermodynamicsFactory, ThermodynamicsFactoryCollocated
 from Microphysics import MicrophysicsFactory
 from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
@@ -37,9 +37,9 @@ class Simulation3d:
         self.Pa = ParallelMPI.ParallelMPI(namelist)                    #Right now nothing to be done here for collocation
         self.Gr = Grid.Grid(namelist, self.Pa)                         #Nothing to be done here for collocation
         self.PV = PrognosticVariables.PrognosticVariables(self.Gr)     #Nothing to be done here for collocation
-        self.Ke = Kinematics.KinematicsCollocated()                    #For now this is empty
+        self.Ke = Kinematics.Kinematics()                    #For now this is empty
         self.DV = DiagnosticVariables.DiagnosticVariables()            #Nothing to be done here for collocation
-        self.Pr = PressureSolver.PressureSolver()                      #Much to be done here
+        self.Pr = PressureSolver.PressureSolverCollocated()                      #Much to be done here
         self.LH = LatentHeat(namelist, self.Pa)                        #Nothing to be done here
         self.Micro = MicrophysicsFactory(namelist, self.LH, self.Pa)   #For now nothing to be done here
         self.SA = ScalarAdvection.ScalarAdvectionCollocated(namelist, self.LH, self.Pa) #Much to be done here
@@ -47,7 +47,7 @@ class Simulation3d:
         self.SGS = SGS.SGSCollocated(namelist)                                #Much to be done here
         self.SD = ScalarDiffusion.ScalarDiffusion(namelist, self.LH, self.DV, self.Pa) #Much to be done here
         self.MD = MomentumDiffusion.MomentumDiffusion(self.DV, self.Pa)  #Much to be done here
-        self.Th = ThermodynamicsFactory(namelist, self.Micro, self.LH, self.Pa) #Bouyancy only
+        self.Th = ThermodynamicsFactoryCollocated(namelist, self.Micro, self.LH, self.Pa) #Bouyancy only
         self.Ref = ReferenceState.ReferenceState(self.Gr)                       #Nothin to be done here
         self.Sur = Surface.Surface(namelist, self.LH, self.Pa) #Need to think about where to add fluxes
         self.Fo = Forcing.Forcing(namelist, self.Pa)           #Much to be done here (but for now will avoid)
@@ -138,20 +138,21 @@ class Simulation3d:
         cdef ParallelMPI.ParallelMPI PA_ = self.Pa
         cdef int rk_step
         # DO First Output
-        self.Th.update(self.Gr, self.Ref, PV_, DV_)
+        #self.Th.update(self.Gr, self.Ref, PV_, DV_)
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
             self.force_io()
 
+        count = 0
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
-                self.Ke.update(self.Gr,PV_)
-                self.Th.update(self.Gr,self.Ref,PV_,DV_)
+                #self.Ke.update(self.Gr,PV_)
+                #self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
-                self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
+                #self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 #self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
                 self.Damping.update(self.Gr,self.PV,self.Pa)
@@ -169,6 +170,15 @@ class Simulation3d:
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
+            s = self.PV.get_variable_array('s',self.Gr)
+            import pylab as plt
+
+
+            count += 1
+            plt.figure(1)
+            plt.contourf(s[:,1,:].T,100)
+            plt.savefig('./figs/' + str(count + 100000) + '.png')
+            plt.close()
 
 
         return

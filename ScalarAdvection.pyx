@@ -23,6 +23,9 @@ import cython
 cdef extern from "scalar_advection.h":
     void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity,
                                     double *scalar, double* flux, int d, int scheme) nogil
+    void compute_advective_fluxes_collocated_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity,
+                                    double *scalar, double* flux, int d, int scheme) nogil
+
 
     void compute_qt_sedimentation_s_source(Grid.DimStruct *dims, double *p0_half, double* rho0_half, double *flux,
                                     double* qt, double* qv, double* T, double* tendency, double (*lam_fp)(double),
@@ -198,7 +201,7 @@ cdef class ScalarAdvectionCollocated:
                             qt_shift = PV.get_varshift(Gr,'qt')
                             qv_shift =  DV.get_varshift(Gr,'qv')
 
-                            compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
+                            compute_advective_fluxes_collocated_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
                                                    &DV.values[ql_shift],&self.flux[flux_shift],d,self.order_sedimentation)
                             scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
                                                &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
@@ -210,7 +213,7 @@ cdef class ScalarAdvectionCollocated:
 
                             # print(sc_vel_name, ' detected as sedimentation velocity')
                             #First get the tendency associated with the sedimentation velocity
-                            compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
+                            compute_advective_fluxes_collocated_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
                                                    &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order_sedimentation)
                             scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
                                                &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
@@ -218,7 +221,7 @@ cdef class ScalarAdvectionCollocated:
 
                     # now the advective flux for all scalars
                     vel_shift = PV.velocity_directions[d]*Gr.dims.npg
-                    compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&PV.values[vel_shift],
+                    compute_advective_fluxes_collocated_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&PV.values[vel_shift],
                                                &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order)
                     scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
                                            &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)

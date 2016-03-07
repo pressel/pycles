@@ -20,7 +20,7 @@ cdef class PressureFFTSerial:
     cpdef solve(self,Grid.Grid Gr, ReferenceState.ReferenceState RS,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI PM)
 
 
-cdef class PressureFFTCollocated:
+cdef class PressureFFTSerialCollocated:
 
     cdef:
         double [:] a

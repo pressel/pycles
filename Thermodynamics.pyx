@@ -5,7 +5,7 @@
 #cython: cdivision=True
 
 cimport ParallelMPI
-from ThermodynamicsDry cimport ThermodynamicsDry
+from ThermodynamicsDry cimport ThermodynamicsDry, ThermodynamicsDryCollocated
 from ThermodynamicsSA cimport ThermodynamicsSA
 from Thermodynamics cimport LatentHeat
 import numpy as np
@@ -112,3 +112,9 @@ def ThermodynamicsFactory(namelist, Micro, LatentHeat LH,ParallelMPI.ParallelMPI
     if(Micro.thermodynamics_type=='SA'):
         return ThermodynamicsSA(namelist,LH,Par)
 
+def ThermodynamicsFactoryCollocated(namelist, Micro, LatentHeat LH,ParallelMPI.ParallelMPI Par):
+
+    if(Micro.thermodynamics_type=='dry'):
+        return ThermodynamicsDryCollocated(namelist,LH,Par)
+    if(Micro.thermodynamics_type=='SA'):
+        return ThermodynamicsSA(namelist,LH,Par)

@@ -53,7 +53,7 @@ class AuxiliaryStatistics:
 
 
     def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                 MomentumAdvection.MomentumAdvectionCollocated MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         #loop over class instances and class stats_io
         for aux_class in self.AuxStatsClasses:
