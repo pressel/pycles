@@ -10,7 +10,6 @@ cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 cimport ParallelMPI
-cimport Filter
 from NetCDFIO cimport NetCDFIO_CondStats
 import cython
 cimport numpy as np
@@ -132,10 +131,6 @@ cdef class SpectraStatistics:
         #Initialize classes used for Pencil communication/tranposes (here dim corresponds to the pencil direction)
         self.X_Pencil.initialize(Gr,Pa,dim=0)
         self.Y_Pencil.initialize(Gr,Pa,dim=1)
-
-
-        self.Filter = Filter.Filter(Gr, Pa)
-
 
 
         return
