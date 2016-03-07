@@ -10,7 +10,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
-cimport TimeStepping
+
 
 import pylab as plt
 import numpy as np
@@ -37,8 +37,6 @@ cdef class Radiation:
             self.scheme = RadiationDyCOMS_RF01()
         elif casename == 'SMOKE':
             self.scheme = RadiationSmoke()
-        elif casename == 'EUROCS_Sc':
-            self.scheme = RadiationEUROCS_Sc()
         else:
             self.scheme = RadiationNone()
         return
@@ -49,8 +47,8 @@ cdef class Radiation:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
-        self.scheme.update(Gr, Ref, PV, DV, Pa, TS)
+                 ParallelMPI.ParallelMPI Pa):
+        self.scheme.update(Gr, Ref, PV, DV, Pa)
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -67,7 +65,7 @@ cdef class RadiationNone:
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+                 ParallelMPI.ParallelMPI Pa):
         return
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                    PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
@@ -95,7 +93,7 @@ cdef class RadiationDyCOMS_RF01:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+                 ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -321,7 +319,7 @@ cdef class RadiationSmoke:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+                 ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -463,47 +461,6 @@ cdef class RadiationSmoke:
 
 
 
-cdef class RadiationEUROCS_Sc:
-    def __init__(self):
-        self.z_pencil = ParallelMPI.Pencil()
-        # Parameters related to parameterized LW radiation
-
-        # Temporal and location information for calculating solar cycle
-        self.year = 1987
-        self.month = 7
-        self.day = 14
-        self.hour = 8.0 # GMT
-        self.latitude = 33.25
-        self.longitude = 119.5
-        # Parameters related to the delta Eddington parameterization for SW radiation
-
-        self.reff = 1.0e-5 # assumed effective droplet radius of 10 micrometers
-        self.asf = 0.06 # Surface albedo
-
-
-        return
-
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.z_pencil.initialize(Gr, Pa, 2)
-        Pa.root_print('Initialized EUROCS_Sc radiation')
-        return
-
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
-
-
-        return
-
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-
-        return
-
-
-
-
 cdef class RadiationFixedHeatingProfile:
     def __init__(self):
         self.dFdz_5m = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -578,7 +535,7 @@ cdef class RadiationFixedHeatingProfile:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+                 ParallelMPI.ParallelMPI Pa):
 
 
         cdef:
