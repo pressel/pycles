@@ -23,10 +23,13 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
 
         printf("values[0] = %f\n", values[0]);
 
+//        double *mean_local = (double *)malloc(sizeof(double) * dims->n[2]);       // Dynamically allocate array
         double *mean_local = (double *)malloc(sizeof(double) * dims->nlg[2]);       // Dynamically allocate array
 //        double mean_;
-        double *mean_ = (double *)malloc(sizeof(double) * dims->n[2]);
-        double *mean = (double *)malloc(sizeof(double) * dims->n[2]);
+//        double *mean_ = (double *)malloc(sizeof(double) * dims->n[2]);
+//        double *mean = (double *)malloc(sizeof(double) * dims->n[2]);
+        double *mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
+        double *mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
         //int i,j,k,ijk;
         int ijk;
         const ssize_t  imin = dims->gw;
@@ -57,12 +60,9 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
         printf("mean_local[0] = %f\n", mean_local[0]);
         printf("mean_local[10] = %f\n", mean_local[0]);
 
-
         //#Here we call MPI_Allreduce on the sub_xy communicator as we only need communication among
         //#processes with the the same vertical rank
-
         // MPI_Reduce(&mean_local, &mean, dims->ng[2], MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
 //        MPI_Allreduce(&mean_local, &mean_, dims->n[2], MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         printf("Done");
         for(ssize_t k=kmin; k<kmax; k++){
