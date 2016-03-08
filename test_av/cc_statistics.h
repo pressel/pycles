@@ -24,7 +24,8 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
         printf("values[0] = %f\n", values[0]);
 
         double *mean_local = (double *)malloc(sizeof(double) * dims->nlg[2]);       // Dynamically allocate array
-        double mean_;
+//        double mean_;
+        double *mean_ = (double *)malloc(sizeof(double) * dims->n[2]);
         double *mean = (double *)malloc(sizeof(double) * dims->n[2]);
         //int i,j,k,ijk;
         int ijk;
@@ -62,10 +63,13 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
 
         // MPI_Reduce(&mean_local, &mean, dims->ng[2], MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
+//        MPI_Allreduce(&mean_local, &mean_, dims->n[2], MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        printf("Done");
         for(ssize_t k=kmin; k<kmax; k++){
-            //MPI_Allreduce(&mean_local[k], &mean[k], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            MPI_Allreduce(&mean_local[k], &mean_, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            mean[k] = mean_ * n_horizontal_i;
+            MPI_Allreduce(&mean_local[k], &mean_[k], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//            MPI_Allreduce(&mean_local[k], &mean_, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//            mean[k] = mean_ * n_horizontal_i;
+            mean[k] = mean_[k] * n_horizontal_i;
         }
         printf("mean[0] = %f\n", mean[0]);
         printf("mean[10] = %f\n", mean[0]);
