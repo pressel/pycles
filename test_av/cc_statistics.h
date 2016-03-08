@@ -24,10 +24,9 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
         printf("values[0] = %f\n", values[0]);
 
 //        double *mean_local = (double *)malloc(sizeof(double) * dims->n[2]);       // Dynamically allocate array
-        double *mean_local = (double *)malloc(sizeof(double) * dims->nlg[2]);       // Dynamically allocate array
-//        double mean_;
 //        double *mean_ = (double *)malloc(sizeof(double) * dims->n[2]);
 //        double *mean = (double *)malloc(sizeof(double) * dims->n[2]);
+        double *mean_local = (double *)malloc(sizeof(double) * dims->nlg[2]);       // Dynamically allocate array
         double *mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
         double *mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
         //int i,j,k,ijk;
@@ -49,10 +48,7 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
                 const ssize_t jshift = j * jstride;
                 for(ssize_t k=kmin; k<kmax; k++){
                     ijk = ishift + jshift + k;
-//                    mean_local[k] += *values[ijk];      // doing the right thing????
-//                        mean_local[k] += 1;
-//                        mean_local[k] += values[0];
-                        mean_local[k] += values[ijk];
+                    mean_local[k] += values[ijk];
                 }
             }
         }
@@ -67,15 +63,12 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
         printf("Done \n");
         for(ssize_t k=kmin; k<kmax; k++){
             MPI_Allreduce(&mean_local[k], &mean_[k], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-//            MPI_Allreduce(&mean_local[k], &mean_, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-//            mean[k] = mean_ * n_horizontal_i;
             mean[k] = mean_[k] * n_horizontal_i;
         }
         printf("mean[0] = %f\n", mean[0]);
         printf("mean[10] = %f\n", mean[0]);
 
-//        for i in xrange(Gr.dims.nlg[2]):
-//            mean[i] = mean[i]*n_horizontal_i;
+        return;
 
         /*
         Open MPI: https://www.open-mpi.org/doc/v1.8/man3/MPI_Allreduce.3.php
@@ -92,7 +85,6 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
 
         /*
         // Example for Averaging using MPI_Allreduce:
-
         rand_nums = create_rand_nums(num_elements_per_proc);
         // Sum the numbers locally
         float local_sum = 0;
@@ -143,7 +135,7 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
 
 
         //return mean;
-        return;
+
 
 }
 
