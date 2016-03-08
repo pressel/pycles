@@ -77,7 +77,6 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
 //        for i in xrange(Gr.dims.nlg[2]):
 //            mean[i] = mean[i]*n_horizontal_i;
 
-
         /*
         Open MPI: https://www.open-mpi.org/doc/v1.8/man3/MPI_Allreduce.3.php
         http://mpitutorial.com/tutorials/mpi-reduce-and-allreduce/
