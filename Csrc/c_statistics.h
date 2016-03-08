@@ -5,7 +5,7 @@
 
 // how to return a double array???
 // double horizontal_mean(struct DimStruct *dims, double* restrict *values){
-void horizontal_mean(struct DimStruct *dims, double* restrict *values){
+void horizontal_mean(struct DimStruct *dims, double* restrict values){
         /*
         Compute the horizontal mean of the array pointed to by values.
         values should have dimension of Gr.dims.nlg[0] * Gr.dims.nlg[1]
@@ -21,7 +21,7 @@ void horizontal_mean(struct DimStruct *dims, double* restrict *values){
         # i = 0,1,2
         */
 
-        double *mean_local = (double *)malloc(sizeof(double) * dims->nlg[2]);
+        double *mean_local = (double *)malloc(sizeof(double) * dims->nlg[2]);       // Dynamically allocate array
         double mean_;
         double *mean = (double *)malloc(sizeof(double) * dims->n[2]);
         //int i,j,k,ijk;
@@ -43,7 +43,7 @@ void horizontal_mean(struct DimStruct *dims, double* restrict *values){
                 const ssize_t jshift = j * jstride;
                 for(ssize_t k=kmin; k<kmax; k++){
                     ijk = ishift + jshift + k;
-                    mean_local[k] += *values[ijk];      // doing the right thing????
+                    mean_local[k] += values[ijk];      // doing the right thing????
                 }
             }
         }

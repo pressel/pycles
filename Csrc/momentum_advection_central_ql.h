@@ -2,7 +2,7 @@
 #include "grid.h"
 #include "advection_interpolation.h"
 #include "flux_divergence.h"
-#include "c_statistics"
+#include "c_statistics.h"
 #include<stdio.h>
 
 // QUESTIONS / NOTES:
