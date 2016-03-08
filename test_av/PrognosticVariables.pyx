@@ -74,7 +74,7 @@ cdef class PrognosticVariables:
     #     self.values = np.empty((self.nv*Gr.dims.npg),dtype=np.double,order='c')
     #     self.tendencies = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
     cpdef initialize(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
-        self.values = np.empty((self.nv*Gr.dims.npg),dtype=np.double,order='c')
+        self.values = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
         self.tendencies = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
 
         # #Add prognostic variables to Statistics IO

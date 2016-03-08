@@ -14,6 +14,7 @@ cimport PrognosticVariables
 #                                     Py_ssize_t d_advecting, Py_ssize_t scheme) nogil
 cdef extern from "cc_statistics.h":
     void horizontal_mean(Grid.DimStruct *dims, double *values)
+    void horizontal_mean_return(Grid.DimStruct *dims, double *values, double *mean)
 
 class TestRun:
     def __init__(self,namelist):
@@ -43,14 +44,6 @@ class TestRun:
 
 
     def array_mean(self, namelist):
-        k = 2
-        m = 10
-        cdef double [:,:] b = np.empty((k,m))
-        cdef double [:] aux = np.linspace(0,m-1,m)
-        b[0,:] = aux
-        b[1,:] = aux
-        # print(*b[0,:])
-
         # cdef dims = self.Gr.dims
         # cdef nxg = dims.ng[0]
         # cdef nyg = dims.ng[1]
@@ -62,27 +55,45 @@ class TestRun:
         print('u shape: ', u_val.shape)
 
         # d = self.PV.velocity_directions[0]
-
-        mean = TestArray_c.TestArray(namelist)
-        mean.array_mean(self.PV, self.Gr)
+        # mean = TestArray_c.TestArray(namelist)
+        # mean.array_mean(self.PV, self.Gr)
 
         # cdef Py_ssize_t shift_u = self.PV.velocity_directions[0] * self.Gr.dims.npg     # cannot take the address of a Python variable
         # horizontal_mean(&self.Gr.dims, &self.PV.values[shift_u])
 
-        # print(np.shape(self.PV.values))
-        # cdef dims = Grid.Grid.dims
-        # dims = self.Gr.dims
-        # horizontal_mean(&dims, &b)
-        # compute_advective_tendencies_m(&Gr.dims, &Rs.rho0[0], &Rs.rho0_half[0], &Rs.alpha0[0], &Rs.alpha0_half[0],
-        #                                     &PV.values[shift_advected], &PV.values[shift_advecting],
-        #                                    &PV.tendencies[shift_advected], i_advected, i_advecting, self.order)
         return
 
+
     def hor_mean(self,namelist):
-        print('hor mean')
+        print('TestArray_c.array_mean')
+
         mean = TestArray_c.TestArray(namelist)
-        b = mean.array_c()
-        mean.array_mean(self.PV, self.Gr)
+
+        mean.set_PV_values_const(self.PV, self.Gr)
+        for i in range(1):
+        # b = mean.array_c()
+            mean.array_mean(self.PV, self.Gr)
+
+        mean.set_PV_values(self.PV, self.Gr)
+        u_val = self.PV.get_variable_array('u', self.Gr)
+        # print('k = 0: ', u_val[:,0,0], u_val[0,0:3,0], u_val[1,0:3,0], u_val[-1,0,0])
+        # print('k = 1: ', u_val[:,0,1], u_val[0,0:3,1])
+        # print('k = 6: ', u_val[:,0,6], u_val[0,:,6], u_val[1,0:3,6], u_val[-1,0,6])
+        # mean.array_mean(self.PV, self.Gr)
+
+
+        print('TestArray_c.array_mean_return')
+        mean.set_PV_values_const(self.PV, self.Gr)
+        for i in range(1):
+            mean.array_mean_return(self.PV, self.Gr)
+
+        mean.set_PV_values(self.PV, self.Gr)
+        u_val = self.PV.get_variable_array('u', self.Gr)
+        # print('k = 0: ', u_val[:,0,0], u_val[0,0:3,0], u_val[1,0:3,0], u_val[-1,0,0])
+        # print('k = 1: ', u_val[:,0,1], u_val[0,0:3,1])
+        # print('k = 6: ', u_val[:,0,6], u_val[0,:,6], u_val[1,0:3,6], u_val[-1,0,6])
+        # mean.array_mean(self.PV, self.Gr)
 
         print('finished TestRun')
+
         return

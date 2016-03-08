@@ -36,34 +36,10 @@ cdef class TestArray:
     cpdef array_c(self)
 
     cpdef array_mean(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
+    cpdef array_mean_return(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
 
-
-
-        # double [:] x
-        # double [:] x_half
-        # double [:] y
-        # double [:] y_half
-        # double [:] z
-        # double [:] z_half
-        #
-        # double [:] xl
-        # double [:] xl_half
-        # double [:] yl
-        # double [:] yl_half
-        # double [:] zl
-        # double [:] zl_half
-        #
-        # void compute_global_dims(self)
-        # void compute_local_dims(self,ParallelMPI.ParallelMPI Parallel)
-        # void compute_coordinates(self)
-
-
-
-    # cpdef extract_local(self, double [:] global_array, int dim)
-    #
-    # cpdef extract_local_ghosted(self, double [:] global_array, int dim)
-    #
-    # cpdef restart(self, Restart.Restart Re)
+    cpdef set_PV_values_const(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
+    cpdef set_PV_values(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
 
 
 

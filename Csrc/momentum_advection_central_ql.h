@@ -2,8 +2,11 @@
 #include "grid.h"
 #include "advection_interpolation.h"
 #include "flux_divergence.h"
-#include "c_statistics.h"
+
+#include "cc_statistics.h"
 #include<stdio.h>
+
+// !!!!!!!! Need to Fix Flux computation (subtracting eddy flux) !!!!!
 
 // QUESTIONS / NOTES:
 // need to be able to output eddy_flux???
@@ -26,7 +29,7 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
-        printf("QL Momentum Transport");
+        printf("2nd order QL Momentum Transport \n");
 
         // Dynamically allocate flux array
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);     // malloc allocates size of uninitialized storage; in this case allocates memory for (nlg[0]+nlg[1]+nlg[2])*sizeof(double))
@@ -75,22 +78,20 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
         // (2) average interpolated velocity fields
         //vel_mean_ing = Pa.HorizontalMean(Gr, &vel_int_advecting);
+//        horizontal_mean(dims, &vel_int_ing[0]);
+//        const ssize_t dims->gw;
+//        int d_ad = d_advected;
+//        int d_ing = d_advecting;
+//        printf("flux: %d, %d; vel_int[gw+2] = %f\n", d_ad, d_ing, values[0]);
+        horizontal_mean_return(dims, &vel_int_ing[0], &vel_mean_ing[0]);
+//        printf("values[gw] = %f\n", values[0]);
         if (d_advected != d_advecting){
-            vel_mean_ed = vel_mean_ing;
-            //vel_mean_ed = Pa.HorizontalMean(Gr, &vel_int_advected);
+//            horizontal_mean(dims, &vel_int_ed[0]);
+            horizontal_mean_return(dims, &vel_int_ed[0], &vel_mean_ed[0]);
             }
         else {
             vel_mean_ed = vel_mean_ing;
             }
-        // ??? call function per k or globally?
-        /*for(ssize_t k=kmin;k<kmax;k++){
-            //vel_mean_ing = mean(vel_int_advecting)
-            if (d_advected != d_advecting)
-                //vel_mean_ed = mean(vel_int_advected)
-                vel_mean_ed[k] = 1;
-            else
-                vel_mean_ed[k] = vel_mean_ing[k];
-        }*/
 
 
         // (3) compute eddy flux: (vel - mean_vel)**2 AND compute total flux
@@ -116,7 +117,7 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        // vel_fluc = vel_int - vel_mean
+                        // vel_fluc = vel_int - vel_meanc
                         // eddy_flux[ijk] = vel_fluc[ijk]*vel_fluc[ijk]*rho0_half[k];       // need to be able to output eddy_flux???
                         eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k];
                         flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k];
@@ -141,6 +142,7 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
         }
 
         // (4) compute mean eddy flux
+        horizontal_mean_return(dims, &eddy_flux[0], &mean_eddy_flux[0]);
         //mean_eddy_flux = Pa.HorizontalMean(Gr, &eddy_flux);
 
 
@@ -151,7 +153,7 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k;
-                    flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
+//                    flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
                 }
             }
         }
@@ -161,12 +163,14 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                                 tendency, d_advected, d_advecting);
 
         //Free dynamically allocated array
-        /*free(flux);
+        /*
         free(eddy_flux);
         free(mean_eddy_flux);
         free(vel_int_ing);
         free(vel_int_ed);
         free(vel_mean_ed);
         free(vel_mean_ing);*/
+
+        free(flux);
         return;
     }

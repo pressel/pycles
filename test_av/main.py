@@ -4,7 +4,6 @@ import numpy as np
 
 
 def main():
-    print('hello')
 
     # Parse information from the command line
     parser = argparse.ArgumentParser(prog='PyCLES')
@@ -17,12 +16,12 @@ def main():
 
 
 
-    a = np.linspace(0,99,100)
-    print(a[0:5])
-
-    k = 2
-    m = 10
-    b = np.ones((k,m))
+    # a = np.linspace(0,99,100)
+    # print(a[0:5])
+    #
+    # k = 2
+    # m = 10
+    # b = np.ones((k,m))
 
     import TestRun
     Arr = TestRun.TestRun(namelist)
