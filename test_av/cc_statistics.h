@@ -94,7 +94,6 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
         // Example for Averaging using MPI_Allreduce:
 
         rand_nums = create_rand_nums(num_elements_per_proc);
-
         // Sum the numbers locally
         float local_sum = 0;
         int i;
