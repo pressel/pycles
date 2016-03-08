@@ -38,7 +38,7 @@ class TestRun:
         b[0,:] = aux
         b[1,:] = aux
 
-        print(b[0,:])
+        # print(b[0,:])
         return b
 
 
@@ -84,4 +84,5 @@ class TestRun:
         b = mean.array_c()
         mean.array_mean(self.PV, self.Gr)
 
+        print('finished TestRun')
         return

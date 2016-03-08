@@ -48,7 +48,7 @@ cdef class TestArray:
 
         cdef int i
         for i in range(Gr.dims.npg):
-            PV.values[i] = 2
+            PV.values[i] = 2.0
 
         return
 
