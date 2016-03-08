@@ -64,7 +64,7 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
         //#processes with the the same vertical rank
         // MPI_Reduce(&mean_local, &mean, dims->ng[2], MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 //        MPI_Allreduce(&mean_local, &mean_, dims->n[2], MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        printf("Done");
+        printf("Done \n");
         for(ssize_t k=kmin; k<kmax; k++){
             MPI_Allreduce(&mean_local[k], &mean_[k], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 //            MPI_Allreduce(&mean_local[k], &mean_, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
