@@ -12,8 +12,7 @@ cdef class Radiation:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 cdef class RadiationNone:
@@ -21,8 +20,7 @@ cdef class RadiationNone:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 cdef class RadiationDyCOMS_RF01:
@@ -39,8 +37,7 @@ cdef class RadiationDyCOMS_RF01:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 cdef class RadiationSmoke:
@@ -53,6 +50,5 @@ cdef class RadiationSmoke:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

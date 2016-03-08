@@ -41,10 +41,9 @@ cdef class Radiation:
         self.scheme.update(Gr, Ref, PV, DV, Pa)
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.scheme.stats_io(Gr, PV, DV, NS, Pa)
+        self.scheme.stats_io(Gr, DV, NS, Pa)
         return
 
 
@@ -57,8 +56,7 @@ cdef class RadiationNone:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  ParallelMPI.ParallelMPI Pa):
         return
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
@@ -177,8 +175,7 @@ cdef class RadiationDyCOMS_RF01:
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -306,8 +303,7 @@ cdef class RadiationSmoke:
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                   PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
