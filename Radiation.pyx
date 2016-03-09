@@ -11,17 +11,18 @@ cimport DiagnosticVariables
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 
-
+import pylab as plt
 import numpy as np
 cimport numpy as np
 from libc.math cimport pow, cbrt, exp
+
 include 'parameters.pxi'
 
 cdef class Radiation:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         casename = namelist['meta']['casename']
         if casename == 'DYCOMS_RF01':
-            self.scheme = RadiationDyCOMS_RF01()
+            self.scheme = RadiationDyCOMSFixedHeating() #RadiationDyCOMS_RF01()
         elif casename == 'DYCOMS_RF02':
             #Dycoms RF01 and RF02 use the same radiation
             self.scheme = RadiationDyCOMS_RF01()
@@ -305,5 +306,147 @@ cdef class RadiationSmoke:
 
     cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+
+
+
+
+cdef class RadiationDyCOMSFixedHeating:
+    def __init__(self):
+        alpha_z = 1.0
+        kap = 85.0
+        f0 = 70.0
+        f1 = 22.0
+        divergence = 3.75e-6
+        dens = 1.13
+
+
+        # Create a heating rate profile using the observed liquid amounts and assumed cloud top height
+        ### obs = np.array([0.08943104,0.13815998,0.28252313,0.29262888])
+        ### hobs =np.array( [632.1025,647.1799,768.43787,765.1738])
+        # Fitting coefficients
+        m = 0.00137814
+        b = -0.76845122
+        # Then plug this into the DYCOMS radiation parameterization
+        zi = 840.0
+        dz = 30.0
+        h_faces = np.arange(0.0, 1800.0+dz, dz, dtype=np.double)
+        nh = len(h_faces) - 1
+        self.heating_grid = np.zeros((nh,),dtype=np.double, order='c')
+
+        for i in range(0,nh):
+            self.heating_grid[i] = (h_faces[i+1] + h_faces[i])/2.0
+        # ql defined on centers (nh)
+        ql  = np.zeros((nh,),dtype=np.double, order='c')
+        # lwp, frad defined on faces (nh+1)
+        lwp_up  = np.zeros((nh+1,),dtype=np.double, order='c')
+        lwp_down = np.zeros((nh+1,),dtype=np.double, order='c')
+        frad = np.zeros((nh+1,),dtype=np.double, order='c')
+        self.heating_profile = np.zeros((nh,),dtype=np.double, order='c')
+
+        for i in range(0,nh):
+            ql[i] = np.maximum(m * self.heating_grid[i] + b, 0.0)
+            if self.heating_grid[i] > zi:
+                ql[i] = 0.0
+            lwp_up[i+1] = lwp_up[i] + ql[i] * dz * dens
+
+        for i in range(nh-1, -1, -1):
+            lwp_down[i] = lwp_down[i+1] + ql[i] * dz * dens
+
+        for i in range(0,nh+1):
+            frad[i] = f0 * np.exp(-lwp_down[i]) + f1 * np.exp(-lwp_up[i])
+            if h_faces[i] >= zi:
+                frad[i] += dens*1015.0*divergence*alpha_z*( 0.25*(h_faces[i]-zi)**(4.0/3.0) + zi*(h_faces[i]-zi)**(1.0/3.0))
+
+
+
+        for i in range(0,nh):
+            self.heating_profile[i] = -(frad[i+1]-frad[i])/dz/1.13
+
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+
+        self.heating_rate = np.interp(Gr.zl_half,self.heating_grid,self.heating_profile)
+
+        plt.figure(1)
+        plt.plot(self.heating_rate,Gr.zl_half)
+        plt.show()
+        NS.add_profile('radiative_heating_rate', Gr, Pa)
+        NS.add_profile('radiative_entropy_tendency', Gr, Pa)
+
+        return
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+
+            Py_ssize_t pi, i, j, k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+
+
+        # Now update entropy tendencies
+        with nogil:
+            for i in xrange(imin, imax):
+                ishift = i * istride
+                for j in xrange(jmin, jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        PV.tendencies[
+                            s_shift + ijk] +=  self.heating_rate[k] / DV.values[ijk + t_shift]
+
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+
+            Py_ssize_t i, j, k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] tmp
+
+        # Now compute entropy tendencies
+        with nogil:
+            for i in xrange(imin, imax):
+                ishift = i * istride
+                for j in xrange(jmin, jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        entropy_tendency[ijk] =  self.heating_rate[k] / DV.values[ijk + t_shift]
+
+        NS.write_profile('radiative_heating_rate', self.heating_rate[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &entropy_tendency[0])
+        NS.write_profile('radiative_entropy_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
 
         return
