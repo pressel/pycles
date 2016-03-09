@@ -22,7 +22,14 @@ cdef class Radiation:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         casename = namelist['meta']['casename']
         if casename == 'DYCOMS_RF01':
-            self.scheme = RadiationDyCOMSFixedHeating() #RadiationDyCOMS_RF01()
+            try:
+                fixed_heating = namelist['radiation']['fixed_heating']
+            except:
+                fixed_heating = False
+            if fixed_heating:
+                self.scheme = RadiationDyCOMSFixedHeating() #RadiationDyCOMS_RF01()
+            else:
+                self.scheme = RadiationDyCOMS_RF01()
         elif casename == 'DYCOMS_RF02':
             #Dycoms RF01 and RF02 use the same radiation
             self.scheme = RadiationDyCOMS_RF01()
