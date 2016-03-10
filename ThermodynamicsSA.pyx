@@ -436,7 +436,3 @@ cdef class ThermodynamicsSA:
         return
 
 
-cpdef double pv_sat_magnus(double temperature):
-    cdef double Tc = temperature - 273.15
-    cdef double esat = 6.1094 * np.exp(17.625*Tc/(Tc + 243.04)) * 100.0
-    return esat
