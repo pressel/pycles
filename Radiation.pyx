@@ -130,7 +130,7 @@ cdef class RadiationDyCOMS_RF01:
 
                 # Compute zi (level of 8.0 g/kg isoline of qt)
                 for k in xrange(Gr.dims.n[2]):
-                    if qt_pencils[pi, k] > 8e-3:
+                    if qt_pencils[ipen, k] > 8e-3:
                         zi = z[gw + k]
                         rhoi = rho_half[gw + k]
 
@@ -292,7 +292,7 @@ cdef class RadiationSmoke:
 
                 for k in xrange(Gr.dims.n[2]):
                     f_heat[ipen, k] = - \
-                       (f_rad[ipen, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
+                       (f_rad[ipen, k + 1] - f_rad[ipen, k]) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
         self.z_pencil.reverse_double(&Gr.dims, Pa, f_heat, &heating_rate[0])
