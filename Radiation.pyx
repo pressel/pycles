@@ -375,9 +375,9 @@ cdef class RadiationDyCOMSFixedHeating:
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        interped_profile = np.interp(Gr.zl_half,self.heating_grid,self.heating_profile)
 
-
-        self.heating_rate = np.interp(Gr.zl_half,self.heating_grid,self.heating_profile)
+        self.heating_rate = np.array(interped_profile, dtype=np.double, copy=True, order='c')
 
         NS.add_profile('radiative_heating_rate', Gr, Pa)
         NS.add_profile('radiative_entropy_tendency', Gr, Pa)
