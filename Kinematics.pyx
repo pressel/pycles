@@ -59,7 +59,7 @@ cdef class Kinematics:
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
-            double [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
+            double [:] mean
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 

@@ -27,7 +27,7 @@ cdef class Radiation:
             except:
                 fixed_heating = False
             if fixed_heating:
-                self.scheme = RadiationDyCOMSFixedHeating() #RadiationDyCOMS_RF01()
+                self.scheme = RadiationDyCOMSFixedHeating()
             else:
                 self.scheme = RadiationDyCOMS_RF01()
         elif casename == 'DYCOMS_RF02':
@@ -101,7 +101,7 @@ cdef class RadiationDyCOMS_RF01:
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
 
-            Py_ssize_t pi, i, j, k, ijk, ishift, jshift
+            Py_ssize_t ipen, i, j, k, ijk, ishift, jshift
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
@@ -126,7 +126,7 @@ cdef class RadiationDyCOMS_RF01:
             double cbrt_z = 0
 
         with nogil:
-            for pi in xrange(self.z_pencil.n_local_pencils):
+            for ipen in xrange(self.z_pencil.n_local_pencils):
 
                 # Compute zi (level of 8.0 g/kg isoline of qt)
                 for k in xrange(Gr.dims.n[2]):
@@ -136,35 +136,35 @@ cdef class RadiationDyCOMS_RF01:
 
                 # Now compute the third term on RHS of Stevens et al 2005
                 # (equation 3)
-                f_rad[pi, 0] = 0.0
+                f_rad[ipen, 0] = 0.0
                 for k in xrange(Gr.dims.n[2]):
                     if z[gw + k] >= zi:
                         cbrt_z = cbrt(z[gw + k] - zi)
-                        f_rad[pi, k + 1] = rhoi * cpd * self.divergence * self.alpha_z * (pow(cbrt_z,4)  / 4.0
+                        f_rad[ipen, k + 1] = rhoi * cpd * self.divergence * self.alpha_z * (pow(cbrt_z,4)  / 4.0
                                                                                      + zi * cbrt_z)
                     else:
-                        f_rad[pi, k + 1] = 0.0
+                        f_rad[ipen, k + 1] = 0.0
 
                 # Compute the second term on RHS of Stevens et al. 2005
                 # (equation 3)
                 q_1 = 0.0
-                f_rad[pi, 0] += self.f1 * exp(-q_1)
+                f_rad[ipen, 0] += self.f1 * exp(-q_1)
                 for k in xrange(1, Gr.dims.n[2] + 1):
                     q_1 += self.kap * \
-                        rho_half[gw + k - 1] * ql_pencils[pi, k - 1] * dz
-                    f_rad[pi, k] += self.f1 * exp(-q_1)
+                        rho_half[gw + k - 1] * ql_pencils[ipen, k - 1] * dz
+                    f_rad[ipen, k] += self.f1 * exp(-q_1)
 
                 # Compute the first term on RHS of Stevens et al. 2005
                 # (equation 3)
                 q_0 = 0.0
-                f_rad[pi, Gr.dims.n[2]] += self.f0 * exp(-q_0)
+                f_rad[ipen, Gr.dims.n[2]] += self.f0 * exp(-q_0)
                 for k in xrange(Gr.dims.n[2] - 1, -1, -1):
-                    q_0 += self.kap * rho_half[gw + k] * ql_pencils[pi, k] * dz
-                    f_rad[pi, k] += self.f0 * exp(-q_0)
+                    q_0 += self.kap * rho_half[gw + k] * ql_pencils[ipen, k] * dz
+                    f_rad[ipen, k] += self.f0 * exp(-q_0)
 
                 for k in xrange(Gr.dims.n[2]):
-                    f_heat[pi, k] = - \
-                       (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
+                    f_heat[ipen, k] = - \
+                       (f_rad[ipen, k + 1] - f_rad[ipen, k]) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
         self.z_pencil.reverse_double(&Gr.dims, Pa, f_heat, &self.heating_rate[0])
@@ -257,7 +257,7 @@ cdef class RadiationSmoke:
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
 
-            Py_ssize_t pi, i, j, k, ijk, ishift, jshift
+            Py_ssize_t ipen, i, j, k, ijk, ishift, jshift
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
@@ -282,17 +282,17 @@ cdef class RadiationSmoke:
 
 
         with nogil:
-            for pi in xrange(self.z_pencil.n_local_pencils):
+            for ipen in xrange(self.z_pencil.n_local_pencils):
 
                 q_0 = 0.0
-                f_rad[pi, Gr.dims.n[2]] = self.f0 * exp(-q_0)
+                f_rad[ipen, Gr.dims.n[2]] = self.f0 * exp(-q_0)
                 for k in xrange(Gr.dims.n[2] - 1, -1, -1):
-                    q_0 += self.kap * rho_half[gw + k] * smoke_pencils[pi, k] * dz
-                    f_rad[pi, k] = self.f0 * exp(-q_0)
+                    q_0 += self.kap * rho_half[gw + k] * smoke_pencils[ipen, k] * dz
+                    f_rad[ipen, k] = self.f0 * exp(-q_0)
 
                 for k in xrange(Gr.dims.n[2]):
-                    f_heat[pi, k] = - \
-                       (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
+                    f_heat[ipen, k] = - \
+                       (f_rad[ipen, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
         self.z_pencil.reverse_double(&Gr.dims, Pa, f_heat, &heating_rate[0])
@@ -379,9 +379,6 @@ cdef class RadiationDyCOMSFixedHeating:
 
         self.heating_rate = np.interp(Gr.zl_half,self.heating_grid,self.heating_profile)
 
-        plt.figure(1)
-        plt.plot(self.heating_rate,Gr.zl_half)
-        plt.show()
         NS.add_profile('radiative_heating_rate', Gr, Pa)
         NS.add_profile('radiative_entropy_tendency', Gr, Pa)
 
@@ -400,7 +397,7 @@ cdef class RadiationDyCOMSFixedHeating:
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
 
-            Py_ssize_t pi, i, j, k, ijk, ishift, jshift
+            Py_ssize_t  i, j, k, ijk, ishift, jshift
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
