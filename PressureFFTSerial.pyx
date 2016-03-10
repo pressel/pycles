@@ -1,9 +1,3 @@
-#!python
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: initializedcheck=False
-#cython: cdivision=True
-
 from scipy.fftpack import fft2, ifft2
 cimport DiagnosticVariables
 

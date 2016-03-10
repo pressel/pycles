@@ -1,9 +1,3 @@
-#!python
-# cython: boundscheck=False
-# cython: wraparound=True
-# cython: initializedcheck=False
-# cython: cdivision=True
-
 cimport Grid
 cimport Restart
 cimport numpy as np

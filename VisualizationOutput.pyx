@@ -49,9 +49,7 @@ cdef class VisualizationOutput:
 
         return
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
+
     cpdef write(self, Grid.Grid Gr,  ReferenceState.ReferenceState RS,
                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                 ParallelMPI.ParallelMPI Pa):

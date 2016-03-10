@@ -1,9 +1,3 @@
-#!python
-#cython: boundscheck=False
-#cython: wraparound=True
-#cython: initializedcheck=False
-#cython: cdivision=True
-
 import numpy as np
 cimport numpy as np
 cimport ParallelMPI

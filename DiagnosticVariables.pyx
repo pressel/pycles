@@ -1,9 +1,3 @@
-#!python
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: initializedcheck=False
-#cython: cdivision=True
-
 cimport ParallelMPI
 cimport Grid
 from NetCDFIO cimport NetCDFIO_Stats

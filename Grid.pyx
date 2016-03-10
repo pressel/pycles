@@ -1,9 +1,3 @@
-#!python
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: initializedcheck=False
-#cython: cdivision=True
-
 cimport mpi4py.libmpi as mpi
 cimport ParallelMPI
 cimport Restart

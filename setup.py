@@ -229,5 +229,5 @@ extensions.append(_ext)
 
 
 setup(
-    ext_modules=cythonize(extensions, verbose=1, include_path=include_path)
+    ext_modules=cythonize(extensions, verbose=1, include_path=include_path, compiler_directives={'boundscheck': True})
 )
