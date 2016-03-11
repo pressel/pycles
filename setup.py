@@ -6,6 +6,12 @@ import mpi4py as mpi4py
 import sys
 import platform
 
+directives = {}
+directives['boundscheck']=False
+directives['wraparound']=False
+directives['initializedcheck']=False
+directives['cdivision'] = True
+
 
 # Now get include paths from relevant python modules
 include_path = [mpi4py.get_include()]
@@ -229,5 +235,5 @@ extensions.append(_ext)
 
 
 setup(
-    ext_modules=cythonize(extensions, verbose=1, include_path=include_path, compiler_directives={'boundscheck': True})
+    ext_modules=cythonize(extensions, verbose=1, include_path=include_path, compiler_directives=directives)
 )
