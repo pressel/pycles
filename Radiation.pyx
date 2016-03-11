@@ -5,7 +5,6 @@ cimport DiagnosticVariables
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 
-import pylab as plt
 import numpy as np
 cimport numpy as np
 from libc.math cimport pow, cbrt, exp
