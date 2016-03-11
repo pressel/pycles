@@ -1,3 +1,6 @@
+#!python
+#cython: wraparound=True
+
 cimport Grid
 cimport Restart
 cimport numpy as np
