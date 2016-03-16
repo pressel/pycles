@@ -219,6 +219,7 @@ class Simulation3d:
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.open_files(self.Pa)
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
+
                 self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa) # do Micro.stats_io prior to DV.stats_io to get sedimentation velocity only in output
                 self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
 
