@@ -67,10 +67,10 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k;
                     vel_int_ing[ijk] = interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]);
-                    if (d_advected != d_advecting)
-                        vel_int_ed[ijk] = interp_2(vel_advected[ijk],vel_advected[ijk+sp1_ed]);
-                    else
-                        vel_int_ed[ijk] = vel_int_ing[ijk];
+                    if (d_advected != d_advecting){
+                        vel_int_ed[ijk] = interp_2(vel_advected[ijk],vel_advected[ijk+sp1_ed]);}
+                    else{
+                        vel_int_ed[ijk] = vel_int_ing[ijk];}
                 }
             }
         }
@@ -153,7 +153,9 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k;
-//                    flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
+                    flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
+//                    flux[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing])
+//                            *interp_2(vel_advected[ijk],vel_advected[ijk + sp1_ed]) )*rho0[k];
                 }
             }
         }
