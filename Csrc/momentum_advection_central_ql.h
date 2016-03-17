@@ -70,7 +70,8 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     if (d_advected != d_advecting){
                         vel_int_ed[ijk] = interp_2(vel_advected[ijk],vel_advected[ijk+sp1_ed]);}
                     else{
-                        vel_int_ed[ijk] = vel_int_ing[ijk];}
+                        vel_int_ed[ijk] = interp_2(vel_advected[ijk],vel_advected[ijk+sp1_ed]);}
+//                        vel_int_ed[ijk] = vel_int_ing[ijk];}
                 }
             }
         }
@@ -90,7 +91,8 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
             horizontal_mean_return(dims, &vel_int_ed[0], &vel_mean_ed[0]);
             }
         else {
-            vel_mean_ed = vel_mean_ing;
+            horizontal_mean_return(dims, &vel_int_ed[0], &vel_mean_ed[0]);
+//            vel_mean_ed = vel_mean_ing ;
             }
 
 
@@ -142,6 +144,7 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
         }
 
         // (4) compute mean eddy flux
+        //printf("QL mom adv: call hor mean");
         horizontal_mean_return(dims, &eddy_flux[0], &mean_eddy_flux[0]);
         //mean_eddy_flux = Pa.HorizontalMean(Gr, &eddy_flux);
 
@@ -172,7 +175,7 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
         free(vel_int_ing);
         free(vel_int_ed);
         free(vel_mean_ed);
-        free(vel_mean_ing);
+        free(vel_mean_ing);     // gives error message
 
         free(flux);
         return;
