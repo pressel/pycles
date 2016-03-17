@@ -802,6 +802,12 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
     }
 
 
+    free(*eddy_flux);
+    free(*mean_eddy_flux);
+    free(*vel_mean);
+    free(*phi_int);
+    free(*phi_mean_int);
+
     return;
 }
 

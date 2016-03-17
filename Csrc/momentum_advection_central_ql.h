@@ -166,13 +166,13 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                                 tendency, d_advected, d_advecting);
 
         //Free dynamically allocated array
-        /*
+
         free(eddy_flux);
         free(mean_eddy_flux);
         free(vel_int_ing);
         free(vel_int_ed);
         free(vel_mean_ed);
-        free(vel_mean_ing);*/
+        free(vel_mean_ing);
 
         free(flux);
         return;
