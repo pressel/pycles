@@ -167,7 +167,7 @@ class Simulation3d:
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
-                self.Pa.root_print('ok until here')
+                # self.Pa.root_print('ok until here')
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)

@@ -18,9 +18,12 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
                                 double* restrict vel_advected, double* restrict vel_advecting,
                                 double* restrict tendency, ssize_t d_advected, ssize_t d_advecting, int scheme){
 
+
     switch(scheme){
-        printf("scheme !!!!!!!!!!");
         case 2:
+            if( d_advected==1 && d_advecting==1 ){
+                printf("2nd order full Momentum Transport \n");
+                }
             second_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
@@ -109,6 +112,9 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
 
 
         case 102:
+            if( d_advected==1 && d_advecting==1 ){
+                printf("2nd order QL Momentum Transport \n");
+                }
             second_order_m_ql(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;

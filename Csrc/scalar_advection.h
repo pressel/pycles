@@ -690,7 +690,10 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
 
 //void second_order_a_ql(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+//    if( d_advected==1 && d_advecting==1 ){
+//        printf("2nd order QL Scalar Transport \n");}
     printf("2nd order QL Scalar Transport \n");
+
 //compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
 //                                                   &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order_sedimentation)
 //void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, double* rho0_half ,double* restrict velocity, double* restrict scalar,
@@ -792,7 +795,8 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
             const ssize_t jshift = j*jstride;
             for(ssize_t k=kmin;k<kmax;k++){
                 const ssize_t ijk = ishift + jshift + k ;
-                flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
+//                flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
+                flux[ijk] = flux[ijk];
             }
         }
     }
