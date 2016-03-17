@@ -795,8 +795,8 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
             const ssize_t jshift = j*jstride;
             for(ssize_t k=kmin;k<kmax;k++){
                 const ssize_t ijk = ishift + jshift + k ;
-//                flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
-                flux[ijk] = flux[ijk];
+                flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
+//                flux[ijk] = flux[ijk];
             }
         }
     }
