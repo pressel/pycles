@@ -29,7 +29,8 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
-        printf("2nd order QL Momentum Transport \n");
+        //if(d_advected==1 && d_advecting==1){
+        //    printf("2nd order QL Momentum Transport \n");}
 
         // Dynamically allocate flux array
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);     // malloc allocates size of uninitialized storage; in this case allocates memory for (nlg[0]+nlg[1]+nlg[2])*sizeof(double))
