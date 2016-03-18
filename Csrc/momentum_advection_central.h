@@ -2,6 +2,8 @@
 #include "grid.h"
 #include "advection_interpolation.h"
 #include "flux_divergence.h"
+
+#include "cc_statistics.h"
 #include<stdio.h>
 
 void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
@@ -9,8 +11,13 @@ void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
+        if (d_advected==1 && d_advecting==1){
+            printf("2nd order full Momentum Transport \n");}
+
         // Dynamically allocate flux array
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//        double *vel_mean_ed = (double *)malloc(sizeof(double) * dims->nlg[2]);
+//        double *vel_mean_ing = (double *)malloc(sizeof(double) * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -72,6 +79,18 @@ void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
 
         //Free dynamically allocated array
         free(flux);
+
+//        // Average velocity fields (Test of cc_statistics.h)
+//        horizontal_mean_return(dims, &vel_advecting[0], &vel_mean_ing[0]);
+//        if (d_advected != d_advecting){
+//            horizontal_mean_return(dims, &vel_advected[0], &vel_mean_ed[0]);
+//            }
+//        else {
+//            vel_mean_ed = vel_mean_ing;
+//            }
+//        free(vel_mean_ing);       // gives a bug
+//        free(vel_mean_ed);
+
         return;
     }
 

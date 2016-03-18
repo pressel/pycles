@@ -79,6 +79,7 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values){
 
 
 void horizontal_mean_return(struct DimStruct *dims, double* restrict values, double* restrict mean){
+//        printf("calling horizontal mean \n");
 //        /*
 //        Compute the horizontal mean of the array pointed to by values.
 //        values should have dimension of Gr.dims.nlg[0] * Gr.dims.nlg[1]
@@ -140,7 +141,7 @@ void horizontal_mean_return(struct DimStruct *dims, double* restrict values, dou
         }
 //        printf("mean[gw] = %f\n", mean[gw]);
 //        printf("mean[10] = %f\n", mean[10]);
-
+//        printf("finished horizontal mean \n");
         return;
 }
         /*
