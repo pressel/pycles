@@ -820,7 +820,7 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
 
 void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
-    printf("2nd order QL Scalar Transport \n");
+    printf("4th order QL Scalar Transport \n");
 
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mean_eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
@@ -854,18 +854,18 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
             const ssize_t jshift = j*jstride;
             for(ssize_t k=kmin;k<kmax;k++){
                 const ssize_t ijk = ishift + jshift + k;
-                phi_int[ijk] = interp_2(scalar[ijk],scalar[ijk+sp1]);
+                phi_int[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2]);
             }
         }
     }
 
 
     // (2) average velocity field and interpolated scalar field
-    for(ssize_t k=kmin;k<kmax;k++){
-        phi_mean_int[k] = 0;
-        vel_mean[k] = 0;
-        mean_eddy_flux[k] = 0;
-        }
+//    for(ssize_t k=kmin;k<kmax;k++){
+//        phi_mean_int[k] = 0;
+//        vel_mean[k] = 0;
+//        mean_eddy_flux[k] = 0;
+//        }
     horizontal_mean_return(dims, &phi_int[0], &phi_mean_int[0]);
     horizontal_mean_return(dims, &velocity[0], &vel_mean[0]);
 
@@ -880,7 +880,7 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t ijk = ishift + jshift + k ;
                     eddy_flux[ijk] = (phi_int[ijk] - phi_mean_int[k]) * (velocity[ijk] - vel_mean[k]) * rho0[k];
                     flux[ijk] = phi_int[ijk] * velocity[ijk] * rho0[k];
-                    // flux[ijk] = interp_2(scalar[ijk],scalar[ijk+sp1]) * velocity[ijk]*rho0[k];
+                    // flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -894,7 +894,7 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t ijk = ishift + jshift + k ;
                     eddy_flux[ijk] = (phi_int[ijk] - phi_mean_int[k]) * (velocity[ijk] - vel_mean[k]) * rho0_half[k];
                     flux[ijk] = phi_int[ijk] * velocity[ijk] * rho0_half[k];
-                    // flux[ijk] = interp_2(scalar[ijk],scalar[ijk+sp1])*velocity[ijk]*rho0_half[k];
+                    // flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -917,7 +917,6 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
             }
         }
     }
-
 
     free(eddy_flux);
     free(mean_eddy_flux);
@@ -971,6 +970,9 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
 
         case 102:
             second_order_a_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            break;
+        case 104:
+            fourth_order_a_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
 
         default:
