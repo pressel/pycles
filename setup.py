@@ -18,16 +18,20 @@ if sys.platform == 'darwin':
     libraries = []
     extensions = []
     extra_compile_args = []
-    extra_compile_args += ['-O3', '-march=native', '-Wno-unused', '-Wno-#warnings']
+    extra_compile_args += ['-O3', '-march=native', '-Wno-unused', '-Wno-#warnings','-fPIC']
+    extra_objects=['./RRTMG/build/rrtmg_combined.o']
+
 elif 'euler' in platform.node():
     #Compile flags for euler @ ETHZ
     library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
     libraries = []
     libraries.append('mpi')
+    libraries.append('gfortran')
     extensions = []
     extra_compile_args=[]
     extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
                          '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds']
+    extra_objects=['./RRTMG/build/rrtmg_combined.o']
 else:
     print('Unknown system platform: ' + sys.platform  + 'or unknown system name: ' + platform.node())
     sys.exit()
@@ -184,7 +188,7 @@ extensions.append(_ext)
 
 _ext = Extension('Radiation', ['Radiation.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs)
+                 runtime_library_dirs=library_dirs, extra_objects=extra_objects)
 extensions.append(_ext)
 
 _ext = Extension('AuxiliaryStatistics', ['AuxiliaryStatistics.pyx'], include_dirs=include_path,
