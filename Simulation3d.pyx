@@ -122,6 +122,7 @@ class Simulation3d:
         self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
+        self.Ra.initialize(self.Gr,self.StatsIO,self.Pa)
         self.Damping.initialize(self.Gr)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
@@ -139,6 +140,8 @@ class Simulation3d:
         cdef int rk_step
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_, PA_)
+        self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.StatsIO,self.Pa)
+
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
@@ -161,7 +164,7 @@ class Simulation3d:
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
-                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.TS, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
@@ -226,9 +229,9 @@ class Simulation3d:
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
                 self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
                 self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-                self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
+                self.SD.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
-                self.Ke.stats_io(self.Gr, self.Ref, self.PV,self.StatsIO,self.Pa)
+                self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
                 self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
                 self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
                 self.StatsIO.close_files(self.Pa)

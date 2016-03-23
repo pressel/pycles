@@ -23,6 +23,14 @@ cdef class ReferenceState:
         self.rho0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.rho0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
 
+
+        self.p0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.p0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.alpha0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.alpha0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.rho0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.rho0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+
         return
 
     def initialize(self, Grid.Grid Gr, Thermodynamics, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -72,6 +80,11 @@ cdef class ReferenceState:
         p = np.exp(p)
         p_half = np.exp(p_half)
 
+        self.p0_global = p
+
+        self.p0_half_global = p_half
+
+
         cdef double[:] p_ = p
         cdef double[:] p_half_ = p_half
         cdef double[:] temperature = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
@@ -108,6 +121,10 @@ cdef class ReferenceState:
                 Pa.root_print('Kill Simulation Now!')
                 Pa.kill()
 
+        self.alpha0_global = alpha
+        self.alpha0_half_global = alpha_half
+        self.rho0_global = 1.0/np.array(self.alpha0_global)
+        self.rho0_half_global = 1.0/np.array(self.alpha0_half_global)
 
         # print(np.array(Gr.extract_local_ghosted(alpha_half,2)))
         self.alpha0_half = Gr.extract_local_ghosted(alpha_half, 2)
