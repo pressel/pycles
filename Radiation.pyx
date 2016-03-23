@@ -1,8 +1,6 @@
 #!python
-#cython: boundscheck=False
 #cython: wraparound=True
-#cython: initializedcheck=False
-#cython: cdivision=True
+
 
 
 cimport Grid
@@ -1060,8 +1058,7 @@ cdef class RadiationRRTM:
 
 
         return
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                   DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
 

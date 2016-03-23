@@ -1,4 +1,5 @@
-
+#!python
+#cython: wraparound=True
 import numpy as np
 from mpi4py import MPI
 cimport numpy as np
