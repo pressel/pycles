@@ -140,11 +140,10 @@ cdef class UniformViscosity_cond:
 
         cdef double fb = buoyancy_adjust(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
                                &Ke.strain_rate_mag[0],self.prt)
+        if fb == 0:
+            Pa.root_print('Ri > 1: setting Viscosity to zero')
 
-        cdef:
-            #Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
-            #Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
-            Py_ssize_t i
+        cdef Py_ssize_t i
 
         with nogil:
             if not self.is_init:
