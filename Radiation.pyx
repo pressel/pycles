@@ -34,7 +34,7 @@ cdef class Radiation:
             if fixed_heating:
                 self.scheme = RadiationDyCOMSFixedHeating()
             else:
-                self.scheme = RadiationRRTM(namelist) #RadiationDyCOMS_RF01()
+                self.scheme = RadiationDyCOMS_RF01()#RadiationRRTM(namelist) #RadiationDyCOMS_RF01()
         elif casename == 'DYCOMS_RF02':
             #Dycoms RF01 and RF02 use the same radiation
             self.scheme = RadiationDyCOMS_RF01()

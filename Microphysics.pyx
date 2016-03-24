@@ -42,8 +42,8 @@ cdef class No_Microphysics_SA:
         LH.L_fp = latent_heat_variable #latent_heat_constant
         self.thermodynamics_type = 'SA'
         #also set local versions
-        self.Lambda_fp = lambda_constant
-        self.L_fp = latent_heat_constant
+        self.Lambda_fp = LH.Lambda_fp
+        self.L_fp = LH.L_fp
 
         # Extract case-specific parameter values from the namelist
         # Get number concentration of cloud condensation nuclei (1/m^3)
@@ -177,11 +177,11 @@ cdef class Microphysics_SB_Liquid:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
         # Create the appropriate linkages to the bulk thermodynamics
         LH.Lambda_fp = lambda_constant
-        LH.L_fp = latent_heat_constant
+        LH.L_fp = latent_heat_variable
         self.thermodynamics_type = 'SA'
         #also set local versions
-        self.Lambda_fp = lambda_constant
-        self.L_fp = latent_heat_constant
+        self.Lambda_fp = LH.Lambda_fp
+        self.L_fp = LH.L_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 
@@ -553,6 +553,7 @@ cdef class No_Microphysics_DrySGS:
         LH.Lambda_fp = lambda_constant
         LH.L_fp = latent_heat_constant
         self.thermodynamics_type = 'dry_sgs'
+
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
@@ -563,8 +564,10 @@ cdef class No_Microphysics_DrySGS:
 cdef class No_Microphysics_SA_SGS:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
         LH.Lambda_fp = lambda_constant
-        LH.L_fp = latent_heat_constant
+        LH.L_fp = latent_heat_variable
         self.thermodynamics_type = 'SA_sgs'
+        self.Lambda_fp = LH.Lambda_fp
+        self.L_fp = LH.L_fp
         return
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
