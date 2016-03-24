@@ -33,10 +33,10 @@ cdef class UniformViscosity:
 cdef class UniformViscosity_cond:
 
     cdef:
-        double const_viscosity
         double const_diffusivity
+        double const_viscosity
         bint is_init
-        double fb
+        double prt
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
