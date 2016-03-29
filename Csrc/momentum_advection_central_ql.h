@@ -121,9 +121,9 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
                         // vel_fluc = vel_int - vel_meanc
-                        // eddy_flux[ijk] = vel_fluc[ijk]*vel_fluc[ijk]*rho0_half[k];       // need to be able to output eddy_flux???
-                        eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k];
-                        flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k];
+                        // eddy_flux[ijk] = vel_fluc[ijk]*vel_fluc[ijk]*rho0_half[k+1];       // need to be able to output eddy_flux???
+                        eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k+1];
+                        flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k+1];
                     }
                 }
             }
@@ -136,9 +136,9 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
                         // vel_fluc = vel_int - vel_mean
-                        // eddy_flux[ijk] = vel_fluc[ijk]*vel_fluc[ijk]*rho0_half[k];       // need to be able to output eddy_flux???
-                        eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k];
-                        flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k];
+                        // eddy_flux[ijk] = vel_fluc[ijk]*vel_fluc[ijk]*rho0[k];       // need to be able to output eddy_flux???
+                        eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0[k];
+                        flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0[k];
                     }
                 }
             }
@@ -268,8 +268,8 @@ void fourth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k];
-                        flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k];
+                        eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k+1];
+                        flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k+1];
                     }
                 }
             }
@@ -281,8 +281,8 @@ void fourth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k];
-                        flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k];
+                        eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0[k];
+                        flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0[k];
                     }
                 }
             }
@@ -316,7 +316,7 @@ void fourth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
         free(vel_int_ing);
         free(vel_int_ed);
         free(vel_mean_ed);
-        free(vel_mean_ing);     // gives error message
+        free(vel_mean_ing);
 
         free(flux);
         return;
