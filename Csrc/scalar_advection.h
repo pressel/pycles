@@ -690,9 +690,7 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
 
 //void second_order_a_ql(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
-//    if( d_advected==1 && d_advecting==1 ){
-//        printf("2nd order QL Scalar Transport \n");}
-    printf("2nd order QL Scalar Transport \n");
+    if (d==1){printf("2nd order QL Scalar Transport \n");}
 
 //compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
 //                                                   &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order_sedimentation)
@@ -820,7 +818,7 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
 
 void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
-    printf("4th order QL Scalar Transport \n");
+    if (d==1){printf("4th order QL Scalar Transport \n");}
 
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mean_eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
