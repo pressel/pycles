@@ -197,7 +197,8 @@ cdef class SurfaceSullivanPatton:
 cdef class SurfaceBomex:
     def __init__(self):
         self.theta_flux = 8.0e-3 # K m/s
-        self.qt_flux = 5.2e-5 # m/s
+        self.qt_flux = 5.2e-5 # m/s (original: 5.2e-5)
+        #self.qt_flux = 2*5.2e-5 # m/s (original: 5.2e-5)
         self.ustar_ = 0.28 #m/s
         self.theta_surface = 299.1 #K
         self.qt_surface = 22.45e-3 # kg/kg
