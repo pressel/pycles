@@ -36,6 +36,7 @@ cdef class RadiationDyCOMS_RF01:
         double f0
         double f1
         double divergence
+        double [:] heating_rate
         ParallelMPI.Pencil z_pencil
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
