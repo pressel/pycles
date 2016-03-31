@@ -7,7 +7,7 @@ set MPATH_LW = $cwd/lw/modules
 set CPATH_LW = $cwd/lw/src
 set MPATH_SW = $cwd/sw/modules
 set CPATH_SW = $cwd/sw/src
-set BPATH = $cwd/rrtm_build
+set BPATH = $cwd/rrtmg_build
 
 # The following paths on Euler are current as of Feb 01 2016.
 #set LIB_NETCDF = /cluster/apps/netcdf/4.3.1/x86_64/gcc_4.8.2/openmpi_1.6.5/lib
