@@ -848,7 +848,7 @@ def InitIsdacCC(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     #First generate the reference profiles
     RS.Pg = 1.02e5  #Pressure at ground
-    RS.Tg = namelist['initial']['SST'] + namelist['initial']['dSST'] #Temperature at ground
+    RS.Tg = (namelist['initial']['SST'] + namelist['initial']['dSST']) * (RS.Pg / p_tilde)**(Rd/cpd) #Temperature at ground
     pv_sat = Th.get_pv_star(RS.Tg)
     pv = pv_sat * namelist['initial']['rh0']
     RS.qtg =  1.0/(eps_vi * (RS.Pg - pv) / pv + 1.0)  #Total water mixing ratio at surface
