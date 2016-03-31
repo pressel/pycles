@@ -76,6 +76,10 @@ cdef class RadiationDyCOMS_RF01:
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.z_pencil.initialize(Gr, Pa, 2)
+        self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        NS.add_profile('radiative_heating_rate', Gr, Pa)
+        NS.add_profile('radiative_entropy_tendency', Gr, Pa)
+
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -103,7 +107,6 @@ cdef class RadiationDyCOMS_RF01:
             double [:, :] qt_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[qt_shift])
             double[:, :] f_rad = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
             double[:, :] f_heat = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
-            double[:] heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double q_0
             double q_1
 
@@ -158,7 +161,7 @@ cdef class RadiationDyCOMS_RF01:
                        (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
-        self.z_pencil.reverse_double(&Gr.dims, Pa, f_heat, &heating_rate[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, f_heat, &self.heating_rate[0])
 
 
         # Now update entropy tendencies
@@ -170,13 +173,34 @@ cdef class RadiationDyCOMS_RF01:
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
                         PV.tendencies[
-                            s_shift + ijk] +=  heating_rate[ijk] / DV.values[ijk + t_shift]
+                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
 
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                    PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+
+
+        cdef:
+            Py_ssize_t i
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] tmp
+
+        # Now update entropy tendencies
+        with nogil:
+            for i in xrange(Gr.dims.npg):
+                entropy_tendency[i] =  self.heating_rate[i] / DV.values[i + t_shift]
+
+        tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
+        NS.write_profile('radiative_heating_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &entropy_tendency[0])
+        NS.write_profile('radiative_entropy_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
 
         return
 
