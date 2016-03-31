@@ -1,6 +1,6 @@
 #!python
 #cython: boundscheck=False
-#cython: wraparound=False
+#cython: wraparound=True
 #cython: initializedcheck=False
 #cython: cdivision=True
 
@@ -10,12 +10,18 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
+cimport TimeStepping
 
-
+import pylab as plt
 import numpy as np
 cimport numpy as np
-from libc.math cimport pow, cbrt, exp
+import netCDF4 as nc
+from scipy.interpolate import pchip_interpolate
+from libc.math cimport pow, cbrt, exp, fmin, fmax
+from thermodynamic_functions cimport cpm_c
 include 'parameters.pxi'
+from profiles import profile_data
+
 
 cdef class Radiation:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
@@ -296,6 +302,32 @@ cdef class RadiationSmoke:
         return
 
 
+# Note: the RRTM modules are compiled in the 'RRTMG' directory:
+cdef extern:
+    void c_rrtmg_lw_init(double *cpdair)
+    void c_rrtmg_lw (
+             int *ncol    ,int *nlay    ,int *icld    ,int *idrv    ,
+             double *play    ,double *plev    ,double *tlay    ,double *tlev    ,double *tsfc    ,
+             double *h2ovmr  ,double *o3vmr   ,double *co2vmr  ,double *ch4vmr  ,double *n2ovmr  ,double *o2vmr,
+             double *cfc11vmr,double *cfc12vmr,double *cfc22vmr,double *ccl4vmr ,double *emis    ,
+             int *inflglw ,int *iceflglw,int *liqflglw,double *cldfr   ,
+             double *taucld  ,double *cicewp  ,double *cliqwp  ,double *reice   ,double *reliq   ,
+             double *tauaer  ,
+             double *uflx    ,double *dflx    ,double *hr      ,double *uflxc   ,double *dflxc,  double *hrc,
+             double *duflx_dt,double *duflxc_dt )
+    void c_rrtmg_sw_init(double *cpdair)
+    void c_rrtmg_sw (int *ncol    ,int *nlay    ,int *icld    ,int *iaer    ,
+             double *play    ,double *plev    ,double *tlay    ,double *tlev    ,double *tsfc    ,
+             double *h2ovmr  ,double *o3vmr   ,double *co2vmr  ,double *ch4vmr  ,double *n2ovmr  ,double *o2vmr,
+             double *asdir   ,double *asdif   ,double *aldir   ,double *aldif   ,
+             double *coszen  ,double *adjes   ,int *dyofyr  ,double *scon    ,
+             int *inflgsw ,int *iceflgsw,int *liqflgsw,double *cldfr   ,
+             double *taucld  ,double *ssacld  ,double *asmcld  ,double *fsfcld  ,
+             double *cicewp  ,double *cliqwp  ,double *reice   ,double *reliq   ,
+             double *tauaer  ,double *ssaaer  ,double *asmaer  ,double *ecaer   ,
+             double *swuflx  ,double *swdflx  ,double *swhr    ,double *swuflxc ,double *swdflxc ,double *swhrc)
+
+
 
 
 cdef class RadiationRRTM:
@@ -386,7 +418,7 @@ cdef class RadiationRRTM:
             self.uniform_reliq = False
 
         try:
-            self.radiation_frequency = namelist['radiation']['RRTM']['radiation_frequency']
+            self.radiation_frequency = namelist['radiation']['RRTM']['frequency']
         except:
             print('radiation_frequency not set so RadiationRRTM takes default value: radiation_frequency = 0.0 (compute at every step).')
             self.radiation_frequency = 0.0
@@ -481,15 +513,15 @@ cdef class RadiationRRTM:
             for i in xrange(self.n_buffer):
                 self.rv_ext[i] = pchip_interpolate(xi, ri, self.p_ext[i] )
                 self.t_ext[i] = pchip_interpolate(xi,ti, self.p_ext[i])
-        # plt.figure(1)
-        # plt.scatter(self.rv_ext,self.p_ext)
-        # plt.plot(vapor_mixing_ratios, pressures)
-        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
-        # plt.figure(2)
-        # plt.scatter(self.t_ext,self.p_ext)
-        # plt.plot(temperatures,pressures)
-        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw])
-        # plt.show()
+        plt.figure(1)
+        plt.scatter(self.rv_ext,self.p_ext)
+        plt.plot(vapor_mixing_ratios, pressures)
+        plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
+        plt.figure(2)
+        plt.scatter(self.t_ext,self.p_ext)
+        plt.plot(temperatures,pressures)
+        plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw])
+        plt.show()
 
         self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
         self.pi_full = np.zeros((self.n_ext+1+nz,),dtype=np.double)
@@ -858,9 +890,9 @@ cdef class RadiationRRTM:
         self.srf_sw_up= Pa.domain_scalar_sum(srf_sw_up_local)
         self.srf_sw_down= Pa.domain_scalar_sum(srf_sw_down_local)
 
-        # plt.figure(6)
-        # plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
-        # plt.show()
+        plt.figure(6)
+        plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
+        plt.show()
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
 
