@@ -7,7 +7,7 @@ import sys
 import platform
 
 
-# Now get include paths from relevant python modules
+#Now get include paths from relevant python modules
 include_path = [mpi4py.get_include()]
 include_path += [np.get_include()]
 include_path += ['./Csrc']
@@ -212,5 +212,5 @@ _ext = Extension('VisualizationOutput', ['VisualizationOutput.pyx'], include_dir
 extensions.append(_ext)
 
 setup(
-    ext_modules=cythonize(extensions, verbose=1, include_path=include_path)
+    ext_modules = cythonize(extensions,verbose=1,include_path=include_path)
 )
