@@ -314,6 +314,11 @@ def Bomex():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] = {}
+    namelist['sgs']['Smagorinsky']['cs'] = 0.17
+    namelist['sgs']['UniformViscosity'] = {}
+    namelist['sgs']['UniformViscosity']['viscosity'] = 1.2
+    namelist['sgs']['UniformViscosity']['diffusivity'] = 3.6
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -846,6 +851,11 @@ def DCBLSoares():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] = {}
+    namelist['sgs']['Smagorinsky']['cs'] = 0.17
+    namelist['sgs']['UniformViscosity'] = {}
+    namelist['sgs']['UniformViscosity']['viscosity'] = 1.2
+    namelist['sgs']['UniformViscosity']['diffusivity'] = 3.6
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False      # seems to be set to False for all cases???

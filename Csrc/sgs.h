@@ -195,14 +195,15 @@ void tke_surface(const struct DimStruct *dims, double* e, double* lmo, double* u
 // added by Bettina Meyer (copied and modified from smagorinsky_update())
 // Turning viscosity off for stably stratified layers
 // stability criterion: gradient Richardson number > 1
-double buoyancy_adjust(const struct DimStruct *dims, double* restrict visc, double* restrict diff,
-double* restrict buoy_freq, double* restrict strain_rate_mag, double prt){
-    double fb = 1;
-        if(buoy_freq[0] > 0.0){
-            fb = sqrt(fmax(1.0 - buoy_freq[0]/(prt*strain_rate_mag[0]*strain_rate_mag[0]),0.0));
-        }
-    return fb;
-}
+
+//double buoyancy_adjust(const struct DimStruct *dims, double* restrict visc, double* restrict diff,
+//double* restrict buoy_freq, double* restrict strain_rate_mag, double prt){
+//    double fb = 1;
+//        if(buoy_freq[0] > 0.0){
+//            fb = sqrt(fmax(1.0 - buoy_freq[0]/(prt*strain_rate_mag[0]*strain_rate_mag[0]),0.0));
+//        }
+//    return fb;
+//}
 
 void const_viscosity_update(const struct DimStruct *dims, double* restrict visc, double* restrict diff,
     double* restrict buoy_freq, double* restrict strain_rate_mag, double const_visc, double prt){
