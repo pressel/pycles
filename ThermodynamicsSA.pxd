@@ -9,6 +9,7 @@ from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
 
 cdef class ThermodynamicsSA:
     cdef:
+        bint do_qt_clipping
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
         ClausiusClapeyron CC

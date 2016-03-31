@@ -4,7 +4,7 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
-cimport mpi4py.mpi_c as mpi
+cimport mpi4py.libmpi as mpi
 cimport Grid
 from time import time
 import sys

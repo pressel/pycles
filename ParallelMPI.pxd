@@ -1,4 +1,4 @@
-cimport mpi4py.mpi_c as mpi
+cimport mpi4py.libmpi as mpi
 cimport Grid
 
 cdef class ParallelMPI:

@@ -10,6 +10,7 @@ cimport DiagnosticVariables
 cimport Kinematics
 cimport ParallelMPI
 from NetCDFIO cimport NetCDFIO_Stats
+from libc.math cimport exp, sqrt
 cimport numpy as np
 import numpy as np
 import cython
@@ -24,7 +25,10 @@ cdef extern from "sgs.h":
     void tke_buoyant_production(Grid.DimStruct *dims,  double* e_tendency, double* diff, double* buoy_freq)
     void tke_surface(Grid.DimStruct *dims, double* e, double* lmo, double* ustar, double h_bl, double zb) nogil
     double tke_ell(double cn, double e, double buoy_freq, double delta) nogil
-
+    void smagorinsky_update_wall(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
+                            double* strain_rate_mag, double cs, double prt)
+    void smagorinsky_update_iles(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
+                            double* strain_rate_mag, double cs, double prt)
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
@@ -33,6 +37,7 @@ cdef class SGS:
             self.scheme = Smagorinsky(namelist)
         elif(namelist['sgs']['scheme'] == 'TKE'):
             self.scheme = TKE(namelist)
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -107,6 +112,21 @@ cdef class Smagorinsky:
         except:
             self.prt = 1.0/3.0
 
+        try:
+            self.adjust_wall = namelist['sgs']['Smagorinsky']['wall']
+            if self.adjust_wall:
+                self.iles = False
+        except:
+            self.adjust_wall = False
+
+        try:
+            self.iles = namelist['sgs']['Smagorinsky']['iles']
+            if self.iles:
+                self.adjust_wall = False
+        except:
+            self.iles = False
+
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -122,8 +142,17 @@ cdef class Smagorinsky:
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
             Py_ssize_t bf_shift =DV.get_varshift(Gr, 'buoyancy_frequency')
 
-        smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
-                           &Ke.strain_rate_mag[0],self.cs,self.prt)
+        if self.adjust_wall:
+            smagorinsky_update_wall(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                                    &Ke.strain_rate_mag[0],self.cs,self.prt)
+
+        elif self.iles:
+            smagorinsky_update_iles(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                                    &Ke.strain_rate_mag[0],self.cs,self.prt)
+        else:
+            smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                               &Ke.strain_rate_mag[0],self.cs,self.prt)
+
 
         return
 
@@ -205,7 +234,6 @@ cdef class TKE:
         cdef Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr,'friction_velocity')
         if Pa.sub_z_rank == 0:
             tke_surface(&Gr.dims, &PV.values[e_shift], &DV.values_2d[lmo_shift], &DV.values_2d[ustar_shift] , h_global, Gr.zl_half[Gr.dims.gw])
-
 
 
         return
