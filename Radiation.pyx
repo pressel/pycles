@@ -12,7 +12,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 
-import pylab as plt
+# import pylab as plt
 import numpy as np
 cimport numpy as np
 import netCDF4 as nc
@@ -203,8 +203,6 @@ cdef class RadiationDyCOMS_RF01:
 
     cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-
-
 
         cdef:
             Py_ssize_t i
@@ -537,15 +535,17 @@ cdef class RadiationRRTM:
             for i in xrange(self.n_buffer):
                 self.rv_ext[i] = pchip_interpolate(xi, ri, self.p_ext[i] )
                 self.t_ext[i] = pchip_interpolate(xi,ti, self.p_ext[i])
-        plt.figure(1)
-        plt.scatter(self.rv_ext,self.p_ext)
-        plt.plot(vapor_mixing_ratios, pressures)
-        plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
-        plt.figure(2)
-        plt.scatter(self.t_ext,self.p_ext)
-        plt.plot(temperatures,pressures)
-        plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw])
-        plt.show()
+
+        # Plotting to evaluate implementation of buffer zone
+        # plt.figure(1)
+        # plt.scatter(self.rv_ext,self.p_ext)
+        # plt.plot(vapor_mixing_ratios, pressures)
+        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
+        # plt.figure(2)
+        # plt.scatter(self.t_ext,self.p_ext)
+        # plt.plot(temperatures,pressures)
+        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw])
+        # plt.show()
 
         self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
         self.pi_full = np.zeros((self.n_ext+1+nz,),dtype=np.double)
@@ -914,9 +914,10 @@ cdef class RadiationRRTM:
         self.srf_sw_up= Pa.domain_scalar_sum(srf_sw_up_local)
         self.srf_sw_down= Pa.domain_scalar_sum(srf_sw_down_local)
 
-        plt.figure(6)
-        plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
-        plt.show()
+        # Plot to verify no kink is present at top of LES domain
+        # plt.figure(6)
+        # plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
+        # plt.show()
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
 
@@ -927,17 +928,7 @@ cdef class RadiationRRTM:
 
 
         cdef:
-            Py_ssize_t imin = Gr.dims.gw
-            Py_ssize_t jmin = Gr.dims.gw
-            Py_ssize_t kmin = Gr.dims.gw
-
-            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
-            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
-
-            Py_ssize_t i, j, k, ijk, ishift, jshift
-            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double [:] tmp
@@ -945,13 +936,8 @@ cdef class RadiationRRTM:
 
         # Now update entropy tendencies
         with nogil:
-            for i in xrange(imin, imax):
-                ishift = i * istride
-                for j in xrange(jmin, jmax):
-                    jshift = j * jstride
-                    for k in xrange(kmin, kmax):
-                        ijk = ishift + jshift + k
-                        entropy_tendency[ijk] =  self.heating_rate[ijk] / DV.values[ijk + t_shift]
+            for i in xrange(Gr.dims.npg):
+                entropy_tendency[i] =  self.heating_rate[i] / DV.values[i + t_shift]
 
 
         tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
