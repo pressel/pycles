@@ -359,6 +359,9 @@ def Bomex():
     namelist['conditional_stats']['frequency'] = 600.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 1800.0
+
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Bomex'
     namelist['meta']['casename'] = 'Bomex'
