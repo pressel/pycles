@@ -30,7 +30,7 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
-        if (d_advected==1 && d_advecting==1){
+//        if (d_advected==1 && d_advecting==1){
 //            printf("2nd order QL Momentum Transport \n");}
 
         // Dynamically allocate flux array
@@ -145,7 +145,6 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
         }
 
         // (4) compute mean eddy flux
-        //printf("QL mom adv: call hor mean");
         horizontal_mean_return(dims, &eddy_flux[0], &mean_eddy_flux[0]);
         //mean_eddy_flux = Pa.HorizontalMean(Gr, &eddy_flux);
 
