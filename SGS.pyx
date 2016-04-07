@@ -229,10 +229,13 @@ cdef class Smagorinsky:
 
 cdef class TKE:
     def __init__(self,namelist):
+        # A Description of the Advanced Research WRF Version 3 (NCAR TECHNICAL NOTE, June 2008)
+        # ck: K = ck*l*sqrt(e)
+        # cn: l = cn*sqrt(e)/N (isotropic mixing)
         try:
             self.ck = namelist['sgs']['TKE']['ck']
         except:
-            self.ck = 0.1
+            self.ck = 0.1       #(0.15<ck<0.25)
         try:
             self.cn = namelist['sgs']['TKE']['cn']
         except:

@@ -319,6 +319,9 @@ def Bomex():
     namelist['sgs']['UniformViscosity'] = {}
     namelist['sgs']['UniformViscosity']['viscosity'] = 1.2
     namelist['sgs']['UniformViscosity']['diffusivity'] = 3.6
+    namelist['sgs']['TKE'] = {}
+    namelist['sgs']['TKE']['ck'] = 0.1
+    namelist['sgs']['TKE']['cn'] = 0.76
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
