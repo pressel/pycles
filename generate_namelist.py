@@ -480,6 +480,9 @@ def DYCOMS_RF01():
     namelist['microphysics']['cloud_sedimentation'] = False
     namelist['microphysics']['ccn'] = 100.0e6
 
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = True
+
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
 
