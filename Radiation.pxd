@@ -78,7 +78,7 @@ cdef class RadiationIsdac:
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 ParallelMPI.ParallelMPI Pa)
+                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
     cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 

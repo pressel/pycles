@@ -350,7 +350,7 @@ cdef class RadiationIsdac:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 ParallelMPI.ParallelMPI Pa):
+                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
