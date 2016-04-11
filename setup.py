@@ -28,7 +28,7 @@ elif 'euler' in platform.node():
     extensions = []
     extra_compile_args=[]
     extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
-                         '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds']
+                         '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
 
 else:
