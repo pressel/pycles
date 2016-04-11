@@ -81,9 +81,9 @@ void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
         free(flux);
 
 //        // Average velocity fields (Test of cc_statistics.h)
-//        horizontal_mean_return(dims, &vel_advecting[0], &vel_mean_ing[0]);
+//        horizontal_mean(dims, &vel_advecting[0], &vel_mean_ing[0]);
 //        if (d_advected != d_advecting){
-//            horizontal_mean_return(dims, &vel_advected[0], &vel_mean_ed[0]);
+//            horizontal_mean(dims, &vel_advected[0], &vel_mean_ed[0]);
 //            }
 //        else {
 //            vel_mean_ed = vel_mean_ing;

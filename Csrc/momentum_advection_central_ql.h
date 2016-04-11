@@ -80,19 +80,17 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
         // (2) average interpolated velocity fields
         //vel_mean_ing = Pa.HorizontalMean(Gr, &vel_int_advecting);
-//        horizontal_mean(dims, &vel_int_ing[0]);
 //        const ssize_t dims->gw;
 //        int d_ad = d_advected;
 //        int d_ing = d_advecting;
 //        printf("flux: %d, %d; vel_int[gw+2] = %f\n", d_ad, d_ing, values[0]);
-        horizontal_mean_return(dims, &vel_int_ing[0], &vel_mean_ing[0]);
+        horizontal_mean(dims, &vel_int_ing[0], &vel_mean_ing[0]);
 //        printf("values[gw] = %f\n", values[0]);
         if (d_advected != d_advecting){
-//            horizontal_mean(dims, &vel_int_ed[0]);
-            horizontal_mean_return(dims, &vel_int_ed[0], &vel_mean_ed[0]);
+            horizontal_mean(dims, &vel_int_ed[0], &vel_mean_ed[0]);
             }
         else {
-            horizontal_mean_return(dims, &vel_int_ed[0], &vel_mean_ed[0]);
+            horizontal_mean(dims, &vel_int_ed[0], &vel_mean_ed[0]);
 //            vel_mean_ed = vel_mean_ing ;
             }
 
@@ -145,7 +143,7 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
         }
 
         // (4) compute mean eddy flux
-        horizontal_mean_return(dims, &eddy_flux[0], &mean_eddy_flux[0]);
+        horizontal_mean(dims, &eddy_flux[0], &mean_eddy_flux[0]);
         //mean_eddy_flux = Pa.HorizontalMean(Gr, &eddy_flux);
 
 
@@ -242,8 +240,8 @@ void fourth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
         // (2) average interpolated velocity fields
         //vel_mean_ing = Pa.HorizontalMean(Gr, &vel_int_advecting);
-        horizontal_mean_return(dims, &vel_int_ing[0], &vel_mean_ing[0]);
-        horizontal_mean_return(dims, &vel_int_ed[0], &vel_mean_ed[0]);
+        horizontal_mean(dims, &vel_int_ing[0], &vel_mean_ing[0]);
+        horizontal_mean(dims, &vel_int_ed[0], &vel_mean_ed[0]);
 
 
         // (3) compute eddy flux: (vel - mean_vel)**2 AND compute total flux
@@ -289,7 +287,7 @@ void fourth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
 
         // (4) compute mean eddy flux
-        horizontal_mean_return(dims, &eddy_flux[0], &mean_eddy_flux[0]);
+        horizontal_mean(dims, &eddy_flux[0], &mean_eddy_flux[0]);
 
 
         // (5) compute QL flux: flux = flux - eddy_flux + mean_eddy_flux
