@@ -20,3 +20,13 @@ cdef class Rayleigh:
         double[:] gamma_z
     cpdef initialize(self, Grid.Grid Gr)
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
+
+
+cdef class NudgeCGILS:
+    cdef:
+        double z_relax  # Depth of damping layer
+        double z_relax_plus  # Inverse damping timescale
+        double[:] gamma_zhalf
+        double[:] gamma_z
+    cpdef initialize(self, Grid.Grid Gr)
+    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)

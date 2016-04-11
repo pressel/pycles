@@ -4,8 +4,11 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
+import pylab as plt
+import netCDF4 as nc
 import numpy as np
 cimport numpy as np
+from scipy.interpolate import PchipInterpolator,pchip_interpolate
 cimport ParallelMPI
 from NetCDFIO cimport NetCDFIO_Stats
 cimport Grid
@@ -26,7 +29,7 @@ def InitializationFactory(namelist):
         elif casename == 'SaturatedBubble':
             return InitSaturatedBubble
         elif casename == 'Bomex':
-            return InitBomex
+            return InitCGILS  #InitBomex
         elif casename == 'Gabls':
             return InitGabls
         elif casename == 'DYCOMS_RF01':
@@ -37,10 +40,12 @@ def InitializationFactory(namelist):
             return InitSmoke
         elif casename == 'Rico':
             return InitRico
+
+
         else:
             pass
 
-def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate reference profiles
@@ -83,7 +88,7 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitSaturatedBubble(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate reference profiles
@@ -167,7 +172,7 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitSullivanPatton(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate the reference profiles
@@ -236,7 +241,7 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     PV.values[e_varshift + ijk] = 0.0
     return
 
-def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #First generate the reference profiles
@@ -339,7 +344,7 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitGabls(Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+def InitGabls(namelist,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate the reference profiles
@@ -416,7 +421,7 @@ def InitGabls(Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     '''
@@ -541,7 +546,7 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
 
-def InitDYCOMS_RF02(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitDYCOMS_RF02(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
 
@@ -655,7 +660,7 @@ def InitDYCOMS_RF02(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitSmoke(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
     '''
     Initialization for the smoke cloud case
@@ -750,7 +755,7 @@ def InitSmoke(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 
-def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitRico(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #First generate the reference profiles
@@ -849,6 +854,310 @@ def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
     return
+
+
+
+def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+    #
+    # try:
+    #     loc = namelist['meta']['CGILS']['location']
+    #     if loc !=12 and loc != 11 and loc != 6:
+    #         Pa.root_print('Invalid CGILS location (must be 6, 11, or 12)')
+    #         Pa.kill()
+    # except:
+    #     Pa.root_print('Must provide a CGILS location (6/11/12) in namelist')
+    #     Pa.kill()
+    # try:
+    #     is_p2 = namelist['meta']['CGILS']['P2']
+    # except:
+    #     Pa.root_print('Must specify if CGILS run is perturbed')
+    #     Pa.kill()
+    loc = 12
+    is_p2 = False
+
+    if is_p2:
+        file = './CGILSdata/p2k_s'+str(loc)+'.nc'
+    else:
+        file = './CGILSdata/ctl_s'+str(loc)+'.nc'
+
+    print(file)
+    data = nc.Dataset(file, 'r')
+    # Get the profile information we need from the data file
+    pressure_data = data.variables['lev'][::-1]
+    temperature_data = data.variables['T'][0,::-1,0,0]
+    q_data = data.variables['q'][0,::-1,0,0]
+    u_data = data.variables['u'][0,::-1,0,0]
+    v_data = data.variables['v'][0,::-1,0,0]
+
+
+
+
+    # Get the surface information we need from the data file
+    RS.Tg= data.variables['Tg'][0,0,0]
+    RS.Pg= data.variables['Ps'][0,0,0]
+    rh_srf = data.variables['rh_srf'][0,0,0]
+
+    data.close()
+
+    # Find the surface moisture and initialize the basic state
+    pv_star = Th.get_pv_star(RS.Tg)
+    qtg_inv = 1.0/rh_srf * (RS.Pg - pv_star)/eps_v/pv_star + 1.0
+    RS.qtg = 1.0/qtg_inv
+
+    RS.initialize(Gr ,Th, NS, Pa)
+
+
+
+
+    cdef:
+        Py_ssize_t i, j, k, ijk, ishift, jshift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double p_inversion = 940.0 * 100.0 # for S11, S12: pressure at the inversion
+        double p_interp_les = 900 * 100.0 # for S11, S12:  pressure at which we start interpolating to the forcing profile
+        double p_interp_data = 860 * 100.0 # for S11, S12: pressure at which we blend full to forcing profile
+
+    #Set up profiles. First create thetal from the forcing data, to be used for interpolation
+    thetal_data = np.zeros(np.shape(temperature_data))
+    for k in xrange(len(thetal_data)):
+        thetal_data[k] = temperature_data[k]/exner_c(pressure_data[k])
+
+
+    # First we handle the S12 and S11 cases
+    # This portion of the profiles is fitted to Figures #,# (S11) and #,# (S12) from Blossey et al
+    if loc == 12:
+        # Use a mixed layer profile
+        if not is_p2:
+            # CTL profiles
+            for k in xrange(Gr.dims.nlg[2]):
+                if RS.p0_half[k] > p_inversion:
+                    thetal[k] = 288.35
+                    qt[k] = 9.374/1000.0
+                else:
+                    thetal[k] = (3.50361862e+02 +  -5.11283538e-02 * RS.p0_half[k]/100.0)
+                    qt[k] = 3.47/1000.0
+        else:
+            # P2K
+            for k in xrange(Gr.dims.nlg[2]):
+                if RS.p0_half[k] > p_inversion:
+                    thetal[k] = 290.35
+                    qt[k] = 11.64/1000.0
+                else:
+                    thetal[k] = (3.55021347e+02 +  -5.37703211e-02 * RS.p0_half[k]/100.0)
+                    qt[k] = 4.28/1000.0
+    elif loc == 11:
+        if not is_p2:
+            for k in xrange(Gr.dims.nlg[2]):
+                if RS.p0_half[k] > 935.0*100.0:
+                    thetal[k] = 289.6
+                    qt[k] = 10.25/1000.0
+                else:
+                    thetal[k] = (3.47949119e+02 +  -5.02475698e-02 * RS.p0_half[k]/100.0)
+                    qt[k] = 3.77/1000.0
+        else:
+            # P2 parameters
+            for k in xrange(Gr.dims.nlg[2]):
+                if RS.p0_half[k] > 935.0*100.0:
+                    thetal[k] = 291.6
+                    qt[k] =11.64/1000.0
+                else:
+                    thetal[k] = (3.56173912e+02 +  -5.70945946e-02 * RS.p0_half[k]/100.0)
+                    qt[k] = 4.28/1000.0
+
+
+    # Set up for interpolation to forcing profiles
+    if loc == 11 or loc == 12:
+        pressure_interp = np.empty(0)
+        thetal_interp = np.empty(0)
+        qt_interp = np.empty(0)
+        for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
+            if RS.p0_half[k] > p_interp_les:
+                pressure_interp = np.append(pressure_interp,RS.p0_half[k])
+                thetal_interp = np.append(thetal_interp,thetal[k])
+                qt_interp = np.append(qt_interp, qt[k])
+
+        pressure_interp = np.append(pressure_interp, pressure_data[pressure_data<p_interp_data] )
+        thetal_interp = np.append(thetal_interp, thetal_data[pressure_data<p_interp_data] )
+        qt_interp = np.append(qt_interp, q_data[pressure_data<p_interp_data] )
+
+        # Reverse the arrays so pressure is increasing
+        pressure_interp = pressure_interp[::-1]
+        thetal_interp = thetal_interp[::-1]
+        qt_interp = qt_interp[::-1]
+
+    else:
+        # for S6 case, interpolate ALL values
+        p_interp_les = RS.Pg
+        pressure_interp = pressure_data[::-1]
+        thetal_interp = thetal_data[::-1]
+        qt_interp = q_data[::-1]
+
+    # PCHIP interpolation helps to make the S11 and S12 thermodynamic profiles nice, but the scipy pchip interpolator
+    # does not handle extrapolation kindly. Thus we tack on our own linear extrapolation to deal with the S6 case
+    # We also use linear extrapolation to handle the velocity profiles, which it seems are fine to interpolate linearly
+
+    thetal_right = thetal_interp[-1] + (thetal_interp[-2] - thetal_interp[-1])/(pressure_interp[-2]-pressure_interp[-1]) \
+                                                 * ( RS.Pg-pressure_interp[-1])
+    thetal_interp = np.append(thetal_interp, thetal_right)
+    qt_right = qt_interp[-1] + (qt_interp[-2] - qt_interp[-1])/(pressure_interp[-2]-pressure_interp[-1]) \
+                                                 * ( RS.Pg-pressure_interp[-1])
+    qt_interp = np.append(qt_interp, qt_right)
+    pressure_interp = np.append(pressure_interp, RS.Pg)
+
+
+
+    # Now do the interpolation
+    for k in xrange(Gr.dims.nlg[2]):
+            if RS.p0_half[k] <= p_interp_les:
+
+                # thetal_right = thetal_interp[-1] + (thetal_interp[-2] - thetal_interp[-1])/(pressure_interp[-2]-pressure_interp[-1]) \
+                #                                  * ( RS.p0_half[k]-pressure_interp[-1])
+                # qt_right = qt_interp[-1] + (qt_interp[-2] - qt_interp[-1])/(pressure_interp[-2]-pressure_interp[-1]) \
+                #                                  * ( RS.p0_half[k]-pressure_interp[-1])
+
+                # thetal[k] = np.interp(RS.p0_half[k], pressure_interp, thetal_interp, right = thetal_right)
+                # qt[k] = np.interp(RS.p0_half[k],pressure_interp,qt_interp, right=qt_right)
+                thetal[k] = pchip_interpolate(pressure_interp, thetal_interp, RS.p0_half[k])
+                qt[k] = pchip_interpolate(pressure_interp, qt_interp, RS.p0_half[k])
+            # Interpolate entire velocity profiles
+            u_right = u_data[0] + (u_data[1] - u_data[0])/(pressure_data[1]-pressure_data[0]) * ( RS.p0_half[k]-pressure_data[0])
+            v_right = v_data[0] + (v_data[1] - v_data[0])/(pressure_data[1]-pressure_data[0]) * ( RS.p0_half[k]-pressure_data[0])
+
+            u[k] = np.interp(RS.p0_half[k],pressure_data[::-1], u_data[::-1], right=u_right)
+            v[k] = np.interp(RS.p0_half[k],pressure_data[::-1], v_data[::-1],right=v_right)
+    #Set velocities for Galilean transformation
+    RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
+    RS.v0 = 0.5 * (np.amax(v)+np.amin(v))
+
+
+    # We will need these functions to perform saturation adjustment
+    def compute_thetal(p_,T_,ql_):
+        theta_ = T_ / (p_/p_tilde)**(287.0/1015.0)
+        return theta_ * exp(-2.47e6 * ql_ / (1015.0 * T_))
+
+    def sat_adjst(p_,thetal_,qt_):
+        '''
+        Use saturation adjustment scheme to compute temperature and ql given thetal and qt.
+        :param p: pressure [Pa]
+        :param thetal: liquid water potential temperature  [K]
+        :param qt:  total water specific humidity
+        :return: T, ql
+        '''
+
+        #Compute temperature
+        t_1 = thetal_ * (p_/p_tilde)**(287.0/1015.0)
+        #Compute saturation vapor pressure
+        pv_star_1 = Th.get_pv_star(t_1)
+        #Compute saturation mixing ratio
+        qs_1 = qv_star_c(p_,qt_,pv_star_1)
+
+        if qt_ <= qs_1:
+            #If not saturated return temperature and ql = 0.0
+            return t_1, 0.0
+        else:
+            ql_1 = qt_ - qs_1
+            f_1 = thetal_ - compute_thetal(p_,t_1,ql_1)
+            t_2 = t_1 + 2.47e6*ql_1/1015.0
+            pv_star_2 = Th.get_pv_star(t_2)
+            qs_2 = qv_star_c(p_,qt_,pv_star_2)
+            ql_2 = qt_ - qs_2
+
+            while fabs(t_2 - t_1) >= 1e-9:
+                pv_star_2 = Th.get_pv_star(t_2)
+                qs_2 = qv_star_c(p_,qt_,pv_star_2)
+                ql_2 = qt_ - qs_2
+                f_2 = thetal_ - compute_thetal(p_, t_2, ql_2)
+                t_n = t_2 - f_2 * (t_2 - t_1)/(f_2 - f_1)
+                t_1 = t_2
+                t_2 = t_n
+                f_1 = f_2
+
+            return t_2, ql_2
+
+    #Generate initial perturbations (here we are generating more than we need)
+    np.random.seed(Pa.rank)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef double theta_pert_
+
+    # Here we fill in the 3D arrays
+    # We perform saturation adjustment on the S6 data, although this should not actually be necessary (but doesn't hurt)
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift = istride * i
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = jstride * j
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[ijk + u_varshift] = u[k] - RS.u0
+                PV.values[ijk + v_varshift] = v[k] - RS.v0
+                PV.values[ijk + w_varshift] = 0.0
+                PV.values[ijk + qt_varshift]  = qt[k]
+
+                #Now set the entropy prognostic variable including a potential temperature perturbation
+                if Gr.zl_half[k] < 200.0:
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                else:
+                    theta_pert_ = 0.0
+                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
+                PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+
+
+    plt.figure(1)
+    plt.plot(thetal,RS.p0_half,'-b')
+    plt.plot(thetal_data, pressure_data,'--r')
+    plt.gca().invert_yaxis()
+
+    plt.figure(2)
+    plt.plot(qt, RS.p0_half,'-b')
+    plt.plot(q_data, pressure_data,'--r')
+    plt.gca().invert_yaxis()
+
+    plt.figure(3)
+    plt.plot(u, RS.p0_half,'-b')
+    plt.plot(u_data, pressure_data,'--r')
+    plt.gca().invert_yaxis()
+
+
+    plt.figure(4)
+    plt.plot(v, RS.p0_half,'-b')
+    plt.plot(v_data, pressure_data,'--r')
+    plt.gca().invert_yaxis()
+
+    plt.figure(11)
+    plt.plot(thetal,Gr.zl_half,'-b')
+
+
+
+    plt.figure(12)
+    plt.plot(qt, Gr.zl_half,'-b')
+
+
+    plt.figure(13)
+    plt.plot(u, Gr.zl_half,'-b')
+
+
+
+
+    plt.figure(14)
+    plt.plot(v, Gr.zl_half,'-b')
+
+
+    plt.show()
+    return
+
+
+
+
+
 
 def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
                        DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
