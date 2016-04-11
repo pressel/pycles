@@ -344,6 +344,10 @@ cdef class RadiationIsdac:
         NS.add_profile('radiative_flux',Gr, Pa)
         return
 
+    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  ParallelMPI.ParallelMPI Pa):
