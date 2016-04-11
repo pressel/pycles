@@ -92,7 +92,6 @@ cdef class RadiationDyCOMS_RF01:
         self.f0 = 70.0
         self.f1 = 22.0
         self.divergence = 3.75e-6
-
         self.z_pencil = ParallelMPI.Pencil()
         return
 
