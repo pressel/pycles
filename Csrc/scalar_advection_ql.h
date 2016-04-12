@@ -435,10 +435,10 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
         } // End i loop
     } // End else
 
-//    free(mix_flux_phiprime);
-//    free(mix_flux_phimean);
-//    free(eddy_flux);
-//    free(mean_flux);
+    free(mix_flux_phiprime);
+    free(mix_flux_phimean);
+    free(eddy_flux);
+    free(mean_flux);
     free(vel_fluc);
     free(vel_mean);
     free(phi_fluc);
