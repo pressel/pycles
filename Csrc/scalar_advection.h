@@ -695,6 +695,8 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
 
 void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, double* rho0_half ,double* restrict velocity, double* restrict scalar,
                                 double* restrict flux, int d, int scheme){
+//void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, double* rho0_half ,double* restrict velocity, double* restrict scalar,
+//                                double* restrict flux, double* restrict flux_old, int d, int scheme){
     switch(scheme){
         case 1:
             upwind_first_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
@@ -741,6 +743,7 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
 
         case 205:
             weno_fifth_order_a_decomp(dims, rho0, rho0_half, velocity, scalar, flux, d);
+//            weno_fifth_order_a_decomp(dims, rho0, rho0_half, velocity, scalar, flux, flux_old, d);
             break;
 
         default:

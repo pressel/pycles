@@ -255,7 +255,12 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
 
 
-void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+                const double* restrict velocity, const double* restrict scalar,
+                double* restrict flux, int d){
+//void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+//                const double* restrict velocity, const double* restrict scalar,
+//                double* restrict flux, double* restrict flux_old, int d){
     if (d==1){printf("Scalar Advection: WENO 5 decomposition \n");}
 //    printf("Scalar Advection: WENO 5 decomposition \n");
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -309,6 +314,7 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
     // mix_flux_phimean = u' <phi>
     // eddy_flux = u' phi'
     // mean_flux = <u><phi>
+    double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mix_flux_phiprime = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mix_flux_phimean = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -364,7 +370,7 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
                     flux[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + eddy_flux[ijk];
 //                    flux[ijk] = mean_flux + mix_flux_phiprime + mix_flux_phimean + eddy_flux;
 
-                    /*//Upwind for positive velocity
+                    //Upwind for positive velocity
                     const double phip = interp_weno5(scalar[ijk + sm2],
 
                                         scalar[ijk + sm1],
@@ -378,8 +384,8 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
                                         scalar[ijk],
                                         scalar[ijk + sm1]);
 
-                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
-                    */
+                    flux_old[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
+
 
                 } // End k loop
             } // End j loop
@@ -422,7 +428,7 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
 //                    flux[ijk] = mean_flux + mix_flux_phiprime + mix_flux_phimean + eddy_flux;
 
 
-/*                    //Upwind for positive velocity
+                    //Upwind for positive velocity
                     const double phip = interp_weno5(scalar[ijk + sm2],
                                                      scalar[ijk + sm1],
                                                      scalar[ijk],
@@ -435,11 +441,13 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                      scalar[ijk],
                                                      scalar[ijk + sm1]);
 
-                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];*/
+                    flux_old[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
     } // End else
+    free(flux_old);
+
     free(mix_flux_phiprime);
     free(mix_flux_phimean);
     free(eddy_flux);
