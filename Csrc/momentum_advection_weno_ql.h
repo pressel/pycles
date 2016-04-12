@@ -9,6 +9,8 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
     double* restrict alpha0, double* restrict alpha0_half,
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+        if (d_advected==1 && d_advecting==1){
+            printf("WENO5 QL Momentum Transport \n");}
 
         // Dynamically allocate flux array
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
