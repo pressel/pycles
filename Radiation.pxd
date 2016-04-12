@@ -126,6 +126,11 @@ cdef class RadiationRRTM:
         double [:] heating_rate
         bint uniform_reliq
 
+        double [:, :] uflx_lw_pencils
+        double [:, :] dflx_lw_pencils
+        double [:, :] uflx_sw_pencils
+        double [:, :] dflx_sw_pencils
+
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,

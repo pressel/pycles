@@ -844,6 +844,13 @@ def Isdac():
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'Smagorinsky'
 
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = True
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['frequency'] = 60.0
+    namelist['radiation']['RRTM']['buffer_points'] = 15
+    namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
+
     namelist["diffusion"] = {}
     namelist['diffusion']['qt_entropy_source'] = False
 

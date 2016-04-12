@@ -484,6 +484,8 @@ cdef class RadiationRRTM:
             self.profile_name = 'sheba'
         elif casename == 'DYCOMS_RF01':
             self.profile_name = 'cgils_s12'
+        elif casename == 'Isdac':
+            self.profile_name = 'arctic'
         else:
             self.profile_name = 'default'
 
@@ -574,11 +576,29 @@ cdef class RadiationRRTM:
 
 
         self.z_pencil.initialize(Gr, Pa, 2)
+
+        cdef:
+            Py_ssize_t nz = Gr.dims.n[2]
+            Py_ssize_t n_pencils = self.z_pencil.n_local_pencils
+
         # Initialize the heating rate array
         self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.uflx_lw_pencils = np.zeros((n_pencils, nz), dtype=np.double, order='c')
+        self.dflx_lw_pencils = np.zeros((n_pencils, nz), dtype=np.double, order='c')
+        self.uflx_sw_pencils = np.zeros((n_pencils, nz), dtype=np.double, order='c')
+        self.dflx_sw_pencils = np.zeros((n_pencils, nz), dtype=np.double, order='c')
 
         NS.add_profile('radiative_heating_rate', Gr, Pa)
         NS.add_profile('radiative_entropy_tendency', Gr, Pa)
+
+        NS.add_profile('lw_flux_down', Gr, Pa)
+        NS.add_profile('lw_flux_up', Gr, Pa)
+        NS.add_profile('sw_flux_down', Gr, Pa)
+        NS.add_profile('sw_flux_up', Gr, Pa)
+        # NS.add_profile('lw_flux_down_clear', Gr, Pa)
+        # NS.add_profile('lw_flux_up_clear', Gr, Pa)
+        # NS.add_profile('sw_flux_down_clear', Gr, Pa)
+        # NS.add_profile('sw_flux_up_clear', Gr, Pa)
 
         NS.add_ts('srf_lw_flux_up', Gr, Pa)
         NS.add_ts('srf_lw_flux_down', Gr, Pa)
@@ -762,12 +782,12 @@ cdef class RadiationRRTM:
             # o3_trace, o3_pressure
             trpath_o3 = np.zeros(nz + self.n_ext+1, dtype=np.double, order='F')
             # plev = self.pi_full/100.0
-            self.o3_np = o3_trace.shape[0]
+            o3_np = o3_trace.shape[0]
             for i in xrange(1, nz + self.n_ext+1):
                 trpath_o3[i] = trpath_o3[i-1]
                 if (self.pi_full[i-1]/100.0 > o3_pressure[0]):
                     trpath_o3[i] = trpath_o3[i] + (self.pi_full[i-1]/100.0 - np.max((self.pi_full[i]/100.0,o3_pressure[0])))/g*o3_trace[0]
-                for m in xrange(1,self.o3_np):
+                for m in xrange(1,o3_np):
                     #print i, m
                     plow = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m-1]))))
                     pupp = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m]))))
@@ -776,8 +796,8 @@ cdef class RadiationRRTM:
                         wgtlow = (pmid-o3_pressure[m])/(o3_pressure[m-1]-o3_pressure[m])
                         wgtupp = (o3_pressure[m-1]-pmid)/(o3_pressure[m-1]-o3_pressure[m])
                         trpath_o3[i] = trpath_o3[i] + (plow-pupp)/g*(wgtlow*o3_trace[m-1]  + wgtupp*o3_trace[m])
-                if (self.pi_full[i]/100.0 < o3_pressure[self.o3_np-1]):
-                    trpath_o3[i] = trpath_o3[i] + (np.min((self.pi_full[i-1]/100.0,o3_pressure[self.o3_np-1]))-self.pi_full[i]/100.0)/g*o3_trace[self.o3_np-1]
+                if (self.pi_full[i]/100.0 < o3_pressure[o3_np-1]):
+                    trpath_o3[i] = trpath_o3[i] + (np.min((self.pi_full[i-1]/100.0,o3_pressure[o3_np-1]))-self.pi_full[i]/100.0)/g*o3_trace[o3_np-1]
             tmpTrace_o3 = np.zeros( nz + self.n_ext, dtype=np.double, order='F')
             for k in xrange(nz + self.n_ext):
                 tmpTrace_o3[k] = g *100.0/(self.pi_full[k]-self.pi_full[k+1])*(trpath_o3[k+1]-trpath_o3[k])
@@ -862,7 +882,7 @@ cdef class RadiationRRTM:
         if 'qi' in DV.name_index:
             qi_shift = DV.get_varshift(Gr, 'qi')
             qi_pencil = self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[qi_shift])
-            use_ice = True
+            # use_ice = True  # testing radiation without ice effect
 
 
 
@@ -966,6 +986,8 @@ cdef class RadiationRRTM:
                                                     fmax(cldfr_in[ip,k],1.0e-6))/(4.0*pi*1.0e3*100.0))**(1.0/3.0)
                         reliq_in[ip, k] = fmin(fmax(reliq_in[ip, k]*rv_to_reff, 2.5), 60.0)
 
+                    reice_in[ip, k] = 50.0
+
             for ip in xrange(n_pencils):
                 tlev_in[ip, 0] = Ref.Tg
                 plev_in[ip,0] = self.pi_full[0]/100.0
@@ -1037,6 +1059,11 @@ cdef class RadiationRRTM:
         # plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
         # plt.show()
 
+        self.uflx_lw_pencils = uflx_lw_out[:, :nz]
+        self.dflx_lw_pencils = dflx_lw_out[:, :nz]
+        self.uflx_sw_pencils = uflx_sw_out[:, :nz]
+        self.dflx_sw_pencils = dflx_sw_out[:, :nz]
+
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
 
 
@@ -1051,6 +1078,11 @@ cdef class RadiationRRTM:
             double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double [:] tmp
 
+            double [:] lw_flux_up = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] lw_flux_down = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] sw_flux_up = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] sw_flux_down = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+
 
         # Now update entropy tendencies
         with nogil:
@@ -1058,11 +1090,30 @@ cdef class RadiationRRTM:
                 entropy_tendency[i] =  self.heating_rate[i] / DV.values[i + t_shift]
 
 
+        # Get radiative flux full arrays from pencils
+        self.z_pencil.reverse_double(&Gr.dims, Pa, self.uflx_lw_pencils, &lw_flux_up[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, self.dflx_lw_pencils, &lw_flux_down[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, self.uflx_sw_pencils, &sw_flux_up[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, self.dflx_sw_pencils, &sw_flux_down[0])
+
         tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
         NS.write_profile('radiative_heating_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMean(Gr, &entropy_tendency[0])
         NS.write_profile('radiative_entropy_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &lw_flux_up[0])
+        NS.write_profile('lw_flux_up', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &lw_flux_down[0])
+        NS.write_profile('lw_flux_down', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &sw_flux_up[0])
+        NS.write_profile('sw_flux_up', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &sw_flux_down[0])
+        NS.write_profile('sw_flux_down', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
 
         NS.write_ts('srf_lw_flux_up',self.srf_lw_up, Pa ) # Units are W/m^2
         NS.write_ts('srf_lw_flux_down', self.srf_lw_down, Pa)
