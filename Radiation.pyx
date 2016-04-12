@@ -643,12 +643,12 @@ cdef class RadiationRRTM:
             # o3_trace, o3_pressure
             trpath_o3 = np.zeros(nz + self.n_ext+1, dtype=np.double, order='F')
             # plev = self.pi_full/100.0
-            self.o3_np = o3_trace.shape[0]
+            o3_np = o3_trace.shape[0]
             for i in xrange(1, nz + self.n_ext+1):
                 trpath_o3[i] = trpath_o3[i-1]
                 if (self.pi_full[i-1]/100.0 > o3_pressure[0]):
                     trpath_o3[i] = trpath_o3[i] + (self.pi_full[i-1]/100.0 - np.max((self.pi_full[i]/100.0,o3_pressure[0])))/g*o3_trace[0]
-                for m in xrange(1,self.o3_np):
+                for m in xrange(1,o3_np):
                     #print i, m
                     plow = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m-1]))))
                     pupp = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m]))))
@@ -657,8 +657,8 @@ cdef class RadiationRRTM:
                         wgtlow = (pmid-o3_pressure[m])/(o3_pressure[m-1]-o3_pressure[m])
                         wgtupp = (o3_pressure[m-1]-pmid)/(o3_pressure[m-1]-o3_pressure[m])
                         trpath_o3[i] = trpath_o3[i] + (plow-pupp)/g*(wgtlow*o3_trace[m-1]  + wgtupp*o3_trace[m])
-                if (self.pi_full[i]/100.0 < o3_pressure[self.o3_np-1]):
-                    trpath_o3[i] = trpath_o3[i] + (np.min((self.pi_full[i-1]/100.0,o3_pressure[self.o3_np-1]))-self.pi_full[i]/100.0)/g*o3_trace[self.o3_np-1]
+                if (self.pi_full[i]/100.0 < o3_pressure[o3_np-1]):
+                    trpath_o3[i] = trpath_o3[i] + (np.min((self.pi_full[i-1]/100.0,o3_pressure[o3_np-1]))-self.pi_full[i]/100.0)/g*o3_trace[o3_np-1]
             tmpTrace_o3 = np.zeros( nz + self.n_ext, dtype=np.double, order='F')
             for k in xrange(nz + self.n_ext):
                 tmpTrace_o3[k] = g *100.0/(self.pi_full[k]-self.pi_full[k+1])*(trpath_o3[k+1]-trpath_o3[k])
