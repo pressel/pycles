@@ -304,6 +304,10 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
     }
 
     // (3) Compute Fluxes
+    // mix_flux_phiprime = <u>phi'
+    // mix_flux_phimean = u' <phi>
+    // eddy_flux = u' phi'
+    // mean_flux = <u><phi>
     double *mix_flux_phiprime = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mix_flux_phimean = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -360,21 +364,22 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
 //                    flux[ijk] = mean_flux + mix_flux_phiprime + mix_flux_phimean + eddy_flux;
 
                     /*//Upwind for positive velocity
-//                    const double phip = interp_weno5(scalar[ijk + sm2],
-                    phip = interp_weno5(scalar[ijk + sm2],
+                    const double phip = interp_weno5(scalar[ijk + sm2],
+
                                         scalar[ijk + sm1],
                                         scalar[ijk],
                                         scalar[ijk + sp1],
                                         scalar[ijk + sp2]);
                     // Up wind for negative velocity
-//                    const double phim = interp_weno5(scalar[ijk + sp3],
-                    phim = interp_weno5(scalar[ijk + sp3],
+                    const double phim = interp_weno5(scalar[ijk + sp3],
                                         scalar[ijk + sp2],
                                         scalar[ijk + sp1],
                                         scalar[ijk],
                                         scalar[ijk + sm1]);
 
-                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];*/
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
+                    */
+
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -434,7 +439,6 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
             } // End j loop
         } // End i loop
     } // End else
-
     free(mix_flux_phiprime);
     free(mix_flux_phimean);
     free(eddy_flux);
