@@ -122,7 +122,7 @@ class Simulation3d:
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
-        self.Damping.initialize(self.Gr)
+        self.Damping.initialize(self.Gr, self.Ref)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
@@ -155,7 +155,7 @@ class Simulation3d:
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
-                self.Damping.update(self.Gr,self.PV,self.Pa)
+                self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
 

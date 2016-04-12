@@ -860,21 +860,20 @@ def InitRico(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
     #
-    # try:
-    #     loc = namelist['meta']['CGILS']['location']
-    #     if loc !=12 and loc != 11 and loc != 6:
-    #         Pa.root_print('Invalid CGILS location (must be 6, 11, or 12)')
-    #         Pa.kill()
-    # except:
-    #     Pa.root_print('Must provide a CGILS location (6/11/12) in namelist')
-    #     Pa.kill()
-    # try:
-    #     is_p2 = namelist['meta']['CGILS']['P2']
-    # except:
-    #     Pa.root_print('Must specify if CGILS run is perturbed')
-    #     Pa.kill()
-    loc = 12
-    is_p2 = False
+    try:
+        loc = namelist['meta']['CGILS']['location']
+        if loc !=12 and loc != 11 and loc != 6:
+            Pa.root_print('Invalid CGILS location (must be 6, 11, or 12)')
+            Pa.kill()
+    except:
+        Pa.root_print('Must provide a CGILS location (6/11/12) in namelist')
+        Pa.kill()
+    try:
+        is_p2 = namelist['meta']['CGILS']['P2']
+    except:
+        Pa.root_print('Must specify if CGILS run is perturbed')
+        Pa.kill()
+
 
     if is_p2:
         file = './CGILSdata/p2k_s'+str(loc)+'.nc'

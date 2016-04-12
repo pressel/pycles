@@ -61,6 +61,8 @@ cdef class Surface:
             self.scheme = SurfaceDYCOMS_RF02(namelist, LH)
         elif casename == 'Rico':
             self.scheme= SurfaceRico()
+        elif casename == 'CGILS':
+            self.scheme= SurfaceBomex()
         else:
             self.scheme= SurfaceNone()
         return
