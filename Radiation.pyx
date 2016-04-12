@@ -651,16 +651,16 @@ cdef class RadiationRRTM:
         if self.n_buffer > 0:
             dp = np.abs(Ref.p0_half_global[nz + gw -1] - Ref.p0_half_global[nz + gw -2])
             self.p_ext[0] = Ref.p0_half_global[nz + gw -1] - dp
-            print(self.p_ext[0])
+            # print(self.p_ext[0])
             for i in range(1,self.n_buffer):
                 self.p_ext[i] = self.p_ext[i-1] - (i+1.0)**self.stretch_factor * dp
 
-            for i in xrange(self.n_ext):
-                print i, self.p_ext[i]
+            # for i in xrange(self.n_ext):
+                # print i, self.p_ext[i]
 
             # Pressures of "data" points for interpolation, must be INCREASING pressure
             xi = np.array([self.p_ext[self.n_buffer+1],self.p_ext[self.n_buffer],Ref.p0_half_global[nz + gw -1],Ref.p0_half_global[nz + gw -2] ],dtype=np.double)
-            print(xi)
+            # print(xi)
 
 
             # interpolation for temperature
