@@ -1,16 +1,19 @@
 #!python
 #cython: boundscheck=False
-#cython: wraparound=False
+#cython: wraparound=True
 #cython: initializedcheck=False
 #cython: cdivision=True
 
 from libc.math cimport fmin, fmax, sin
 import cython
+import pylab as plt
+import netCDF4 as nc
 import numpy as np
 cimport ParallelMPI as ParallelMPI
 cimport PrognosticVariables as PrognosticVariables
 cimport Grid as Grid
 cimport numpy as np
+from thermodynamic_functions import pd, pv
 
 
 include 'parameters.pxi'
@@ -124,7 +127,9 @@ cdef class Rayleigh:
         return
 
 
-
+cdef extern from "entropies.h":
+    inline double sd_c(double pd, double T) nogil
+    inline double sv_c(double pv, double T) nogil
 
 
 cdef class NudgeCGILS:
@@ -156,7 +161,7 @@ cdef class NudgeCGILS:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
 
         if is_p2:
             file = './CGILSdata/p2k_s'+str(loc)+'.nc'
@@ -174,13 +179,36 @@ cdef class NudgeCGILS:
         u_data = data.variables['u'][0,:,0,0]
         v_data = data.variables['v'][0,:,0,0]
 
-        self.nudge_qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double, order='c')
+
         self.nudge_s = np.zeros((Gr.dims.nlg[2],),dtype=np.double, order='c')
-        self.nudge_u = np.zeros((Gr.dims.nlg[2],),dtype=np.double, order='c')
-        self.nudge_v = np.zeros((Gr.dims.nlg[2],),dtype=np.double, order='c')
+
+        self.nudge_qt = np.array(np.interp(RS.p0_half, pressure_data[::-1], q_data[::-1]),dtype=np.double, order='c')
+        nudge_temperature = np.array(np.interp(RS.p0_half, pressure_data[::-1], temperature_data[::-1]),dtype=np.double, order='c')
+        self.nudge_u = np.array(np.interp(RS.p0_half, pressure_data[::-1], u_data[::-1]),dtype=np.double, order='c')
+        self.nudge_v = np.array(np.interp(RS.p0_half, pressure_data[::-1], v_data[::-1]),dtype=np.double, order='c')
+
+        # Nudging profile is unsaturated, so we can calculate entropy simply
+        cdef:
+            Py_ssize_t k
+            double qv, pd, pv
 
 
+        with nogil:
+            for k in range(Gr.dims.nlg[2]):
+                pd = pd(RS.p0_half[k], self.nudge_qt[k], self.nudge_qt[k])
+                pv = pv(RS.p0_half[k], self.nudge_qt[k], self.nudge_qt[k])
+                self.nudge_s[k] = sd_c(pd, nudge_temperature[k]) * (1.0 - self.nudge_qt[k]) \
+                                  + sv_c(pv, nudge_temperature[k]) * self.nudge_qt[k]
 
+        plt.figure(1)
+        plt.plot(self.nudge_qt, Gr.zl_half)
+        plt.figure(2)
+        plt.plot(self.nudge_s, Gr.zl_half)
+        plt.figure(3)
+        plt.plot(nudge_temperature, Gr.zl_half)
+        plt.figure(4)
+        plt.plot(self.nudge_u, Gr.zl_half)
+        plt.plot(self.nudge_v, Gr.zl_half)
         # cdef:
         #     int k
         #     double z_top
