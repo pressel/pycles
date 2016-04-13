@@ -95,7 +95,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                 }
             }
         }
-        if(ok==0){printf("good decomposition \n");}
+//        if(ok==0){printf("good decomposition \n");}
 
 
 
