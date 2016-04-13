@@ -850,6 +850,8 @@ def Isdac():
     namelist['radiation']['RRTM']['frequency'] = 60.0
     namelist['radiation']['RRTM']['buffer_points'] = 15
     namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
+    namelist['radiation']['RRTM']['adjes'] = 0.0
+    namelist['radiation']['RRTM']['coszen'] = 0.0
 
     namelist["diffusion"] = {}
     namelist['diffusion']['qt_entropy_source'] = False
