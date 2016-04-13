@@ -377,7 +377,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const int ijk = ishift + jshift + k;
-                        if(fabs(flux[ijk]-flux_old[ijk])>1.0){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
+                        if(fabs((flux[ijk]-flux_old[ijk])/flux_old[ijk])>0.05){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
                         }
                         }
                         }
