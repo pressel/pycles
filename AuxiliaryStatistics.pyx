@@ -5,6 +5,7 @@
 #cython: cdivision=True
 
 cimport Grid
+cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 cimport ParallelMPI
@@ -18,33 +19,46 @@ from libc.math cimport sqrt
 from thermodynamic_functions cimport thetas_c
 include "parameters.pxi"
 
-
-def AuxiliaryStatisticsFactory(namelist, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
-                               DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-    try:
-        auxiliary_statistics = namelist['stats_io']['auxiliary']
-    except:
-        auxiliary_statistics = 'None'
-
-    if auxiliary_statistics == 'Cumulus':
-        return CumulusStatistics(Gr,PV, DV, NS, Pa)
-    elif auxiliary_statistics == 'StableBL':
-        return StableBLStatistics(Gr, NS, Pa)
-    elif auxiliary_statistics == 'SMOKE':
-        return SmokeStatistics(Gr, NS, Pa)
-    elif auxiliary_statistics == 'None':
-        return AuxiliaryStatisticsNone()
-    else:
-        if Pa.rank == 0:
-            print('Auxiliary statistics class provided by namelist is not recognized.')
-        return AuxiliaryStatisticsNone()
-
-
-class AuxiliaryStatisticsNone:
-    def __init__(self):
+class AuxiliaryStatistics:
+    def __init__(self, namelist):
+        self.AuxStatsClasses = []
         return
-    def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+
+    def initialize(self, namelist, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+                               DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        try:
+            auxiliary_statistics = namelist['stats_io']['auxiliary']
+        except:
+            return
+
+        #Convert whatever is in auxiliary_statistics to list if not already
+        if not type(auxiliary_statistics) == list:
+            auxiliary_statistics = [auxiliary_statistics]
+
+        #Build list of auxilary statistics class instances
+        if 'Cumulus' in auxiliary_statistics:
+            self.AuxStatsClasses.append(CumulusStatistics(Gr,PV, DV, NS, Pa))
+        if 'StableBL' in auxiliary_statistics:
+            self.AuxStatsClasses.append(StableBLStatistics(Gr, NS, Pa))
+        if 'SMOKE' in auxiliary_statistics:
+            self.AuxStatsClasses.append(SmokeStatistics(Gr, NS, Pa))
+        if 'DYCOMS' in auxiliary_statistics:
+            self.AuxStatsClasses.append(DYCOMSStatistics(Gr, NS, Pa))
+        if 'TKE' in auxiliary_statistics:
+            self.AuxStatsClasses.append(TKEStatistics(Gr, NS, Pa))
+        if 'Flux' in auxiliary_statistics:
+            self.AuxStatsClasses.append(FluxStatistics(Gr,PV, DV, NS, Pa))
+        return
+
+
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        #loop over class instances and class stats_io
+        for aux_class in self.AuxStatsClasses:
+            aux_class.stats_io(Gr, RS, PV, DV, MA, MD, NS, Pa)
+
         return
 
 class CumulusStatistics:
@@ -52,7 +66,7 @@ class CumulusStatistics:
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         conditions = ['cloud','core']
         scalars = ['qt','ql','s', 'thetas']
-        print('PV.name_index', PV.name_index)
+
 
         if 'qr' in PV.name_index:
             scalars.append('qr')
@@ -62,7 +76,6 @@ class CumulusStatistics:
             scalars.append('theta_rho')
         if 'thetali' in DV.name_index:
             scalars.append('thetali')
-        print('Aux scalars', scalars)
 
 
         for cond in conditions:
@@ -73,9 +86,7 @@ class CumulusStatistics:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
 
-
-
-    def stats_io(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -176,7 +187,6 @@ class CumulusStatistics:
             NS.write_profile('qr2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
 
-
         if 'nr' in PV.name_index:
             shift = PV.get_varshift(Gr, 'nr')
             tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
@@ -187,7 +197,6 @@ class CumulusStatistics:
             NS.write_profile('nr_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
             tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[shift], &DV.values[shift], &coremask[0])
             NS.write_profile('nr2_core' ,tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
-
 
         if 'theta_rho' in DV.name_index:
             shift = DV.get_varshift(Gr, 'theta_rho')
@@ -258,7 +267,7 @@ class StableBLStatistics:
         return
 
 
-    def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, MomentumAdvection.MomentumAdvection MA,
                  MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -308,10 +317,11 @@ class StableBLStatistics:
 
 class SmokeStatistics:
     def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-            NS.add_ts('boundary_layer_height', Gr, Pa)
+        NS.add_ts('boundary_layer_height', Gr, Pa)
+        return
 
 
-    def stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
                  ParallelMPI.ParallelMPI Pa):
@@ -358,13 +368,473 @@ class SmokeStatistics:
 
         return
 
+class DYCOMSStatistics:
+
+    def __init__(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts('boundary_layer_height', Gr, Pa)
+        return
+
+
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+             DiagnosticVariables.DiagnosticVariables DV,
+             MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
+             ParallelMPI.ParallelMPI Pa):
+
+        #Here we compute the boundary layer height consistent with Bretherton et al. 1999
+        cdef:
+            Py_ssize_t i, j, k, ij, ij2d, ijk
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t level_1
+            Py_ssize_t level_2
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            double [:] blh = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+            double blh_mean
+            double qt_1
+            double qt_2
+            double z1
+            double z2
+            double dz
+
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                for j in xrange(Gr.dims.nlg[1]):
+                    ij = i * istride + j * jstride
+                    ij2d = i * Gr.dims.nlg[1] + j
+                    level_1 = 0
+                    level_2 = 0
+                    for k in xrange(Gr.dims.nlg[2]):
+                        ijk = ij + k
+                        if PV.values[qt_shift+ ijk] >= 0.005:
+                            level_1 = k
+                    level_2 = level_1 + 1
+                    qt_1 = PV.values[qt_shift + ij + level_1]
+                    qt_2 = PV.values[qt_shift+ ij + level_2]
+                    z1 = Gr.zl_half[level_1]
+                    z2 = Gr.zl_half[level_2]
+                    dz = (0.005 - qt_1)/(qt_2 - qt_1)*(z2 - z1)
+
+                    blh[ij2d] = z1 + dz
+
+        blh_mean = Pa.HorizontalMeanSurface(Gr, &blh[0])
+
+        NS.write_ts('boundary_layer_height', blh_mean, Pa)
+
+        return
+
+class TKEStatistics:
+
+    def __init__(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts('tke_int_z', Gr, Pa)
+        NS.add_ts('tke_nd_int_z', Gr, Pa)
+
+        NS.add_profile('tke_mean', Gr, Pa)
+        NS.add_profile('tke_nd_mean', Gr, Pa)
+        NS.add_profile('tke_prod_B', Gr, Pa)
+        NS.add_profile('tke_prod_S', Gr, Pa)
+        NS.add_profile('tke_prod_P', Gr, Pa)
+        NS.add_profile('tke_prod_T', Gr, Pa)
+        NS.add_profile('tke_prod_A', Gr, Pa)
+        NS.add_profile('tke_prod_D', Gr, Pa)
+
+        return
+
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+             DiagnosticVariables.DiagnosticVariables DV,
+             MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
+             ParallelMPI.ParallelMPI Pa):
+
+        #Here we compute the boundary layer height consistent with Bretherton et al. 1999
+        cdef:
+            Py_ssize_t i, j, k, ij, ij2d, ijk
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t ishift
+            Py_ssize_t jshift
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
+            Py_ssize_t b_shift = DV.get_varshift(Gr,'buoyancy')
+            Py_ssize_t p_shift = DV.get_varshift(Gr, 'dynamic_pressure')
+            Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
+
+            double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] up = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] ucp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] upup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] upvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] upwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] vpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] wpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] uppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] wpep = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wpbp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] tke = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] tke_nd = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            #double [:] epup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            #double [:] epvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] epwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] e_adv = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] e_dis = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] tke_S = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] tke_P = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] tke_T = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+
+        #Interpolate to cell centers
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        uc[ijk] = 0.5 * (PV.values[u_shift + ijk - istride] + PV.values[u_shift + ijk])
+                        vc[ijk] = 0.5 * (PV.values[v_shift + ijk - jstride] + PV.values[v_shift + ijk])
+                        wc[ijk] = 0.5 * (PV.values[w_shift + ijk - 1] + PV.values[w_shift + ijk])
+
+        #Compute the horizontal means of the cell centered velocities
+        cdef:
+            double [:] ucmean = Pa.HorizontalMean(Gr, &uc[0])
+            double [:] vcmean = Pa.HorizontalMean(Gr, &vc[0])
+            double [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
+            double [:] bmean = Pa.HorizontalMean(Gr, &DV.values[b_shift])
+            double [:] pmean = Pa.HorizontalMean(Gr, &DV.values[p_shift])
+            double  bp, pp
+
+        #Compute the TKE
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+
+                        #Compute fluctuations
+                        up[ijk] = uc[ijk] - ucmean[k]
+                        vp[ijk] = vc[ijk] - vcmean[k]
+                        wp[ijk] = wc[ijk] - wcmean[k]
+                        bp  = DV.values[b_shift + ijk] - bmean[k]
+                        pp  = DV.values[p_shift + ijk] - pmean[k]
+
+                        #Coumpute fluctuation products
+                        upup[ijk] = up[ijk] * up[ijk]
+                        upvp[ijk] = up[ijk] * vp[ijk]
+                        upwp[ijk] = up[ijk] * wp[ijk]
+
+                        vpvp[ijk] = vp[ijk] * vp[ijk]
+                        vpwp[ijk] = vp[ijk] * wp[ijk]
+                        wpwp[ijk] = wp[ijk] * wp[ijk]
+
+                        uppp[ijk] = up[ijk] * pp
+                        vppp[ijk] = vp[ijk] * pp
+                        wppp[ijk] = wp[ijk] * pp
+
+                        tke_nd[ijk] =  0.5 * (upup[ijk] + vpvp[ijk] + wpwp[ijk])
+                        tke[ijk] = RS.rho0[k] * tke_nd[ijk]
+
+                        wpbp[ijk] = wp[ijk] * bp
+
+        cdef:
+            double [:] upup_mean = Pa.HorizontalMean(Gr, &upup[0])
+            double [:] upvp_mean = Pa.HorizontalMean(Gr, &upvp[0])
+            double [:] upwp_mean = Pa.HorizontalMean(Gr, &upwp[0])
+            double [:] vpvp_mean = Pa.HorizontalMean(Gr, &vpvp[0])
+            double [:] vpwp_mean = Pa.HorizontalMean(Gr, &vpwp[0])
+            double [:] wpwp_mean = Pa.HorizontalMean(Gr, &wpwp[0])
+            double [:] wppp_mean = Pa.HorizontalMean(Gr, &wppp[0])
+            double [:] tke_mean = Pa.HorizontalMean(Gr, &tke_nd[0])
+            double [:] tkemean = Pa.HorizontalMean(Gr, &tke[0])
+            double [:] tkendmean = Pa.HorizontalMean(Gr, &tke_nd[0])
+            double [:] tke_B = Pa.HorizontalMean(Gr, &wpbp[0])
+
+        #Compute the Shear Production
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2]-1):
+                tke_S[k] -= upwp_mean[k] * (ucmean[k+1] - ucmean[k-1]) * 0.5 * Gr.dims.dxi[2]
+                tke_S[k] -= vpwp_mean[k] * (vcmean[k+1] - vcmean[k-1]) * 0.5 * Gr.dims.dxi[2]
+
+        #Compute Pressure Work
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2]-1):
+                tke_P[k] -= (wppp_mean[k+1] * RS.alpha0[k+1] - wppp_mean[k-1]* RS.alpha0[k-1])* 0.5 * Gr.dims.dxi[2]
+
+        #Compute the Turbulent transport
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        epwp[ijk] = (wc[ijk] - wcmean[k])*(tke_nd[ijk] - tke_mean[k])
+
+        cdef:
+            double [:] epwp_mean = Pa.HorizontalMean(Gr, &epwp[0])
+
+        #Compute Turbulent Transport
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2] -1):
+                tke_T[k] -= (epwp_mean[k+1] - epwp_mean[k-1]) * 0.5 * Gr.dims.dxi[2]
+
+        #Compute Mean Advection
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        e_adv[ijk] -= ucmean[k] * (tke_nd[ijk+istride] - tke_nd[ijk-istride])*0.5*Gr.dims.dxi[0]
+                        e_adv[ijk] -= vcmean[k] * (tke_nd[ijk+jstride] - tke_nd[ijk-jstride])*0.5*Gr.dims.dxi[1]
+
+        cdef:
+            double [:] tke_A = Pa.HorizontalMean(Gr, &e_adv[0])
+            double nu
+
+        #Compute the dissipation of TKE
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        nu = DV.values[visc_shift + ijk]
+                        e_dis[ijk] += (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0] * (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0]
+                        e_dis[ijk] += (vp[ijk + jstride] - vp[ijk-jstride]) * 0.5 * Gr.dims.dxi[1] * (vp[ijk + jstride] - vp[ijk-jstride]) * 0.5 * Gr.dims.dxi[1]
+                        e_dis[ijk] += (wp[ijk + 1] - wp[ijk-1]) * 0.5 * Gr.dims.dxi[2] * (wp[ijk + 1] - wp[ijk-1]) * 0.5 * Gr.dims.dxi[2]
+                        e_dis[ijk] *= nu
+
+        cdef:
+            double [:] tke_D = Pa.HorizontalMean(Gr, &e_dis[0])
+
+        #Write data
+        NS.write_profile('tke_mean', tkemean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_nd_mean', tkendmean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_ts('tke_int_z', np.sum(tkemean[Gr.dims.gw:-Gr.dims.gw])*Gr.dims.dx[2], Pa)
+        NS.write_ts('tke_nd_int_z', np.sum(tkendmean[Gr.dims.gw:-Gr.dims.gw])*Gr.dims.dx[2],Pa)
+        NS.write_profile('tke_prod_B', tke_B[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_S', tke_S[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_P', tke_P[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_T', tke_T[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_A', tke_A[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('tke_prod_D', tke_D[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        return
+
+
+class FluxStatistics:
+    def __init__(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        scalar_list = []
+
+        if 'theta' in DV.name_index:
+            scalar_list.append('theta')
+        else:
+            scalar_list.append('thetali')
+        if 'buoyancy' in DV.name_index:
+            scalar_list.append('buoyancy')
+
+        for name in scalar_list:
+            NS.add_profile('resolved_x_flux_'+name, Gr, Pa)
+            NS.add_profile('resolved_y_flux_'+name, Gr, Pa)
+            NS.add_profile('resolved_z_flux_'+name, Gr, Pa)
+
+            NS.add_profile('sgs_x_flux_'+name, Gr, Pa)
+            NS.add_profile('sgs_y_flux_'+name, Gr, Pa)
+            NS.add_profile('sgs_z_flux_'+name, Gr, Pa)
+
+        NS.add_profile('resolved_x_vel_flux', Gr, Pa)
+        NS.add_profile('resolved_y_vel_flux', Gr, Pa)
+
+        return
+
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+             DiagnosticVariables.DiagnosticVariables DV,
+             MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
+             ParallelMPI.ParallelMPI Pa):
+
+        #Here we compute the boundary layer height consistent with Bretherton et al. 1999
+        cdef:
+            Py_ssize_t i, j, k, ij, ij2d, ijk
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t ishift
+            Py_ssize_t jshift
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
+            Py_ssize_t b_shift = DV.get_varshift(Gr, 'buoyancy')
+            Py_ssize_t th_shift
+            Py_ssize_t diff_shift = DV.get_varshift(Gr, 'diffusivity')
+            double bp, thp
+
+
+            double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] up = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] wp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] upwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] vpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] bpup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] bpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] bpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+
+            double [:] thpup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] thpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] thpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+            double [:] b_xsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] b_ysgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] b_zsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+
+            double [:] th_xsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] th_ysgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] th_zsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+
+
+        if 'theta' in DV.name_index:
+            th_shift = DV.get_varshift(Gr,'theta')
+        else:
+            th_shift = DV.get_varshift(Gr,'thetali')
+
+
+        #Interpolate to cell centers
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        uc[ijk] = 0.5 * (PV.values[u_shift + ijk - istride] + PV.values[u_shift + ijk])
+                        vc[ijk] = 0.5 * (PV.values[v_shift + ijk - jstride] + PV.values[v_shift + ijk])
+                        wc[ijk] = 0.5 * (PV.values[w_shift + ijk - 1] + PV.values[w_shift + ijk])
+
+
+        #Compute the horizontal means of the cell centered velocities
+        cdef:
+            double [:] ucmean = Pa.HorizontalMean(Gr, &uc[0])
+            double [:] vcmean = Pa.HorizontalMean(Gr, &vc[0])
+            double [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
+            double [:] bmean = Pa.HorizontalMean(Gr, &DV.values[b_shift])
+            double [:] thmean = Pa.HorizontalMean(Gr, &DV.values[th_shift])
+
+        #Compute the fluxes
+        with nogil:
+            for i in xrange(1, Gr.dims.nlg[0]-1):
+                ishift = i * istride
+                for j in xrange(1, Gr.dims.nlg[1]-1):
+                    jshift = j * jstride
+                    for k in xrange(1, Gr.dims.nlg[2]-1):
+                        ijk = ishift + jshift + k
+
+                        #Compute fluctuations
+                        up[ijk] = uc[ijk] - ucmean[k]
+                        vp[ijk] = vc[ijk] - vcmean[k]
+                        wp[ijk] = wc[ijk] - wcmean[k]
+                        bp  = DV.values[b_shift + ijk] - bmean[k]
+                        thp = DV.values[th_shift + ijk] - thmean[k]
+
+                        upwp[ijk] = up[ijk] * wp[ijk]
+                        vpwp[ijk] = vp[ijk] * wp[ijk]
+
+                        bpup[ijk] = bp * up[ijk]
+                        bpvp[ijk] = bp * vp[ijk]
+                        bpwp[ijk] = bp * wp[ijk]
+
+                        thpup[ijk] = thp * up[ijk]
+                        thpvp[ijk] = thp * vp[ijk]
+                        thpwp[ijk] = thp * wp[ijk]
+
+                        b_xsgs[ijk] = -DV.values[diff_shift+ijk] * (DV.values[b_shift + ijk + istride] - DV.values[b_shift + ijk -istride]) * Gr.dims.dxi[0] * 0.5
+                        b_ysgs[ijk] = -DV.values[diff_shift+ijk] * (DV.values[b_shift + ijk + jstride] - DV.values[b_shift + ijk -jstride]) * Gr.dims.dxi[1] * 0.5
+                        b_zsgs[ijk] = -DV.values[diff_shift+ijk] * (DV.values[b_shift + ijk + 1] - DV.values[b_shift + ijk -1]) * Gr.dims.dxi[2] * 0.5
+
+                        th_xsgs[ijk] = -DV.values[diff_shift+ijk] * (DV.values[th_shift + ijk + istride] - DV.values[th_shift + ijk -istride]) * Gr.dims.dxi[0] * 0.5
+                        th_ysgs[ijk] = -DV.values[diff_shift+ijk] * (DV.values[th_shift + ijk + jstride] - DV.values[th_shift + ijk -jstride]) * Gr.dims.dxi[1] * 0.5
+                        th_zsgs[ijk] = -DV.values[diff_shift+ijk] * (DV.values[th_shift + ijk + 1] - DV.values[th_shift + ijk -1]) * Gr.dims.dxi[2] * 0.5
 
 
 
+        cdef:
+            double [:] thpup_mean = Pa.HorizontalMean(Gr, &thpup[0])
+            double [:] thpvp_mean = Pa.HorizontalMean(Gr, &thpvp[0])
+            double [:] thpwp_mean = Pa.HorizontalMean(Gr, &thpwp[0])
+
+            double [:] bpup_mean = Pa.HorizontalMean(Gr, &bpup[0])
+            double [:] bpvp_mean = Pa.HorizontalMean(Gr, &bpvp[0])
+            double [:] bpwp_mean = Pa.HorizontalMean(Gr, &bpwp[0])
+
+            double [:] upwp_mean = Pa.HorizontalMean(Gr, &upwp[0])
+            double [:] vpwp_mean = Pa.HorizontalMean(Gr, &vpwp[0])
+
+            double [:] th_xsgs_mean = Pa.HorizontalMean(Gr, &th_xsgs[0])
+            double [:] th_ysgs_mean = Pa.HorizontalMean(Gr, &th_ysgs[0])
+            double [:] th_zsgs_mean = Pa.HorizontalMean(Gr, &th_zsgs[0])
+
+            double [:] b_xsgs_mean = Pa.HorizontalMean(Gr, &b_xsgs[0])
+            double [:] b_ysgs_mean = Pa.HorizontalMean(Gr, &b_ysgs[0])
+            double [:] b_zsgs_mean = Pa.HorizontalMean(Gr, &b_zsgs[0])
+
+        if 'theta' in DV.name_index:
+            NS.write_profile('resolved_x_flux_theta', thpup_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+            NS.write_profile('resolved_y_flux_theta', thpvp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+            NS.write_profile('resolved_z_flux_theta', thpwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
+            NS.write_profile('sgs_x_flux_theta', th_xsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+            NS.write_profile('sgs_y_flux_theta', th_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+            NS.write_profile('sgs_z_flux_theta', th_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        else:
+            NS.write_profile('resolved_x_flux_thetali', thpup_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+            NS.write_profile('resolved_y_flux_thetali', thpvp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+            NS.write_profile('resolved_z_flux_thetali', thpwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
+            NS.write_profile('sgs_x_flux_thetali', th_xsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+            NS.write_profile('sgs_y_flux_thetali', th_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+            NS.write_profile('sgs_z_flux_thetali', th_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
+        NS.write_profile('resolved_x_flux_buoyancy', bpup_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('resolved_y_flux_buoyancy', bpvp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('resolved_z_flux_buoyancy', bpwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+        NS.write_profile('sgs_x_flux_buoyancy', b_xsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('sgs_y_flux_buoyancy', b_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('sgs_z_flux_buoyancy', b_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        NS.write_profile('resolved_x_vel_flux', upwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('resolved_y_vel_flux', vpwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        return

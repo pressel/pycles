@@ -182,7 +182,6 @@ void bvf_sa(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(do
 }
 
 
-
 void thetali_update(struct DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double* restrict p0, double* restrict T, double* restrict qt, double* restrict ql, double* restrict qi, double* restrict thetali){
 
     ssize_t i,j,k;
@@ -211,3 +210,11 @@ void thetali_update(struct DimStruct *dims, double (*lam_fp)(double), double (*L
     return;
 }
 
+void clip_qt(struct DimStruct *dims, double* restrict qt, double clip_value){
+    size_t i;
+    const size_t npg = dims->npg;
+    for (i=0; i<npg; i++){
+        qt[i] = fmax(qt[i], clip_value);
+    }
+    return;
+}

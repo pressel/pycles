@@ -7,7 +7,7 @@
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 import numpy as np
 cimport numpy as np
-cimport mpi4py.mpi_c as mpi
+cimport mpi4py.libmpi as mpi
 from NetCDFIO cimport NetCDFIO_Stats
 
 cimport Grid
@@ -95,11 +95,14 @@ cdef class PrognosticVariables:
             NS.add_ts(var_name+'_max',Gr,Pa)
             #Add min ts
             NS.add_ts(var_name+'_min',Gr,Pa)
+
+        if 'qt' in self.name_index.keys() and 's' in self.name_index.keys():
+            NS.add_profile('qt_s_product_mean', Gr, Pa)
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS ,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
-            Py_ssize_t var_shift
+            Py_ssize_t var_shift, var_shift2
             double [:] tmp
 
         for var_name in self.name_index.keys():
@@ -133,6 +136,12 @@ cdef class PrognosticVariables:
             tmp = Pa.HorizontalMinimum(Gr,&self.values[var_shift])
             NS.write_profile(var_name + '_min',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
             NS.write_ts(var_name+'_min',np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]),Pa)
+
+        if 'qt' in self.name_index.keys() and 's' in self.name_index.keys():
+            var_shift = self.get_varshift(Gr,'qt')
+            var_shift2 = self.get_varshift(Gr,'s')
+            tmp = Pa.HorizontalMeanofSquares(Gr,&self.values[var_shift],&self.values[var_shift2])
+            NS.write_profile('qt_s_product_mean',tmp[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         return
 

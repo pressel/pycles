@@ -24,6 +24,8 @@ def main():
         namelist = Gabls()
     elif case_name == 'DYCOMS_RF01':
         namelist = DYCOMS_RF01()
+    elif case_name == 'DYCOMS_RF02':
+        namelist = DYCOMS_RF02()
     elif case_name == 'SMOKE':
         namelist = SMOKE()
     elif case_name == 'Rico':
@@ -101,13 +103,18 @@ def SullivanPatton():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['auxiliary'] = ['None']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
     namelist['fields_io']['diagnostic_fields'] = ['temperature','buoyancy_frequency','viscosity']
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'SullivanPatton'
@@ -176,9 +183,11 @@ def SaturatedBubble():
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
+    namelist['conditional_stats'] = {}
+
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['auxiliary'] = ['None']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -253,9 +262,11 @@ def StableBubble():
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
+    namelist['conditional_stats'] = {} 
+
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['auxiliary'] = ['None']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -332,13 +343,18 @@ def Bomex():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'Cumulus'
+    namelist['stats_io']['auxiliary'] = ['Cumulus']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Bomex'
@@ -412,13 +428,18 @@ def Gabls():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'StableBL'
+    namelist['stats_io']['auxiliary'] = ['StableBL']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
     namelist['fields_io']['diagnostic_fields'] = ['temperature','buoyancy_frequency','viscosity']
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Gabls'
@@ -458,6 +479,13 @@ def DYCOMS_RF01():
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'None_SA'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['cloud_sedimentation'] = False
+    namelist['microphysics']['ccn'] = 100.0e6
+
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = True
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['frequency'] = 60.0
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -488,7 +516,94 @@ def DYCOMS_RF01():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux']
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 1e6
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'DYCOMS_RF01'
+    namelist['meta']['casename'] = 'DYCOMS_RF01'
+
+    return namelist
+
+def DYCOMS_RF02():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 128
+    namelist['grid']['ny'] = 128
+    namelist['grid']['nz'] = 300
+    namelist['grid']['gw'] = 5
+    namelist['grid']['dx'] = 50.0
+    namelist['grid']['dy'] = 50.0
+    namelist['grid']['dz'] = 5.0
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 6.0 * 3600.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'SB_Liquid'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['cloud_sedimentation'] = True
+    namelist['microphysics']['ccn'] = 55.0e6
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 7
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 7
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.002
+    namelist['damping']['Rayleigh']['z_d'] = 500.0
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
@@ -497,14 +612,19 @@ def DYCOMS_RF01():
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['visualization'] = {}
-    namelist['visualization']['frequency'] = 10.0
+    namelist['visualization']['frequency'] = 1e6
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'DYCOMS_RF01'
-    namelist['meta']['casename'] = 'DYCOMS_RF01'
+    namelist['meta']['simname'] = 'DYCOMS_RF02'
+    namelist['meta']['casename'] = 'DYCOMS_RF02'
 
     return namelist
-
 
 def SMOKE():
 
@@ -578,13 +698,18 @@ def SMOKE():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'SMOKE'
+    namelist['stats_io']['auxiliary'] = ['SMOKE']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'SMOKE'
@@ -623,12 +748,14 @@ def Rico():
 
     namelist['microphysics'] = {}
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['cloud_sedimentation'] = False
+    namelist['microphysics']['ccn'] = 70.0e6
     namelist['microphysics']['scheme'] = 'SB_Liquid'
     namelist['microphysics']['SB_Liquid'] = {}
-    namelist['microphysics']['SB_Liquid']['cloud_sedimentation'] = False
+
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
-    namelist['microphysics']['SB_Liquid']['ccn'] = 70.0e6
+
 
 
     namelist['sgs'] = {}
@@ -655,7 +782,7 @@ def Rico():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = 'Cumulus'
+    namelist['stats_io']['auxiliary'] = ['Cumulus']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -672,6 +799,12 @@ def Rico():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
 
     return namelist
 
@@ -712,6 +845,15 @@ def Isdac():
 
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'Smagorinsky'
+
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = True
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['frequency'] = 60.0
+    namelist['radiation']['RRTM']['buffer_points'] = 15
+    namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
+    namelist['radiation']['RRTM']['adjes'] = 0.0
+    # namelist['radiation']['RRTM']['coszen'] = 0.0
 
     namelist["diffusion"] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -821,6 +963,15 @@ def IsdacCC():
     namelist['surface'] = {}
     namelist['surface']['sensible'] = 2.0 #surface sensible heat flux Wm-2
 
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = True
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['frequency'] = 60.0
+    namelist['radiation']['RRTM']['buffer_points'] = 12
+    namelist['radiation']['RRTM']['patch_pressure'] = 650.0*100.0
+    namelist['radiation']['RRTM']['adjes'] = 0.0
+    # namelist['radiation']['RRTM']['coszen'] = 0.0
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -841,7 +992,7 @@ def IsdacCC():
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'IsdacCC_sh'
+    namelist['meta']['simname'] = 'IsdacCC_rrtm'
     namelist['meta']['casename'] = 'IsdacCC'
 
     return namelist

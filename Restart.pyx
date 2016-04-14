@@ -14,6 +14,7 @@ cdef class Restart:
         for the restart files. If one cannot be constructed from the namelist information the restart files are placed
         into the directory containing main.py. The uuid is also stored to make sure the restart files remain unique.
 
+        :type Pa: object
         :param namelist:
         :return:
         '''
@@ -47,9 +48,12 @@ cdef class Restart:
             if namelist['restart']['init_from']:
                 self.input_path = str(namelist['restart']['input_path'])
                 self.is_restart_run = True
-                Pa.root_print('This is a restart run!')
+
+                Pa.root_print('This run is restarting from data :' + self.input_path )
+            else:
+                Pa.root_print('Not a restarted simulation.')
         except:
-            Pa.root_print('Not a restart run!')
+            Pa.root_print('Not a restarted simulation.')
 
 
         return
@@ -66,8 +70,9 @@ cdef class Restart:
     cpdef write(self, ParallelMPI.ParallelMPI Pa):
 
         self.restart_data['last_restart_time'] = self.last_restart_time
+
         #Set up path for writing restar files
-        path = self.restart_path + '/' + str(np.int(self.last_restart_time + self.frequency))
+        path = self.restart_path + '/' + str(np.int(self.last_restart_time))
 
         if Pa.rank == 0:
             if os.path.exists(path):
@@ -97,7 +102,7 @@ cdef class Restart:
 
     cpdef free_memory(self):
         '''
-        Free memoery associated with restart_data dictionary.
+        Free memory associated with restart_data dictionary.
         :return:
         '''
 
