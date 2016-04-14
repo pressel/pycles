@@ -25,10 +25,11 @@ elif 'euler' in platform.node():
     library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
     libraries = []
     libraries.append('mpi')
+    libraries.append('gfortran')
     extensions = []
     extra_compile_args=[]
     extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
-                         '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds']
+                         '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
 
 else:
