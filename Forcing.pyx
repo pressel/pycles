@@ -3,7 +3,7 @@
 #cython: wraparound=False
 #cython: initializedcheck=False
 #cython: cdivision=True
-import pylab as plt
+
 import netCDF4 as nc
 cimport Grid
 cimport ReferenceState
@@ -39,15 +39,15 @@ cdef class Forcing:
         elif casename == 'StableBubble':
             self.scheme = ForcingNone()
         elif casename == 'CGILS':
-            self.scheme == ForcingCGILS(namelist, Pa)
+            self.scheme = ForcingCGILS(namelist, Pa)
         else:
             Pa.root_print('No focing for casename: ' +  casename)
             Pa.root_print('Killing simulation now!!!')
             Pa.kill()
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.scheme.initialize(Gr, NS, Pa)
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.scheme.initialize(Gr, Ref, NS, Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -67,7 +67,7 @@ cdef class Forcing:
 cdef class ForcingNone:
     def __init__(self):
         pass
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -83,7 +83,7 @@ cdef class ForcingBomex:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -245,7 +245,7 @@ cdef class ForcingSullivanPatton:
     def __init__(self):
 
         return
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
         self.coriolis_param = 1.0e-4 #s^{-1}
@@ -291,7 +291,7 @@ cdef class ForcingGabls:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * 8.0
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.coriolis_param = 1.39e-4 #s^{-1}
@@ -343,7 +343,7 @@ cdef class ForcingDyCOMS_RF01:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t k
@@ -503,7 +503,7 @@ cdef class ForcingRico:
         self.momentum_subsidence = 0
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef Py_ssize_t k
 
         self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
@@ -633,9 +633,9 @@ cdef class ForcingCGILS:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-
+        print('forcingCgils.intiialize')
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -649,45 +649,40 @@ cdef class ForcingCGILS:
         data = nc.Dataset(file, 'r')
 
         pressure = data.variables['lev'][:]
-        divq = data.variables['divq'][0,:,0,0]
-        divT = data.variables['divT'][0,:,0,0]
-        omega = data.variables['omega'][0,:,0,0]
+        divq_data = data.variables['divq'][0,:,0,0]
+        divT_data = data.variables['divT'][0,:,0,0]
+        omega_data = data.variables['omega'][0,:,0,0]
+        Ps = data.variables['Ps'][0,0,0]
+        n_data = np.shape(pressure)[0] - 1
         data.close()
 
         if self.is_p2 and  self.is_ctl_omega:
             file = './CGILSdata/ctl_s'+str(self.loc)+'.nc'
             data = nc.Dataset(file, 'r')
-            omega = data.variables['omega'][0,:,0,0]
+            omega_data = data.variables['omega'][0,:,0,0]
             data.close()
 
-        # Now we need to use interpolation to get the forcing at the LE
+        # Now we need to use interpolation to get the forcing at the LES grid.
+        # We need to extrapolate the data arrays to the surface
+        omega_right = (omega_data[n_data-1] - omega_data[n_data])/(pressure[n_data-1]-pressure[n_data])*(Ps-pressure[n_data]) + omega_data[n_data]
+        omega_data = np.append(omega_data,omega_right)
+        divq_right = (divq_data[n_data-1] - divq_data[n_data])/(pressure[n_data-1]-pressure[n_data])*(Ps-pressure[n_data]) + divq_data[n_data]
+        divq_data = np.append(divq_data,divq_right)
+        divT_right = (divT_data[n_data-1] - divT_data[n_data])/(pressure[n_data-1]-pressure[n_data])*(Ps-pressure[n_data]) + divT_data[n_data]
+        divT_data = np.append(divT_data,divT_right)
+        pressure = np.append(pressure, Ps)
+        self.subsidence = np.array(np.interp(Ref.p0_half, pressure, omega_data),dtype=np.double, order='c')
 
-
+        self.dqtdt = np.array(np.interp(Ref.p0_half, pressure, divq_data),dtype=np.double, order='c')
+        self.dtdt = np.array(np.interp(Ref.p0_half, pressure, divT_data),dtype=np.double, order='c')
 
         cdef:
             Py_ssize_t k
 
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
-                self.ug[k] = -10.0 + (1.8e-3)*Gr.zl_half[k]
+                self.subsidence[k] = -self.subsidence[k]*Ref.alpha0_half[k]/g
 
-                #Set large scale cooling
-                if Gr.zl_half[k] <= 1500.0:
-                    self.dtdt[k] = -2.0/(3600 * 24.0)      #K/s
-                if Gr.zl_half[k] > 1500.0:
-                    self.dtdt[k] = -2.0/(3600 * 24.0) + (Gr.zl_half[k] - 1500.0) * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)
-
-                #Set large scale drying
-                if Gr.zl_half[k] <= 300.0:
-                    self.dqtdt[k] = -1.2e-8   #kg/(kg * s)
-                if Gr.zl_half[k] > 300.0 and Gr.zl_half[k] <= 500.0:
-                    self.dqtdt[k] = -1.2e-8 + (Gr.zl_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
-
-                #Set large scale subsidence
-                if Gr.zl_half[k] <= 1500.0:
-                    self.subsidence[k] = 0.0 + Gr.zl_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
-                if Gr.zl_half[k] > 1500.0 and Gr.zl_half[k] <= 2100.0:
-                    self.subsidence[k] = -0.65/100 + (Gr.zl_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
 
 
         #Initialize Statistical Output
@@ -695,8 +690,7 @@ cdef class ForcingCGILS:
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
         NS.add_profile('u_subsidence_tendency', Gr, Pa)
         NS.add_profile('v_subsidence_tendency', Gr, Pa)
-        NS.add_profile('u_coriolis_tendency', Gr, Pa)
-        NS.add_profile('v_coriolis_tendency',Gr, Pa)
+
 
         return
 
@@ -727,8 +721,6 @@ cdef class ForcingCGILS:
             double p0
             double rho0
             double t
-            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
 
         #Apply large scale source terms
@@ -747,7 +739,7 @@ cdef class ForcingCGILS:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
                         PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-                                                         * self.dtdt[k] * exner_c(p0) * rho0)/t
+                                                         * self.dtdt[k]  * rho0)/t
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
@@ -796,15 +788,6 @@ cdef class ForcingCGILS:
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('v_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
-
-        #Output Coriolis tendencies
-        tmp_tendency[:] = 0.0
-        large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &tmp_tendency[0],
-                       &tmp_tendency_2[0], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
-        NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
-        NS.write_profile('v_coriolis_tendency',mean_tendency_2[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         return
 

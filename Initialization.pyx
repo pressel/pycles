@@ -29,7 +29,7 @@ def InitializationFactory(namelist):
         elif casename == 'SaturatedBubble':
             return InitSaturatedBubble
         elif casename == 'Bomex':
-            return InitCGILS  #InitBomex
+            return InitBomex
         elif casename == 'Gabls':
             return InitGabls
         elif casename == 'DYCOMS_RF01':
@@ -40,6 +40,8 @@ def InitializationFactory(namelist):
             return InitSmoke
         elif casename == 'Rico':
             return InitRico
+        elif casename == 'CGILS':
+            return  InitCGILS
 
 
         else:
@@ -903,6 +905,7 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     pv_star = Th.get_pv_star(RS.Tg)
     qtg_inv = 1.0/rh_srf * (RS.Pg - pv_star)/eps_v/pv_star + 1.0
     RS.qtg = 1.0/qtg_inv
+    print('qtg = ' + str(RS.qtg))
 
     RS.initialize(Gr ,Th, NS, Pa)
 

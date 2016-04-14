@@ -6,7 +6,6 @@
 
 from libc.math cimport fmin, fmax, sin, cos
 import cython
-import pylab as plt
 import netCDF4 as nc
 import numpy as np
 cimport ParallelMPI as ParallelMPI
@@ -162,7 +161,8 @@ cdef class NudgeCGILS:
             self.z_relax = 4000.0
             self.z_relax_plus = 4800.0
 
-        self.tau_inverse = 1.0/3600.0 # inverse of  max nudging timescale, 1 hr, for all cases
+        self.tau_inverse = 1.0/(60.0*60.0) # inverse of  max nudging timescale, 1 hr, for all cases
+        self.tau_vel_inverse = 1.0/(10.0*60.0) # nudging timescale of horizontal winds
 
 
         return
@@ -186,6 +186,21 @@ cdef class NudgeCGILS:
         q_data = data.variables['q'][0,:,0,0]
         u_data = data.variables['u'][0,:,0,0]
         v_data = data.variables['v'][0,:,0,0]
+        Ps = data.variables['Ps'][0,0,0]
+        n_data = np.shape(pressure_data)[0] - 1
+
+        temperature_right = (temperature_data[n_data-1] - temperature_data[n_data])/(pressure_data[n_data-1]-pressure_data[n_data])*(Ps-pressure_data[n_data]) + temperature_data[n_data]
+        temperature_data = np.append(temperature_data, temperature_right)
+
+        q_right = (q_data[n_data-1] - q_data[n_data])/(pressure_data[n_data-1]-pressure_data[n_data])*(Ps-pressure_data[n_data]) + q_data[n_data]
+        q_data = np.append(q_data, q_right)
+
+        u_right = (u_data[n_data-1] - u_data[n_data])/(pressure_data[n_data-1]-pressure_data[n_data])*(Ps-pressure_data[n_data]) + u_data[n_data]
+        u_data = np.append(u_data,u_right)
+
+        v_right = (v_data[n_data-1] - v_data[n_data])/(pressure_data[n_data-1]-pressure_data[n_data])*(Ps-pressure_data[n_data]) + v_data[n_data]
+        v_data = np.append(v_data, v_right)
+        pressure_data = np.append(pressure_data, Ps)
 
 
         self.nudge_s = np.zeros((Gr.dims.nlg[2],),dtype=np.double, order='c')
@@ -223,17 +238,6 @@ cdef class NudgeCGILS:
                 self.nudge_s[k] = sd_c(pd, nudge_temperature[k]) * (1.0 - self.nudge_qt[k]) \
                                   + sv_c(pv, nudge_temperature[k]) * self.nudge_qt[k]
 
-        plt.figure(1)
-        plt.plot(self.nudge_qt[Gr.dims.gw:-Gr.dims.gw], Gr.zl_half[Gr.dims.gw:-Gr.dims.gw])
-        plt.figure(2)
-        plt.plot(self.nudge_s[Gr.dims.gw:-Gr.dims.gw], Gr.zl_half[Gr.dims.gw:-Gr.dims.gw])
-        plt.figure(3)
-        plt.plot(nudge_temperature[Gr.dims.gw:-Gr.dims.gw], Gr.zl_half[Gr.dims.gw:-Gr.dims.gw])
-        plt.figure(4)
-        plt.plot(self.nudge_u[Gr.dims.gw:-Gr.dims.gw], Gr.zl_half[Gr.dims.gw:-Gr.dims.gw])
-        plt.plot(self.nudge_v[Gr.dims.gw:-Gr.dims.gw], Gr.zl_half[Gr.dims.gw:-Gr.dims.gw])
-        plt.show()
-
         self.gamma_zhalf = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
         self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.double, order='c')
 
@@ -261,8 +265,11 @@ cdef class NudgeCGILS:
         # Here we apply the free tropospheric damping without considering an entropy source due to moisture damping
         # However, we do apply an entropy source due to the in-BL moisture floor damping of the S12 case
         cdef:
-            Py_ssize_t var_shift
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t imin = Gr.dims.gw
@@ -274,63 +281,51 @@ cdef class NudgeCGILS:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t i, j, k, ishift, jshift, ijk
-            double [:] nudge_array
+            double [:] u_mean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            double [:] v_mean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+
             double[:] domain_mean
             double qv, qt, pd, pv, t, qt_floor_nudge
 
-        for var_name in PV.name_index:
-            var_shift = PV.get_varshift(Gr, var_name)
-            if var_name == 'u':
-                nudge_array = self.nudge_u
-            elif var_name == 'v':
-                nudge_array = self.nudge_v
-            elif var_name == 's':
-                nudge_array = self.nudge_s
-            elif var_name == 'qt':
-                nudge_array = self.nudge_qt
-            else:
-                nudge_array = np.zeros((Gr.dims.nlg[2],), dtype=np.double, order='c')
-            if var_name == 'w':
-                with nogil:
-                    for i in xrange(imin, imax):
-                        ishift = i * istride
-                        for j in xrange(jmin, jmax):
-                            jshift = j * jstride
-                            for k in xrange(kmin, kmax):
-                                ijk = ishift + jshift + k
-                                PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - nudge_array[k]) * self.gamma_zhalf[k]
-            else:
-                with nogil:
-                    for i in xrange(imin, imax):
-                        ishift = i * istride
-                        for j in xrange(jmin, jmax):
-                            jshift = j * jstride
-                            for k in xrange(kmin, kmax):
-                                ijk = ishift + jshift + k
-                                PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - nudge_array[k]) * self.gamma_z[k]
+
+        with nogil:
+            for i in xrange(imin, imax):
+                ishift = i * istride
+                for j in xrange(jmin, jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        # Nudge w to zero in free troposphere
+                        PV.tendencies[w_shift + ijk] -= (PV.values[w_shift + ijk]) * self.gamma_zhalf[k]
+                        # Nudge s, qt to reference profiles in free troposphere
+                        PV.tendencies[s_shift + ijk] -= (PV.values[s_shift + ijk] - self.nudge_s[k]) * self.gamma_z[k]
+                        PV.tendencies[qt_shift + ijk] -= (PV.values[qt_shift + ijk] - self.nudge_qt[k]) * self.gamma_z[k]
+                        # Nudge mean wind profiles through entire depth
+                        PV.tendencies[u_shift + ijk] -= (u_mean[k] + RS.u0 - self.nudge_u[k]) * self.tau_vel_inverse
+                        PV.tendencies[v_shift + ijk] -= (v_mean[k] + RS.v0 - self.nudge_v[k]) * self.tau_vel_inverse
+
+
+
 
         # Moisture floor nudging for S12 case
         if self.loc == 12:
-            var_shift = PV.get_varshift(Gr, 'qt')
-            domain_mean = Pa.HorizontalMean(Gr, & PV.values[var_shift])
+            domain_mean = Pa.HorizontalMean(Gr, & PV.values[qt_shift])
             if np.amin(domain_mean[Gr.dims.gw:self.floor_index]) < self.qt_floor:
                 with nogil:
                     for k in xrange(kmin, self.floor_index):
                         if domain_mean[k] < self.qt_floor:
+                            qt_floor_nudge = -(domain_mean[k] - self.qt_floor) * self.tau_inverse
                             for i in xrange(imin, imax):
                                 ishift = i * istride
                                 for j in xrange(jmin, jmax):
                                     jshift = j * jstride
-
                                     ijk = ishift + jshift + k
-                                    qt = PV.values[var_shift + ijk]
+                                    qt = PV.values[qt_shift + ijk]
                                     qv = DV.values[qv_shift + ijk]
                                     t = DV.values[t_shift + ijk]
                                     pv = pv_c(RS.p0_half[k],qt, qv)
                                     pd = pd_c(RS.p0_half[k],qt, qv)
-
-                                    qt_floor_nudge = -(PV.values[var_shift + ijk] - self.qt_floor) * self.tau_inverse
-                                    PV.tendencies[var_shift + ijk] += qt_floor_nudge
+                                    PV.tendencies[qt_shift + ijk] += qt_floor_nudge
                                     PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * qt_floor_nudge
 
 

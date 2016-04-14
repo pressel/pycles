@@ -30,6 +30,12 @@ def main():
         namelist = SMOKE()
     elif case_name == 'Rico':
         namelist = Rico()
+    elif case_name == 'CGILS_S6':
+        namelist = CGILS_S6()
+    elif case_name == 'CGILS_S11':
+        namelist = CGILS_S11()
+    elif case_name == 'CGILS_S12':
+        namelist = CGILS_S12()
     else:
         print('Not a vaild case name')
         exit()
@@ -798,6 +804,116 @@ def Rico():
 
 
     return namelist
+
+
+
+
+def CGILS_S6():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 96
+    namelist['grid']['ny'] = 96
+    namelist['grid']['nz'] = 150
+    namelist['grid']['gw'] = 4
+    namelist['grid']['dx'] = 100.0
+    namelist['grid']['dy'] = 100.0
+    namelist['grid']['dz'] = 40.0
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 3600.0*24.0*10.0 # 10 days
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'variable'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['cloud_sedimentation'] = True
+    namelist['microphysics']['ccn'] = 100.0e6
+    namelist['microphysics']['scheme'] = 'SB_Liquid'
+    namelist['microphysics']['SB_Liquid'] = {}
+
+    namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
+    namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
+
+
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 7
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 7
+    namelist['scalar_transport']['order_sedimentation'] = 1
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'NudgeCGILS'
+
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['frequency'] = 5 * 60.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 86400.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy']
+
+    namelist['meta'] = {}
+    namelist['meta']['CGILS'] = {}
+    namelist['meta']['casename'] = 'CGILS'
+    namelist['meta']['CGILS']['location'] = 6
+    namelist['meta']['CGILS']['P2'] = False
+    namelist['meta']['CGILS']['CTL_omega'] = False
+
+    simname = 'CGILS_S' + str(namelist['meta']['CGILS']['location'] )
+    if namelist['meta']['CGILS']['P2']:
+        if namelist['meta']['CGILS']['CTL_omega']:
+            simname += '_P2'
+        else:
+            simname += '_P2S'
+    else:
+        simname += '_CTL'
+    namelist['meta']['simname'] = simname
+
+
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+
+    return namelist
+
+
+
 
 
 def write_file(namelist):

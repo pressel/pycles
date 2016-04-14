@@ -31,7 +31,7 @@ cdef class Radiation:
         except:
             use_rrtm = False
         if use_rrtm:
-            self.scheme = RadiationRRTM(namelist)
+            self.scheme = RadiationRRTM(namelist, Pa)
         else:
             casename = namelist['meta']['casename']
             if casename == 'DYCOMS_RF01':
@@ -41,6 +41,8 @@ cdef class Radiation:
                 self.scheme = RadiationDyCOMS_RF01()
             elif casename == 'SMOKE':
                 self.scheme = RadiationSmoke()
+            elif casename == 'CGILS':
+                self.scheme = RadiationRRTM(namelist, Pa)
             else:
                 self.scheme = RadiationNone()
         return
@@ -352,7 +354,7 @@ cdef extern:
 
 
 cdef class RadiationRRTM:
-    def __init__(self, namelist):
+    def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         self.z_pencil = ParallelMPI.Pencil()
         # Required for surface energy budget calculations, can also be used for stats io
         self.srf_lw_down = 0.0
@@ -364,24 +366,32 @@ cdef class RadiationRRTM:
         if casename == 'SHEBA':
             self.profile_name = 'sheba'
         elif casename == 'DYCOMS_RF01':
-            self.profile_name = 'cgils_s12'
+            self.profile_name = 'cgils_ctl_s12'
+        elif casename == 'CGILS':
+            loc = namelist['meta']['CGILS']['location']
+            is_p2 = namelist['meta']['CGILS']['P2']
+            if is_p2:
+                self.profile_name = 'cgils_p2_s'+str(loc)
+            else:
+                self.profile_name = 'cgils_ctl_s'+str(loc)
         else:
-            self.profile_name = 'default'
+            Pa.root_print('RadiationRRTM: Case ' + casename + ' has no known extension profile')
+            Pa.kill()
 
         # Namelist options related to the profile extension
         try:
             self.n_buffer = namelist['radiation']['RRTM']['buffer_points']
         except:
-            self.n_buffer = 0
+            self.n_buffer = 2
         try:
             self.stretch_factor = namelist['radiation']['RRTM']['stretch_factor']
         except:
-            self.stretch_factor = 1.0
+            self.stretch_factor = 1.3
 
         try:
             self.patch_pressure = namelist['radiation']['RRTM']['patch_pressure']
         except:
-            self.patch_pressure = 600.00*100.0
+            self.patch_pressure = 1000.00*100.0
 
         # Namelist options related to gas concentrations
         try:
@@ -444,6 +454,8 @@ cdef class RadiationRRTM:
             print('radiation_frequency not set so RadiationRRTM takes default value: radiation_frequency = 0.0 (compute at every step).')
             self.radiation_frequency = 0.0
 
+
+
         self.next_radiation_calculate = 0.0
 
 
@@ -489,6 +501,10 @@ cdef class RadiationRRTM:
         temperatures = profile_data[self.profile_name]['temperature'][:]
         vapor_mixing_ratios = profile_data[self.profile_name]['vapor_mixing_ratio'][:]
 
+        # Sanity check that patch_pressure < minimum LES domain pressure
+        dp = np.abs(Ref.p0_half_global[nz + gw -1] - Ref.p0_half_global[nz + gw -2])
+        self.patch_pressure = np.minimum(self.patch_pressure, Ref.p0_half_global[nz + gw -1] - dp  )
+
         n_profile = len(pressures[pressures<=self.patch_pressure]) # nprofile = # of points in the fixed profile to use
         self.n_ext =  n_profile + self.n_buffer # n_ext = total # of points to add to LES domain (buffer portion + fixed profile portion)
 
@@ -519,6 +535,11 @@ cdef class RadiationRRTM:
             for i in xrange(self.n_ext):
                 print i, self.p_ext[i]
 
+            # Sanity check the buffer zone
+            if self.p_ext[self.n_buffer-1] < self.p_ext[self.n_buffer]:
+                Pa.root_print('Radiation buffer zone extends too far')
+                Pa.kill()
+
             # Pressures of "data" points for interpolation, must be INCREASING pressure
             xi = np.array([self.p_ext[self.n_buffer+1],self.p_ext[self.n_buffer],Ref.p0_half_global[nz + gw -1],Ref.p0_half_global[nz + gw -2] ],dtype=np.double)
             print(xi)
@@ -535,16 +556,24 @@ cdef class RadiationRRTM:
                 self.rv_ext[i] = pchip_interpolate(xi, ri, self.p_ext[i] )
                 self.t_ext[i] = pchip_interpolate(xi,ti, self.p_ext[i])
 
+        #--- Plotting to evaluate implementation of buffer zone
+        #--- Comment out when not running locally
+        # for i in xrange(Gr.dims.nlg[2]):
+        #     qv_pencils[0,i] = qv_pencils[0, i]/ (1.0 - qv_pencils[0, i])
+        #
         # Plotting to evaluate implementation of buffer zone
         # plt.figure(1)
-        # plt.scatter(self.rv_ext,self.p_ext)
+        # plt.plot(self.rv_ext,self.p_ext,'or')
         # plt.plot(vapor_mixing_ratios, pressures)
-        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
+        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw],'ob')
+        # plt.gca().invert_yaxis()
         # plt.figure(2)
-        # plt.scatter(self.t_ext,self.p_ext)
+        # plt.plot(self.t_ext,self.p_ext,'-or')
         # plt.plot(temperatures,pressures)
-        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw])
+        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw],'-ob')
+        # plt.gca().invert_yaxis()
         # plt.show()
+        #---END Plotting to evaluate implementation of buffer zone
 
         self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
         self.pi_full = np.zeros((self.n_ext+1+nz,),dtype=np.double)
@@ -913,10 +942,14 @@ cdef class RadiationRRTM:
         self.srf_sw_up= Pa.domain_scalar_sum(srf_sw_up_local)
         self.srf_sw_down= Pa.domain_scalar_sum(srf_sw_down_local)
 
+        #----BEGIN Plotting to test implementation of buffer zone
+        #---Comment out when not running locally
         # Plot to verify no kink is present at top of LES domain
         # plt.figure(6)
         # plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
+        # plt.gca().invert_yaxis()
         # plt.show()
+        #---END plotting
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
 

@@ -118,9 +118,10 @@ class Simulation3d:
 
         self.Sur.initialize(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
 
-        self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
+
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
+        self.Fo.initialize(self.Gr, self.Ref,self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Damping.initialize(self.Gr, self.Ref)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)

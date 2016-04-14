@@ -133,6 +133,26 @@ cdef class SurfaceRico:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
+cdef class SurfaceCGILS:
+    cdef:
+        Py_ssize_t loc
+        bint is_p2
+        double (*L_fp)(double T, double Lambda) nogil
+        double (*Lambda_fp)(double T) nogil
+        ClausiusClapeyron CC
+        double gustiness
+        double z0
+        double [:] u_flux
+        double [:] v_flux
+        double [:] qt_flux
+        double [:] s_flux
+        double ct
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+
 
 cdef inline double compute_z0(double z1, double windspeed) nogil
 

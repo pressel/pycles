@@ -29,6 +29,7 @@ cdef class NudgeCGILS:
         double z_relax
         double z_relax_plus
         double tau_inverse
+        double tau_vel_inverse
         double qt_floor
         Py_ssize_t floor_index
         double[:] gamma_zhalf
