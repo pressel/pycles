@@ -170,6 +170,8 @@ class Simulation3d:
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
 
+        self.Restart.cleanup()
+
 
         return
 
