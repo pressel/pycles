@@ -44,11 +44,11 @@ cdef class No_Microphysics_Dry:
 cdef class No_Microphysics_SA:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
         LH.Lambda_fp = lambda_constant
-        LH.L_fp = latent_heat_constant
+        LH.L_fp = latent_heat_variable
         self.thermodynamics_type = 'SA'
         #also set local versions
         self.Lambda_fp = lambda_constant
-        self.L_fp = latent_heat_constant
+        self.L_fp = latent_heat_variable
 
         # Extract case-specific parameter values from the namelist
         # Get number concentration of cloud condensation nuclei (1/m^3)
@@ -182,11 +182,11 @@ cdef class Microphysics_SB_Liquid:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
         # Create the appropriate linkages to the bulk thermodynamics
         LH.Lambda_fp = lambda_constant
-        LH.L_fp = latent_heat_constant
+        LH.L_fp = latent_heat_variable
         self.thermodynamics_type = 'SA'
         #also set local versions
         self.Lambda_fp = lambda_constant
-        self.L_fp = latent_heat_constant
+        self.L_fp = latent_heat_variable
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 
