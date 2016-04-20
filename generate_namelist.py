@@ -961,7 +961,7 @@ def IsdacCC():
     namelist['initial']['divergence'] = 5.0e-6 # LS divergence
 
     namelist['surface'] = {}
-    namelist['surface']['sensible'] = 2.0 #surface sensible heat flux Wm-2
+    namelist['surface']['sensible'] = 0.0 #surface sensible heat flux Wm-2
 
     namelist['radiation'] = {}
     namelist['radiation']['use_RRTM'] = True

@@ -678,16 +678,16 @@ cdef class RadiationRRTM:
                 self.rv_ext[i] = pchip_interpolate(xi, ri, self.p_ext[i] )
                 self.t_ext[i] = pchip_interpolate(xi,ti, self.p_ext[i])
 
-        # Plotting to evaluate implementation of buffer zone
-        plt.figure(1)
-        plt.scatter(self.rv_ext,self.p_ext)
-        plt.plot(vapor_mixing_ratios, pressures)
-        plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
-        plt.figure(2)
-        plt.scatter(self.t_ext,self.p_ext)
-        plt.plot(temperatures,pressures)
-        plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw])
-        plt.show()
+        # # Plotting to evaluate implementation of buffer zone
+        # plt.figure(1)
+        # plt.scatter(self.rv_ext,self.p_ext)
+        # plt.plot(vapor_mixing_ratios, pressures)
+        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
+        # plt.figure(2)
+        # plt.scatter(self.t_ext,self.p_ext)
+        # plt.plot(temperatures,pressures)
+        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw])
+        # plt.show()
 
         self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
         self.pi_full = np.zeros((self.n_ext+1+nz,),dtype=np.double)
@@ -990,7 +990,11 @@ cdef class RadiationRRTM:
                                                     fmax(cldfr_in[ip,k],1.0e-6))/(4.0*pi*1.0e3*100.0))**(1.0/3.0)
                         reliq_in[ip, k] = fmin(fmax(reliq_in[ip, k]*rv_to_reff, 2.5), 60.0)
 
-                    reice_in[ip, k] = 50.0
+                    # Boudala et al. (2002) Eqn 10a
+                    reice_in[ip, k] = 53.005 * ((self.p_full[k]/Rd/tlay_in[ip, k]*qi_pencil[ip, k]*1.0e3)/
+                                                fmax(cldfr_in[ip,k],1.0e-6)) ** 0.06 \
+                                      * exp(0.0013*(tlay_in[ip, k] - 273.16))
+                    reice_in[ip, k] = fmin(fmax(reice_in[ip, k]/1.54, 2.5), 50.0)
 
             for ip in xrange(n_pencils):
                 tlev_in[ip, 0] = Ref.Tg
