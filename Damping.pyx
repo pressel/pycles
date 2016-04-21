@@ -176,7 +176,7 @@ cdef class NudgeCGILS:
         else:
             file = './CGILSdata/ctl_s'+str(self.loc)+'.nc'
 
-        print("DAMPING " + file)
+
         data = nc.Dataset(file, 'r')
         # Get the profile information we need from the data file to set up nudging profiles
         # Since we are sure the the range of LES pressures that are nudged are within the range of the
@@ -213,18 +213,12 @@ cdef class NudgeCGILS:
         # Obtain the moisture floor and find the max index corresponding to z <= 1300 m
 
         self.qt_floor = np.interp(1300.0, Gr.zl_half, self.nudge_qt)
-        print("qt floor = " + str(self.qt_floor))
         cdef Py_ssize_t k = Gr.dims.gw
 
         for k in range(Gr.dims.gw, Gr.dims.nlg[2]-Gr.dims.gw):
             if Gr.zl_half[k] > 1300.0:
                 break
             self.floor_index = k
-
-        print("floor imdex" + str(self.floor_index))
-        print(str(Gr.zl_half[self.floor_index]))
-
-
 
 
         # Nudging profile is unsaturated, so we can calculate entropy simply

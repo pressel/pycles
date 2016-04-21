@@ -412,25 +412,25 @@ cdef class RadiationRRTM:
         try:
             self.adjes = namelist['radiation']['RRTM']['adjes']
         except:
-            print('Insolation adjustive factor not set so RadiationRRTM takes default value: adjes = 0.5 (12 hour of daylight).')
+            Pa.root_print('Insolation adjustive factor not set so RadiationRRTM takes default value: adjes = 0.5 (12 hour of daylight).')
             self.adjes = 0.5
 
         try:
             self.scon = namelist['radiation']['RRTM']['solar_constant']
         except:
-            print('Solar Constant not set so RadiationRRTM takes default value: scon = 1360.0 .')
+            Pa.root_print('Solar Constant not set so RadiationRRTM takes default value: scon = 1360.0 .')
             self.scon = 1360.0
 
         try:
             self.coszen =namelist['radiation']['RRTM']['coszen']
         except:
-            print('Mean Daytime cos(SZA) not set so RadiationRRTM takes default value: coszen = 2.0/pi .')
+            Pa.root_print('Mean Daytime cos(SZA) not set so RadiationRRTM takes default value: coszen = 2.0/pi .')
             self.coszen = 2.0/pi
 
         try:
             self.adif = namelist['radiation']['RRTM']['adif']
         except:
-            print('Surface diffusive albedo not set so RadiationRRTM takes default value: adif = 0.06 .')
+            Pa.root_print('Surface diffusive albedo not set so RadiationRRTM takes default value: adif = 0.06 .')
             self.adif = 0.06
 
         try:
@@ -440,18 +440,18 @@ cdef class RadiationRRTM:
                 self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
             else:
                 self.adir = 0.0
-            print('Surface direct albedo not set so RadiationRRTM computes value: adif = %5.4f .'%(self.adir))
+            Pa.root_print('Surface direct albedo not set so RadiationRRTM computes value: adif = %5.4f .'%(self.adir))
 
         try:
             self.uniform_reliq = namelist['radiation']['RRTM']['uniform_reliq']
         except:
-            print('uniform_reliq not set so RadiationRRTM takes default value: uniform_reliq = False.')
+            Pa.root_print('uniform_reliq not set so RadiationRRTM takes default value: uniform_reliq = False.')
             self.uniform_reliq = False
 
         try:
             self.radiation_frequency = namelist['radiation']['RRTM']['frequency']
         except:
-            print('radiation_frequency not set so RadiationRRTM takes default value: radiation_frequency = 0.0 (compute at every step).')
+            Pa.root_print('radiation_frequency not set so RadiationRRTM takes default value: radiation_frequency = 0.0 (compute at every step).')
             self.radiation_frequency = 0.0
 
 
@@ -528,12 +528,9 @@ cdef class RadiationRRTM:
         if self.n_buffer > 0:
             dp = np.abs(Ref.p0_half_global[nz + gw -1] - Ref.p0_half_global[nz + gw -2])
             self.p_ext[0] = Ref.p0_half_global[nz + gw -1] - dp
-            print(self.p_ext[0])
             for i in range(1,self.n_buffer):
                 self.p_ext[i] = self.p_ext[i-1] - (i+1.0)**self.stretch_factor * dp
 
-            for i in xrange(self.n_ext):
-                print i, self.p_ext[i]
 
             # Sanity check the buffer zone
             if self.p_ext[self.n_buffer-1] < self.p_ext[self.n_buffer]:
@@ -542,8 +539,6 @@ cdef class RadiationRRTM:
 
             # Pressures of "data" points for interpolation, must be INCREASING pressure
             xi = np.array([self.p_ext[self.n_buffer+1],self.p_ext[self.n_buffer],Ref.p0_half_global[nz + gw -1],Ref.p0_half_global[nz + gw -2] ],dtype=np.double)
-            print(xi)
-
 
             # interpolation for temperature
             ti = np.array([self.t_ext[self.n_buffer+1],self.t_ext[self.n_buffer], t_pencils[0,nz-1],t_pencils[0,nz-2] ], dtype = np.double)
@@ -600,7 +595,7 @@ cdef class RadiationRRTM:
                 use_o3in = True
 
             except:
-                print('O3 profile not set so default RRTM profile will be used.')
+                Pa.root_print('O3 profile not set so default RRTM profile will be used.')
                 use_o3in = False
 
         #Initialize rrtmg_lw and rrtmg_sw
@@ -650,7 +645,6 @@ cdef class RadiationRRTM:
             if (self.pi_full[i-1]/100.0 > lw_pressure[0]):
                 trpath[i,:] = trpath[i,:] + (self.pi_full[i-1]/100.0 - np.max((self.pi_full[i]/100.0,lw_pressure[0])))/g*trace[:,0]
             for m in xrange(1,lw_np):
-                #print i, m
                 plow = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, lw_pressure[m-1]))))
                 pupp = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, lw_pressure[m]))))
                 if (plow > pupp):
@@ -678,7 +672,6 @@ cdef class RadiationRRTM:
                 if (self.pi_full[i-1]/100.0 > o3_pressure[0]):
                     trpath_o3[i] = trpath_o3[i] + (self.pi_full[i-1]/100.0 - np.max((self.pi_full[i]/100.0,o3_pressure[0])))/g*o3_trace[0]
                 for m in xrange(1,self.o3_np):
-                    #print i, m
                     plow = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m-1]))))
                     pupp = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m]))))
                     if (plow > pupp):

@@ -635,7 +635,6 @@ cdef class ForcingCGILS:
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        print('forcingCgils.intiialize')
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')

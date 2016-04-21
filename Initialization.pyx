@@ -4,7 +4,7 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
-import pylab as plt
+
 import netCDF4 as nc
 import numpy as np
 cimport numpy as np
@@ -882,7 +882,6 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     else:
         file = './CGILSdata/ctl_s'+str(loc)+'.nc'
 
-    print(file)
     data = nc.Dataset(file, 'r')
     # Get the profile information we need from the data file
     pressure_data = data.variables['lev'][::-1]
@@ -905,7 +904,7 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     pv_star = Th.get_pv_star(RS.Tg)
     qtg_inv = 1.0/rh_srf * (RS.Pg - pv_star)/eps_v/pv_star + 1.0
     RS.qtg = 1.0/qtg_inv
-    print('qtg = ' + str(RS.qtg))
+
 
     RS.initialize(Gr ,Th, NS, Pa)
 
@@ -1113,47 +1112,6 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
 
 
-    plt.figure(1)
-    plt.plot(thetal,RS.p0_half,'-b')
-    plt.plot(thetal_data, pressure_data,'--r')
-    plt.gca().invert_yaxis()
-
-    plt.figure(2)
-    plt.plot(qt, RS.p0_half,'-b')
-    plt.plot(q_data, pressure_data,'--r')
-    plt.gca().invert_yaxis()
-
-    plt.figure(3)
-    plt.plot(u, RS.p0_half,'-b')
-    plt.plot(u_data, pressure_data,'--r')
-    plt.gca().invert_yaxis()
-
-
-    plt.figure(4)
-    plt.plot(v, RS.p0_half,'-b')
-    plt.plot(v_data, pressure_data,'--r')
-    plt.gca().invert_yaxis()
-
-    plt.figure(11)
-    plt.plot(thetal,Gr.zl_half,'-b')
-
-
-
-    plt.figure(12)
-    plt.plot(qt, Gr.zl_half,'-b')
-
-
-    plt.figure(13)
-    plt.plot(u, Gr.zl_half,'-b')
-
-
-
-
-    plt.figure(14)
-    plt.plot(v, Gr.zl_half,'-b')
-
-
-    plt.show()
     return
 
 
