@@ -61,7 +61,6 @@ cdef class Tracers:
             Py_ssize_t c_lcl_15_shift, c_lcl_60_shift
 
 
-
         if self.lcl_tracers:
             c_lcl_15_shift = PV.get_varshift(Gr, 'c_lcl_15')
             c_lcl_60_shift = PV.get_varshift(Gr, 'c_lcl_60')
