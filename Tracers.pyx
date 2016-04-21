@@ -27,7 +27,7 @@ cdef extern from "thermodynamic_functions.h":
 cdef class Tracers:
     def __init__(self, namelist):
 
-        if namelist['microphysics']['scheme'] == 'None_SA':
+        if namelist['microphysics']['scheme'] == 'None_SA' or namelist['microphysics']['scheme'] == 'SB_Liquid':
             self.lcl_tracers = True
         else:
             self.lcl_tracers = False
