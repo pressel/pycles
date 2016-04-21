@@ -994,7 +994,7 @@ cdef class RadiationRRTM:
                     reice_in[ip, k] = 53.005 * ((self.p_full[k]/Rd/tlay_in[ip, k]*qi_pencil[ip, k]*1.0e3)/
                                                 fmax(cldfr_in[ip,k],1.0e-6)) ** 0.06 \
                                       * exp(0.0013*(tlay_in[ip, k] - 273.16))
-                    reice_in[ip, k] = fmin(fmax(reice_in[ip, k]/1.54, 2.5), 50.0)
+                    reice_in[ip, k] = fmin(fmax(reice_in[ip, k]/1.54, 5.0), 130.0) # Threshold from rrtmg sw instruction
 
             for ip in xrange(n_pencils):
                 tlev_in[ip, 0] = Ref.Tg
