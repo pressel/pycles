@@ -81,7 +81,7 @@ cdef class TestArray:
         return
 
 
-    cpdef set_PV_values(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr):
+    cpdef set_PV_values(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
         cdef:
             # Py_ssize_t shift_flux = i_advected * Gr.dims.dims * Gr.dims.npg + i_advecting * Gr.dims.npg
             Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
@@ -98,8 +98,11 @@ cdef class TestArray:
             Py_ssize_t jmax = Gr.dims.nlg[1]
             Py_ssize_t kmax = Gr.dims.nlg[2]
 
+            Py_ssize_t rank = Pa.rank
+
         for i in range(Gr.dims.npg):
             PV.values[i] = 0.0
+
 
         for i in xrange(imin, imax):
                 # print(i)
@@ -109,7 +112,7 @@ cdef class TestArray:
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
                         # PV.values[0+ishift+jshift+k] = i-Gr.dims.gw
-                        PV.values[u_varshift + ijk] = i
+                        PV.values[u_varshift + ijk] = i * (rank+1)
                         # print(PV.values[0+ishift+jshift+k])
 
 

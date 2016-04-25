@@ -38,7 +38,7 @@ cdef class TestArray:
     cpdef array_mean_return(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
 
     cpdef set_PV_values_const(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
-    cpdef set_PV_values(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
+    cpdef set_PV_values(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
 
 
 

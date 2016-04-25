@@ -14,10 +14,9 @@ def main():
     namelist = json.loads(file_namelist)
     del file_namelist
 
-
-    import TestRun
-    Arr = TestRun.TestRun(namelist)
-    a = Arr.array()
+    # import TestRun
+    # Arr = TestRun.TestRun(namelist)
+    # a = Arr.array()
 
 
 
