@@ -51,9 +51,11 @@ cdef class TestArray:
 
         u_val = PV.get_variable_array('u', Gr)
         cdef double [:] u_mean = np.zeros(Gr.dims.ng[2])
-        print('!!!', u_mean.shape, Gr.dims.ng[2], u_val.shape)
-        print('!!! before !!!')
-        print('u_mean:', np.array(u_mean))
+
+        if Pa.rank == 0:
+            print('!!!', u_mean.shape, Gr.dims.ng[2], u_val.shape)
+            print('!!! before !!!')
+            print('u_mean:', np.array(u_mean))
         # print('u_val, (:,0,0):', u_val[:,0,0])
         # print('u_val, (0,:,0):', u_val[0,:,0])
 
