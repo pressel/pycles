@@ -64,8 +64,9 @@ cdef class TestArray:
 
         print('!!! after !!!')
         print('processor:', Pa.rank)
-        print('u_val, (:,:,0):', u_val[:,:,0])
-        print(np.array(u_mean))
+        if Pa.rank == 0:
+            # print('u_val, (:,:,0):', u_val[:,:,0])
+            print(np.array(u_mean))
 
         return
 
