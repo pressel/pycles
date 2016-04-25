@@ -314,8 +314,6 @@ void horizontal_mean_nogw(struct DimStruct *dims, double* restrict values, doubl
         const ssize_t  kmax = dims->nlg[2];
         const ssize_t  istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t  jstride = dims->nlg[2];
-        //int ishift, jshift;
-//        const double n_horizontal_i = 1.0/(dims->n[1]*dims->n[0]);
         const double n_horizontal_i = 1.0/(dims->n[1]*dims->n[0]);
 
         for(ssize_t k=kmin; k<kmax; k++){

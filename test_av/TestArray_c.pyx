@@ -111,8 +111,8 @@ cdef class TestArray:
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
-                        # PV.values[0+ishift+jshift+k] = i-Gr.dims.gw
-                        PV.values[u_varshift + ijk] = i * (rank+1)
+                        PV.values[0+ishift+jshift+k] = (i-Gr.dims.gw) * (rank+1)
+                        # PV.values[u_varshift + ijk] = i * (rank+1)
                         # print(PV.values[0+ishift+jshift+k])
 
 
