@@ -70,17 +70,15 @@ class TestRun:
         mean = TestArray_c.TestArray(namelist)
 
         mean.set_PV_values_const(self.PV, self.Gr)
-        for i in range(1):
-            mean.array_mean_return(self.PV, self.Gr)
+        # u_mean = np.zeros(self.Gr.dims.ng[2])
+        mean.array_mean_return(self.PV, self.Gr, self.Pa)
 
         mean.set_PV_values(self.PV, self.Gr)
         u_val = self.PV.get_variable_array('u', self.Gr)
-        for i in range(1):
-            mean.array_mean_return(self.PV, self.Gr)
-        # print('k = 0: ', u_val[:,0,0], u_val[0,0:3,0], u_val[1,0:3,0], u_val[-1,0,0])
-        # print('k = 1: ', u_val[:,0,1], u_val[0,0:3,1])
-        # print('k = 6: ', u_val[:,0,6], u_val[0,:,6], u_val[1,0:3,6], u_val[-1,0,6])
+        mean.array_mean_return(self.PV, self.Gr, self.Pa)
 
         print('finished TestRun')
+
+
 
         return
