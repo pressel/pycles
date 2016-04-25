@@ -111,6 +111,7 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values, double* re
         const ssize_t  istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t  jstride = dims->nlg[2];
         //int ishift, jshift;
+//        const double n_horizontal_i = 1.0/(dims->n[1]*dims->n[0]);
         const double n_horizontal_i = 1.0/(dims->n[1]*dims->n[0]);
 
         for(ssize_t k=kmin; k<kmax; k++){
@@ -127,7 +128,7 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values, double* re
                 }
             }
         }
-        printf("nx*ny = %f\n", 1/n_horizontal_i);
+        printf("averaging number (nx*ny) = %f, %f\n", n_horizontal_i, 1/n_horizontal_i);
         printf("mean_local[gw] = %f\n", mean_local[gw]);
         printf("mean_local[10] = %f\n", mean_local[10]);
 
@@ -246,6 +247,7 @@ void horizontal_mean_const(struct DimStruct *dims, const double* restrict values
         const ssize_t  jstride = dims->nlg[2];
         //int ishift, jshift;
         const double n_horizontal_i = 1.0/(dims->n[1]*dims->n[0]);
+        printf("averaging number: %f\n", n_horizontal_i);
 
         for(ssize_t k=kmin; k<kmax; k++){
             mean_local[k] = 0;
@@ -279,3 +281,72 @@ void horizontal_mean_const(struct DimStruct *dims, const double* restrict values
         return;
 }
 
+
+
+void horizontal_mean_nogw(struct DimStruct *dims, double* restrict values, double* restrict mean){
+//        /*
+//        Compute the horizontal mean of the array pointed to by values.
+//        values should have dimension of Gr.dims.nlg[0] * Gr.dims.nlg[1]
+//        * Gr.dims.nlg[1].
+//
+//        :param Gr: Grid class
+//        :param values1: pointer to array of type double containing first value in product
+//        :return: memoryview type double with dimension Gr.dims.nlg[2]
+//        '''
+//        # Gr.dims.n[i] = namelist['grid']['ni'] (e.g. n[0] = 'nx')      --> total number of pts
+//        # Gr.dims.nl[i] = Gr.dims.n[i] // mpi_dims[i]                   --> local number of pts (per processor)
+//        # Gr.dims.nlg[i] = Gr.dims.nl[i] + 2*gw                         --> local number of pts incl ghost points
+//        # i = 0,1,2
+//        */
+//
+        const ssize_t gw = dims->gw;
+        printf("values[gw] = %f\n", values[gw]);
+        printf("before: mean[gw] = %f\n", mean[gw]);
+
+        double *mean_local = (double *)malloc(sizeof(double) * dims->nlg[2]);       // Dynamically allocate array
+        double *mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
+        int ijk;
+        const ssize_t  imin = dims->gw;
+        const ssize_t  jmin = dims->gw;
+        const ssize_t  kmin = 0;
+        const ssize_t  imax = dims->nlg[0] - dims->gw;
+        const ssize_t  jmax = dims->nlg[1] - dims->gw;
+        const ssize_t  kmax = dims->nlg[2];
+        const ssize_t  istride = dims->nlg[1] * dims->nlg[2];
+        const ssize_t  jstride = dims->nlg[2];
+        //int ishift, jshift;
+//        const double n_horizontal_i = 1.0/(dims->n[1]*dims->n[0]);
+        const double n_horizontal_i = 1.0/(dims->n[1]*dims->n[0]);
+
+        for(ssize_t k=kmin; k<kmax; k++){
+            mean_local[k] = 0;
+        }
+
+        for(ssize_t i=imin; i<imax; i++){
+            const ssize_t ishift = i * istride;
+            for(ssize_t j=jmin; j<jmax; j++){
+                const ssize_t jshift = j * jstride;
+                for(ssize_t k=kmin; k<kmax; k++){
+                    ijk = ishift + jshift + k;
+                    mean_local[k] += values[ijk];
+                }
+            }
+        }
+        printf("nx*ny = %f\n", 1/n_horizontal_i);
+        printf("mean_local[gw] = %f\n", mean_local[gw]);
+        printf("mean_local[10] = %f\n", mean_local[10]);
+
+//        //#Here we call MPI_Allreduce on the sub_xy communicator as we only need communication among
+//        //#processes with the the same vertical rank
+//        // MPI_Reduce(&mean_local, &mean, dims->ng[2], MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//        MPI_Allreduce(&mean_local, &mean_, dims->n[2], MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        for(ssize_t k=kmin; k<kmax; k++){
+            MPI_Allreduce(&mean_local[k], &mean_[k], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            mean[k] = mean_[k] * n_horizontal_i;
+        }
+        printf("mean[gw] = %f\n", mean[gw]);
+        printf("mean[10] = %f\n", mean[10]);
+        printf("Done \n");
+
+        return;
+}
