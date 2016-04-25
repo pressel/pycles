@@ -33,7 +33,6 @@ cdef class TestArray:
         double [:] b
 
         # double array(self)
-    cpdef array_c(self)
 
     cpdef array_mean(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
     cpdef array_mean_return(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)

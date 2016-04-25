@@ -11,8 +11,8 @@ cimport ParallelMPI
 cimport PrognosticVariables
 
 cdef extern from "cc_statistics.h":
-    void horizontal_mean(Grid.DimStruct *dims, double *values)
-    void horizontal_mean_return(Grid.DimStruct *dims, double *values, double *mean)
+    # void horizontal_mean(Grid.DimStruct *dims, double *values)
+    void horizontal_mean(Grid.DimStruct *dims, double *values, double *mean)
 
 cdef class TestArray:
     def __init__(self,namelist):
@@ -26,28 +26,23 @@ cdef class TestArray:
         # self.Gr = Grid.Grid(namelist, self.Pa)
         return
 
-    cpdef array_c(self):
-        k = 2
-        m = 10
-        b = np.empty((k,m))
-        # self.array_mean()
-        return b
 
     cpdef array_mean(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr):
-        print('calling TestArray_c.array_mean')
-        # # horizontal_mean()
-        # cdef dims = Gr.dims
-        # print(dims)
-        # cdef nxg = dims.ng[0]
-        # cdef nyg = dims.ng[1]
-        # cdef nzg = dims.ng[2]
-
-        # # cdef double [:,:,:,:] b = self.array_c
-        u_val = PV.get_variable_array('u', Gr)
-
-        cdef Py_ssize_t shift_u = PV.velocity_directions[0] * Gr.dims.npg
-        horizontal_mean(&Gr.dims, &PV.values[shift_u])
-
+    #     print('calling TestArray_c.array_mean')
+    #     # # horizontal_mean()
+    #     # cdef dims = Gr.dims
+    #     # print(dims)
+    #     # cdef nxg = dims.ng[0]
+    #     # cdef nyg = dims.ng[1]
+    #     # cdef nzg = dims.ng[2]
+    #
+    #     # # cdef double [:,:,:,:] b = self.array_c
+    #     u_val = PV.get_variable_array('u', Gr)
+    #
+    #     cdef Py_ssize_t shift_u = PV.velocity_directions[0] * Gr.dims.npg
+    #     # horizontal_mean(&Gr.dims, &PV.values[shift_u])
+    #     horizontal_mean(&Gr.dims,&PV.values[shift_u],)
+    #
         return
 
 
@@ -57,12 +52,15 @@ cdef class TestArray:
         u_val = PV.get_variable_array('u', Gr)
         # cdef double [:] u_mean = np.empty(shape = u_val.shape[2])
         cdef double [:] u_mean = np.zeros(Gr.dims.ng[2])
-        print('!!!', u_mean.shape, Gr.dims.ng[2])
+        print('!!!', u_mean.shape, Gr.dims.ng[2], u_val.shape)
         print('!!! before !!!')
-        print(np.array(u_mean))
+        print('u_mean:', np.array(u_mean))
+        print('u_val, (:,0,0):', u_val[:,0,0])
+        # print('u_val, (0,:,0):', u_val[0,:,0])
+        print('u_val, (:,:,0):', u_val[:,:,0])
 
         cdef Py_ssize_t shift_u = PV.velocity_directions[0] * Gr.dims.npg
-        horizontal_mean_return(&Gr.dims, &PV.values[shift_u], &u_mean[0])
+        horizontal_mean(&Gr.dims, &PV.values[shift_u], &u_mean[0])
 
         print('!!! after !!!')
         print(np.array(u_mean))
@@ -105,7 +103,8 @@ cdef class TestArray:
                 for j in xrange(jmin, jmax):
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
-                        PV.values[0+ishift+jshift+k] = i-Gr.dims.gw
+                        # PV.values[0+ishift+jshift+k] = i-Gr.dims.gw
+                        PV.values[ishift+jshift+k] = i
                         # print(PV.values[0+ishift+jshift+k])
         return
 
