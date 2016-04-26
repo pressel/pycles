@@ -63,8 +63,6 @@ void fourth_order_ws_m_ql   (struct DimStruct *dims, double* restrict rho0, doub
         horizontal_mean(dims, &vel_int_ed[0], &vel_mean_ed[0]);
 
 
-
-
         // (3) compute eddy flux:
         if (d_advected != 2 && d_advecting !=2){                    // exclude w.u, w.v, w.w, u.w, v.w (advection by or of vertical velocity)
             for(ssize_t i=imin;i<imax;i++){
