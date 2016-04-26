@@ -175,7 +175,7 @@ cdef class SurfaceSullivanPatton:
                     self.u_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
                     self.v_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
                     PV.tendencies[u_shift + ijk] += self.u_flux[ij] * tendency_factor
-                    PV.tendencies[v_shift + ijk] += PV.tendencies[v_shift + ijk] + self.v_flux[ij] * tendency_factor
+                    PV.tendencies[v_shift + ijk] += self.v_flux[ij] * tendency_factor
 
         return
 
