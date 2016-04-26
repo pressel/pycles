@@ -21,13 +21,18 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
 
-        const ssize_t imin = 2;
-        const ssize_t jmin = 2;
-        const ssize_t kmin = 2;
-
-        const ssize_t imax = dims->nlg[0]-3;
-        const ssize_t jmax = dims->nlg[1]-3;
-        const ssize_t kmax = dims->nlg[2]-3;
+//        const ssize_t imin = 2;
+//        const ssize_t jmin = 2;
+//        const ssize_t kmin = 2;
+//        const ssize_t imax = dims->nlg[0]-3;
+//        const ssize_t jmax = dims->nlg[1]-3;
+//        const ssize_t kmax = dims->nlg[2]-3;
+        ssize_t imin = 0;
+        ssize_t jmin = 0;
+        ssize_t kmin = 0;
+        ssize_t imax = dims->nlg[0];
+        ssize_t jmax = dims->nlg[1];
+        ssize_t kmax = dims->nlg[2];
 
         const ssize_t stencil[3] = {istride,jstride,1};
 
@@ -48,10 +53,6 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
         double *vel_advecting_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *vel_advecting_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
 
-//        for(ssize_t k=kmin;k<kmax;k++){
-//            phi_mean[k] = 0;
-//            vel_mean[k] = 0;
-//            }
         horizontal_mean(dims, &vel_advecting[0], &vel_advecting_mean[0]);
         horizontal_mean(dims, &vel_advected[0], &vel_advected_mean[0]);
 //        horizontal_mean_const(dims, &vel_advecting[0], &vel_advecting_mean[0]);
@@ -97,7 +98,12 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
         }
 //        if(ok==0){printf("good decomposition \n");}
 
-
+        imin = 2;
+        jmin = 2;
+        kmin = 2;
+        imax = dims->nlg[0]-3;
+        jmax = dims->nlg[1]-3;
+        kmax = dims->nlg[2]-3;
 
         // (3) Compute Fluxes
         // mix_flux_one = <u_ing> u_ed'
@@ -129,6 +135,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
+//                        printf("d_adv != 2, d_ing != 2\n");
 
                         phip_fluc = interp_weno5(vel_advected_fluc[ijk + sm2_ed],
                                                  vel_advected_fluc[ijk + sm1_ed],
@@ -200,7 +207,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                         vel_advecting[ijk + sp2_ing]);
 
                         flux_old[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
-
+//                        printf("old flux: %f\n", fabs(flux_old[ijk]));
 
                     }
                 }
@@ -213,6 +220,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
+//                        printf("d_adv = 2, d_ing = 2\n");
 
                         phip_fluc = interp_weno5(vel_advected_fluc[ijk + sm2_ed],
                                                  vel_advected_fluc[ijk + sm1_ed],
@@ -294,6 +302,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
+//                        printf("d_adv != 2, d_ing = 2\n");
 
                         phip_fluc = interp_weno5(vel_advected_fluc[ijk + sm2_ed],
                                                  vel_advected_fluc[ijk + sm1_ed],
@@ -377,7 +386,9 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const int ijk = ishift + jshift + k;
-                        if(fabs((flux[ijk]-flux_old[ijk])/flux_old[ijk])>0.05){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
+                        if(fabs((flux[ijk]-flux_old[ijk])/flux_old[ijk])>0.01){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
+//                        if(fabs((flux[ijk]-flux_old[ijk]))>fabs(flux_old[ijk])){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
+//                        if(fabs(flux_old[ijk])<1e-10){printf("zero old flux\n");}
                         }
                         }
                         }
@@ -399,6 +410,9 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
         free(vel_advected_mean);
         return;
     }
+
+
+
 
 void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
     double* restrict alpha0, double* restrict alpha0_half,
