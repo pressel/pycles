@@ -98,27 +98,23 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
         }
 //        if(ok==0){printf("good decomposition \n");}
 
-        imin = 2;
-        jmin = 2;
-        kmin = 2;
-        imax = dims->nlg[0]-3;
-        jmax = dims->nlg[1]-3;
-        kmax = dims->nlg[2]-3;
+
 
         // (3) Compute Fluxes
         // mix_flux_one = <u_ing> u_ed'
         // mix_flux_two = u_ing' <u_ed>
         // eddy_flux = u_ing' u_ed'
         // mean_flux = <u_ing> <u_ed>
+        imin = 2;
+        jmin = 2;
+        kmin = 2;
+        imax = dims->nlg[0]-3;
+        jmax = dims->nlg[1]-3;
+        kmax = dims->nlg[2]-3;
         double *mix_flux_one = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *mix_flux_two = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *mean_flux = (double *)malloc(sizeof(double)*dims->nlg[2]);        // ??? 1D profile sufficient!?
-    //    double *mean_eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
-    //    double eddy_flux;
-    //    double mix_flux_one;
-    //    double mix_flux_two;
-    //    double mean_flux;
 
         double phip;
         double phim;
