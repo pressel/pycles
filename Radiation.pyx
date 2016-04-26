@@ -12,7 +12,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 
-# import pylab as plt
+import pylab as plt
 import numpy as np
 cimport numpy as np
 import netCDF4 as nc
@@ -362,6 +362,7 @@ cdef class RadiationRRTM:
         self.srf_lw_up = 0.0
         self.srf_sw_down = 0.0
 
+
         casename = namelist['meta']['casename']
         if casename == 'SHEBA':
             self.profile_name = 'sheba'
@@ -382,11 +383,11 @@ cdef class RadiationRRTM:
         try:
             self.n_buffer = namelist['radiation']['RRTM']['buffer_points']
         except:
-            self.n_buffer = 2
+            self.n_buffer = 0
         try:
             self.stretch_factor = namelist['radiation']['RRTM']['stretch_factor']
         except:
-            self.stretch_factor = 1.3
+            self.stretch_factor = 1.0
 
         try:
             self.patch_pressure = namelist['radiation']['RRTM']['patch_pressure']
@@ -553,21 +554,21 @@ cdef class RadiationRRTM:
 
         #--- Plotting to evaluate implementation of buffer zone
         #--- Comment out when not running locally
-        # for i in xrange(Gr.dims.nlg[2]):
-        #     qv_pencils[0,i] = qv_pencils[0, i]/ (1.0 - qv_pencils[0, i])
+        for i in xrange(Gr.dims.nlg[2]):
+            qv_pencils[0,i] = qv_pencils[0, i]/ (1.0 - qv_pencils[0, i])
         #
         # Plotting to evaluate implementation of buffer zone
-        # plt.figure(1)
-        # plt.plot(self.rv_ext,self.p_ext,'or')
-        # plt.plot(vapor_mixing_ratios, pressures)
-        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw],'ob')
-        # plt.gca().invert_yaxis()
-        # plt.figure(2)
-        # plt.plot(self.t_ext,self.p_ext,'-or')
-        # plt.plot(temperatures,pressures)
-        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw],'-ob')
-        # plt.gca().invert_yaxis()
-        # plt.show()
+        plt.figure(1)
+        plt.plot(self.rv_ext,self.p_ext,'or')
+        plt.plot(vapor_mixing_ratios, pressures)
+        plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw],'ob')
+        plt.gca().invert_yaxis()
+        plt.figure(2)
+        plt.plot(self.t_ext,self.p_ext,'-or')
+        plt.plot(temperatures,pressures)
+        plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw],'-ob')
+        plt.gca().invert_yaxis()
+        plt.show()
         #---END Plotting to evaluate implementation of buffer zone
 
         self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
@@ -589,7 +590,7 @@ cdef class RadiationRRTM:
             use_o3in = True
         except:
             try:
-                o3_trace = profile_data[self.profile_name]['o3_mr'][:]*28.97/47.9982   # O3 MR converted to VMR
+                o3_trace = profile_data[self.profile_name]['o3_mmr'][:]*28.97/47.9982   # O3 MR converted to VMR
                 o3_pressure = profile_data[self.profile_name]['pressure'][:]/100.0       # Pressure (from SRF to TOP) in hPa
                 # can't do simple interpolation... Need to conserve column path !!!
                 use_o3in = True
@@ -695,6 +696,9 @@ cdef class RadiationRRTM:
         self.cfc22vmr = np.array( tmpTrace[:,7],dtype=np.double, order='F')
         self.ccl4vmr  =  np.array(tmpTrace[:,8],dtype=np.double, order='F')
 
+        # Set the temperature of the surface
+        self.surface_temperature = Ref.Tg
+
 
 
         return
@@ -776,7 +780,7 @@ cdef class RadiationRRTM:
             double [:,:] plev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.double, order='F')
             double [:,:] tlay_in = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
             double [:,:] tlev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.double, order='F')
-            double [:] tsfc_in = np.ones((n_pencils),dtype=np.double,order='F') * Ref.Tg
+            double [:] tsfc_in = np.ones((n_pencils),dtype=np.double,order='F') * self.surface_temperature
             double [:,:] h2ovmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
             double [:,:] o3vmr_in  = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
             double [:,:] co2vmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
@@ -938,10 +942,10 @@ cdef class RadiationRRTM:
         #----BEGIN Plotting to test implementation of buffer zone
         #---Comment out when not running locally
         # Plot to verify no kink is present at top of LES domain
-        # plt.figure(6)
-        # plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
-        # plt.gca().invert_yaxis()
-        # plt.show()
+        plt.figure(6)
+        plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
+        plt.gca().invert_yaxis()
+        plt.show()
         #---END plotting
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])

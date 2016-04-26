@@ -72,6 +72,7 @@ cdef class RadiationRRTM:
         double srf_lw_up
         double srf_sw_down
         double srf_sw_up
+        double surface_temperature
         str profile_name
         Py_ssize_t n_buffer
         Py_ssize_t n_ext

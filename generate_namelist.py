@@ -857,6 +857,12 @@ def CGILS_S6(is_p2,is_ctl_omega):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
+    namelist['radiation']={}
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['buffer_points'] = 1
+    namelist['radiation']['RRTM']['stretch_factor'] = 1.0
+    namelist['radiation']['RRTM']['frequency'] = 60.0
+
 
 
     namelist['sgs'] = {}

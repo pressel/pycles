@@ -10,6 +10,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ParallelMPI
 cimport TimeStepping
+cimport Radiation
 from Thermodynamics cimport LatentHeat,ClausiusClapeyron
 from NetCDFIO cimport NetCDFIO_Stats
 import cython
@@ -24,7 +25,7 @@ include "parameters.pxi"
 import cython
 
 cdef class SurfaceBudget:
-    def __init__(self, namelist):
+    def __init__(self, namelist, init_sst):
 
         try:
             self.ocean_heat_flux = namelist['surface_budget']['ocean_heat_flux']
@@ -44,17 +45,31 @@ cdef class SurfaceBudget:
             self.water_depth_time = 0.0
 
         self.water_depth = self.water_depth_initial
+        self.sst = init_sst
         return
+
+    def __getattr__(self, item):
+        if item == 'sst':
+            return self.sst
+        else:
+            print('what???')
+            return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
-        if TS.t > self.water_depth_time:
+    cpdef update(self, Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa,  double time, double shf, double lhf):
+        if time > self.water_depth_time:
             self.water_depth = self.water_depth_final
         else:
             self.water_depth = self.water_depth_initial
+
+        Pa.root_print('Water depth '+str(self.water_depth) )
+
+        cdef double rho_liquid = 1000.0
+        # cdef double net_flux =  -self.ocean_heat_flux - Ra.srf_lw_up - shf - lhf + Ra.srf_lw_down + Ra.srf_sw_down
+        # cdef double tendency = net_flux/cl/rho_liquid/self.water_depth
+        # self.sst  += tendency
 
 
 

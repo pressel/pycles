@@ -18,7 +18,6 @@ from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c,
 cimport ReferenceState
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
-
 def InitializationFactory(namelist):
 
         casename = namelist['meta']['casename']
@@ -890,6 +889,9 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     u_data = data.variables['u'][0,::-1,0,0]
     v_data = data.variables['v'][0,::-1,0,0]
 
+    for index in np.arange(len(q_data)):
+        q_data[index] = q_data[index]/ (1.0 + q_data[index])
+
 
 
 
@@ -985,7 +987,7 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             if RS.p0_half[k] > p_interp_les:
                 pressure_interp = np.append(pressure_interp,RS.p0_half[k])
                 thetal_interp = np.append(thetal_interp,thetal[k])
-                qt_interp = np.append(qt_interp, qt[k])
+                qt_interp = np.append(qt_interp, qt[k]/(1.0+qt[k]))
 
         pressure_interp = np.append(pressure_interp, pressure_data[pressure_data<p_interp_data] )
         thetal_interp = np.append(thetal_interp, thetal_data[pressure_data<p_interp_data] )
@@ -1043,8 +1045,8 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     # We will need these functions to perform saturation adjustment
     def compute_thetal(p_,T_,ql_):
-        theta_ = T_ / (p_/p_tilde)**(287.0/1015.0)
-        return theta_ * exp(-2.47e6 * ql_ / (1015.0 * T_))
+        theta_ = T_ / (p_/p_tilde)**kappa
+        return theta_ * exp(-2.501e6 * ql_ / (cpd* T_))
 
     def sat_adjst(p_,thetal_,qt_):
         '''
@@ -1056,7 +1058,7 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         '''
 
         #Compute temperature
-        t_1 = thetal_ * (p_/p_tilde)**(287.0/1015.0)
+        t_1 = thetal_ * (p_/p_tilde)**kappa
         #Compute saturation vapor pressure
         pv_star_1 = Th.get_pv_star(t_1)
         #Compute saturation mixing ratio
@@ -1068,7 +1070,7 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         else:
             ql_1 = qt_ - qs_1
             f_1 = thetal_ - compute_thetal(p_,t_1,ql_1)
-            t_2 = t_1 + 2.47e6*ql_1/1015.0
+            t_2 = t_1 + 2.501e6*ql_1/cpd
             pv_star_2 = Th.get_pv_star(t_2)
             qs_2 = qv_star_c(p_,qt_,pv_star_2)
             ql_2 = qt_ - qs_2
@@ -1110,6 +1112,8 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     theta_pert_ = 0.0
                 T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
                 PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+
+
 
 
     return

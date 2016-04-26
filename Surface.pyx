@@ -10,7 +10,9 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ParallelMPI
 cimport TimeStepping
+cimport Radiation
 from Thermodynamics cimport LatentHeat,ClausiusClapeyron
+from SurfaceBudget cimport SurfaceBudget
 from NetCDFIO cimport NetCDFIO_Stats
 import cython
 from thermodynamic_functions import exner, cpm
@@ -75,8 +77,8 @@ cdef class Surface:
         self.scheme.initialize(Gr, Ref, NS, Pa)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
-        self.scheme.update(Gr, Ref, PV, DV, Pa, TS)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+        self.scheme.update(Gr, Ref, PV, DV, Ra, Pa, TS)
         return
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.scheme.stats_io(Gr, NS, Pa)
@@ -90,7 +92,8 @@ cdef class SurfaceNone:
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,
+                 Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         return
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
@@ -123,7 +126,8 @@ cdef class SurfaceSullivanPatton:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         # Since this case is completely dry, the computation of entropy flux from sensible heat flux is very simple
 
         if Pa.sub_z_rank != 0:
@@ -225,7 +229,8 @@ cdef class SurfaceBomex:
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,
+                 Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         if Pa.sub_z_rank != 0:
             return
@@ -328,7 +333,8 @@ cdef class SurfaceGabls:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,
+                 Radiation.Radiation Ra,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         if Pa.sub_z_rank != 0:
             return
@@ -446,7 +452,8 @@ cdef class SurfaceDYCOMS_RF01:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,
+                 Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         if Pa.sub_z_rank != 0:
             return
@@ -561,7 +568,8 @@ cdef class SurfaceDYCOMS_RF02:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,
+                 Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         if Pa.sub_z_rank != 0:
             return
@@ -680,8 +688,8 @@ cdef class SurfaceRico:
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         if Pa.sub_z_rank != 0:
             return
@@ -778,6 +786,10 @@ cdef class SurfaceCGILS:
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
+        #testing
+        self.sst = 300
+        self.SurfaceBudgetCGILS = SurfaceBudget(namelist, self.sst)
+        # end testing
 
 
         return
@@ -808,10 +820,14 @@ cdef class SurfaceCGILS:
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
         NS.add_ts('qt_flux_surface_mean', Gr, Pa)
 
+
+
+
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,
+                 Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         if Pa.sub_z_rank != 0:
             return
@@ -888,6 +904,13 @@ cdef class SurfaceCGILS:
                     PV.tendencies[v_shift  + ijk] += self.v_flux[ij] * tendency_factor
                     PV.tendencies[s_shift  + ijk] += self.s_flux[ij] * tendency_factor
                     PV.tendencies[qt_shift  + ijk] += self.qt_flux[ij] * tendency_factor
+        cdef double lhf = 30.0, shf = 100.0
+
+        self.SurfaceBudgetCGILS.update(Ra, Pa, TS.t,shf, lhf )
+
+        self.sst = self.SurfaceBudgetCGILS.__getattr__('sst')
+        print(self.sst)
+
 
         return
 
