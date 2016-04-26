@@ -4,8 +4,8 @@
 #include "thermodynamic_functions.h"
 #include "entropies.h"
 
-#include "scalar_advection_ql.h"
-#include "cc_statistics.h"
+#include "scalar_advection_ql.h"        // contains modules to compute QL fluxes
+#include "cc_statistics.h"              // contains horizontal averaging function
 
 
 void second_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){

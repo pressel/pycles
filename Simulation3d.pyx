@@ -247,23 +247,24 @@ class Simulation3d:
             self.Pa.root_print('time: '+str(self.TS.t))
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 # # __
-                if np.isnan(PV_.values[u_varshift:v_varshift]).any():
-                    print('u: is nan')
-                else:
-                    print('u (Sim): ', np.amax(PV_.values[u_varshift:v_varshift]))
+                if np.isnan(PV_.values).any():
+                    if np.isnan(PV_.values[u_varshift:v_varshift]).any():
+                        print('u: is nan')
+                    else:
+                        print('u (Sim): ', np.amax(PV_.values[u_varshift:v_varshift]))
 
-                if np.isnan(PV_.values[v_varshift:w_varshift]).any():
-                    print('v: is nan')
-                else:
-                    print('v (Sim): ', np.amax(PV_.values[v_varshift:w_varshift]))
-                if np.isnan(PV_.values[w_varshift:s_varshift]).any():
-                    print('w: is nan')
-                else:
-                    print('w (Sim): ', np.amax(PV_.values[w_varshift:s_varshift]))
-                if np.isnan(PV_.values[s_varshift:-1]).any():
-                    print('s: is nan')
-                else:
-                    print('s (Sim): ', np.amax(PV_.values[s_varshift:-1]))
+                    if np.isnan(PV_.values[v_varshift:w_varshift]).any():
+                        print('v: is nan')
+                    else:
+                        print('v (Sim): ', np.amax(PV_.values[v_varshift:w_varshift]))
+                    if np.isnan(PV_.values[w_varshift:s_varshift]).any():
+                        print('w: is nan')
+                    else:
+                        print('w (Sim): ', np.amax(PV_.values[w_varshift:s_varshift]))
+                    if np.isnan(PV_.values[s_varshift:-1]).any():
+                        print('s: is nan')
+                    else:
+                        print('s (Sim): ', np.amax(PV_.values[s_varshift:-1]))
                 # # __
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
@@ -290,22 +291,22 @@ class Simulation3d:
                     print('No nan in PV tendencies (1)')
                 if np.isnan(PV_.values).any():
                     print('!!!! PV Values nan (1)')
-                else:
-                    print('No nan in PV values (1)')
+                # else:
+                #     print('No nan in PV values (1)')
 
                 self.TS.update(self.Gr, self.PV, self.Pa)
 
                 if np.isnan(PV_.values).any():
-                    print('!!!! PV Values nan (2), rk step: ', self.TS.rk_step, self.TS.n_rk_step)
-                else:
-                    print('No nan in PV values (2)')
+                    print('!!!! PV Values nan (2), rk step: ', self.TS.rk_step, self.TS.n_rk_steps)
+                # else:
+                #     print('No nan in PV values (2)')
 
                 PV_.Update_all_bcs(self.Gr, self.Pa)
 
                 if np.isnan(PV_.values).any():
                     print('!!!! PV Values nan (3), rk step: ', self.TS.rk_step)
-                else:
-                    print('No nan in PV values (3), rk step: ', self.TS.rk_step)
+                # else:
+                #     print('No nan in PV values (3), rk step: ', self.TS.rk_step)
 
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
                 # self.Pa.root_print('ok until here')
