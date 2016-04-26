@@ -274,8 +274,8 @@ class Simulation3d:
                 # # __
                 if np.isnan(PV_.tendencies).any():
                     print('!!!! PV Tendencies nan')
-                else:
-                    print('No nan in PV tendencies')
+                # else:
+                #     print('No nan in PV tendencies')
                 # # __
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
@@ -287,8 +287,8 @@ class Simulation3d:
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 if np.isnan(PV_.tendencies).any():
                     print('!!!! PV Tendencies nan (1)')
-                else:
-                    print('No nan in PV tendencies (1)')
+                # else:
+                #     print('No nan in PV tendencies (1)')
                 if np.isnan(PV_.values).any():
                     print('!!!! PV Values nan (1)')
                 # else:
@@ -313,8 +313,8 @@ class Simulation3d:
 
                 if np.isnan(PV_.values).any():
                     print('!!!! PV Values nan (4), rk step: ', self.TS.rk_step)
-                else:
-                    print('No nan in PV values (4)')
+                # else:
+                #     print('No nan in PV values (4)')
 
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
