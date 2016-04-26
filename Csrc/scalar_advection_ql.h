@@ -39,9 +39,12 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
     const ssize_t jmin = 0;
     const ssize_t kmin = 0;
 
-    const ssize_t imax = dims->nlg[0]-1;
-    const ssize_t jmax = dims->nlg[1]-1;
-    const ssize_t kmax = dims->nlg[2]-1;
+//    const ssize_t imax = dims->nlg[0]-1;
+//    const ssize_t jmax = dims->nlg[1]-1;
+//    const ssize_t kmax = dims->nlg[2]-1;
+    ssize_t imax = dims->nlg[0];
+    ssize_t jmax = dims->nlg[1];
+    ssize_t kmax = dims->nlg[2];
 
     const ssize_t stencil[3] = {istride,jstride,1};
     const ssize_t sp1 = stencil[d];
@@ -72,7 +75,12 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
     horizontal_mean(dims, &velocity[0], &vel_mean[0]);
 
 
+
+
     // (3) compute eddy flux: (vel - mean_vel)**2 AND compute total flux
+    imax = dims->nlg[0]-1;
+    jmax = dims->nlg[1]-1;
+    kmax = dims->nlg[2]-1;
     if(d==2){
         for(ssize_t i=imin;i<imax;i++){
             const ssize_t ishift = i*istride ;

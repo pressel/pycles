@@ -10,6 +10,7 @@
 #include "flux_divergence.h"
 
 #include "momentum_advection_central_ql.h"
+#include "momentum_advection_central_ws_ql.h"
 #include "momentum_advection_weno_ql.h"
 #include<stdio.h>
 
@@ -118,21 +119,29 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
             second_order_m_ql(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
-
         case 104:
 //            if (d_advected==1 && d_advecting==1){
 //                printf("4th order QL Momentum Transport \n");}
             fourth_order_m_ql(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
-
         case 105:
             weno_fifth_order_m_ql(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
+        case 114: // !!!!!! NOT Finished !!!!!!
+            fourth_order_ws_m_ql(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
+
+
 
         case 205:
             weno_fifth_order_m_decomp(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
+        case 214:
+            fourth_order_ws_m_decomp(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
 
