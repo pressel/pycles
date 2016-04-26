@@ -200,13 +200,9 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
         momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
                                 tendency, d_advected, d_advecting);
 
-        free(eddy_flux);
-        free(mean_eddy_flux);
-        free(vel_int_ing);
-        free(vel_int_ed);
-        free(vel_mean_ed);
-        free(vel_mean_ing);
-
         free(flux);
+        free(flux_old);
+
+
         return;
     }
