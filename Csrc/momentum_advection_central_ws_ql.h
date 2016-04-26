@@ -75,8 +75,8 @@ void fourth_order_ws_m_ql   (struct DimStruct *dims, double* restrict rho0, doub
                         const ssize_t ijk = ishift + jshift + k;
                         eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k];
                         flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k];
-                        flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
-                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k];
+//                        flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
+//                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k];
                     }
                 }
             }
@@ -90,8 +90,8 @@ void fourth_order_ws_m_ql   (struct DimStruct *dims, double* restrict rho0, doub
                         const ssize_t ijk = ishift + jshift + k;
                         eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0_half[k+1];
                         flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0_half[k+1];
-                        flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
-                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k+1];
+//                        flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
+//                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k+1];
                     }
                 }
             }
@@ -105,31 +105,31 @@ void fourth_order_ws_m_ql   (struct DimStruct *dims, double* restrict rho0, doub
                         const ssize_t ijk = ishift + jshift + k;
                         eddy_flux[ijk] = (vel_int_ing[ijk] - vel_mean_ing[k]) * (vel_int_ed[ijk] - vel_mean_ed[k]) * rho0[k];
                         flux[ijk] = (vel_int_ing[ijk] * vel_int_ed[ijk]) * rho0[k];
-                        flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
-                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0[k];
+//                        flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
+//                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0[k];
                     }
                 }
             }
         }
 
-        int a = 0;
-        int c = 0;
-        double b;
-        for(ssize_t i=imin;i<imax;i++){
-            const ssize_t ishift = i*istride;
-            for(ssize_t j=jmin;j<jmax;j++){
-                const ssize_t jshift = j*jstride;
-                for(ssize_t k=kmin;k<kmax;k++){
-                    const ssize_t ijk = ishift + jshift + k;
-                    b = vel_int_ing[ijk] - interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]);
-                    if(b > 1e-5){a += 1;}
-                    b = flux[ijk] - flux_old[ijk];
-                    if(b > 1e-5){c += 1;}
-                }
-            }
-        }
-        if (a > 0){printf("Achtung!!! a > 0\n");}
-        if (c > 0){printf("Achtung!!! Flux != old Flux (c > 0)\n");}
+//        int a = 0;
+//        int c = 0;
+//        double b;
+//        for(ssize_t i=imin;i<imax;i++){
+//            const ssize_t ishift = i*istride;
+//            for(ssize_t j=jmin;j<jmax;j++){
+//                const ssize_t jshift = j*jstride;
+//                for(ssize_t k=kmin;k<kmax;k++){
+//                    const ssize_t ijk = ishift + jshift + k;
+//                    b = vel_int_ing[ijk] - interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]);
+//                    if(b > 1e-5){a += 1;}
+//                    b = flux[ijk] - flux_old[ijk];
+//                    if(b > 1e-5){c += 1;}
+//                }
+//            }
+//        }
+//        if (a > 0){printf("Achtung!!! a > 0\n");}
+//        if (c > 0){printf("Achtung!!! Flux != old Flux (c > 0)\n");}
 
         // (4) compute mean eddy flux
         horizontal_mean(dims, &eddy_flux[0], &mean_eddy_flux[0]);
@@ -142,8 +142,8 @@ void fourth_order_ws_m_ql   (struct DimStruct *dims, double* restrict rho0, doub
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k;
-//                    flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
-                    flux[ijk] = flux[ijk];
+                    flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
+//                    flux[ijk] = flux[ijk];
                 }
             }
         }
