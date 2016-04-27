@@ -270,12 +270,6 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
         double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *mean_flux = (double *)malloc(sizeof(double)*dims->nlg[2]);        // ??? 1D profile sufficient!?
 
-//        double phip;
-//        double phim;
-//        double phip_fluc;      //???? do I need const double phip ??? Difference to declaring it within loop?
-//        double phim_fluc;
-//        double phip_mean;
-//        double phim_mean;
         double vel_ing_mean = 0.0;
         double vel_ed_mean = 0.0;
         double vel_ing_fluc;
@@ -290,8 +284,8 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                         const ssize_t ijk = ishift + jshift + k;
                         vel_ing_fluc = interp_2(vel_advecting_fluc[ijk],vel_advecting_fluc[ijk+sp1_ing]);
                         vel_ed_fluc = interp_4(vel_advected_fluc[ijk+sm1_ed],vel_advected_fluc[ijk],vel_advected_fluc[ijk+sp1_ed],vel_advected_fluc[ijk+sp2_ed]);
-                        vel_ing_fluc = interp_2(vel_advecting_mean[k],vel_advecting_mean[k]);
-                        vel_ed_fluc = interp_4(vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k]);
+                        vel_ing_mean = interp_2(vel_advecting_mean[k],vel_advecting_mean[k]);
+                        vel_ed_mean = interp_4(vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k]);
 //                        vel_ed_mean = vel_advected_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
 //                        vel_ing_mean = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
 

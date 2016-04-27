@@ -187,7 +187,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
                 phi_fluc[ijk] = scalar[ijk] - phi_mean[k];
 
                 if(isnan(phi_fluc[ijk])) {
-                    printf("Nan in vel_advected_fluc\n");}
+                    printf("Nan in phi_fluc\n");}
                 if(isnan(vel_advecting_fluc[ijk])) {
                     printf("Nan in vel_advecting_fluc\n");}
             }
