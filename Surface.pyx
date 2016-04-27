@@ -188,6 +188,7 @@ cdef class SurfaceSullivanPatton(SurfaceBase):
                     PV.tendencies[u_shift + ijk] += self.u_flux[ij] * tendency_factor
                     PV.tendencies[v_shift + ijk] += self.v_flux[ij] * tendency_factor
 
+
         return
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
