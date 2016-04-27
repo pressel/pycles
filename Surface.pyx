@@ -124,6 +124,7 @@ cdef class SurfaceBase:
                         ij = i * istride_2d + j
                         self.shf[ij] = self.s_flux[ij] * Ref.rho0_half[gw] * DV.values[t_shift+ijk]
                         self.b_flux[ij] = self.shf[ij] * g * Ref.alpha0_half[gw]/cpd/t_mean[gw]
+                        self.obukhov_length[ij] = -self.friction_velocity[ij] *self.friction_velocity[ij] *self.friction_velocity[ij] /self.b_flux[ij]/vkb
 
                         PV.tendencies[u_shift  + ijk] +=  self.u_flux[ij] * tendency_factor
                         PV.tendencies[v_shift  + ijk] +=  self.v_flux[ij] * tendency_factor
@@ -148,6 +149,8 @@ cdef class SurfaceBase:
                         cp_ = cpm_c(PV.values[qt_shift+ijk])
                         self.b_flux[ij] = g * Ref.alpha0_half[gw]/cp_/t_mean[gw] * \
                                           (self.shf[ij] + (eps_vi-1.0)*cp_*t_mean[gw]*self.lhf[ij]/lv)
+                        self.obukhov_length[ij] = -self.friction_velocity[ij] *self.friction_velocity[ij] *self.friction_velocity[ij] /self.b_flux[ij]/vkb
+
 
                         PV.tendencies[u_shift  + ijk] +=  self.u_flux[ij] * tendency_factor
                         PV.tendencies[v_shift  + ijk] +=  self.v_flux[ij] * tendency_factor
@@ -256,7 +259,6 @@ cdef class SurfaceSullivanPatton(SurfaceBase):
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
                     self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
-                    self.obukhov_length[ij] = -self.friction_velocity[ij] *self.friction_velocity[ij] *self.friction_velocity[ij] /self.buoyancy_flux/vkb
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
@@ -327,7 +329,6 @@ cdef class SurfaceBomex(SurfaceBase):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
                     self.friction_velocity[ij] = self.ustar_
-                    self.obukhov_length[ij] = -self.ustar_*self.ustar_*self.ustar_/self.buoyancy_flux/vkb
                     self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux[ij], Ref.p0_half[gw],
                                                                         DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
 
@@ -519,7 +520,6 @@ cdef class SurfaceDYCOMS_RF01(SurfaceBase):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
                     self.friction_velocity[ij] = sqrt(self.cm) * self.windspeed[ij]
-                    self.obukhov_length[ij] = -self.friction_velocity[ij]*self.friction_velocity[ij]*self.friction_velocity[ij]/self.buoyancy_flux/vkb
                     lam = self.Lambda_fp(DV.values[t_shift+ijk])
                     lv = self.L_fp(DV.values[t_shift+ijk],lam)
                     pv = pv_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
@@ -617,7 +617,6 @@ cdef class SurfaceDYCOMS_RF02(SurfaceBase):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
                     self.friction_velocity[ij] = self.ustar
-                    self.obukhov_length[ij] = -self.ustar*self.ustar*self.ustar/self.buoyancy_flux/vkb
                     lam = self.Lambda_fp(DV.values[t_shift+ijk])
                     lv = self.L_fp(DV.values[t_shift+ijk],lam)
                     pv = pv_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
@@ -718,7 +717,6 @@ cdef class SurfaceRico(SurfaceBase):
                     self.v_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij + 1])* (PV.values[v_shift + ijk] + Ref.v0)
                     ustar_ = cm_sqrt * windspeed[ij]
                     self.friction_velocity[ij] = ustar_
-                    self.obukhov_length[ij] = -ustar_ * ustar_ * ustar_/buoyancy_flux/vkb
 
         SurfaceBase.update(self, Gr, Ref, PV, DV, Pa, TS)
 
