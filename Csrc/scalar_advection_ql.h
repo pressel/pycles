@@ -194,6 +194,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
         }
     }
     int ok = 0;
+    int ok_s = 0;
     for(ssize_t i=imin;i<imax;i++){
         const ssize_t ishift = i*istride;
         for(ssize_t j=jmin;j<jmax;j++){
@@ -203,12 +204,17 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
                 double diff = velocity[ijk]-(vel_advecting_mean[k] + vel_advecting_fluc[ijk]);
                 if(fabs(diff)>0.00001){ok = 1;
                     printf("decomposition advecting , ijk= %d, diff = %f, vel = %f \n", ijk, diff, velocity[ijk]);}
+
                 diff = scalar[ijk]-(phi_mean[k] + phi_fluc[ijk]);
-                if(fabs(diff)>0.00001){ok = 1;
+                if(fabs(diff)>0.00001){ok_s = 1;
                     printf("decomposition advected, ijk= %d, diff = %f, vel = %f \n", ijk, diff, scalar[ijk]);}
             }
         }
     }
+    if(ok > 0){printf("Problem in decomposition of velocity\n");}
+//    else{printf("good decomposition of velocity\n");}
+    if(ok_s > 0){printf("Problem in decomposition of scalar\n");}
+//    else{printf("good decomposition of scalar\n");}
 
     // (3) Compute Fluxes
     // mix_flux_one = <u_ing> u_ed'
@@ -227,6 +233,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     double *mean_flux = (double *)malloc(sizeof(double)*dims->nlg[2]);        // ??? 1D profile sufficient!?
     double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
+    ok = 0;
     if(d==2){
         for(ssize_t i=imin;i<imax;i++){
             const ssize_t ishift = i*istride ;
@@ -235,13 +242,9 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
                     eddy_flux[ijk] = vel_advecting_fluc[ijk] * interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2]) * rho0[k];
-//                    eddy_flux[ijk] =  vel_advecting_fluc[ijk] * phi_fluc[ijk] * rho0[k];
                     mix_flux_phiprime[ijk] =  vel_advecting_mean[k] * interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2]) * rho0[k];
-//                    mix_flux_phiprime[ijk] =  vel_advecting_mean[k] * phi_fluc[ijk] * rho0[k];
-                    mix_flux_phimean[ijk] =  vel_advecting_fluc[ijk] * interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2]) * rho0[k];
-//                    mix_flux_phimean[ijk] =  vel_advecting_fluc[ijk] * phi_mean[k] * rho0[k];
-                    mean_flux[k] =  vel_advecting_mean[k] * interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2]) * rho0[k];
-//                    mean_flux[k] =  vel_advecting_mean[k] * phi_mean[k] * rho0[k];      // ?? 1D profile sufficient
+                    mix_flux_phimean[ijk] =  vel_advecting_fluc[ijk] * interp_4(phi_mean[k],phi_mean[k],phi_mean[k],phi_mean[k]) * rho0[k];
+                    mean_flux[k] =  vel_advecting_mean[k] * interp_4(phi_mean[k],phi_mean[k],phi_mean[k],phi_mean[k]) * rho0[k];
                     flux[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + eddy_flux[ijk];
 
                     flux_old[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
@@ -257,21 +260,28 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
                     eddy_flux[ijk] =  vel_advecting_fluc[ijk] * interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2]) * rho0_half[k];
-//                    eddy_flux[ijk] =  vel_advecting_fluc[ijk] * phi_fluc[ijk] * rho0_half[k];
                     mix_flux_phiprime[ijk] =  vel_advecting_mean[k] * interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2]) * rho0_half[k];
-//                    mix_flux_phiprime[ijk] =  vel_advecting_mean[k] * phi_fluc[ijk] * rho0_half[k];
-                    mix_flux_phimean[ijk] =  vel_advecting_fluc[ijk] * interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2]) * rho0_half[k];
-//                    mix_flux_phimean[ijk] =  vel_advecting_fluc[ijk] * phi_mean[k] * rho0_half[k];
-                    mean_flux[k] =  vel_advecting_mean[k] * phi_mean[k] * interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2]) * rho0_half[k];
-//                    mean_flux[k] =  vel_advecting_mean[k] * phi_mean[k] * rho0_half[k];      // ?? 1D profile sufficient
+                    mix_flux_phimean[ijk] =  vel_advecting_fluc[ijk] * interp_4(phi_mean[k],phi_mean[k],phi_mean[k],phi_mean[k]) * rho0_half[k];
+                    mean_flux[k] =  vel_advecting_mean[k] * interp_4(phi_mean[k],phi_mean[k],phi_mean[k],phi_mean[k]) * rho0_half[k];
                     flux[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + eddy_flux[ijk];
+
+                    if(isnan(eddy_flux[ijk])) {ok = 1;
+                        printf("Nan in eddy_flux\n");}
+                    if(isnan(mix_flux_phiprime[ijk])) {ok = 1;
+                        printf("Nan in mix_flux_phiprime\n");}
+                    if(isnan(mix_flux_phimean[ijk])) {ok = 1;
+                        printf("Nan in mix_flux_phimean\n");}
+                    if(isnan(mean_flux[k])) {ok = 1;
+                        printf("Nan in mean_flux\n");}
+                    if(isnan(flux[ijk])) {ok = 1;
+                        printf("Nan in flux\n");}
 
                     flux_old[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
     } // end else
-
+    if(ok == 0){printf("no Nans in fluxes\n");}
 
     free(mix_flux_phiprime);
     free(mix_flux_phimean);
