@@ -205,7 +205,6 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
         const ssize_t sp2_ing = 2 * sp1_ing;
         const ssize_t sm1_ing = -sp1_ing;
 
-
         // (1) average advecting and advected velocity
         double *vel_advected_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *vel_advected_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
@@ -245,7 +244,6 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                         if(fabs(diff)>0.0000001){
                             ok = 1;
                             printf("decomposition advecting , ijk= %d, diff = %f, vel = %f \n", ijk, diff, vel_advecting[ijk]);}
-
                         diff = vel_advected[ijk]-(vel_advected_mean[k] + vel_advected_fluc[ijk]);
                         if(fabs(diff)>0.0000001){
                             ok = 1;
@@ -316,8 +314,8 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                         const ssize_t ijk = ishift + jshift + k;
                         vel_ing_fluc = interp_2(vel_advecting_fluc[ijk],vel_advecting_fluc[ijk+sp1_ing]);
                         vel_ed_fluc = interp_4(vel_advected_fluc[ijk+sm1_ed],vel_advected_fluc[ijk],vel_advected_fluc[ijk+sp1_ed],vel_advected_fluc[ijk+sp2_ed]);
-                        vel_ing_fluc = interp_2(vel_advecting_mean[k],vel_advecting_mean[k]);
-                        vel_ed_fluc = interp_4(vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k]);
+                        vel_ing_mean = interp_2(vel_advecting_mean[k],vel_advecting_mean[k]);
+                        vel_ed_mean = interp_4(vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k]);
 //                        vel_ed_mean = vel_advected_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
 //                        vel_ing_mean = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
 
@@ -348,8 +346,8 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                         const ssize_t ijk = ishift + jshift + k;
                         vel_ing_fluc = interp_2(vel_advecting_fluc[ijk],vel_advecting_fluc[ijk+sp1_ing]);
                         vel_ed_fluc = interp_4(vel_advected_fluc[ijk+sm1_ed],vel_advected_fluc[ijk],vel_advected_fluc[ijk+sp1_ed],vel_advected_fluc[ijk+sp2_ed]);
-                        vel_ing_fluc = interp_2(vel_advecting_mean[k],vel_advecting_mean[k]);
-                        vel_ed_fluc = interp_4(vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k]);
+                        vel_ing_mean = interp_2(vel_advecting_mean[k],vel_advecting_mean[k]);
+                        vel_ed_mean = interp_4(vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k]);
 //                        vel_ed_mean = vel_advected_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
 //                        vel_ing_mean = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
 
