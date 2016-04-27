@@ -4,6 +4,7 @@ cimport numpy as np
 from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
+from Surface import SurfaceFactory
 from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
@@ -23,7 +24,6 @@ cimport Kinematics
 cimport Damping
 cimport NetCDFIO
 cimport VisualizationOutput
-cimport Surface
 cimport Forcing
 cimport Radiation
 cimport Restart
@@ -49,7 +49,7 @@ class Simulation3d:
         self.MD = MomentumDiffusion.MomentumDiffusion(self.DV, self.Pa)
         self.Th = ThermodynamicsFactory(namelist, self.Micro, self.LH, self.Pa)
         self.Ref = ReferenceState.ReferenceState(self.Gr)
-        self.Sur = Surface.Surface(namelist, self.LH, self.Pa)
+        self.Sur = SurfaceFactory(namelist, self.LH, self.Pa)
         self.Fo = Forcing.Forcing(namelist, self.Pa)
         self.Ra = Radiation.Radiation(namelist, self.Pa)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
@@ -116,7 +116,7 @@ class Simulation3d:
             SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa)
             del SetInitialConditions
 
-        self.Sur.initialize(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
+        self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
 
         self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
