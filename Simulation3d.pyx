@@ -27,6 +27,7 @@ cimport VisualizationOutput
 cimport Forcing
 cimport Radiation
 cimport Restart
+cimport Surface
 
 class Simulation3d:
 
@@ -153,7 +154,7 @@ class Simulation3d:
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
-                self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
+                self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
                 self.Damping.update(self.Gr,self.PV,self.Pa)
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)

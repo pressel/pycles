@@ -16,15 +16,21 @@ cdef class SurfaceBase:
         double [:] v_flux
         double [:] friction_velocity
         double [:] obukhov_length
+        double [:] shf
+        double [:] lhf
+        double [:] b_flux
         bint dry_case
+        double (*L_fp)(double T, double Lambda) nogil
+        double (*Lambda_fp)(double T) nogil
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa,TimeStepping.TimeStepping TS)
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
-cdef class SurfaceNone:
+cdef class SurfaceNone(SurfaceBase):
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
@@ -63,9 +69,6 @@ cdef class SurfaceGabls(SurfaceBase):
     cdef:
         double gustiness
         double z0
-
-        double [:] b_flux
-
         double cooling_rate
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -81,8 +84,6 @@ cdef class SurfaceDYCOMS_RF01(SurfaceBase):
         double cm
         double buoyancy_flux
         double gustiness
-        double (*L_fp)(double T, double Lambda) nogil
-        double (*Lambda_fp)(double T) nogil
         double [:] windspeed
 
 
@@ -100,12 +101,7 @@ cdef class SurfaceDYCOMS_RF02(SurfaceBase):
         double ustar
         double buoyancy_flux
         double gustiness
-        double (*L_fp)(double T, double Lambda) nogil
-        double (*Lambda_fp)(double T) nogil
         double [:] windspeed
-
-
-
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
