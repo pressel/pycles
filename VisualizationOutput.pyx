@@ -144,6 +144,31 @@ cdef class VisualizationOutput:
             except:
                 Pa.root_print('Trouble Writing ' + var)
 
+            local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
+            reduced_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
+            k = Gr.dims.gw + 8;
+            try:
+                var_shift =  PV.get_varshift(Gr, var)
+                with nogil:
+                    for i in xrange(imin, imax):
+                        ishift = i * istride
+                        for j in xrange(jmin, jmax):
+                            jshift = j * jstride
+                            ijk = ishift + jshift + k
+                            i2d = global_shift_i + i - Gr.dims.gw
+                            j2d = global_shift_j + j - Gr.dims.gw
+
+                            local_var[i2d, j2d] = PV.values[var_shift + ijk]
+
+                comm.Reduce(local_var, reduced_var, op=MPI.SUM)
+
+                del local_lwp
+                if Pa.rank == 0:
+                    out_dict[var + '_xy'] = np.array(reduced_var,dtype=np.double)
+                del reduced_var
+            except:
+                Pa.root_print('Trouble Writing LWP')
+
 
         for var in dv_vars:
             local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
@@ -169,8 +194,32 @@ cdef class VisualizationOutput:
                     out_dict[var] = np.array(reduced_var, dtype=np.double)
                 del reduced_var
 
+            except:
+                Pa.root_print('Trouble Writing ' + var)
 
+            local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
+            reduced_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
 
+            k = Gr.dims.gw + 8;
+            try:
+                var_shift =  DV.get_varshift(Gr, var)
+                with nogil:
+                    for i in xrange(imin, imax):
+                        ishift = i * istride
+                        for j in xrange(jmin, jmax):
+                            jshift = j * jstride
+                            ijk = ishift + jshift + k
+                            i2d = global_shift_i + i - Gr.dims.gw
+                            j2d = global_shift_j + j - Gr.dims.gw
+
+                            local_var[i2d, j2d] = DV.values[var_shift + ijk]
+
+                comm.Reduce(local_var, reduced_var, op=MPI.SUM)
+
+                del local_lwp
+                if Pa.rank == 0:
+                    out_dict[var + '_xy'] = np.array(reduced_var,dtype=np.double)
+                del reduced_var
             except:
                 Pa.root_print('Trouble Writing ' + var)
 
