@@ -811,8 +811,7 @@ cdef class SurfaceCGILS(SurfaceBase):
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
 
-            Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
-            Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
+
             double ustar, t_flux, b_flux
             double theta_rho_b, Nb2, Ri
             double zb = Gr.dims.dx[2] * 0.5
@@ -842,16 +841,12 @@ cdef class SurfaceCGILS(SurfaceBase):
                     theta_rho_b = DV.values[th_shift + ijk]
                     Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
                     Ri = Nb2 * zb * zb/(windspeed[ij] * windspeed[ij])
-                    exchange_coefficients_byun(Ri, zb, self.z0, &cm[ij], &ch, &DV.values_2d[lmo_shift + ij])
+                    exchange_coefficients_byun(Ri, zb, self.z0, &cm[ij], &ch, &self.obukhov_length[ij])
                     self.s_flux[ij] = self.ct * (s_star - PV.values[s_shift + ijk])
                     self.qt_flux[ij] = self.ct * (0.98 * qv_star - PV.values[qt_shift + ijk])
                     ustar = sqrt(cm[ij]) * windspeed[ij]
                     self.friction_velocity[ij] = ustar
-                    # Roughly getting the buoyancy flux so we can compute Obukhov length
-                    # value is only used if we use TKE model
-                    t_flux = self.ct * (Ref.Tg - DV.values[t_shift + ijk])
-                    b_flux = g * t_flux/t_mean[gw] + 0.61 * self.qt_flux[ij]
-                    self.obukhov_length[ij] = -ustar * ustar * ustar/b_flux/vkb
+
 
             for i in xrange(gw, imax-gw):
                 for j in xrange(gw, jmax-gw):
