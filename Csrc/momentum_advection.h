@@ -5,7 +5,6 @@
 #include "momentum_advection_weno_pt.h"
 #include "momentum_advection_central.h"
 #include "momentum_advection_central_ws.h"
-#include "momentum_advection_central_ml.h"
 #include "momentum_advection_central_pt.h"
 #include "flux_divergence.h"
 #include<stdio.h>
@@ -87,18 +86,6 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
             break;
         case 29:
             weno_ninth_order_m_pt(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
-                tendency, d_advected, d_advecting);
-            break;
-        case 32:
-            second_order_ml_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
-                tendency, d_advected, d_advecting);
-            break;
-        case 34:
-            fourth_order_ml_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
-                tendency, d_advected, d_advecting);
-            break;
-        case 36:
-            sixth_order_ml_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
         default:
