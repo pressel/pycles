@@ -6,9 +6,17 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 
-cdef class Radiation:
+cdef class RadiationBase:
     cdef:
-        object scheme
+        double [:] heating_rate
+        ParallelMPI.Pencil z_pencil
+        double srf_lw_down
+        double srf_lw_up
+        double srf_sw_down
+        double srf_sw_up
+
+
+
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -19,7 +27,7 @@ cdef class Radiation:
     cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
-cdef class RadiationNone:
+cdef class RadiationNone(RadiationBase):
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -29,15 +37,13 @@ cdef class RadiationNone:
     cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
-cdef class RadiationDyCOMS_RF01:
+cdef class RadiationDyCOMS_RF01(RadiationBase):
     cdef:
         double alpha_z
         double kap
         double f0
         double f1
         double divergence
-        double [:] heating_rate
-        ParallelMPI.Pencil z_pencil
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
@@ -49,11 +55,11 @@ cdef class RadiationDyCOMS_RF01:
     cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
-cdef class RadiationSmoke:
+cdef class RadiationSmoke(RadiationBase):
     cdef:
         double f0
         double kap
-        ParallelMPI.Pencil z_pencil
+
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
@@ -65,14 +71,8 @@ cdef class RadiationSmoke:
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
-cdef class RadiationRRTM:
+cdef class RadiationRRTM(RadiationBase):
     cdef:
-        ParallelMPI.Pencil z_pencil
-        double srf_lw_down
-        double srf_lw_up
-        double srf_sw_down
-        double srf_sw_up
-        double surface_temperature
         str profile_name
         Py_ssize_t n_buffer
         Py_ssize_t n_ext
@@ -106,7 +106,6 @@ cdef class RadiationRRTM:
         double [:] cfc12vmr
         double [:] cfc22vmr
         double [:] ccl4vmr
-        double [:] heating_rate
         bint uniform_reliq
 
 

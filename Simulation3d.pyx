@@ -5,6 +5,7 @@ from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
 from Surface import SurfaceFactory
+from Radiation import RadiationFactory
 from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
@@ -52,7 +53,7 @@ class Simulation3d:
         self.Ref = ReferenceState.ReferenceState(self.Gr)
         self.Sur = SurfaceFactory(namelist, self.LH, self.Pa)
         self.Fo = Forcing.Forcing(namelist, self.Pa)
-        self.Ra = Radiation.Radiation(namelist, self.Pa)
+        self.Ra = RadiationFactory(namelist, self.Pa)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
         self.CondStatsIO = NetCDFIO.NetCDFIO_CondStats()
