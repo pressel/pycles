@@ -3,29 +3,44 @@
 #cython: wraparound=False
 #cython: initializedcheck=False
 #cython: cdivision=True
-
+cimport mpi4py.libmpi as mpi
 cimport Grid
 cimport ReferenceState
-cimport PrognosticVariables
-cimport DiagnosticVariables
 cimport ParallelMPI
 cimport TimeStepping
 cimport Radiation
-from Thermodynamics cimport LatentHeat,ClausiusClapeyron
+cimport Surface
 from NetCDFIO cimport NetCDFIO_Stats
 import cython
-from thermodynamic_functions import exner, cpm
-from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
-from entropies cimport sv_c, sd_c
-from libc.math cimport sqrt, log, fabs,atan, exp, fmax
+
 cimport numpy as np
 import numpy as np
 include "parameters.pxi"
 
 import cython
 
+def SurfaceBudgetFactory(namelist):
+    if namelist['meta']['casename'] == 'ZGILS':
+        return SurfaceBudget(namelist)
+    elif namelist['meta']['casename'] == 'CGILS':
+        return SurfaceBudget(namelist)
+    else:
+        return SurfaceBudgetNone()
+
+cdef class SurfaceBudgetNone:
+    def __init__(self):
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+    cpdef update(self,Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+        return
+    cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
+
 cdef class SurfaceBudget:
-    def __init__(self, namelist, init_sst):
+    def __init__(self, namelist):
 
         try:
             self.ocean_heat_flux = namelist['surface_budget']['ocean_heat_flux']
@@ -45,34 +60,44 @@ cdef class SurfaceBudget:
             self.water_depth_time = 0.0
 
         self.water_depth = self.water_depth_initial
-        self.sst = init_sst
+
         return
 
-    def __getattr__(self, item):
-        if item == 'sst':
-            return self.sst
-        else:
-            print('what???')
+
+
+    cpdef initialize(self, Grid.Grid Gr,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts('surface_temperature', Gr, Pa)
+        return
+
+    cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            int root = 0
+            int count = 1
+            double rho_liquid = 1000.0
+            double mean_shf = Pa.HorizontalMeanSurface(Gr, &Sur.shf[0])
+            double mean_lhf = Pa.HorizontalMeanSurface(Gr, &Sur.lhf[0])
+            double net_flux, tendency
+
+        if TS.rk_step != 0:
             return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        return
+        if Pa.sub_z_rank == 0:
 
-    cpdef update(self, Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa,  double time, double shf, double lhf):
-        if time > self.water_depth_time:
-            self.water_depth = self.water_depth_final
-        else:
-            self.water_depth = self.water_depth_initial
+            if TS.t > self.water_depth_time:
+                self.water_depth = self.water_depth_final
+            else:
+                self.water_depth = self.water_depth_initial
 
-        Pa.root_print('Water depth '+str(self.water_depth) )
 
-        cdef double rho_liquid = 1000.0
-        # cdef double net_flux =  -self.ocean_heat_flux - Ra.srf_lw_up - shf - lhf + Ra.srf_lw_down + Ra.srf_sw_down
-        # cdef double tendency = net_flux/cl/rho_liquid/self.water_depth
-        # self.sst  += tendency
+            net_flux =  -self.ocean_heat_flux - Ra.srf_lw_up - Ra.srf_sw_up - mean_shf - mean_lhf + Ra.srf_lw_down + Ra.srf_sw_down
+            tendency = net_flux/cl/rho_liquid/self.water_depth
+            Sur.T_surface += tendency *TS.dt
+
+        mpi.MPI_Bcast(&Sur.T_surface,count,mpi.MPI_DOUBLE,root, Pa.cart_comm_sub_z)
 
 
 
         return
-    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.write_ts('surface_temperature', Sur.T_surface, Pa)
         return

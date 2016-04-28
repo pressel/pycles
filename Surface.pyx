@@ -83,6 +83,10 @@ cdef class SurfaceBase:
         self.lhf = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
         self.b_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
 
+        # If not overridden in the specific case, set T_surface = Tg
+        self.T_surface = Ref.Tg
+
+
         NS.add_ts('uw_surface_mean', Gr, Pa)
         NS.add_ts('vw_surface_mean', Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
@@ -418,12 +422,11 @@ cdef class SurfaceGabls(SurfaceBase):
             double ch=0.0
 
 
-            double sst = 265.0 - self.cooling_rate * TS.t/3600.0 # sst = theta_surface also
+        self.T_surface = 265.0 - self.cooling_rate * TS.t/3600.0 # sst = theta_surface also
 
 
-            double theta_rho_g = theta_rho_c(Ref.Pg, sst, 0.0, 0.0)
-            double s_star = sd_c(Ref.Pg,sst)
-            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]/Gr.dims.dx[2]
+        cdef double theta_rho_g = theta_rho_c(Ref.Pg, self.T_surface, 0.0, 0.0)
+        cdef double s_star = sd_c(Ref.Pg,self.T_surface)
 
 
         with nogil:
@@ -478,6 +481,7 @@ cdef class SurfaceDYCOMS_RF01(SurfaceBase):
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
         self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+        self.T_surface = 292.5
 
         return
 
@@ -570,6 +574,7 @@ cdef class SurfaceDYCOMS_RF02(SurfaceBase):
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
         self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+        self.T_surface = 292.5 # assuming same sst as DYCOMS RF01
 
 
         return
@@ -672,6 +677,7 @@ cdef class SurfaceRico(SurfaceBase):
 
 
 
+
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
@@ -757,11 +763,6 @@ cdef class SurfaceCGILS(SurfaceBase):
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
-        #testing
-        self.sst = 300
-
-        # end testing
-
 
         return
 

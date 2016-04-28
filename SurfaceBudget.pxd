@@ -1,13 +1,18 @@
 cimport Grid
 cimport ReferenceState
-cimport PrognosticVariables
-cimport DiagnosticVariables
+
 cimport ParallelMPI
 cimport TimeStepping
 cimport Radiation
-from Thermodynamics cimport  LatentHeat, ClausiusClapeyron
+cimport Surface
 from NetCDFIO cimport NetCDFIO_Stats
 
+
+cdef class SurfaceBudgetNone:
+
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+    cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
 cdef class SurfaceBudget:
@@ -19,6 +24,6 @@ cdef class SurfaceBudget:
         double water_depth
         double sst
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Radiation.Radiation Ra, ParallelMPI.ParallelMPI Pa,double time, double shf, double lhf)
-    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+    cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
