@@ -238,7 +238,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
             for(ssize_t j=jmin;j<jmax;j++){
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
-                    const ssize_t ijk = ishift + jshift + k ;
+                    const ssize_t ijk = ishift + jshift + k;
                     eddy_flux[ijk] = vel_advecting_fluc[ijk] * interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2]) * rho0[k];
                     mix_flux_phiprime[ijk] = vel_advecting_mean[k] * interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2]) * rho0[k];
                     mix_flux_phimean[ijk] = vel_advecting_fluc[ijk] * interp_4(phi_mean[k],phi_mean[k],phi_mean[k],phi_mean[k]) * rho0[k];
@@ -289,6 +289,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     free(vel_advecting_mean);
     free(phi_fluc);
     free(phi_mean);
+    free(flux_old);
 
     return;
 }
