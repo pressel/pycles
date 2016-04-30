@@ -205,11 +205,21 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
         const ssize_t sp2_ing = 2 * sp1_ing;
         const ssize_t sm1_ing = -sp1_ing;
 
+        double *mix_flux_one = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *mix_flux_two = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *mean_flux = (double *)malloc(sizeof(double)*dims->nlg[2]);        // ??? 1D profile suffici
+
         // (1) average advecting and advected velocity
         double *vel_advected_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *vel_advected_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
         double *vel_advecting_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *vel_advecting_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
+
+        for(ssize_t k=kmin;k<kmax;k++){
+            vel_advected_mean[k] = 0.0;
+            vel_advecting_mean[k] = 0.0;
+        }
 
         horizontal_mean(dims, &vel_advecting[0], &vel_advecting_mean[0]);
         horizontal_mean(dims, &vel_advected[0], &vel_advected_mean[0]);
@@ -223,6 +233,11 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                     int ijk = ishift + jshift + k;
                     vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean[k];
                     vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean[k];
+
+                    mix_flux_one[ijk] = 0.0;
+                    mix_flux_two[ijk] = 0.0;
+                    mean_flux[k] = 0.0;
+                    eddy_flux[ijk] = 0.0;
 
                     if(isnan(vel_advected_fluc[ijk])) {
                         printf("Nan in vel_advected_fluc\n");
@@ -263,10 +278,10 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
         imax = dims->nlg[0]-2;
         jmax = dims->nlg[1]-2;
         kmax = dims->nlg[2]-2;
-        double *mix_flux_one = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-        double *mix_flux_two = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-        double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-        double *mean_flux = (double *)malloc(sizeof(double)*dims->nlg[2]);        // ??? 1D profile sufficient!?
+//        double *mix_flux_one = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//        double *mix_flux_two = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//        double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//        double *mean_flux = (double *)malloc(sizeof(double)*dims->nlg[2]);        // ??? 1D profile sufficient!?
 
         double vel_ing_mean = 0.0;
         double vel_ed_mean = 0.0;

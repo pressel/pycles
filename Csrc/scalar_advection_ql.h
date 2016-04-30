@@ -160,9 +160,9 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     const ssize_t sm1 = -sp1 ;
 
     // (1) average advecting and advected velocity
-    double *phi_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+    double *phi_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *phi_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
-    double *vel_advecting_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+    double *vel_advecting_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *vel_advecting_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
 
     horizontal_mean(dims, &velocity[0], &vel_advecting_mean[0]);
@@ -199,7 +199,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
             const ssize_t jshift = j*jstride;
             for(ssize_t k=kmin;k<kmax;k++){
                 const int ijk = ishift + jshift + k;
-                double diff = velocity[ijk]-(vel_advecting_mean[k] + vel_advecting_fluc[ijk]);
+                double diff = velocity[ijk] - (vel_advecting_mean[k] + vel_advecting_fluc[ijk]);
                 if(fabs(diff)>0.00001){ok = 1;
                     printf("decomposition advecting , ijk= %d, diff = %f, vel = %f \n", ijk, diff, velocity[ijk]);}
 
