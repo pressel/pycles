@@ -232,8 +232,8 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                 }
             }
         }
-        if(ok_ing=1){printf("problem decomposition advecting: count = %d",ok_ing);}
-        if(ok_ed=1){printf("problem decomposition advected: count = %d",ok_ed);}
+        if(ok_ing==1){printf("problem decomposition advecting: count = %d",ok_ing);}
+        if(ok_ed==1){printf("problem decomposition advected: count = %d",ok_ed);}
 
         const ssize_t stencil[3] = {istride,jstride,1};
         const ssize_t sp1_ed = stencil[d_advecting];
