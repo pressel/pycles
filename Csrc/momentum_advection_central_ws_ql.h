@@ -285,8 +285,8 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
 
         double vel_ing_mean = 0.0;
         double vel_ed_mean = 0.0;
-        double vel_ing_fluc;
-        double vel_ed_fluc;
+        double vel_ing_fluc = 0.0;
+        double vel_ed_fluc = 0.0;
 
         if (d_advected !=2 && d_advecting !=2){
             for(ssize_t i=imin;i<imax;i++){
