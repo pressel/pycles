@@ -395,7 +395,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
         }
 
         int count = 0;
-        max = 0;
+        double max = 0.0;
         for(ssize_t i=imin;i<imax;i++){
                 const ssize_t ishift = i*istride;
                 for(ssize_t j=jmin;j<jmax;j++){
