@@ -166,35 +166,56 @@ void fourth_order_ws_m_ql   (struct DimStruct *dims, double* restrict rho0, doub
 
 
 
-
-// !!!!!! test if doing the correct thing !!!!!!
 void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
     double* restrict alpha0, double* restrict alpha0_half,
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
-        if (d_advected==1 && d_advecting==1){
-            printf("4th order WS decomposition Momentum Transport \n");}
+        if(d_advected==2 & d_advecting==2){
+            printf("4th order Momentum Transport decomp \n");}
 
         // Dynamically allocate flux array
-        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+
+        double *vel_ed_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *vel_ing_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *vel_ed_mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
+        double *vel_ing_mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
+        double *vel_ed_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *vel_ing_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
 
-//        const ssize_t imin = 1;
-//        const ssize_t jmin = 1;
-//        const ssize_t kmin = 1;
-//        const ssize_t imax = dims->nlg[0]-2;
-//        const ssize_t jmax = dims->nlg[1]-2;
-//        const ssize_t kmax = dims->nlg[2]-2;
         ssize_t imin = 0;
         ssize_t jmin = 0;
         ssize_t kmin = 0;
+
         ssize_t imax = dims->nlg[0];
         ssize_t jmax = dims->nlg[1];
         ssize_t kmax = dims->nlg[2];
+
+        ssize_t i,j,k;
+
+        // (1) compute mean velocities
+        horizontal_mean(dims, &vel_advecting[0], &vel_ing_mean_[0]);
+        horizontal_mean(dims, &vel_advected[0], &vel_ed_mean_[0]);
+
+        for(i=imin; i<imax; i++){
+            const ssize_t ishift = i * istride;
+            for(j=jmin; j<jmax; j++){
+                const ssize_t jshift = j * jstride;
+                for(k=kmin; k<kmax; k++){
+                    const ssize_t ijk = ishift + jshift + k;
+                    vel_ing_mean[ijk] = vel_ing_mean_[k];
+                    vel_ed_mean[ijk] = vel_ed_mean_[k];
+
+                    vel_ing_fluc[ijk] = vel_advecting[ijk] - vel_ing_mean[ijk];
+                    vel_ed_fluc[ijk] = vel_advected[ijk] - vel_ed_mean[ijk];
+                }
+            }
+        }
 
         const ssize_t stencil[3] = {istride,jstride,1};
         const ssize_t sp1_ed = stencil[d_advecting];
@@ -205,115 +226,31 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
         const ssize_t sp2_ing = 2 * sp1_ing;
         const ssize_t sm1_ing = -sp1_ing;
 
-        double *mix_flux_one = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-        double *mix_flux_two = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-        double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-        double *mean_flux = (double *)malloc(sizeof(double)*dims->nlg[2]);        // ??? 1D profile suffici
-
-        // (1) average advecting and advected velocity
-        double *vel_advected_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-        double *vel_advected_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
-        double *vel_advecting_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-        double *vel_advecting_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
-
-        for(ssize_t k=kmin;k<kmax;k++){
-            vel_advected_mean[k] = 0.0;
-            vel_advecting_mean[k] = 0.0;
-        }
-
-        horizontal_mean(dims, &vel_advecting[0], &vel_advecting_mean[0]);
-        horizontal_mean(dims, &vel_advected[0], &vel_advected_mean[0]);
-
-        // (2) compute eddy fields
-        for(ssize_t i=imin;i<imax;i++){
-            const ssize_t ishift = i * istride;
-            for(ssize_t j=jmin;j<jmax;j++){
-                const ssize_t jshift = j * jstride;
-                for(ssize_t k=kmin;k<kmax;k++){
-                    int ijk = ishift + jshift + k;
-                    vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean[k];
-                    vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean[k];
-
-                    mix_flux_one[ijk] = 0.0;
-                    mix_flux_two[ijk] = 0.0;
-                    mean_flux[k] = 0.0;
-                    eddy_flux[ijk] = 0.0;
-
-                    if(isnan(vel_advected_fluc[ijk])) {
-                        printf("Nan in vel_advected_fluc\n");
-                    }
-                    if(isnan(vel_advecting_fluc[ijk])) {
-                        printf("Nan in vel_advecting_fluc\n");
-                    }
-                }
-            }
-        }
-        int ok = 0;
-        for(ssize_t i=imin;i<imax;i++){
-                const ssize_t ishift = i*istride;
-                for(ssize_t j=jmin;j<jmax;j++){
-                    const ssize_t jshift = j*jstride;
-                    for(ssize_t k=kmin;k<kmax;k++){
-                        const int ijk = ishift + jshift + k;
-                        double diff = vel_advecting[ijk]-(vel_advecting_mean[k] + vel_advecting_fluc[ijk]);
-                        if(fabs(diff)>0.0000001){
-                            ok = 1;
-                            printf("decomposition advecting , ijk= %d, diff = %f, vel = %f \n", ijk, diff, vel_advecting[ijk]);}
-                        diff = vel_advected[ijk]-(vel_advected_mean[k] + vel_advected_fluc[ijk]);
-                        if(fabs(diff)>0.0000001){
-                            ok = 1;
-                            printf("decomposition advected, ijk= %d, diff = %f, vel = %f \n", ijk, diff, vel_advected[ijk]);}
-                }
-            }
-        }
-
-        // (3) Compute Fluxes
-        // mix_flux_one = <u_ing> u_ed'
-        // mix_flux_two = u_ing' <u_ed>
-        // eddy_flux = u_ing' u_ed'
-        // mean_flux = <u_ing> <u_ed>
         imin = 1;
         jmin = 1;
         kmin = 1;
+
         imax = dims->nlg[0]-2;
         jmax = dims->nlg[1]-2;
         kmax = dims->nlg[2]-2;
-//        double *mix_flux_one = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-//        double *mix_flux_two = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-//        double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-//        double *mean_flux = (double *)malloc(sizeof(double)*dims->nlg[2]);        // ??? 1D profile sufficient!?
 
-        double vel_ing_mean = 0.0;
-        double vel_ed_mean = 0.0;
-        double vel_ing_fluc = 0.0;
-        double vel_ed_fluc = 0.0;
-
-        if (d_advected !=2 && d_advecting !=2){
+        if (d_advected != 2 && d_advecting !=2){
             for(ssize_t i=imin;i<imax;i++){
                 const ssize_t ishift = i*istride;
                 for(ssize_t j=jmin;j<jmax;j++){
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        vel_ing_fluc = interp_2(vel_advecting_fluc[ijk],vel_advecting_fluc[ijk+sp1_ing]);
-                        vel_ed_fluc = interp_4(vel_advected_fluc[ijk+sm1_ed],vel_advected_fluc[ijk],vel_advected_fluc[ijk+sp1_ed],vel_advected_fluc[ijk+sp2_ed]);
-                        vel_ing_mean = interp_2(vel_advecting_mean[k],vel_advecting_mean[k]);
-                        vel_ed_mean = interp_4(vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k]);
-//                        vel_ed_mean = vel_advected_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
-//                        vel_ing_mean = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
+                        const double flux_eddy = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k];
+                        const double flux_m1 = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k];
+                        const double flux_m2 = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k];
+                        const double flux_mean = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k];
 
-                        // (a) mix_flux_one = <u_ing> u_ed'
-                        // (b) mix_flux_two = u_ing'<u_ed>
-                        // (c) mean_flux = <u_ing><u_ed>
-                        // (d) eddy_flux = u_ing' u_ed'
-                        mix_flux_one[ijk] = vel_ing_mean * vel_ed_fluc * rho0_half[k] ;
-                        mix_flux_two[ijk] = vel_ing_fluc * vel_ed_mean * rho0_half[k] ;
-                        mean_flux[k] = vel_ing_mean * vel_ed_mean * rho0_half[k] ;
-                        eddy_flux[ijk] = vel_ing_fluc * vel_ed_fluc * rho0_half[k] ;
-
-                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
-                        if(isnan(flux[ijk])) {printf("Nan in flux, d1!=2, d2!=2\n");}
-
+                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
                         flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
                                  interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k];
                     }
@@ -327,24 +264,16 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        vel_ing_fluc = interp_2(vel_advecting_fluc[ijk],vel_advecting_fluc[ijk+sp1_ing]);
-                        vel_ed_fluc = interp_4(vel_advected_fluc[ijk+sm1_ed],vel_advected_fluc[ijk],vel_advected_fluc[ijk+sp1_ed],vel_advected_fluc[ijk+sp2_ed]);
-                        vel_ing_mean = interp_2(vel_advecting_mean[k],vel_advecting_mean[k]);
-                        vel_ed_mean = interp_4(vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k]);
-//                        vel_ed_mean = vel_advected_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
-//                        vel_ing_mean = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
+                        const double flux_eddy = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k+1];
+                        const double flux_m1 = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k+1];
+                        const double flux_m2 = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k+1];
+                        const double flux_mean = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k+1];
 
-                        // (a) mix_flux_one = <u_ing> u_ed'
-                        // (b) mix_flux_two = u_ing'<u_ed>
-                        // (c) mean_flux = <u_ing><u_ed>
-                        // (d) eddy_flux = u_ing' u_ed'
-                        mix_flux_one[ijk] = vel_ing_mean * vel_ed_fluc * rho0_half[k+1] ;
-                        mix_flux_two[ijk] = vel_ing_fluc * vel_ed_mean * rho0_half[k+1] ;
-                        mean_flux[k] = vel_ing_mean * vel_ed_mean * rho0_half[k+1] ;
-                        eddy_flux[ijk] = vel_ing_fluc * vel_ed_fluc * rho0_half[k+1] ;
-
-                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
-                        if(isnan(flux[ijk])) {printf("Nan in flux, d1=2, d2=2\n");}
+                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
 
                         flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
                                  interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k+1];
@@ -359,24 +288,16 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        vel_ing_fluc = interp_2(vel_advecting_fluc[ijk],vel_advecting_fluc[ijk+sp1_ing]);
-                        vel_ed_fluc = interp_4(vel_advected_fluc[ijk+sm1_ed],vel_advected_fluc[ijk],vel_advected_fluc[ijk+sp1_ed],vel_advected_fluc[ijk+sp2_ed]);
-                        vel_ing_mean = interp_2(vel_advecting_mean[k],vel_advecting_mean[k]);
-                        vel_ed_mean = interp_4(vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k],vel_advected_mean[k]);
-//                        vel_ed_mean = vel_advected_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
-//                        vel_ing_mean = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
+                        const double flux_eddy = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0[k+1];
+                        const double flux_m1 = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0[k+1];
+                        const double flux_m2 = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0[k+1];
+                        const double flux_mean = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0[k+1];
 
-                        // (a) mix_flux_one = <u_ing> u_ed'
-                        // (b) mix_flux_two = u_ing'<u_ed>
-                        // (c) mean_flux = <u_ing><u_ed>
-                        // (d) eddy_flux = u_ing' u_ed'
-                        mix_flux_one[ijk] = vel_ing_mean * vel_ed_fluc * rho0[k] ;
-                        mix_flux_two[ijk] = vel_ing_fluc * vel_ed_mean * rho0[k] ;
-                        mean_flux[k] = vel_ing_mean * vel_ed_mean * rho0[k] ;
-                        eddy_flux[ijk] = vel_ing_fluc * vel_ed_fluc * rho0[k] ;
-
-                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
-                        if(isnan(flux[ijk])) {printf("Nan in flux, d1=2, d2!=2\n");}
+                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
 
                         flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
                                  interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0[k];
@@ -387,18 +308,13 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
 
         momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
                                 tendency, d_advected, d_advecting);
-
         free(flux);
         free(flux_old);
-        free(mix_flux_one);
-        free(mix_flux_two);
-        free(eddy_flux);
-        free(mean_flux);
-        free(vel_advecting_fluc);
-        free(vel_advected_fluc);
-        free(vel_advecting_mean);
-        free(vel_advected_mean);
-
-
+        free(vel_ed_mean);
+        free(vel_ing_mean);
+        free(vel_ed_mean_);
+        free(vel_ing_mean_);
+        free(vel_ed_fluc);
+        free(vel_ing_fluc);
         return;
     }

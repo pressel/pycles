@@ -84,6 +84,10 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                 }
             }
         }
+
+        free(vel_advected_mean_);
+        free(vel_advecting_mean_);
+
         int ok = 0;
         for(ssize_t i=imin;i<imax;i++){
                 const ssize_t ishift = i*istride;
