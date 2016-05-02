@@ -37,6 +37,8 @@ cdef class Forcing:
             self.scheme = ForcingRico()
         elif casename == 'DCBLSoares':
             self.scheme = ForcingSoares()
+        elif casename == 'DCBLSoares_moist':
+            self.scheme = ForcingSoares()
         elif casename == 'StableBubble':
             self.scheme = ForcingNone()
         else:

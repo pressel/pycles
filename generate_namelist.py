@@ -32,6 +32,8 @@ def main():
         namelist = Rico()
     elif case_name == 'DCBLSoares':
         namelist = DCBLSoares()
+    elif case_name == 'DCBLSoares_moist':
+        namelist = DCBLSoares_moist()
     else:
         print('Not a vaild case name')
         exit()
@@ -916,6 +918,119 @@ def DCBLSoares():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 1800.0
+
+    return namelist
+
+
+
+def DCBLSoares_moist():
+    # adopted from: "An eddy-diffusivity/mass-flux parametrization for dry and shallow cumulus convection",
+    # By P. M. M. SOARES, P. M. A. MIRANDA, A. P. SIEBESMA and J. TEIXEIRA, Q. J. R. Meteorol. Soc. (2004)
+    # modifications: qt initial profile and flux set to zero, since no dry thermodynamics without condensation given
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    # Soares (2004): domain size = 6400 x 6400 m, domain height = 3000 (?) m; dx = ?, dy = ?, dz = 20 m
+    # Nieuwstadt: domain size = ?, domain height = 2400m; dx = dy = 60 m, dz = 50-60 m
+    # IOP Paper, old code: domain size = 6400 x 6400 m, domain height = 3750 m
+    namelist['grid']['nx'] = 256    # IOP
+    namelist['grid']['ny'] = 256    # IOP
+    namelist['grid']['nz'] = 150    # IOP
+    namelist['grid']['gw'] = 3      # for 2nd order
+    namelist['grid']['dx'] = 25.0   # IOP
+    namelist['grid']['dy'] = 25.0   # IOP
+    namelist['grid']['dz'] = 25.0   # IOP
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3    # seems to be 3 in all cases???
+    namelist['time_stepping']['cfl_limit'] = 0.3    # default: 0.7; IOP: 0.3
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 6*3600.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'       # 'constant' or 'variable', for Clausius Clapeyron calculation
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_SA'     # DCBL: 'None_Dry', Bomex: 'None_SA'; options: 'None_Dry' (no qt as Progn. Var.), 'None_SA', 'SB_Liquid'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'  # seems to be this in all cases???
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] = {}
+    namelist['sgs']['Smagorinsky']['cs'] = 0.17
+    namelist['sgs']['UniformViscosity'] = {}
+    namelist['sgs']['UniformViscosity']['viscosity'] = 1.2
+    namelist['sgs']['UniformViscosity']['diffusivity'] = 3.6
+    namelist['sgs']['TKE'] = {}
+    namelist['sgs']['TKE']['ck'] = 0.1
+    namelist['sgs']['TKE']['cn'] = 0.76
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False      # seems to be set to False for all cases???
+
+    # 2 = second_order_m
+    # 32 = second_order_ml_m
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 2
+    # 2 = second_order_a
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 2
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'  # no more 'DampingToDomainMean' ???
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
+    namelist['damping']['Rayleigh']['z_d'] = 800.0  # ??? depth of damping layer?
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    # profile outputs
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['None']    # AuxiliaryStatistics
+    namelist['stats_io']['frequency'] = 900.0
+
+    # field outputs
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['temperature','viscosity']   # defines diagnostic variable output fields (progn. variables output in restart files?!)
+
+    # Conditional Statistics
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'DCBLSoares_moist'
+    namelist['meta']['casename'] = 'DCBLSoares_moist'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = False
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 1800.0
 
     return namelist
 

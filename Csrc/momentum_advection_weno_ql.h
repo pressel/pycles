@@ -385,9 +385,9 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                         if(fabs((flux[ijk]-flux_old[ijk])/flux_old[ijk])>0.01){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
 //                        if(fabs((flux[ijk]-flux_old[ijk]))>fabs(flux_old[ijk])){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
 //                        if(fabs(flux_old[ijk])<1e-10){printf("zero old flux\n");}
-                        }
-                        }
-                        }
+                 }
+             }
+         }
 
 //        printf("flux: %f\n", flux);
         //        printf("values[gw] = %f\n", values[gw]);
