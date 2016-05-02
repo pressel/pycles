@@ -375,19 +375,21 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
             }
         }
 
-
+        int count = 0;
         for(ssize_t i=imin;i<imax;i++){
                 const ssize_t ishift = i*istride;
                 for(ssize_t j=jmin;j<jmax;j++){
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const int ijk = ishift + jshift + k;
-                        if(fabs((flux[ijk]-flux_old[ijk])/flux_old[ijk])>0.1){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
+                        if(fabs((flux[ijk]-flux_old[ijk])/flux_old[ijk])>0.01){count = count + 1;}
+//                        if(fabs((flux[ijk]-flux_old[ijk])/flux_old[ijk])>0.01){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
 //                        if(fabs((flux[ijk]-flux_old[ijk]))>fabs(flux_old[ijk])){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
 //                        if(fabs(flux_old[ijk])<1e-10){printf("zero old flux\n");}
                  }
              }
          }
+         printf("Fluxes differences: count = %d", count);
 
 //        printf("flux: %f\n", flux);
         //        printf("values[gw] = %f\n", values[gw]);
