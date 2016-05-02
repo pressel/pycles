@@ -225,9 +225,9 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                 const ssize_t jshift = j * jstride;
                 for(k=kmin; k<kmax; k++){
                     const ssize_t ijk = ishift + jshift + k;
-                    double diff = vel_advecting[ijk] - (vel_ing_fluc[ijk] + vel_mean_ing[ijk]);
+                    double diff = vel_advecting[ijk] - (vel_ing_fluc[ijk] + vel_ing_mean[ijk]);
                     if(fabs(diff)>0.00001){ok_ing = ok_ing + 1;}
-                    diff = vel_advected[ijk] - (vel_ed_fluc[ijk] + vel_mean_ed[ijk]);
+                    diff = vel_advected[ijk] - (vel_ed_fluc[ijk] + vel_ed_mean[ijk]);
                     if(fabs(diff)>0.00001){ok_ed = ok_ed + 1;}
                 }
             }
