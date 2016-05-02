@@ -389,7 +389,8 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                  }
              }
          }
-         printf("Fluxes differences: count = %d", count);
+         if(count > 0){printf("MA Fluxes differences: count = %d\n", count);}
+
 
 //        printf("flux: %f\n", flux);
         //        printf("values[gw] = %f\n", values[gw]);

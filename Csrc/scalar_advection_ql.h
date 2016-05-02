@@ -510,20 +510,16 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
                     // ????? different computation of mean eddy-flux
                     // mean_eddy_flux = rms(v')*rms(phi')*covar(v',phi')
                     eddy_flux[ijk] =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0[k];
-                    mix_flux_phiprime[ijk] =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0[k];
 //                    eddy_flux =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0[k];
+                    mix_flux_phiprime[ijk] =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0[k];
 //                    mix_flux_phiprime =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0[k];
 
-                    phip = interp_weno5(phi_mean[k + sm2],          // ????????? correct for 1D profiles??
-                                        phi_mean[k + sm1],
-                                        phi_mean[k],
-                                        phi_mean[k + sp1],
-                                        phi_mean[k + sp2]);
-                    phim = interp_weno5(phi_mean[k + sp3],
-                                        phi_mean[k + sp2],
-                                        phi_mean[k + sp1],
-                                        phi_mean[k],
-                                        phi_mean[k + sm1]);
+                    // ????????? correct for 1D profiles??
+//                    phip = interp_weno5(phi_mean[k + sm2],phi_mean[k + sm1],phi_mean[k],phi_mean[k + sp1],phi_mean[k + sp2]);
+//                    phim = interp_weno5(phi_mean[k + sp3],phi_mean[k + sp2],phi_mean[k + sp1],phi_mean[k],phi_mean[k + sm1]);
+                    phip = interp_weno5(phi_mean[k - 2],phi_mean[k - 1],phi_mean[k],phi_mean[k + 1],phi_mean[k + 2]);
+                    phim = interp_weno5(phi_mean[k + 3],phi_mean[k + 2],phi_mean[k + 1],phi_mean[k],phi_mean[k - 1]);
+
                     mix_flux_phimean[ijk] =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0[k];
                     mean_flux[k] =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0[k];      // ?? 1D profile sufficient
 //                    mix_flux_phimean =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0[k];
@@ -534,7 +530,6 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
 
                     //Upwind for positive velocity
                     const double phip = interp_weno5(scalar[ijk + sm2],
-
                                         scalar[ijk + sm1],
                                         scalar[ijk],
                                         scalar[ijk + sp1],
