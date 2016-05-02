@@ -171,7 +171,7 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
-        if(d_advected==2 & d_advecting==2){
+        if(d_advected==2 && d_advecting==2){
             printf("4th order Momentum Transport decomp \n");}
 
         // Dynamically allocate flux array
