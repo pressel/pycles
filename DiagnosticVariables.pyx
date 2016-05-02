@@ -123,8 +123,8 @@ cdef class DiagnosticVariables:
         return
 
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.values = np.empty((self.nv*Gr.dims.npg),dtype=np.double,order='c')
-        self.values_2d = np.empty((self.nv_2d*Gr.dims.nlg[0]*Gr.dims.nlg[1]),dtype=np.double,order='c' )
+        self.values = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
+        self.values_2d = np.zeros((self.nv_2d*Gr.dims.nlg[0]*Gr.dims.nlg[1]),dtype=np.double,order='c' )
 
 
         #Add prognostic variables to Statistics IO

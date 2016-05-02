@@ -9,8 +9,11 @@ cdef class Restart:
         str uuid
         public double last_restart_time
         public double frequency
+        bint delete_old
+        list times_retained
 
     cpdef initialize(self)
     cpdef write(self, ParallelMPI.ParallelMPI Pa)
     cpdef read(self, ParallelMPI.ParallelMPI Pa)
     cpdef free_memory(self)
+    cpdef cleanup(self)
