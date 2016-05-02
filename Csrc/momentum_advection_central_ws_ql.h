@@ -217,6 +217,24 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
             }
         }
 
+        int ok_ing = 0;
+        int ok_ed = 0;
+        for(i=imin; i<imax; i++){
+            const ssize_t ishift = i * istride;
+            for(j=jmin; j<jmax; j++){
+                const ssize_t jshift = j * jstride;
+                for(k=kmin; k<kmax; k++){
+                    const ssize_t ijk = ishift + jshift + k;
+                    double diff = vel_advecting[ijk] - (vel_ing_fluc[ijk] + vel_mean_ing[ijk]);
+                    if(fabs(diff)>0.00001){ok_ing = ok_ing + 1;}
+                    diff = vel_advected[ijk] - (vel_ed_fluc[ijk] + vel_mean_ed[ijk]);
+                    if(fabs(diff)>0.00001){ok_ed = ok_ed + 1;}
+                }
+            }
+        }
+        if(ok_ing=1){printf("problem decomposition advecting: count = %f",ok_ing);}
+        if(ok_ed=1){printf("problem decomposition advected: count = %f",ok_ed);}
+
         const ssize_t stencil[3] = {istride,jstride,1};
         const ssize_t sp1_ed = stencil[d_advecting];
         const ssize_t sp2_ed = 2 * sp1_ed ;
