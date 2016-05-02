@@ -14,19 +14,12 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
         if (d_advected==1 && d_advecting==1){
             printf("WENO5 decompositioned Momentum Transport \n");}
 
-        // Dynamically allocate flux array
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
 
-//        const ssize_t imin = 2;
-//        const ssize_t jmin = 2;
-//        const ssize_t kmin = 2;
-//        const ssize_t imax = dims->nlg[0]-3;
-//        const ssize_t jmax = dims->nlg[1]-3;
-//        const ssize_t kmax = dims->nlg[2]-3;
         ssize_t imin = 0;
         ssize_t jmin = 0;
         ssize_t kmin = 0;
@@ -57,7 +50,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
 
 //        horizontal_mean(dims, &vel_advecting[0], &vel_advecting_mean[0]);
         horizontal_mean(dims, &vel_advecting[0], &vel_advecting_mean_[0]);
-//        horizontal_mean(dims, &vel_advected[0], &vel_advected_mean_[0]);
+//        horizontal_mean(dims, &vel_advected[0], &vel_advected_mean[0]);
         horizontal_mean(dims, &vel_advected[0], &vel_advected_mean_[0]);
 //        horizontal_mean_const(dims, &vel_advecting[0], &vel_advecting_mean[0]);
 //        horizontal_mean_const(dims, &vel_advected[0], &vel_advected_mean[0]);
@@ -69,11 +62,11 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                 const ssize_t jshift = j * jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     int ijk = ishift + jshift + k;
-                    vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean[k];
-                    vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean[k];
-
                     vel_advecting_mean[ijk] = vel_advecting_mean_[k];
                     vel_advected_mean[ijk] = vel_advected_mean_[k];
+
+                    vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean[ijk];
+                    vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean[ijk];
 
                     if(isnan(vel_advected_fluc[ijk])) {
                         printf("Nan in vel_advected_fluc\n");
@@ -85,8 +78,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
             }
         }
 
-        free(vel_advected_mean_);
-        free(vel_advecting_mean_);
+
 
         int ok = 0;
         for(ssize_t i=imin;i<imax;i++){
@@ -95,12 +87,22 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const int ijk = ishift + jshift + k;
-                        double diff = vel_advecting[ijk]-(vel_advecting_mean[k] + vel_advecting_fluc[ijk]);
+                        double diff = vel_advecting[ijk]-(vel_advecting_mean[ijk] + vel_advecting_fluc[ijk]);
+                        if(fabs(diff)>0.0000001){
+                            ok = 1;
+                            printf("!!! decomposition advecting , ijk= %d, diff = %f, vel = %f \n", ijk, diff, vel_advecting[ijk]);}
+
+                        diff = vel_advected[ijk]-(vel_advected_mean[ijk] + vel_advected_fluc[ijk]);
+                        if(fabs(diff)>0.0000001){
+                            ok = 1;
+                            printf("!!! decomposition advected, ijk= %d, diff = %f, vel = %f \n", ijk, diff, vel_advected[ijk]);}
+
+                        diff = vel_advecting[ijk]-(vel_advecting_mean_[k] + vel_advecting_fluc[ijk]);
                         if(fabs(diff)>0.0000001){
                             ok = 1;
                             printf("decomposition advecting , ijk= %d, diff = %f, vel = %f \n", ijk, diff, vel_advecting[ijk]);}
 
-                        diff = vel_advected[ijk]-(vel_advected_mean[k] + vel_advected_fluc[ijk]);
+                        diff = vel_advected[ijk]-(vel_advected_mean_[k] + vel_advected_fluc[ijk]);
                         if(fabs(diff)>0.0000001){
                             ok = 1;
                             printf("decomposition advected, ijk= %d, diff = %f, vel = %f \n", ijk, diff, vel_advected[ijk]);}
@@ -108,7 +110,8 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
             }
         }
 //        if(ok==0){printf("good decomposition \n");}
-
+        free(vel_advected_mean_);
+        free(vel_advecting_mean_);
 
 
         // (3) Compute Fluxes
@@ -176,10 +179,10 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                         // (a) mix_flux_one = <u_ing> u_ed'
                         // (b) mean_flux = <u_ing><u_ed>
 //                        vel_adv = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
-                        vel_adv = interp_4(vel_advecting_mean[k],
-                                           vel_advecting_mean[k],
-                                           vel_advecting_mean[k],
-                                           vel_advecting_mean[k]);
+                        vel_adv = interp_4(vel_advecting_mean[ijk],
+                                           vel_advecting_mean[ijk],
+                                           vel_advecting_mean[ijk],
+                                           vel_advecting_mean[ijk]);
                         mix_flux_one[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_fluc + (vel_adv-fabs(vel_adv))*phim_fluc)*rho0_half[k] ;
                         mean_flux[k] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_mean + (vel_adv-fabs(vel_adv))*phim_mean)*rho0_half[k] ;
 
@@ -261,10 +264,10 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
 
                         // (a) mix_flux_one = <u_ing> u_ed' && mean_flux = <u_ing><u_ed>
 //                        vel_adv = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
-                        vel_adv = interp_4(vel_advecting_mean[k],
-                                           vel_advecting_mean[k],
-                                           vel_advecting_mean[k],
-                                           vel_advecting_mean[k]);
+                        vel_adv = interp_4(vel_advecting_mean[ijk],
+                                           vel_advecting_mean[ijk],
+                                           vel_advecting_mean[ijk],
+                                           vel_advecting_mean[ijk]);
                         mix_flux_one[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_fluc + (vel_adv-fabs(vel_adv))*phim_fluc)*rho0_half[k+1] ;
                         mean_flux[k] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_mean + (vel_adv-fabs(vel_adv))*phim_mean)*rho0_half[k+1] ;
 
@@ -343,10 +346,10 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
 
                         // (a) mix_flux_one = <u_ing> u_ed' && mean_flux = <u_ing><u_ed>
 //                        vel_adv = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
-                        vel_adv = interp_4(vel_advecting_mean[k],
-                                           vel_advecting_mean[k],
-                                           vel_advecting_mean[k],
-                                           vel_advecting_mean[k]);
+                        vel_adv = interp_4(vel_advecting_mean[ijk],
+                                           vel_advecting_mean[ijk],
+                                           vel_advecting_mean[ijk],
+                                           vel_advecting_mean[ijk]);
                         mix_flux_one[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_fluc + (vel_adv-fabs(vel_adv))*phim_fluc)*rho0[k] ;
                         mean_flux[k] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_mean + (vel_adv-fabs(vel_adv))*phim_mean)*rho0[k] ;
 
