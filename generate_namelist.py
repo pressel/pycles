@@ -847,6 +847,14 @@ def CGILS_S6(is_p2,is_ctl_omega):
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'variable'
 
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
+    namelist['damping']['Rayleigh']['z_d'] = 600.0
+
+
     namelist['microphysics'] = {}
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     namelist['microphysics']['cloud_sedimentation'] = True
@@ -877,9 +885,6 @@ def CGILS_S6(is_p2,is_ctl_omega):
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
     namelist['scalar_transport']['order_sedimentation'] = 1
-
-    namelist['damping'] = {}
-    namelist['damping']['scheme'] = 'NudgeCGILS'
 
 
     namelist['output'] = {}
@@ -944,7 +949,7 @@ def CGILS_S11(is_p2,is_ctl_omega):
     namelist['grid']['dims'] = 3
     namelist['grid']['nx'] = 96
     namelist['grid']['ny'] = 96
-    namelist['grid']['nz'] = 200
+    namelist['grid']['nz'] = 180
     namelist['grid']['gw'] = 4
     namelist['grid']['dx'] = 50.0
     namelist['grid']['dy'] = 50.0
@@ -964,6 +969,13 @@ def CGILS_S11(is_p2,is_ctl_omega):
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'variable'
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
+    namelist['damping']['Rayleigh']['z_d'] = 600.0
+
 
     namelist['microphysics'] = {}
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
@@ -989,10 +1001,6 @@ def CGILS_S11(is_p2,is_ctl_omega):
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
     namelist['scalar_transport']['order_sedimentation'] = 1
-
-    namelist['damping'] = {}
-    namelist['damping']['scheme'] = 'NudgeCGILS'
-
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -1058,7 +1066,7 @@ def CGILS_S12(is_p2,is_ctl_omega):
     namelist['grid']['gw'] = 4
     namelist['grid']['dx'] = 25.0
     namelist['grid']['dy'] = 25.0
-    namelist['grid']['dz'] = 12.0
+    namelist['grid']['dz'] = 10.0
 
     namelist['mpi'] = {}
     namelist['mpi']['nprocx'] = 1
@@ -1074,6 +1082,13 @@ def CGILS_S12(is_p2,is_ctl_omega):
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'variable'
+
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
+    namelist['damping']['Rayleigh']['z_d'] = 500.0
 
     namelist['microphysics'] = {}
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
@@ -1099,9 +1114,6 @@ def CGILS_S12(is_p2,is_ctl_omega):
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
     namelist['scalar_transport']['order_sedimentation'] = 1
-
-    namelist['damping'] = {}
-    namelist['damping']['scheme'] = 'NudgeCGILS'
 
 
     namelist['output'] = {}

@@ -103,6 +103,18 @@ cdef class ForcingCGILS:
         double [:] dtdt
         double [:] dqtdt
         double [:] subsidence
+        double z_relax
+        double z_relax_plus
+        double tau_inverse
+        double tau_vel_inverse
+        double qt_floor
+        Py_ssize_t floor_index
+        double[:] gamma_zhalf
+        double[:] gamma_z
+        double [:] nudge_qt
+        double [:] nudge_s
+        double [:] nudge_u
+        double [:] nudge_v
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,

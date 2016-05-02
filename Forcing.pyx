@@ -13,7 +13,7 @@ from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c
 import numpy as np
 import cython
-from libc.math cimport fabs, sin
+from libc.math cimport fabs, sin, cos
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 include 'parameters.pxi'
@@ -631,6 +631,21 @@ cdef class ForcingCGILS:
             if self.is_p2:
                 Pa.root_print('ForcingCGILS: Assuming perturbed omega is used')
 
+
+        if self.loc == 12:
+            self.z_relax = 1200.0
+            self.z_relax_plus = 1500.0
+        elif self.loc == 11:
+            self.z_relax = 2500.0
+            self.z_relax_plus = 3000.0
+        elif self.loc == 6:
+            self.z_relax = 4000.0
+            self.z_relax_plus = 4800.0
+
+        self.tau_inverse = 1.0/(60.0*60.0) # inverse of  max nudging timescale, 1 hr, for all cases
+        self.tau_vel_inverse = 1.0/(10.0*60.0) # nudging timescale of horizontal winds
+
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -651,6 +666,10 @@ cdef class ForcingCGILS:
         divq_data = data.variables['divq'][0,:,0,0]
         divT_data = data.variables['divT'][0,:,0,0]
         omega_data = data.variables['omega'][0,:,0,0]
+        temperature_data = data.variables['T'][0,:,0,0]
+        q_data = data.variables['q'][0,:,0,0]
+        u_data = data.variables['u'][0,:,0,0]
+        v_data = data.variables['v'][0,:,0,0]
         Ps = data.variables['Ps'][0,0,0]
         n_data = np.shape(pressure)[0] - 1
         data.close()
@@ -669,20 +688,77 @@ cdef class ForcingCGILS:
         divq_data = np.append(divq_data,divq_right)
         divT_right = (divT_data[n_data-1] - divT_data[n_data])/(pressure[n_data-1]-pressure[n_data])*(Ps-pressure[n_data]) + divT_data[n_data]
         divT_data = np.append(divT_data,divT_right)
+        temperature_right = (temperature_data[n_data-1] - temperature_data[n_data])/(pressure[n_data-1]-pressure[n_data])*(Ps-pressure[n_data]) + temperature_data[n_data]
+        temperature_data = np.append(temperature_data, temperature_right)
+        q_right = (q_data[n_data-1] - q_data[n_data])/(pressure[n_data-1]-pressure[n_data])*(Ps-pressure[n_data]) + q_data[n_data]
+        q_data = np.append(q_data, q_right)
+        u_right = (u_data[n_data-1] - u_data[n_data])/(pressure[n_data-1]-pressure[n_data])*(Ps-pressure[n_data]) + u_data[n_data]
+        u_data = np.append(u_data,u_right)
+        v_right = (v_data[n_data-1] - v_data[n_data])/(pressure[n_data-1]-pressure[n_data])*(Ps-pressure[n_data]) + v_data[n_data]
+        v_data = np.append(v_data, v_right)
+
         pressure = np.append(pressure, Ps)
         self.subsidence = np.array(np.interp(Ref.p0_half, pressure, omega_data),dtype=np.double, order='c')
 
         self.dqtdt = np.array(np.interp(Ref.p0_half, pressure, divq_data),dtype=np.double, order='c')
         self.dtdt = np.array(np.interp(Ref.p0_half, pressure, divT_data),dtype=np.double, order='c')
 
+
+        self.nudge_s = np.zeros((Gr.dims.nlg[2],),dtype=np.double, order='c')
+
+        self.nudge_qt = np.array(np.interp(Ref.p0_half, pressure, q_data),dtype=np.double, order='c')
+        cdef double [:] nudge_temperature = np.array(np.interp(Ref.p0_half, pressure, temperature_data),dtype=np.double, order='c')
+        self.nudge_u = np.array(np.interp(Ref.p0_half, pressure, u_data),dtype=np.double, order='c')
+        self.nudge_v = np.array(np.interp(Ref.p0_half, pressure, v_data),dtype=np.double, order='c')
+
+
         cdef:
             Py_ssize_t k
+
 
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
                 self.subsidence[k] = -self.subsidence[k]*Ref.alpha0_half[k]/g
 
 
+        # Obtain the moisture floor and find the max index corresponding to z <= 1300 m
+
+        self.qt_floor = np.interp(1300.0, Gr.zl_half, self.nudge_qt)
+        for k in range(Gr.dims.gw, Gr.dims.nlg[2]-Gr.dims.gw):
+            if Gr.zl_half[k] > 1300.0:
+                break
+            self.floor_index = k
+
+
+        # Nudging profile is unsaturated, so we can calculate entropy simply
+        cdef double qv, pd, pv
+
+
+        with nogil:
+            for k in range(Gr.dims.nlg[2]):
+                pd = pd_c(Ref.p0_half[k], self.nudge_qt[k], self.nudge_qt[k])
+                pv = pv_c(Ref.p0_half[k], self.nudge_qt[k], self.nudge_qt[k])
+                self.nudge_s[k] = sd_c(pd, nudge_temperature[k]) * (1.0 - self.nudge_qt[k]) \
+                                  + sv_c(pv, nudge_temperature[k]) * self.nudge_qt[k]
+
+        self.gamma_zhalf = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.double, order='c')
+
+        with nogil:
+            for k in range(Gr.dims.nlg[2]):
+                if Gr.zl_half[k] < self.z_relax:
+                    self.gamma_zhalf[k] = 0.0
+                elif Gr.zl_half[k] > self.z_relax_plus:
+                    self.gamma_zhalf[k] = self.tau_inverse
+                else:
+                    self.gamma_zhalf[k] = 0.5*self.tau_inverse * (1.0 - cos(pi* (Gr.zl_half[k]-self.z_relax)/(self.z_relax_plus-self.z_relax)))
+
+                if Gr.zl[k] < self.z_relax:
+                    self.gamma_z[k] = 0.0
+                elif Gr.zl[k] > self.z_relax_plus:
+                    self.gamma_z[k] = self.tau_inverse
+                else:
+                    self.gamma_z[k] = 0.5*self.tau_inverse * (1.0 - cos(pi* (Gr.zl[k]-self.z_relax)/(self.z_relax_plus-self.z_relax)))
 
         #Initialize Statistical Output
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
@@ -713,13 +789,14 @@ cdef class ForcingCGILS:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double pd
-            double pv
-            double qt
-            double qv
-            double p0
-            double rho0
-            double t
+            Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
+            double pd, pv, qt, qv, p0, rho0,t, qt_floor_nudge
+
+            double [:] u_mean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            double [:] v_mean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+
+            double[:] domain_mean
+
 
 
         #Apply large scale source terms
@@ -744,8 +821,48 @@ cdef class ForcingCGILS:
 
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+        # apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
+        # apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+
+
+        # Apply nudging
+        with nogil:
+            for i in xrange(imin, imax):
+                ishift = i * istride
+                for j in xrange(jmin, jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        # Nudge s, qt to reference profiles in free troposphere
+                        PV.tendencies[s_shift + ijk] -= (PV.values[s_shift + ijk] - self.nudge_s[k]) * self.gamma_z[k]
+                        PV.tendencies[qt_shift + ijk] -= (PV.values[qt_shift + ijk] - self.nudge_qt[k]) * self.gamma_z[k]
+                        # Nudge mean wind profiles through entire depth
+                        PV.tendencies[u_shift + ijk] -= (u_mean[k] + Ref.u0 - self.nudge_u[k]) * self.tau_vel_inverse
+                        PV.tendencies[v_shift + ijk] -= (v_mean[k] + Ref.v0 - self.nudge_v[k]) * self.tau_vel_inverse
+
+        # Moisture floor nudging for S12 case
+        if self.loc == 12:
+            domain_mean = Pa.HorizontalMean(Gr, & PV.values[qt_shift])
+            if np.amin(domain_mean[Gr.dims.gw:self.floor_index]) < self.qt_floor:
+                with nogil:
+                    for k in xrange(kmin, self.floor_index):
+                        if domain_mean[k] < self.qt_floor:
+                            qt_floor_nudge = -(domain_mean[k] - self.qt_floor) * self.tau_inverse
+                            for i in xrange(imin, imax):
+                                ishift = i * istride
+                                for j in xrange(jmin, jmax):
+                                    jshift = j * jstride
+                                    ijk = ishift + jshift + k
+                                    qt = PV.values[qt_shift + ijk]
+                                    qv = DV.values[qv_shift + ijk]
+                                    t = DV.values[t_shift + ijk]
+                                    pv = pv_c(Ref.p0_half[k],qt, qv)
+                                    pd = pd_c(Ref.p0_half[k],qt, qv)
+                                    PV.tendencies[qt_shift + ijk] += qt_floor_nudge
+                                    PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * qt_floor_nudge
+
+
+
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,

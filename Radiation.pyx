@@ -11,7 +11,7 @@ cimport DiagnosticVariables
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
-
+cimport Surface
 import pylab as plt
 import numpy as np
 cimport numpy as np
@@ -72,7 +72,7 @@ cdef class RadiationBase:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
@@ -112,7 +112,7 @@ cdef class RadiationNone(RadiationBase):
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -140,7 +140,7 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -241,7 +241,7 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
         return
 
 
-cdef class RadiationSmoke:
+cdef class RadiationSmoke(RadiationBase):
     '''
     Radiation for the smoke cloud case
 
@@ -268,7 +268,7 @@ cdef class RadiationSmoke:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -368,7 +368,7 @@ cdef extern:
 
 
 
-cdef class RadiationRRTM:
+cdef class RadiationRRTM(RadiationBase):
 
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
 
@@ -704,15 +704,16 @@ cdef class RadiationRRTM:
 
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,
                  ParallelMPI.ParallelMPI Pa):
 
 
         if TS.rk_step == 0:
             if self.radiation_frequency <= 0.0:
-                self.update_RRTM(Gr, Ref, PV, DV, Pa)
+                self.update_RRTM(Gr, Ref, PV, DV,Sur, Pa)
             elif TS.t >= self.next_radiation_calculate:
-                self.update_RRTM(Gr, Ref, PV, DV, Pa)
+                self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
                 self.next_radiation_calculate = (TS.t//self.radiation_frequency + 1.0) * self.radiation_frequency
 
 
@@ -748,7 +749,7 @@ cdef class RadiationRRTM:
         return
 
     cdef update_RRTM(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                      DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+                      DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t nz = Gr.dims.n[2]
             Py_ssize_t nz_full = self.n_ext + nz
@@ -781,7 +782,7 @@ cdef class RadiationRRTM:
             double [:,:] plev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.double, order='F')
             double [:,:] tlay_in = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
             double [:,:] tlev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.double, order='F')
-            double [:] tsfc_in = np.ones((n_pencils),dtype=np.double,order='F') * Ref.Tg
+            double [:] tsfc_in = np.ones((n_pencils),dtype=np.double,order='F') * Sur.T_surface
             double [:,:] h2ovmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
             double [:,:] o3vmr_in  = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
             double [:,:] co2vmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
