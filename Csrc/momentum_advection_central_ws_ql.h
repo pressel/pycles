@@ -219,6 +219,10 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
 
         int ok_ing = 0;
         int ok_ed = 0;
+        int ok_nan_ed = 0;
+        int ok_nan_ing = 0;
+        int ok_nan_ed_mean = 0;
+        int ok_nan_ing_mean = 0;
         for(i=imin; i<imax; i++){
             const ssize_t ishift = i * istride;
             for(j=jmin; j<jmax; j++){
@@ -229,11 +233,20 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                     if(fabs(diff)>0.00001){ok_ing = ok_ing + 1;}
                     diff = vel_advected[ijk] - (vel_ed_fluc[ijk] + vel_ed_mean[ijk]);
                     if(fabs(diff)>0.00001){ok_ed = ok_ed + 1;}
+
+                    if(isnan(vel_ing_fluc[ijk])){ok_nan_ing = ok_nan_ing + 1;}
+                    if(isnan(vel_ed_fluc[ijk])){ok_nan_ed = ok_nan_ed + 1;}
+                    if(isnan(vel_ing_mean[ijk])){ok_nan_ing_mean = ok_nan_ing_mean + 1;}
+                    if(isnan(vel_ed_mean[ijk])){ok_nan_ed_mean = ok_nan_ed_mean + 1;}
                 }
             }
         }
-        if(ok_ing==1){printf("problem decomposition advecting: count = %d",ok_ing);}
-        if(ok_ed==1){printf("problem decomposition advected: count = %d",ok_ed);}
+        if(ok_ing > 1){printf("problem decomposition advecting: count = %d\n",ok_ing);}
+        if(ok_ed > 1){printf("problem decomposition advected: count = %d\n",ok_ed);}
+        if(ok_nan_ing > 1){printf("problem nan advecting fluc: count = %d\n",ok_nan_ing);}
+        if(ok_nan_ed > 1){printf("problem nan advected fluc: count = %d\n",ok_nan_ed);}
+        if(ok_nan_ing_mean > 1){printf("problem nan advecting mean: count = %d\n",ok_nan_ing_mean);}
+        if(ok_nan_ed_mean > 1){printf("problem nan advected mean: count = %d\n",ok_nan_ed_mean);}
 
         const ssize_t stencil[3] = {istride,jstride,1};
         const ssize_t sp1_ed = stencil[d_advecting];
@@ -323,6 +336,20 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                 }
             }
         }
+        int ok_nan = 0;
+        for(i=imin; i<imax; i++){
+            const ssize_t ishift = i * istride;
+            for(j=jmin; j<jmax; j++){
+                const ssize_t jshift = j * jstride;
+                for(k=kmin; k<kmax; k++){
+                    const ssize_t ijk = ishift + jshift + k;
+
+                    if(isnan(flux[ijk])){ok_nan = ok_nan + 1;}
+                }
+            }
+        }
+        if(ok_nan > 1){printf("problem decomposition advecting: count = %d\n",ok_nan);}
+//        else{printf("no nans in MA fluxes\n");}
 
         momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
                                 tendency, d_advected, d_advecting);
