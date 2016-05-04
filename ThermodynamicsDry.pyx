@@ -12,6 +12,7 @@ cimport Grid
 cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
+cimport Thermodynamics
 from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
 from thermodynamic_functions cimport thetas_c
 import cython

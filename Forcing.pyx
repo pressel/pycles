@@ -16,10 +16,12 @@ import cython
 from libc.math cimport fabs, sin, cos
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
+cimport Lookup
+from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 include 'parameters.pxi'
 
 cdef class Forcing:
-    def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
+    def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
             self.scheme = ForcingSullivanPatton()
@@ -40,6 +42,8 @@ cdef class Forcing:
             self.scheme = ForcingNone()
         elif casename == 'CGILS':
             self.scheme = ForcingCGILS(namelist, Pa)
+        elif casename == 'ZGILS':
+            self.scheme = ForcingZGILS(namelist, LH, Pa)
         else:
             Pa.root_print('No focing for casename: ' +  casename)
             Pa.root_print('Killing simulation now!!!')
@@ -912,21 +916,31 @@ cdef class ForcingCGILS:
 
 
 cdef class ForcingZGILS:
-    def __init__(self, ParallelMPI.ParallelMPI Pa):
+    def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
         try:
             self.loc = namelist['meta']['ZGILS']['location']
         except:
             Pa.root_print('Must provide a ZGILS location (6/11/12) in namelist')
             Pa.kill()
-        if loc == 12:
+        if self.loc == 12:
             self.divergence = 6.0e-6
-        elif loc == 11:
+            self.coriolis_param = 2.0 * omega * sin(34.5/180.0*pi)
+        elif self.loc == 11:
             self.divergence = 3.5e-6
-        elif loc == 6:
+            self.coriolis_param = 2.0 * omega * sin(31.5/180.0*pi)
+        elif self.loc == 6:
             self.divergence = 2.0e-6
+            self.coriolis_param = 2.0 * omega * sin(16.5/180.0*pi)
         else:
             Pa.root_print('Unrecognized ZGILS location')
             Pa.kill()
+
+        self.t_adv_max = -1.2/86400.0 # K/s BL tendency of temperature due to horizontal advection
+        self.qt_adv_max = -0.6e-3/86400.0 # kg/kg/s BL tendency of qt due to horizontal advection
+        self.tau_relax_inverse = 1.0/86400.0 # relaxation time scale = 24 h
+        self.alpha_h = 1.2 # threshold ratio for determining BL height
+        # Initialize the reference profiles classe
+        self.forcing_ref = AdjustedMoistAdiabat(namelist, LH, Pa)
 
         return
 
@@ -936,34 +950,35 @@ cdef class ForcingZGILS:
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.coriolis_param = 0.376e-4 #s^{-1}
+
+
+        # compute the reference profiles for forcing/nudging
+        cdef double Pg_parcel = 1000.0e2
+        cdef double Tg_parcel = 295.0
+        cdef double RH_ref = 0.3
+
+        self.forcing_ref.initialize(Gr,Ref, Pa,Pg_parcel, Tg_parcel, RH_ref)
 
         cdef:
             Py_ssize_t k
+            double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g
 
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
                 self.ug[k] = min(-10.0 + (-4.0-(-10.0))/(500.0e2-1000.0e2)*(Ref.p0_half[k]-1000.0e2),-4.0)
 
-                self.subsidence[k]
+                self.subsidence[k]= sub_factor * (Ref.p0_half[k] - Ref.Pg) * Ref.p0_half[k] * Ref.p0_half[k] * Ref.alpha0_half[k]
 
                 #Set large scale cooling
-                if Gr.zl_half[k] <= 1500.0:
-                    self.dtdt[k] = -2.0/(3600 * 24.0)      #K/s
-                if Gr.zl_half[k] > 1500.0:
-                    self.dtdt[k] = -2.0/(3600 * 24.0) + (Gr.zl_half[k] - 1500.0) * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)
-
-                #Set large scale drying
-                if Gr.zl_half[k] <= 300.0:
-                    self.dqtdt[k] = -1.2e-8   #kg/(kg * s)
-                if Gr.zl_half[k] > 300.0 and Gr.zl_half[k] <= 500.0:
-                    self.dqtdt[k] = -1.2e-8 + (Gr.zl_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
-
-                #Set large scale subsidence
-                if Gr.zl_half[k] <= 1500.0:
-                    self.subsidence[k] = 0.0 + Gr.zl_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
-                if Gr.zl_half[k] > 1500.0 and Gr.zl_half[k] <= 2100.0:
-                    self.subsidence[k] = -0.65/100 + (Gr.zl_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
+                if Ref.p0_half[k] > 900.0e2:
+                    self.dtdt[k] = self.t_adv_max
+                    self.dqtdt[k] = self.qt_adv_max
+                elif  Ref.p0_half[k]< 800.0e2:
+                    self.dtdt[k] = 0.0
+                    self.dqtdt[k] = 0.0
+                else:
+                    self.dtdt[k] = self.t_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
+                    self.dqtdt[k] = self.qt_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
 
 
         #Initialize Statistical Output
@@ -1003,17 +1018,39 @@ cdef class ForcingZGILS:
             double p0
             double rho0
             double t
-            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
-
-
-
         #Apply Coriolis Forcing
-        large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
 
-        #Apply large scale source terms
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+
+        # Apply Subsidence
+        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+
+        # Prepare for nuding
+        # Here we cheat a bit and ignore potential use of vertical domain decomp. in the future
+        cdef double h_BL = Gr.zl_half[kmax]
+        with nogil:
+            for k in xrange(kmax, kmin-1, -1):
+                if qtmean[k] <= self.alpha_h * self.forcing_ref.qt[k]:
+                    h_BL = Gr.zl_half[k]
+
+        Pa.root_print('H_BL forcing is ' + str(h_BL))
+
+        cdef double [:] xi_relax = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        with nogil:
+            for k in xrange(kmin, kmax):
+                if Gr.zl_half[k]/h_BL < 1.2:
+                    xi_relax[k] = 0.0
+                elif Gr.zl_half[k]/h_BL > 1.5:
+                    xi_relax[k] = self.tau_relax_inverse
+                else:
+                    xi_relax[k] = 0.5*self.tau_relax_inverse*cos((Gr.zl_half[k]/h_BL-1.2)/(1.5-1.2))
+
+        #Apply large scale source terms (BL advection, Free Tropo relaxation)
         with nogil:
             for i in xrange(imin,imax):
                 ishift = i * istride
@@ -1033,10 +1070,10 @@ cdef class ForcingZGILS:
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+                        PV.tendencies[s_shift + ijk] += -xi_relax[k] * (PV.values[s_shift + ijk]-self.forcing_ref.entropy[k])
+                        PV.tendencies[qt_shift + ijk] += -xi_relax[k] * (PV.values[qt_shift + ijk]-self.forcing_ref.qt[k])
+
+
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -1083,6 +1120,10 @@ cdef class ForcingZGILS:
         tmp_tendency[:] = 0.0
         large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &tmp_tendency[0],
                        &tmp_tendency_2[0], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
+
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -1092,6 +1133,70 @@ cdef class ForcingZGILS:
 
 
 
+cdef extern from "thermodynamics_sa.h":
+    void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
+cdef extern from "thermodynamic_functions.h":
+    inline double pd_c(double p0, double qt, double qv) nogil
+    inline double pv_c(double p0, double qt, double qv) nogil
+cdef extern from "entropies.h":
+    inline double sd_c(double pd, double T) nogil
+    inline double sv_c(double pv, double T) nogil
+    inline double sc_c(double L, double T) nogil
+
+
+
+cdef class AdjustedMoistAdiabat:
+    def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
+
+
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+        self.CC = ClausiusClapeyron()
+        self.CC.initialize(namelist, LH, Pa)
+
+        return
+
+    cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
+        cdef:
+            double qv = qt - ql - qi
+            double qd = 1.0 - qt
+            double pd = pd_c(p0, qt, qv)
+            double pv = pv_c(p0, qt, qv)
+            double Lambda = self.Lambda_fp(T)
+            double L = self.L_fp(T, Lambda)
+
+        return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
+
+    cpdef eos(self, double p0, double s, double qt):
+        cdef:
+            double T, qv, qc, ql, qi, lam
+        eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
+        return T, ql, qi
+
+
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,  ParallelMPI.ParallelMPI Pa,
+                   double Pg, double Tg, double RH):
+        '''
+        Initialize the forcing reference profiles. These profiles use the temperature corresponding to a moist adiabat,
+        but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
+        '''
+        self.entropy = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+        self.qt = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+        cdef double pvg = Thermodynamics.get_pv_star(Tg)
+        cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
+        cdef double sg = Thermodynamics.entropy(Pg, Tg, qtg, 0.0, 0.0)
+
+
+        cdef double temperature, ql, qi, pv
+
+        # Compute reference state thermodynamic profiles
+        for k in xrange(Gr.dims.nlg[2]):
+            temperature, ql, qi = Thermodynamics.eos(Ref.p0_half[k], sg, qtg)
+            pv = Thermodynamics.get_pv_star(temperature) * RH
+            self.qt[k] = eps_v * pv / (Ref.p0_half[k] + (eps_v-1.0)*pv)
+            self.entropy[k] = Thermodynamics.entropy(Ref.p0_half[k],temperature, self.qt[k] , 0.0, 0.0)
+        return
 
 
 

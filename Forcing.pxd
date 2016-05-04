@@ -4,6 +4,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
+cimport Thermodynamics
 
 cdef class Forcing:
     cdef:
@@ -122,3 +123,43 @@ cdef class ForcingCGILS:
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+
+
+
+cdef class ForcingZGILS:
+    cdef:
+        Py_ssize_t loc
+        double [:] dtdt
+        double [:] dqtdt
+        double [:] subsidence
+        double [:] ug
+        double [:] vg
+        double coriolis_param
+        double divergence
+        double t_adv_max
+        double qt_adv_max
+        double tau_relax_inverse
+        double alpha_h
+        AdjustedMoistAdiabat forcing_ref
+
+
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+
+cdef class AdjustedMoistAdiabat:
+    cdef:
+        double [:] entropy
+        double [:] qt
+        double (*L_fp)(double T, double Lambda) nogil
+        double (*Lambda_fp)(double T) nogil
+        Thermodynamics.ClausiusClapeyron CC
+    cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
+    cpdef eos(self, double p0, double s, double qt)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,  ParallelMPI.ParallelMPI Pa,
+                   double Pg, double Tg, double RH)
