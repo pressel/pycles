@@ -21,8 +21,9 @@ cdef class SurfaceBudget:
         double water_depth_initial
         double water_depth_final
         double water_depth_time
+        double fixed_sst_time
         double water_depth
-        double sst
+
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)

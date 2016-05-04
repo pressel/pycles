@@ -22,8 +22,6 @@ import cython
 def SurfaceBudgetFactory(namelist):
     if namelist['meta']['casename'] == 'ZGILS':
         return SurfaceBudget(namelist)
-    elif namelist['meta']['casename'] == 'CGILS':
-        return SurfaceBudget(namelist)
     else:
         return SurfaceBudgetNone()
 
@@ -58,6 +56,13 @@ cdef class SurfaceBudget:
             self.water_depth_time = namelist['surface_budget']['water_depth_time']
         except:
             self.water_depth_time = 0.0
+        # Allow spin up time with fixed sst
+        try:
+            self.fixed_sst_time = namelist['surface_budget']['fixed_sst_time']
+        except:
+            self.fixed_sst_time = 0.0
+        print(self.fixed_sst_time)
+
 
         self.water_depth = self.water_depth_initial
 
@@ -70,6 +75,9 @@ cdef class SurfaceBudget:
         return
 
     cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+        print('in surface busget update')
+
+
         cdef:
             int root = 0
             int count = 1
@@ -78,7 +86,12 @@ cdef class SurfaceBudget:
             double mean_lhf = Pa.HorizontalMeanSurface(Gr, &Sur.lhf[0])
             double net_flux, tendency
 
+
+
         if TS.rk_step != 0:
+            return
+        if TS.t < self.fixed_sst_time:
+            print('returning from budget')
             return
 
         if Pa.sub_z_rank == 0:

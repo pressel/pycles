@@ -920,7 +920,7 @@ cdef class ForcingZGILS:
         try:
             self.loc = namelist['meta']['ZGILS']['location']
         except:
-            Pa.root_print('Must provide a ZGILS location (6/11/12) in namelist')
+            Pa.root_print('FORCING: Must provide a ZGILS location (6/11/12) in namelist')
             Pa.kill()
         if self.loc == 12:
             self.divergence = 6.0e-6
@@ -932,7 +932,7 @@ cdef class ForcingZGILS:
             self.divergence = 2.0e-6
             self.coriolis_param = 2.0 * omega * sin(16.5/180.0*pi)
         else:
-            Pa.root_print('Unrecognized ZGILS location')
+            Pa.root_print('FORCING: Unrecognized ZGILS location ' + str(self.loc))
             Pa.kill()
 
         self.t_adv_max = -1.2/86400.0 # K/s BL tendency of temperature due to horizontal advection
@@ -957,7 +957,8 @@ cdef class ForcingZGILS:
         cdef double Tg_parcel = 295.0
         cdef double RH_ref = 0.3
 
-        self.forcing_ref.initialize(Gr,Ref, Pa,Pg_parcel, Tg_parcel, RH_ref)
+        self.forcing_ref.initialize(Pa, Ref.p0_half[:], Gr.dims.nlg[2],
+                                    Pg_parcel, Tg_parcel, RH_ref)
 
         cdef:
             Py_ssize_t k
@@ -1177,27 +1178,27 @@ cdef class AdjustedMoistAdiabat:
 
 
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,  ParallelMPI.ParallelMPI Pa,
-                   double Pg, double Tg, double RH):
+    cpdef initialize(self, ParallelMPI.ParallelMPI Pa,
+                   double [:] pressure_array, Py_ssize_t n_levels, double Pg, double Tg, double RH):
         '''
         Initialize the forcing reference profiles. These profiles use the temperature corresponding to a moist adiabat,
         but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
         '''
-        self.s = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
-        self.qt = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
-        cdef double pvg = Thermodynamics.get_pv_star(Tg)
+        self.s = np.zeros(n_levels, dtype=np.double, order='c')
+        self.qt = np.zeros(n_levels, dtype=np.double, order='c')
+        cdef double pvg = self.get_pv_star(Tg)
         cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
-        cdef double sg = Thermodynamics.entropy(Pg, Tg, qtg, 0.0, 0.0)
+        cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
 
 
         cdef double temperature, ql, qi, pv
 
         # Compute reference state thermodynamic profiles
-        for k in xrange(Gr.dims.nlg[2]):
-            temperature, ql, qi = self.eos(Ref.p0_half[k], sg, qtg)
+        for k in xrange(n_levels):
+            temperature, ql, qi = self.eos(pressure_array[k], sg, qtg)
             pv = self.get_pv_star(temperature) * RH
-            self.qt[k] = eps_v * pv / (Ref.p0_half[k] + (eps_v-1.0)*pv)
-            self.s[k] = self.entropy(Ref.p0_half[k],temperature, self.qt[k] , 0.0, 0.0)
+            self.qt[k] = eps_v * pv / (pressure_array[k] + (eps_v-1.0)*pv)
+            self.s[k] = self.entropy(pressure_array[k],temperature, self.qt[k] , 0.0, 0.0)
         return
 
 

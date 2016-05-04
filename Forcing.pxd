@@ -162,5 +162,5 @@ cdef class AdjustedMoistAdiabat:
     cpdef get_pv_star(self, t)
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,  ParallelMPI.ParallelMPI Pa,
-                   double Pg, double Tg, double RH)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
+                     double Pg, double Tg, double RH)

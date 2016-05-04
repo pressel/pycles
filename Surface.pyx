@@ -61,6 +61,8 @@ def SurfaceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
             return SurfaceRico(LH)
         elif casename == 'CGILS':
             return SurfaceCGILS(namelist, LH, Par)
+        elif casename == 'ZGILS':
+            return SurfaceZGILS(namelist, LH, Par)
         else:
             return SurfaceNone()
 
@@ -882,11 +884,27 @@ cdef class SurfaceZGILS(SurfaceBase):
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
+        try:
+            self.loc = namelist['meta']['ZGILS']['location']
+            if self.loc !=12 and self.loc != 11 and self.loc != 6:
+                Pa.root_print('SURFACE: Invalid ZGILS location (must be 6, 11, or 12) '+ str(self.loc))
+                Pa.kill()
+        except:
+            Pa.root_print('SURFACE: Must provide a ZGILS location (6/11/12) in namelist')
+            Pa.kill()
+
 
         return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+        # Set the initial sst value to the Fixed-SST case value (Tan et al 2016a, Table 1)
+        if self.loc == 12:
+            self.T_surface  = 289.75
+        elif self.loc == 11:
+            self.T_surface = 292.22
+        elif self.loc == 6:
+            self.T_surface = 298.86
         return
 
 
