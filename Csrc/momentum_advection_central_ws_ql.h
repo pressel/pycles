@@ -172,7 +172,7 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
         if(d_advected==2 && d_advecting==2){
-            printf("4th order Momentum Transport decomp \n");}
+            printf("4th order Momentum Transport decomp\n");}
 
         // Dynamically allocate flux array
         double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -248,6 +248,7 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
         if(ok_nan_ing_mean > 1){printf("problem nan advecting mean: count = %d\n",ok_nan_ing_mean);}
         if(ok_nan_ed_mean > 1){printf("problem nan advected mean: count = %d\n",ok_nan_ed_mean);}
 
+        // (2) compute flux
         const ssize_t stencil[3] = {istride,jstride,1};
         const ssize_t sp1_ed = stencil[d_advecting];
         const ssize_t sp2_ed = 2 * sp1_ed ;
@@ -348,7 +349,7 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
                 }
             }
         }
-        if(ok_nan > 1){printf("problem decomposition advecting: count = %d\n",ok_nan);}
+        if(ok_nan > 1){printf("problem nan flux: count = %d\n",ok_nan);}
 //        else{printf("no nans in MA fluxes\n");}
 
         momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
