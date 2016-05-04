@@ -52,8 +52,6 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
         horizontal_mean(dims, &vel_advecting[0], &vel_advecting_mean_[0]);
 //        horizontal_mean(dims, &vel_advected[0], &vel_advected_mean[0]);
         horizontal_mean(dims, &vel_advected[0], &vel_advected_mean_[0]);
-//        horizontal_mean_const(dims, &vel_advecting[0], &vel_advecting_mean[0]);
-//        horizontal_mean_const(dims, &vel_advected[0], &vel_advected_mean[0]);
 
         // (2) compute eddy fields
         for(ssize_t i=imin;i<imax;i++){
