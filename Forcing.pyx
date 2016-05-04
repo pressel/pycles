@@ -1070,7 +1070,7 @@ cdef class ForcingZGILS:
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
-                        PV.tendencies[s_shift + ijk] += -xi_relax[k] * (PV.values[s_shift + ijk]-self.forcing_ref.entropy[k])
+                        PV.tendencies[s_shift + ijk] += -xi_relax[k] * (PV.values[s_shift + ijk]-self.forcing_ref.s[k])
                         PV.tendencies[qt_shift + ijk] += -xi_relax[k] * (PV.values[qt_shift + ijk]-self.forcing_ref.qt[k])
 
 
@@ -1155,6 +1155,8 @@ cdef class AdjustedMoistAdiabat:
         self.CC.initialize(namelist, LH, Pa)
 
         return
+    cpdef get_pv_star(self, t):
+        return self.CC.LT.fast_lookup(t)
 
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
         cdef:
@@ -1181,7 +1183,7 @@ cdef class AdjustedMoistAdiabat:
         Initialize the forcing reference profiles. These profiles use the temperature corresponding to a moist adiabat,
         but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
         '''
-        self.entropy = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+        self.s = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.qt = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         cdef double pvg = Thermodynamics.get_pv_star(Tg)
         cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
@@ -1192,10 +1194,10 @@ cdef class AdjustedMoistAdiabat:
 
         # Compute reference state thermodynamic profiles
         for k in xrange(Gr.dims.nlg[2]):
-            temperature, ql, qi = Thermodynamics.eos(Ref.p0_half[k], sg, qtg)
-            pv = Thermodynamics.get_pv_star(temperature) * RH
+            temperature, ql, qi = self.eos(Ref.p0_half[k], sg, qtg)
+            pv = self.get_pv_star(temperature) * RH
             self.qt[k] = eps_v * pv / (Ref.p0_half[k] + (eps_v-1.0)*pv)
-            self.entropy[k] = Thermodynamics.entropy(Ref.p0_half[k],temperature, self.qt[k] , 0.0, 0.0)
+            self.s[k] = self.entropy(Ref.p0_half[k],temperature, self.qt[k] , 0.0, 0.0)
         return
 
 

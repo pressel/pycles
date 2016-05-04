@@ -154,11 +154,12 @@ cdef class ForcingZGILS:
 
 cdef class AdjustedMoistAdiabat:
     cdef:
-        double [:] entropy
+        double [:] s
         double [:] qt
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
         Thermodynamics.ClausiusClapeyron CC
+    cpdef get_pv_star(self, t)
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,  ParallelMPI.ParallelMPI Pa,

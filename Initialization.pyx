@@ -16,8 +16,13 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
 cimport ReferenceState
+from Forcing cimport AdjustedMoistAdiabat
+from Thermodynamics cimport LatentHeat
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
+
+
+
 def InitializationFactory(namelist):
 
         casename = namelist['meta']['casename']
@@ -42,12 +47,14 @@ def InitializationFactory(namelist):
         elif casename == 'CGILS':
             return  InitCGILS
 
+        elif casename == 'ZGILS':
+            return  InitZGILS
 
         else:
             pass
 
 def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH):
 
     #Generate reference profiles
     RS.Pg = 1.0e5
@@ -90,7 +97,7 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
     return
 
 def InitSaturatedBubble(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
     #Generate reference profiles
     RS.Pg = 1.0e5
@@ -174,7 +181,7 @@ def InitSaturatedBubble(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVari
     return
 
 def InitSullivanPatton(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
     #Generate the reference profiles
     RS.Pg = 1.0e5  #Pressure at ground
@@ -243,7 +250,7 @@ def InitSullivanPatton(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVaria
     return
 
 def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
     #First generate the reference profiles
     RS.Pg = 1.015e5  #Pressure at ground
@@ -346,7 +353,7 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 def InitGabls(namelist,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
     #Generate the reference profiles
     RS.Pg = 1.0e5  #Pressure at ground
@@ -423,7 +430,7 @@ def InitGabls(namelist,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
     return
 
 def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
 
     '''
     Initialize the DYCOMS_RF01 case described in
@@ -561,7 +568,7 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
 
 def InitDYCOMS_RF02(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
 
     # Generate Reference Profiles
@@ -675,7 +682,7 @@ def InitDYCOMS_RF02(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
     return
 
 def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
     '''
     Initialization for the smoke cloud case
     Bretherton, C. S., and coauthors, 1999:
@@ -770,7 +777,7 @@ def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
 def InitRico(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
     #First generate the reference profiles
     RS.Pg = 1.0154e5  #Pressure at ground
@@ -872,7 +879,7 @@ def InitRico(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
 def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
     #
     try:
         loc = namelist['meta']['CGILS']['location']
@@ -916,9 +923,8 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     data.close()
 
     # Find the surface moisture and initialize the basic state
-    pv_star = Th.get_pv_star(RS.Tg)
-    qtg_inv = 1.0/rh_srf * (RS.Pg - pv_star)/eps_v/pv_star + 1.0
-    RS.qtg = 1.0/qtg_inv
+    pv_ = Th.get_pv_star(RS.Tg)*rh_srf
+    RS.qtg =  eps_v * pv_ / (RS.Pg + (eps_v-1.0)*pv_)
 
 
     RS.initialize(Gr ,Th, NS, Pa)
@@ -1131,6 +1137,127 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
+
+
+
+
+
+def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
+
+    reference_profiles = AdjustedMoistAdiabat(namelist, LH, Pa)
+
+    RS.Tg= 288.0
+    RS.Pg= 1018.0e2
+    rh_ref = 0.8
+
+    # Find the surface moisture and initialize the basic state
+    pv_ = Th.get_pv_star(RS.Tg)*rh_ref
+    RS.qtg =  eps_v * pv_ / (RS.Pg + (eps_v-1.0)*pv_)
+
+    RS.initialize(Gr ,Th, NS, Pa)
+
+
+    cdef double Pg_parcel = 1000.0e2
+    cdef double Tg_parcel = 295.0
+    cdef double RH_ref = 0.3
+    reference_profiles.initialize(Gr,RS, Pa,Pg_parcel, Tg_parcel, RH_ref)
+
+
+
+    cdef:
+        Py_ssize_t i, j, k, ijk, ishift, jshift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+
+    for k in xrange(Gr.dims.nlg[2]):
+        if RS.p0_half[k]  > 920.0e2:
+            thetal[k] = RS.Tg /exner_c(RS.Pg)
+            qt[k] = RS.qtg
+        u[k] = min(-10.0 + (-4.0-(-10.0))/(500.0e2-1000.0e2)*(RS.p0_half[k]-1000.0e2),-4.0)
+
+
+
+
+      #Set velocities for Galilean transformation
+    RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
+    RS.v0 = 0.5 * (np.amax(v)+np.amin(v))
+
+
+    # We will need these functions to perform saturation adjustment
+    def compute_thetal(p_,T_,ql_):
+        theta_ = T_ / (p_/p_tilde)**kappa
+        return theta_ * exp(-2.501e6 * ql_ / (cpd* T_))
+
+    def sat_adjst(p_,thetal_,qt_):
+
+
+        #Compute temperature
+        t_1 = thetal_ * (p_/p_tilde)**kappa
+        #Compute saturation vapor pressure
+        pv_star_1 = Th.get_pv_star(t_1)
+        #Compute saturation mixing ratio
+        qs_1 = qv_star_c(p_,qt_,pv_star_1)
+
+        if qt_ <= qs_1:
+            #If not saturated return temperature and ql = 0.0
+            return t_1, 0.0
+        else:
+            ql_1 = qt_ - qs_1
+            f_1 = thetal_ - compute_thetal(p_,t_1,ql_1)
+            t_2 = t_1 + 2.501e6*ql_1/cpd
+            pv_star_2 = Th.get_pv_star(t_2)
+            qs_2 = qv_star_c(p_,qt_,pv_star_2)
+            ql_2 = qt_ - qs_2
+
+            while fabs(t_2 - t_1) >= 1e-9:
+                pv_star_2 = Th.get_pv_star(t_2)
+                qs_2 = qv_star_c(p_,qt_,pv_star_2)
+                ql_2 = qt_ - qs_2
+                f_2 = thetal_ - compute_thetal(p_, t_2, ql_2)
+                t_n = t_2 - f_2 * (t_2 - t_1)/(f_2 - f_1)
+                t_1 = t_2
+                t_2 = t_n
+                f_1 = f_2
+
+            return t_2, ql_2
+
+    #Generate initial perturbations (here we are generating more than we need)
+    np.random.seed(Pa.rank)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef double theta_pert_
+
+    # Here we fill in the 3D arrays
+    # We perform saturation adjustment on the S6 data, although this should not actually be necessary (but doesn't hurt)
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift = istride * i
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = jstride * j
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[ijk + u_varshift] = u[k] - RS.u0
+                PV.values[ijk + v_varshift] = v[k] - RS.v0
+                PV.values[ijk + w_varshift] = 0.0
+                if RS.p0_half[k] > 920.0e2:
+                    PV.values[ijk + qt_varshift]  = qt[k]
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                    T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
+                    PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+                else:
+                    PV.values[ijk + qt_varshift]  = reference_profiles.qt[k]
+                    PV.values[ijk + s_varshift] = reference_profiles.s[k]
+
+
+    return
 
 
 
