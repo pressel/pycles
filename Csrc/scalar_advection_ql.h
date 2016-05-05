@@ -268,6 +268,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     free(phi_fluc);
     free(phi_mean);
     free(vel_mean);
+
 }
 
 
