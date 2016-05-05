@@ -169,15 +169,14 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
             }
         }
     }
-//    free(vel_mean_);
     free(phi_mean_);
 
 
     // (2) compute flux
-//    double *eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-//    double *mix_flux_phimean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-//    double *mix_flux_phiprime = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-//    double *mean_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
+    double *eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+    double *mix_flux_phimean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+    double *mix_flux_phiprime = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+    double *mean_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
     double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
     const ssize_t stencil[3] = {istride,jstride,1};
@@ -261,10 +260,10 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     } // end else
     return;
 
-//    free(eddy_flux);
-//    free(mix_flux_phiprime);
-//    free(mix_flux_phimean);
-//    free(mean_flux);
+    free(eddy_flux);
+    free(mix_flux_phiprime);
+    free(mix_flux_phimean);
+    free(mean_flux);
     free(flux_old);
     free(phi_fluc);
     free(phi_mean);
