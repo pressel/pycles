@@ -179,7 +179,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 
 
     // (2) compute flux
-//    double *eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+    double *eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 //    double *mix_flux_phimean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 //    double *mix_flux_phiprime = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 //    double *mean_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
@@ -266,7 +266,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     } // end else
     return;
 
-//    free(eddy_flux);
+    free(eddy_flux);
 //    free(mix_flux_phiprime);
 //    free(mix_flux_phimean);
 //    free(mean_flux);
