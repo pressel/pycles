@@ -158,17 +158,17 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     horizontal_mean(dims, &velocity[0], &vel_mean[0]);
     horizontal_mean(dims, &scalar[0], &phi_mean_[0]);
 
-//    for(i=imin; i<imax; i++){
-//        const ssize_t ishift = i * istride;
-//        for(j=jmin; j<jmax; j++){
-//            const ssize_t jshift = j * jstride;
-//            for(k=kmin; k<kmax; k++){
-//                const ssize_t ijk = ishift + jshift + k;
+    for(i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
 //                phi_mean[ijk] = phi_mean_[k];
 //                phi_fluc[ijk] = scalar[ijk] - phi_mean[ijk];
-//            }
-//        }
-//    }
+            }
+        }
+    }
 
 
     // (2) compute flux
