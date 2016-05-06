@@ -213,8 +213,8 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
                 for(ssize_t k=kkmin;k<kkmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
 
-//                    const double eddy_flux = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
-//                                        * (velocity[ijk]-vel_mean[k]) * rho0[k];
+                    const double eddy_flux = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
+                                        * (velocity[ijk]-vel_mean[k]) * rho0[k];
 //                    const double mix_flux_phimean = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])
 //                                        * (velocity[ijk]-vel_mean[k]) * rho0[k];
 //                    const double mix_flux_phiprime = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
@@ -246,8 +246,8 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kkmin;k<kkmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
-//                    const double eddy_flux = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
-//                                        * (velocity[ijk]-vel_mean[k]) * rho0_half[k];
+                    const double eddy_flux = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
+                                        * (velocity[ijk]-vel_mean[k]) * rho0_half[k];
 //                    const double mix_flux_phimean = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])
 //                                        * (velocity[ijk]-vel_mean[k]) * rho0_half[k];
 //                    const double mix_flux_phiprime = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
