@@ -139,7 +139,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 
     double *vel_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
 //    double *phi_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-//    double *phi_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+    double *phi_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *phi_mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -266,7 +266,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 //    free(mean_flux);
 //    free(flux_old);
 //    free(phi_fluc);
-//    free(phi_mean);
+    free(phi_mean);
     free(phi_mean_);
     free(vel_mean);
 
