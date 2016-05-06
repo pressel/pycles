@@ -145,13 +145,13 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
 
-    const ssize_t imin = 1;
-    const ssize_t jmin = 1;
-    const ssize_t kmin = 1;
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
 
-    const ssize_t imax = dims->nlg[0]-2;
-    const ssize_t jmax = dims->nlg[1]-2;
-    const ssize_t kmax = dims->nlg[2]-2;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
 
     ssize_t i,j,k;
 
@@ -198,12 +198,20 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 //    jmax = dims->nlg[1]-2;
 //    kmax = dims->nlg[2]-2;
 
+    const ssize_t iimin = 0;
+    const ssize_t jjmin = 0;
+    const ssize_t kkmin = 0;
+
+    const ssize_t iimax = dims->nlg[0];
+    const ssize_t jjmax = dims->nlg[1];
+    const ssize_t kkmax = dims->nlg[2];
+
     if(d==2){
-        for(ssize_t i=imin;i<imax;i++){
+        for(ssize_t i=iimin;i<iimax;i++){
             const ssize_t ishift = i*istride ;
-            for(ssize_t j=jmin;j<jmax;j++){
+            for(ssize_t j=jjmin;j<jjmax;j++){
                 const ssize_t jshift = j*jstride;
-                for(ssize_t k=kmin;k<kmax;k++){
+                for(ssize_t k=kkmin;k<kkmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
 
 //                    const double eddy_flux = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
@@ -233,11 +241,11 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
         } // End i loop
     } //end if
     else{
-        for(ssize_t i=imin;i<imax;i++){
+        for(ssize_t i=iimin;i<iimax;i++){
             const ssize_t ishift = i*istride ;
-            for(ssize_t j=jmin;j<jmax;j++){
+            for(ssize_t j=jjmin;j<jjmax;j++){
                 const ssize_t jshift = j*jstride;
-                for(ssize_t k=kmin;k<kmax;k++){
+                for(ssize_t k=kkmin;k<kkmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
 //                    const double eddy_flux = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
 //                                        * (velocity[ijk]-vel_mean[k]) * rho0_half[k];
