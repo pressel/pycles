@@ -172,7 +172,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 //                phi_mean[ijk] = 1.0; // !!!!!
 //                phi_mean_[k] = 1.0; // !!!!!
                 phi_mean[ijk] = phi_mean_[k];
-//                phi_fluc[ijk] = scalar[ijk] - phi_mean[ijk];
+                phi_fluc[ijk] = scalar[ijk] - phi_mean[ijk];
             }
         }
     }
