@@ -156,6 +156,10 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 
 
     // (1) compute mean fields
+    for(k=kmin; k<kmax; k++){
+        phi_mean_[k] = 0.0;
+    }
+
     horizontal_mean(dims, &velocity[0], &vel_mean[0]);
     horizontal_mean(dims, &scalar[0], &phi_mean_[0]);
 
