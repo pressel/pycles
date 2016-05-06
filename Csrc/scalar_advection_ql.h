@@ -145,12 +145,13 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
 
-    ssize_t imin = 1;
-    ssize_t jmin = 1;
-    ssize_t kmin = 1;
-    ssize_t imax = dims->nlg[0]-2;
-    ssize_t jmax = dims->nlg[1]-2;
-    ssize_t kmax = dims->nlg[2]-2;
+    const ssize_t imin = 1;
+    const ssize_t jmin = 1;
+    const ssize_t kmin = 1;
+
+    const ssize_t imax = dims->nlg[0]-2;
+    const ssize_t jmax = dims->nlg[1]-2;
+    const ssize_t kmax = dims->nlg[2]-2;
 
     ssize_t i,j,k;
 
@@ -190,12 +191,12 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     const ssize_t sp2 = 2 * sp1;
     const ssize_t sm1 = -sp1 ;
 
-    imin = 1;
-    jmin = 1;
-    kmin = 1;
-    imax = dims->nlg[0]-2;
-    jmax = dims->nlg[1]-2;
-    kmax = dims->nlg[2]-2;
+//    imin = 1;
+//    jmin = 1;
+//    kmin = 1;
+//    imax = dims->nlg[0]-2;
+//    jmax = dims->nlg[1]-2;
+//    kmax = dims->nlg[2]-2;
 
     if(d==2){
         for(ssize_t i=imin;i<imax;i++){
