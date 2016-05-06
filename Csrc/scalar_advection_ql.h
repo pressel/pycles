@@ -138,8 +138,8 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     if(d==2){printf("4th order Scalar Transport decomp \n");}
 
     double *vel_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
-    double *phi_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-    double *phi_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//    double *phi_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//    double *phi_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *phi_mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -158,18 +158,17 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     horizontal_mean(dims, &velocity[0], &vel_mean[0]);
     horizontal_mean(dims, &scalar[0], &phi_mean_[0]);
 
-    for(i=imin; i<imax; i++){
-        const ssize_t ishift = i * istride;
-        for(j=jmin; j<jmax; j++){
-            const ssize_t jshift = j * jstride;
-            for(k=kmin; k<kmax; k++){
-                const ssize_t ijk = ishift + jshift + k;
-                phi_mean[ijk] = phi_mean_[k];
-                phi_fluc[ijk] = scalar[ijk] - phi_mean[ijk];
-            }
-        }
-    }
-    free(phi_mean_);
+//    for(i=imin; i<imax; i++){
+//        const ssize_t ishift = i * istride;
+//        for(j=jmin; j<jmax; j++){
+//            const ssize_t jshift = j * jstride;
+//            for(k=kmin; k<kmax; k++){
+//                const ssize_t ijk = ishift + jshift + k;
+//                phi_mean[ijk] = phi_mean_[k];
+//                phi_fluc[ijk] = scalar[ijk] - phi_mean[ijk];
+//            }
+//        }
+//    }
 
 
     // (2) compute flux
@@ -177,7 +176,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 //    double *mix_flux_phimean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 //    double *mix_flux_phiprime = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 //    double *mean_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
-    double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//    double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
     const ssize_t stencil[3] = {istride,jstride,1};
     const ssize_t sp1 = stencil[d];
@@ -264,9 +263,10 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 //    free(mix_flux_phiprime);
 //    free(mix_flux_phimean);
 //    free(mean_flux);
-    free(flux_old);
-    free(phi_fluc);
-    free(phi_mean);
+//    free(flux_old);
+//    free(phi_fluc);
+//    free(phi_mean);
+    free(phi_mean_);
     free(vel_mean);
 
 }
