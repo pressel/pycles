@@ -145,16 +145,15 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
 
-    const ssize_t imin = 0;
-    const ssize_t jmin = 0;
-    const ssize_t kmin = 0;
+    ssize_t imin = 0;
+    ssize_t jmin = 0;
+    ssize_t kmin = 0;
 
-    const ssize_t imax = dims->nlg[0];
-    const ssize_t jmax = dims->nlg[1];
-    const ssize_t kmax = dims->nlg[2];
+    ssize_t imax = dims->nlg[0];
+    ssize_t jmax = dims->nlg[1];
+    ssize_t kmax = dims->nlg[2];
 
     ssize_t i,j,k;
-
 
     // (1) compute mean fields
 //    for(k=kmin; k<kmax; k++){
@@ -198,13 +197,13 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 //    jmax = dims->nlg[1]-2;
 //    kmax = dims->nlg[2]-2;
 
-    const ssize_t iimin = 0;
-    const ssize_t jjmin = 0;
-    const ssize_t kkmin = 0;
+    ssize_t iimin = 0;
+    ssize_t jjmin = 0;
+    ssize_t kkmin = 0;
 
-    const ssize_t iimax = dims->nlg[0];
-    const ssize_t jjmax = dims->nlg[1];
-    const ssize_t kkmax = dims->nlg[2];
+    ssize_t iimax = dims->nlg[0];
+    ssize_t jjmax = dims->nlg[1];
+    ssize_t kkmax = dims->nlg[2];
 
     if(d==2){
         for(ssize_t i=iimin;i<iimax;i++){
