@@ -148,11 +148,17 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     ssize_t imin = 0;
     ssize_t jmin = 0;
     ssize_t kmin = 0;
+
     ssize_t imax = dims->nlg[0];
     ssize_t jmax = dims->nlg[1];
     ssize_t kmax = dims->nlg[2];
 
     ssize_t i,j,k;
+
+    // (1) compute mean fields
+//    for(k=kmin; k<kmax; k++){
+//        phi_mean_[k] = 0.0;
+//    }
 
     horizontal_mean(dims, &velocity[0], &vel_mean[0]);
     horizontal_mean(dims, &scalar[0], &phi_mean_[0]);
@@ -184,20 +190,20 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
     const ssize_t sp2 = 2 * sp1;
     const ssize_t sm1 = -sp1 ;
 
-//    imin = 1;
-//    jmin = 1;
-//    kmin = 1;
-//    imax = dims->nlg[0]-2;
-//    jmax = dims->nlg[1]-2;
-//    kmax = dims->nlg[2]-2;
-
     imin = 1;
     jmin = 1;
     kmin = 1;
-
     imax = dims->nlg[0]-2;
     jmax = dims->nlg[1]-2;
     kmax = dims->nlg[2]-2;
+//
+//    ssize_t iimin = 0;
+//    ssize_t jjmin = 0;
+//    ssize_t kkmin = 0;
+//
+//    ssize_t iimax = dims->nlg[0];
+//    ssize_t jjmax = dims->nlg[1];
+//    ssize_t kkmax = dims->nlg[2];
 
     if(d==2){
         for(ssize_t i=imin;i<imax;i++){
@@ -217,16 +223,16 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 //                    flux[ijk] = eddy_flux + mix_flux_phimean + mix_flux_phiprime + mean_flux;
                     eddy_flux[ijk] = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
                                         * (velocity[ijk]-vel_mean[k]) * rho0[k];
-                    mix_flux_phimean[ijk] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])
-                                        * (velocity[ijk]-vel_mean[k]) * rho0[k];
-                    mix_flux_phiprime[ijk] = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
-                                        * vel_mean[k] * rho0[k];
-                    mean_flux[k] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])*velocity[ijk]
-                                        * vel_mean[k] * rho0[k];
-                    flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
+//                    mix_flux_phimean[ijk] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])
+//                                        * (velocity[ijk]-vel_mean[k]) * rho0[k];
+//                    mix_flux_phiprime[ijk] = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
+//                                        * vel_mean[k] * rho0[k];
+//                    mean_flux[k] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])*velocity[ijk]
+//                                        * vel_mean[k] * rho0[k];
+//                    flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
 
-                    flux_old[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
-//                    flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
+//                    flux_old[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
+                    flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
 //                    flux[ijk] = flux_old[ijk];
                 } // End k loop
             } // End j loop
@@ -250,16 +256,16 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 //                    flux[ijk] = eddy_flux + mix_flux_phimean + mix_flux_phiprime + mean_flux;
                     eddy_flux[ijk] = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
                                         * (velocity[ijk]-vel_mean[k]) * rho0_half[k];
-                    mix_flux_phimean[ijk] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])
-                                        * (velocity[ijk]-vel_mean[k]) * rho0_half[k];
-                    mix_flux_phiprime[ijk] = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
-                                        * vel_mean[k] * rho0_half[k];
-                    mean_flux[k] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])*velocity[ijk]
-                                        * vel_mean[k] * rho0_half[k];
-                    flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
+//                    mix_flux_phimean[ijk] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])
+//                                        * (velocity[ijk]-vel_mean[k]) * rho0_half[k];
+//                    mix_flux_phiprime[ijk] = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
+//                                        * vel_mean[k] * rho0_half[k];
+//                    mean_flux[k] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])*velocity[ijk]
+//                                        * vel_mean[k] * rho0_half[k];
+//                    flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
 
-                    flux_old[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
-//                    flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
+//                    flux_old[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
+                    flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
 //                    flux[ijk] = flux_old[ijk];
                 } // End k loop
             } // End j loop
