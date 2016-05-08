@@ -232,7 +232,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
                     flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
 
                     flux_old[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
-                    flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
+//                    flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
 //                    flux[ijk] = flux_old[ijk];
                 } // End k loop
             } // End j loop
@@ -265,7 +265,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
                     flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
 
                     flux_old[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
-                    flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
+//                    flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
 //                    flux[ijk] = flux_old[ijk];
                 } // End k loop
             } // End j loop
