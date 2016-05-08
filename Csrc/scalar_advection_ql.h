@@ -131,7 +131,6 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
 
 
-
 void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
     double* restrict velocity, double* restrict scalar, double* restrict flux, int d){
 
@@ -227,7 +226,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
                                         * (velocity[ijk]-vel_mean[k]) * rho0[k];
                     mix_flux_phiprime[ijk] = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
                                         * vel_mean[k] * rho0[k];
-                    mean_flux[k] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])*velocity[ijk]
+                    mean_flux[k] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])
                                         * vel_mean[k] * rho0[k];
                     flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
 
@@ -260,7 +259,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
                                         * (velocity[ijk]-vel_mean[k]) * rho0_half[k];
                     mix_flux_phiprime[ijk] = interp_4(phi_fluc[ijk+sm1],phi_fluc[ijk],phi_fluc[ijk+sp1],phi_fluc[ijk+sp2])
                                         * vel_mean[k] * rho0_half[k];
-                    mean_flux[k] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])*velocity[ijk]
+                    mean_flux[k] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])
                                         * vel_mean[k] * rho0_half[k];
                     flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
 
