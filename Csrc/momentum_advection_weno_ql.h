@@ -164,14 +164,15 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                  vel_advected_fluc[ijk + sp1_ed],
                                                  vel_advected_fluc[ijk],
                                                  vel_advected_fluc[ijk + sm1_ed]);
-//                        const double phim_mean = interp_weno5(vel_advected_mean[ijk + sp3_ed],
-//                                                 vel_advected_mean[ijk + sp2_ed],
-//                                                 vel_advected_mean[ijk + sp1_ed],
-//                                                 vel_advected_mean[ijk],
-//                                                 vel_advected_mean[ijk + sm1_ed]);
+                        const double phim_mean = interp_weno5(vel_advected_mean[ijk + sp3_ed],
+                                                 vel_advected_mean[ijk + sp2_ed],
+                                                 vel_advected_mean[ijk + sp1_ed],
+                                                 vel_advected_mean[ijk],
+                                                 vel_advected_mean[ijk + sm1_ed]);
 //                        phim_mean = interp_weno5(vel_advected_mean_[k],vel_advected_mean_[k],vel_advected_mean_[k],vel_advected_mean_[k],vel_advected_mean_[k]);
+
 //                        const double phip_mean = vel_advected_mean_[k];  // interpolation of mean profiles in x-, y-direction has no effect
-                        const double phim_mean = vel_advected_mean_[k];  // interpolation of mean profiles in x-, y-direction has no effect
+//                        const double phim_mean = vel_advected_mean_[k];  // interpolation of mean profiles in x-, y-direction has no effect
 
 //                        const double vel_adv_mean = interp_4(vel_advecting_mean[ijk + sm1_ing],
 //                                                             vel_advecting_mean[ijk],
@@ -252,14 +253,14 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                  vel_advected_fluc[ijk + sp1_ed],
                                                  vel_advected_fluc[ijk],
                                                  vel_advected_fluc[ijk + sm1_ed]);
-//                        const double phim_mean = interp_weno5(vel_advected_mean[ijk + sp3_ed],
-//                                                 vel_advected_mean[ijk + sp2_ed],
-//                                                 vel_advected_mean[ijk + sp1_ed],
-//                                                 vel_advected_mean[ijk],
-//                                                 vel_advected_mean[ijk + sm1_ed]);
-
+                        const double phim_mean = interp_weno5(vel_advected_mean[ijk + sp3_ed],
+                                                 vel_advected_mean[ijk + sp2_ed],
+                                                 vel_advected_mean[ijk + sp1_ed],
+                                                 vel_advected_mean[ijk],
+                                                 vel_advected_mean[ijk + sm1_ed]);
+//
 //                        const double phip_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
-                        const double phim_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
+//                        const double phim_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
 
 
 //                        const double vel_adv_mean = interp_4(vel_advecting_mean[ijk + sm1_ing],
@@ -338,14 +339,14 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                  vel_advected_fluc[ijk + sp1_ed],
                                                  vel_advected_fluc[ijk],
                                                  vel_advected_fluc[ijk + sm1_ed]);
-//                        const double phim_mean = interp_weno5(vel_advected_mean[ijk + sp3_ed],
-//                                                 vel_advected_mean[ijk + sp2_ed],
-//                                                 vel_advected_mean[ijk + sp1_ed],
-//                                                 vel_advected_mean[ijk],
-//                                                 vel_advected_mean[ijk + sm1_ed]);
+                        const double phim_mean = interp_weno5(vel_advected_mean[ijk + sp3_ed],
+                                                 vel_advected_mean[ijk + sp2_ed],
+                                                 vel_advected_mean[ijk + sp1_ed],
+                                                 vel_advected_mean[ijk],
+                                                 vel_advected_mean[ijk + sm1_ed]);
 
 //                        const double phip_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
-                        const double phim_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
+//                        const double phim_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
 
 //                        const double vel_adv_mean = interp_4(vel_advecting_mean[ijk + sm1_ing],
 //                                                            vel_advecting_mean[ijk],
