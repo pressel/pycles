@@ -220,7 +220,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                         vel_advecting[ijk + sp2_ing]);
 
                         flux_old[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
-                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+//                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
 //                        printf("old flux: %f\n", fabs(flux_old[ijk]));
 
                     }
@@ -307,7 +307,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                         vel_advecting[ijk + sp2_ing]);
 
                         flux_old[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
-                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+//                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
 
                     }
                 }
@@ -392,7 +392,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                         vel_advecting[ijk + sp2_ing]);
 
                         flux_old[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
-                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
+//                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
 
                     }
                 }
