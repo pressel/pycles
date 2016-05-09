@@ -746,8 +746,13 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
             break;
         case 205:
             weno_fifth_order_a_decomp(dims, rho0, rho0_half, velocity, scalar, flux, d);
-//            weno_fifth_order_a_decomp(dims, rho0, rho0_half, velocity, scalar, flux, flux_old, d);
             break;
+
+        case 305:
+            weno_fifth_order_a_decomp_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            break;
+
+
 
         default:
             // Make WENO5 default case. The central schemes may not be necessarily stable, however WENO5 should be.
