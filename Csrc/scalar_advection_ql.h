@@ -673,6 +673,7 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
     // eddy_flux = u' phi'
     // mean_flux = <u><phi>
     double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+    double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mix_flux_phiprime = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mix_flux_phimean = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -784,7 +785,19 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
 
     horizontal_mean_const(dims, &eddy_flux[0], &mean_eddy_flux[0]);
 
+    for(ssize_t i=imin;i<imax;i++){
+            const ssize_t ishift = i*istride ;
+            for(ssize_t j=jmin;j<jmax;j++){
+                const ssize_t jshift = j*jstride;
+                for(ssize_t k=kmin;k<kmax;k++){
+                    const ssize_t ijk = ishift + jshift + k ;
+                    flux_ql[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + mean_eddy_flux[k];
+                } // End k loop
+            } // End j loop
+        } // End i loop
+
     free(flux_old);
+    free(flux_ql);
     free(mix_flux_phiprime);
     free(mix_flux_phimean);
     free(eddy_flux);
