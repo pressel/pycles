@@ -451,7 +451,7 @@ void weno_fifth_order_m_decomp_ql(struct DimStruct *dims, double* restrict rho0,
 
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-        double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//        double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -603,12 +603,11 @@ void weno_fifth_order_m_decomp_ql(struct DimStruct *dims, double* restrict rho0,
                         mix_flux_two[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_mean + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_mean)*rho0_half[k] ;
                         eddy_flux[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_fluc + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_fluc)*rho0_half[k] ;
 
-                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
+//                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
 
-                        if(isnan(flux[ijk])) {
-                            printf("Nan in flux, d1!=2, d2!=2\n");
-                        }
-
+//                        if(isnan(flux[ijk])) {
+//                            printf("Nan in flux, d1!=2, d2!=2\n");
+//                        }
 
                         // Old Flux
                         const double phip = interp_weno5(vel_advected[ijk + sm2_ed],
@@ -683,10 +682,10 @@ void weno_fifth_order_m_decomp_ql(struct DimStruct *dims, double* restrict rho0,
                         mix_flux_two[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_mean + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_mean)*rho0_half[k+1] ;
                         eddy_flux[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_fluc + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_fluc)*rho0_half[k+1] ;
 
-                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
-                        if(isnan(flux[ijk])) {
-                            printf("Nan in flux, d1=2, d2=2\n");
-                        }
+//                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
+//                        if(isnan(flux[ijk])) {
+//                            printf("Nan in flux, d1=2, d2=2\n");
+//                        }
 
 
                         // Old Flux
@@ -760,10 +759,10 @@ void weno_fifth_order_m_decomp_ql(struct DimStruct *dims, double* restrict rho0,
                         mix_flux_two[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_mean + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_mean)*rho0[k] ;
                         eddy_flux[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_fluc + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_fluc)*rho0[k] ;
 
-                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
-                        if(isnan(flux[ijk])) {
-                            printf("Nan in flux, d1=2, d2!=2\n");
-                        }
+//                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
+//                        if(isnan(flux[ijk])) {
+//                            printf("Nan in flux, d1=2, d2!=2\n");
+//                        }
 
 
                         // Original Flux computation
@@ -796,9 +795,11 @@ void weno_fifth_order_m_decomp_ql(struct DimStruct *dims, double* restrict rho0,
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
 
-                        flux_ql[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + mean_eddy_flux[k];
+//                        flux_ql[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + mean_eddy_flux[k];
+                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + mean_eddy_flux[k];
 
-                        if(isnan(flux_ql[ijk])) {
+//                        if(isnan(flux_ql[ijk])) {
+                        if(isnan(flux[ijk])) {
                             printf("Nan in QL flux, because of mean eddy flux\n");
                         }
                     }
@@ -811,7 +812,7 @@ void weno_fifth_order_m_decomp_ql(struct DimStruct *dims, double* restrict rho0,
 
         free(flux);
         free(flux_old);
-        free(flux_ql);
+//        free(flux_ql);
         free(mix_flux_one);
         free(mix_flux_two);
         free(eddy_flux);
