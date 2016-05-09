@@ -178,6 +178,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                              vel_advecting_mean[ijk],
                                                              vel_advecting_mean[ijk + sp1_ing],
                                                              vel_advecting_mean[ijk] + sp2_ing);
+                        vel_adv_mean = vel_advecting_mean_[k];
 //                        const double vel_adv_mean = vel_advecting_mean_[k];
                         const double vel_adv_fluc = interp_4(vel_advecting_fluc[ijk + sm1_ing],
                                                             vel_advecting_fluc[ijk],
@@ -267,6 +268,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                             vel_advecting_mean[ijk],
                                                             vel_advecting_mean[ijk + sp1_ing],
                                                             vel_advecting_mean[ijk] + sp2_ing);
+                        vel_adv_mean = vel_advecting_mean_[k];
 //                        const double vel_adv_mean = vel_advecting_mean_[k];
                         const double vel_adv_fluc = interp_4(vel_advecting_fluc[ijk + sm1_ing],
                                                             vel_advecting_fluc[ijk],
@@ -352,6 +354,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                             vel_advecting_mean[ijk],
                                                             vel_advecting_mean[ijk + sp1_ing],
                                                             vel_advecting_mean[ijk] + sp2_ing);
+                        vel_adv_mean = vel_advecting_mean_[k];
 //                        const double vel_adv_mean = vel_advecting_mean_[k];
                         const double vel_adv_fluc = interp_4(vel_advecting_fluc[ijk + sm1_ing],
                                                             vel_advecting_fluc[ijk],
