@@ -6,6 +6,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 cimport Surface
+from Forcing cimport AdjustedMoistAdiabat
 
 cdef class RadiationBase:
     cdef:
@@ -75,6 +76,11 @@ cdef class RadiationSmoke(RadiationBase):
 cdef class RadiationRRTM(RadiationBase):
     cdef:
         str profile_name
+        bint modified_adiabat
+        AdjustedMoistAdiabat reference_profile
+        double Tg_adiabat
+        double Pg_adiabat
+        double RH_adiabat
         Py_ssize_t n_buffer
         Py_ssize_t n_ext
         double stretch_factor

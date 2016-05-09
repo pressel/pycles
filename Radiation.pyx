@@ -12,7 +12,9 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 cimport Surface
-import pylab as plt
+from Forcing cimport AdjustedMoistAdiabat
+from Thermodynamics cimport LatentHeat
+# import pylab as plt
 import numpy as np
 cimport numpy as np
 import netCDF4 as nc
@@ -23,14 +25,14 @@ include 'parameters.pxi'
 from profiles import profile_data
 
 
-def RadiationFactory(namelist, ParallelMPI.ParallelMPI Pa):
+def RadiationFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
     # if namelist specifies RRTM is to be used, this will override any case-specific radiation schemes
     try:
         use_rrtm = namelist['radiation']['use_RRTM']
     except:
         use_rrtm = False
     if use_rrtm:
-        return RadiationRRTM(namelist, Pa)
+        return RadiationRRTM(namelist,LH, Pa)
     else:
         casename = namelist['meta']['casename']
         if casename == 'DYCOMS_RF01':
@@ -41,7 +43,9 @@ def RadiationFactory(namelist, ParallelMPI.ParallelMPI Pa):
         elif casename == 'SMOKE':
             return RadiationSmoke()
         elif casename == 'CGILS':
-            return RadiationRRTM(namelist, Pa)
+            return RadiationRRTM(namelist,LH, Pa)
+        elif casename == 'ZGILS':
+            return RadiationRRTM(namelist, LH, Pa)
         else:
             return RadiationNone()
 
@@ -370,7 +374,7 @@ cdef extern:
 
 cdef class RadiationRRTM(RadiationBase):
 
-    def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
+    def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
 
 
         # Required for surface energy budget calculations, can also be used for stats io
@@ -381,6 +385,7 @@ cdef class RadiationRRTM(RadiationBase):
 
 
         casename = namelist['meta']['casename']
+        self.modified_adiabat = False
         if casename == 'SHEBA':
             self.profile_name = 'sheba'
         elif casename == 'DYCOMS_RF01':
@@ -392,6 +397,15 @@ cdef class RadiationRRTM(RadiationBase):
                 self.profile_name = 'cgils_p2_s'+str(loc)
             else:
                 self.profile_name = 'cgils_ctl_s'+str(loc)
+        elif casename == 'ZGILS':
+            loc = namelist['meta']['ZGILS']['location']
+            self.profile_name = 'cgils_ctl_s'+str(loc)
+            self.modified_adiabat = True
+            self.reference_profile = AdjustedMoistAdiabat(namelist, LH, Pa)
+            self.Tg_adiabat = 295.0
+            self.Pg_adiabat = 1000.0e2
+            self.RH_adiabat = 0.3
+
         else:
             Pa.root_print('RadiationRRTM: Case ' + casename + ' has no known extension profile')
             Pa.kill()
@@ -500,18 +514,38 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t nz = Gr.dims.n[2]
             Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t i,k
+            Py_ssize_t n_adiabat
+            double [:] pressures_adiabat
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
-        pressures = profile_data[self.profile_name]['pressure'][:]
-        temperatures = profile_data[self.profile_name]['temperature'][:]
-        vapor_mixing_ratios = profile_data[self.profile_name]['vapor_mixing_ratio'][:]
+        if self.modified_adiabat:
+            # pressures = profile_data[self.profile_name]['pressure'][:]
+            pressures = np.arange(25*100, 1015*100, 10*100)
+            pressures = np.array(pressures[::-1], dtype=np.double)
+            n_adiabat = np.shape(pressures)[0]
+            self.reference_profile.initialize(Pa, pressures, n_adiabat, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
+            temperatures =np.array( self.reference_profile.temperature)
+            vapor_mixing_ratios = np.array(self.reference_profile.rv)
+            print temperatures
+            print vapor_mixing_ratios
+        else:
+            pressures = profile_data[self.profile_name]['pressure'][:]
+            temperatures = profile_data[self.profile_name]['temperature'][:]
+            vapor_mixing_ratios = profile_data[self.profile_name]['vapor_mixing_ratio'][:]
+
 
         # Sanity check that patch_pressure < minimum LES domain pressure
         dp = np.abs(Ref.p0_half_global[nz + gw -1] - Ref.p0_half_global[nz + gw -2])
         self.patch_pressure = np.minimum(self.patch_pressure, Ref.p0_half_global[nz + gw -1] - dp  )
 
-        n_profile = len(pressures[pressures<=self.patch_pressure]) # nprofile = # of points in the fixed profile to use
+        #n_profile = len(pressures[pressures<=self.patch_pressure]) # nprofile = # of points in the fixed profile to use
+        # above syntax tends to cause problems so use a more robust way
+        n_profile = 0
+        for pressure in pressures:
+            if pressure <= self.patch_pressure:
+                n_profile += 1
+        print('n_prfile is '+str(n_profile))
         self.n_ext =  n_profile + self.n_buffer # n_ext = total # of points to add to LES domain (buffer portion + fixed profile portion)
 
 
@@ -563,17 +597,17 @@ cdef class RadiationRRTM(RadiationBase):
             qv_pencils[0,i] = qv_pencils[0, i]/ (1.0 - qv_pencils[0, i])
         #
         # Plotting to evaluate implementation of buffer zone
-        plt.figure(1)
-        plt.plot(self.rv_ext,self.p_ext,'or')
-        plt.plot(vapor_mixing_ratios, pressures)
-        plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw],'ob')
-        plt.gca().invert_yaxis()
-        plt.figure(2)
-        plt.plot(self.t_ext,self.p_ext,'-or')
-        plt.plot(temperatures,pressures)
-        plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw],'-ob')
-        plt.gca().invert_yaxis()
-        plt.show()
+        # plt.figure(1)
+        # plt.plot(self.rv_ext,self.p_ext,'or')
+        # plt.plot(vapor_mixing_ratios, pressures)
+        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw],'ob')
+        # plt.gca().invert_yaxis()
+        # plt.figure(2)
+        # plt.plot(self.t_ext,self.p_ext,'-or')
+        # plt.plot(temperatures,pressures)
+        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw],'-ob')
+        # plt.gca().invert_yaxis()
+        # plt.show()
         #---END Plotting to evaluate implementation of buffer zone
 
         self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
@@ -766,13 +800,13 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t k, ip
             bint use_ice = False
 
+        print('in update_RRTM')
 
 
         if 'qi' in DV.name_index:
             qi_shift = DV.get_varshift(Gr, 'qi')
             qi_pencil = self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[qi_shift])
             use_ice = True
-
 
 
 
@@ -809,7 +843,7 @@ cdef class RadiationRRTM(RadiationBase):
             double [:,:,:] taucld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.double,order='F')
             double [:,:,:] ssacld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.double,order='F')
             double [:,:,:] asmcld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:,:] fsfcld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.double,ordexr='F')
+            double [:,:,:] fsfcld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.double,order='F')
             double [:,:,:] tauaer_sw_in  = np.zeros((n_pencils,nz_full,14),dtype=np.double,order='F')
             double [:,:,:] ssaaer_sw_in  = np.zeros((n_pencils,nz_full,14),dtype=np.double,order='F')
             double [:,:,:] asmaer_sw_in  = np.zeros((n_pencils,nz_full,14),dtype=np.double,order='F')
@@ -832,7 +866,6 @@ cdef class RadiationRRTM(RadiationBase):
             double[:,:] hrc_sw_out = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
 
             double rv_to_reff = np.exp(np.log(1.2)**2.0)*10.0*1000.0
-
 
         with nogil:
             for k in xrange(nz, nz_full):
@@ -898,6 +931,7 @@ cdef class RadiationRRTM(RadiationBase):
             int iceflgsw = 3
             int liqflgsw = 1
 
+        print(n_pencils,nz_full)
         c_rrtmg_lw (
              &ncol    ,&nlay    ,&icld    ,&idrv,
              &play_in[0,0]    ,&plev_in[0,0]    ,&tlay_in[0,0]    ,&tlev_in[0,0]    ,&tsfc_in[0]    ,
@@ -908,7 +942,6 @@ cdef class RadiationRRTM(RadiationBase):
              &tauaer_lw_in[0,0,0]  ,
              &uflx_lw_out[0,0]    ,&dflx_lw_out[0,0]    ,&hr_lw_out[0,0]      ,&uflxc_lw_out[0,0]   ,&dflxc_lw_out[0,0],  &hrc_lw_out[0,0],
              &duflx_dt_out[0,0],&duflxc_dt_out[0,0] )
-
 
 
         c_rrtmg_sw (
@@ -922,9 +955,6 @@ cdef class RadiationRRTM(RadiationBase):
              &tauaer_sw_in[0,0,0]  ,&ssaaer_sw_in[0,0,0]  ,&asmaer_sw_in[0,0,0]  ,&ecaer_sw_in[0,0,0]   ,
              &uflx_sw_out[0,0]    ,&dflx_sw_out[0,0]    ,&hr_sw_out[0,0]      ,&uflxc_sw_out[0,0]   ,&dflxc_sw_out[0,0], &hrc_sw_out[0,0])
 
-
-
-
         cdef double [:,:] heating_rate_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
         cdef double srf_lw_up_local =0.0, srf_lw_down_local=0.0, srf_sw_up_local=0.0, srf_sw_down_local=0.0
         cdef double nxny_i = 1.0/(Gr.dims.n[0]*Gr.dims.n[1])
@@ -936,18 +966,20 @@ cdef class RadiationRRTM(RadiationBase):
                srf_sw_down_local += dflx_sw_out[ip,0] * nxny_i
                for k in xrange(nz):
                    heating_rate_pencil[ip, k] = (hr_lw_out[ip,k] + hr_sw_out[ip,k]) * Ref.rho0_half_global[k] * cpm_c(qv_pencil[ip,k])/86400.0
+
         self.srf_lw_up = Pa.domain_scalar_sum(srf_lw_up_local)
         self.srf_lw_down = Pa.domain_scalar_sum(srf_lw_down_local)
         self.srf_sw_up= Pa.domain_scalar_sum(srf_sw_up_local)
         self.srf_sw_down= Pa.domain_scalar_sum(srf_sw_down_local)
 
+
         #----BEGIN Plotting to test implementation of buffer zone
         #---Comment out when not running locally
-        # Plot to verify no kink is present at top of LES domain
-        plt.figure(6)
-        plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
-        plt.gca().invert_yaxis()
-        plt.show()
+        # #---Plot to verify no kink is present at top of LES domain
+        # plt.figure(6)
+        # plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
+        # plt.gca().invert_yaxis()
+        # plt.show()
         #---END plotting
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])

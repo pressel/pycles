@@ -1039,7 +1039,7 @@ cdef class ForcingZGILS:
                 if qtmean[k] <= self.alpha_h * self.forcing_ref.qt[k]:
                     h_BL = Gr.zl_half[k]
 
-        Pa.root_print('H_BL forcing is ' + str(h_BL))
+        # Pa.root_print('H_BL forcing is ' + str(h_BL))
 
         cdef double [:] xi_relax = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         with nogil:
@@ -1186,6 +1186,8 @@ cdef class AdjustedMoistAdiabat:
         '''
         self.s = np.zeros(n_levels, dtype=np.double, order='c')
         self.qt = np.zeros(n_levels, dtype=np.double, order='c')
+        self.temperature = np.zeros(n_levels, dtype=np.double, order='c')
+        self.rv = np.zeros(n_levels, dtype=np.double, order='c')
         cdef double pvg = self.get_pv_star(Tg)
         cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
         cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
@@ -1199,6 +1201,8 @@ cdef class AdjustedMoistAdiabat:
             pv = self.get_pv_star(temperature) * RH
             self.qt[k] = eps_v * pv / (pressure_array[k] + (eps_v-1.0)*pv)
             self.s[k] = self.entropy(pressure_array[k],temperature, self.qt[k] , 0.0, 0.0)
+            self.temperature[k] = temperature
+            self.rv[k] = self.qt[k]/(1.0-self.qt[k])
         return
 
 

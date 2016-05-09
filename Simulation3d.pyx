@@ -54,7 +54,7 @@ class Simulation3d:
         self.Ref = ReferenceState.ReferenceState(self.Gr)
         self.Sur = SurfaceFactory(namelist, self.LH, self.Pa)
         self.Fo = Forcing.Forcing(namelist, self.LH, self.Pa)
-        self.Ra = RadiationFactory(namelist, self.Pa)
+        self.Ra = RadiationFactory(namelist,self.LH, self.Pa)
         self.Budg = SurfaceBudgetFactory(namelist)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()

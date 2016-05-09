@@ -156,6 +156,8 @@ cdef class AdjustedMoistAdiabat:
     cdef:
         double [:] s
         double [:] qt
+        double [:] temperature
+        double [:] rv
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
         Thermodynamics.ClausiusClapeyron CC
