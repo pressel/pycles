@@ -527,8 +527,7 @@ cdef class RadiationRRTM(RadiationBase):
             self.reference_profile.initialize(Pa, pressures, n_adiabat, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
             temperatures =np.array( self.reference_profile.temperature)
             vapor_mixing_ratios = np.array(self.reference_profile.rv)
-            print temperatures
-            print vapor_mixing_ratios
+
         else:
             pressures = profile_data[self.profile_name]['pressure'][:]
             temperatures = profile_data[self.profile_name]['temperature'][:]
@@ -545,7 +544,7 @@ cdef class RadiationRRTM(RadiationBase):
         for pressure in pressures:
             if pressure <= self.patch_pressure:
                 n_profile += 1
-        print('n_prfile is '+str(n_profile))
+
         self.n_ext =  n_profile + self.n_buffer # n_ext = total # of points to add to LES domain (buffer portion + fixed profile portion)
 
 
@@ -800,8 +799,6 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t k, ip
             bint use_ice = False
 
-        print('in update_RRTM')
-
 
         if 'qi' in DV.name_index:
             qi_shift = DV.get_varshift(Gr, 'qi')
@@ -931,7 +928,6 @@ cdef class RadiationRRTM(RadiationBase):
             int iceflgsw = 3
             int liqflgsw = 1
 
-        print(n_pencils,nz_full)
         c_rrtmg_lw (
              &ncol    ,&nlay    ,&icld    ,&idrv,
              &play_in[0,0]    ,&plev_in[0,0]    ,&tlay_in[0,0]    ,&tlev_in[0,0]    ,&tsfc_in[0]    ,

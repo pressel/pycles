@@ -61,7 +61,7 @@ cdef class SurfaceBudget:
             self.fixed_sst_time = namelist['surface_budget']['fixed_sst_time']
         except:
             self.fixed_sst_time = 0.0
-        print(self.fixed_sst_time)
+
 
 
         self.water_depth = self.water_depth_initial
@@ -75,8 +75,6 @@ cdef class SurfaceBudget:
         return
 
     cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
-        print('in surface busget update')
-
 
         cdef:
             int root = 0
@@ -91,7 +89,6 @@ cdef class SurfaceBudget:
         if TS.rk_step != 0:
             return
         if TS.t < self.fixed_sst_time:
-            print('returning from budget')
             return
 
         if Pa.sub_z_rank == 0:
