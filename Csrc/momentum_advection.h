@@ -126,6 +126,10 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
             fourth_order_ws_m_decomp(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
+        case 305:
+            weno_fifth_order_m_decomp_ql(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
+                tendency, d_advected, d_advecting);
+            break;
 
         default:
             // Default to second order scheme.
