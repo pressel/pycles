@@ -451,6 +451,7 @@ void weno_fifth_order_m_decomp_ql(struct DimStruct *dims, double* restrict rho0,
 
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -788,12 +789,29 @@ void weno_fifth_order_m_decomp_ql(struct DimStruct *dims, double* restrict rho0,
         }
 
         horizontal_mean(dims, &eddy_flux[0], &mean_eddy_flux[0]);
+        for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+
+                        flux_ql[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + mean_eddy_flux[k];
+
+                        if(isnan(flux_ql[ijk])) {
+                            printf("Nan in QL flux, because of mean eddy flux\n");
+                        }
+                    }
+                }
+            }
 
 
         momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
                                 tendency, d_advected, d_advecting);
+
         free(flux);
         free(flux_old);
+        free(flux_ql);
         free(mix_flux_one);
         free(mix_flux_two);
         free(eddy_flux);
