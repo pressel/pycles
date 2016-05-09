@@ -63,8 +63,10 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                     vel_advecting_mean[ijk] = vel_advecting_mean_[k];
                     vel_advected_mean[ijk] = vel_advected_mean_[k];
 
-                    vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean[ijk];
-                    vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean[ijk];
+//                    vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean[ijk];
+//                    vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean[ijk];
+                    vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean_[k];
+                    vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean_[k];
 
                     if(isnan(vel_advected_fluc[ijk])) {
                         printf("Nan in vel_advected_fluc\n");
@@ -220,6 +222,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                         vel_advecting[ijk + sp2_ing]);
 
                         flux_old[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
 //                        printf("old flux: %f\n", fabs(flux_old[ijk]));
 
                     }
@@ -303,6 +306,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                         vel_advecting[ijk + sp2_ing]);
 
                         flux_old[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
 
                     }
                 }
@@ -386,30 +390,28 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                         vel_advecting[ijk + sp2_ing]);
 
                         flux_old[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
 
                     }
                 }
             }
         }
 
-        int count = 0;
-        double max = 0.0;
-        for(ssize_t i=imin;i<imax;i++){
-                const ssize_t ishift = i*istride;
-                for(ssize_t j=jmin;j<jmax;j++){
-                    const ssize_t jshift = j*jstride;
-                    for(ssize_t k=kmin;k<kmax;k++){
-                        const int ijk = ishift + jshift + k;
-                        const double diff = fabs(flux[ijk]-flux_old[ijk]);
-//                        if(fabs((flux[ijk]-flux_old[ijk])/flux_old[ijk])>0.01){count = count + 1;}
-//                        if(fabs((flux[ijk]-flux_old[ijk])/flux_old[ijk])>0.01){printf("achtung, ijk= %d, diff = %f, flux_old = %f \n", ijk, flux[ijk]-flux_old[ijk], flux_old[ijk]);}
-                        if(diff>0.05*fabs(flux_old[ijk])){count = count + 1;}
-                        if(max<diff){max=diff;}
-//                        if(fabs(flux_old[ijk])<1e-10){printf("zero old flux\n");}
-                 }
-             }
-         }
-         if(count > 0){printf("MA Fluxes differences: count = %d, max = %f\n", count, max);}
+//        int count = 0;
+//        double max = 0.0;
+//        for(ssize_t i=imin;i<imax;i++){
+//                const ssize_t ishift = i*istride;
+//                for(ssize_t j=jmin;j<jmax;j++){
+//                    const ssize_t jshift = j*jstride;
+//                    for(ssize_t k=kmin;k<kmax;k++){
+//                        const int ijk = ishift + jshift + k;
+//                        const double diff = fabs(flux[ijk]-flux_old[ijk]);
+//                        if(diff>0.05*fabs(flux_old[ijk])){count = count + 1;}
+//                        if(max<diff){max=diff;}
+//                 }
+//             }
+//         }
+//         if(count > 0){printf("MA Fluxes differences: count = %d, max = %f\n", count, max);}
 
 
 //        printf("flux: %f\n", flux);
