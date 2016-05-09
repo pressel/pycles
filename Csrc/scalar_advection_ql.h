@@ -673,7 +673,7 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
     // eddy_flux = u' phi'
     // mean_flux = <u><phi>
     double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-    double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//    double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mix_flux_phiprime = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mix_flux_phimean = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -718,7 +718,7 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
                     mix_flux_phimean[ijk] =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0[k];
                     mean_flux[k] =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0[k];
 
-                    flux[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + eddy_flux[ijk];
+//                    flux[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + eddy_flux[ijk];
 
                     // Original Flux
                     phip = interp_weno5(scalar[ijk + sm2],
@@ -763,7 +763,7 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
                     mix_flux_phimean[ijk] =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0_half[k];
                     mean_flux[k] =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0_half[k];
 
-                    flux[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + eddy_flux[ijk];
+//                    flux[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + eddy_flux[ijk];
 
                     // Original Flux
                     phip = interp_weno5(scalar[ijk + sm2],
@@ -791,13 +791,14 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
                 const ssize_t jshift = j*jstride;
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
-                    flux_ql[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + mean_eddy_flux[k];
+//                    flux_ql[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + mean_eddy_flux[k];
+                    flux[ijk] = mean_flux[k] + mix_flux_phiprime[ijk] + mix_flux_phimean[ijk] + mean_eddy_flux[k];
                 } // End k loop
             } // End j loop
         } // End i loop
 
     free(flux_old);
-    free(flux_ql);
+//    free(flux_ql);
     free(mix_flux_phiprime);
     free(mix_flux_phimean);
     free(eddy_flux);
