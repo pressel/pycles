@@ -435,8 +435,9 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
 
     // (1) average velocity and scalar field
     double *vel_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-    double *vel_mean = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-    double *vel_mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
+//    double *vel_mean = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//    double *vel_mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
+    double *vel_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
     double *phi_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *phi_mean = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *phi_mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
@@ -446,7 +447,8 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
         vel_mean[k] = 0;
         }
     // horizontal_mean(dims, &vel_fluc[0], &phi_mean[0]);
-    horizontal_mean_const(dims, &velocity[0], &vel_mean_[0]);
+//    horizontal_mean_const(dims, &velocity[0], &vel_mean_[0]);
+    horizontal_mean_const(dims, &velocity[0], &vel_mean[0]);
     horizontal_mean_const(dims, &scalar[0], &phi_mean_[0]);
 
     // (2) compute eddy fields
@@ -456,10 +458,11 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin;k<kmax;k++){
                 int ijk = ishift + jshift + k;
-                vel_mean[ijk] = vel_mean_[k];
+//                vel_mean[ijk] = vel_mean_[k];
                 phi_mean[ijk] = phi_mean_[k];
 
-                vel_fluc[ijk] = velocity[ijk] - vel_mean[ijk];
+//                vel_fluc[ijk] = velocity[ijk] - vel_mean[ijk];
+                vel_fluc[ijk] = velocity[ijk] - vel_mean[k];
                 phi_fluc[ijk] = scalar[ijk] - phi_mean[ijk];
             }
         }
@@ -511,7 +514,8 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
 
                     // mean_eddy_flux = rms(v')*rms(phi')*covar(v',phi') // ????? different computation of mean eddy-flux
                     eddy_flux[ijk] =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0[k];
-                    mix_flux_phiprime[ijk] =  0.5 * ((vel_mean[ijk]+fabs(vel_mean[ijk]))*phip + (vel_mean[ijk]-fabs(vel_mean[ijk]))*phim)*rho0[k];
+//                    mix_flux_phiprime[ijk] =  0.5 * ((vel_mean[ijk]+fabs(vel_mean[ijk]))*phip + (vel_mean[ijk]-fabs(vel_mean[ijk]))*phim)*rho0[k];
+                    mix_flux_phiprime[ijk] =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0[k];
 //                    eddy_flux =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0[k];
 //                    mix_flux_phiprime =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0[k];
 
@@ -519,9 +523,9 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
                     phim = interp_weno5(phi_mean[ijk+sp3],phi_mean[ijk+sp2],phi_mean[ijk+sp1],phi_mean[ijk],phi_mean[ijk+sm1]);
 //                    phip = interp_weno5(phi_mean[k - 2],phi_mean[k - 1],phi_mean[k],phi_mean[k + 1],phi_mean[k + 2]);
 //                    phim = interp_weno5(phi_mean[k + 3],phi_mean[k + 2],phi_mean[k + 1],phi_mean[k],phi_mean[k - 1]);
-
                     mix_flux_phimean[ijk] =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0[k];
-                    mean_flux[k] =  0.5 * ((vel_mean[ijk]+fabs(vel_mean[ijk]))*phip + (vel_mean[ijk]-fabs(vel_mean[ijk]))*phim)*rho0[k];
+//                    mean_flux[k] =  0.5 * ((vel_mean[ijk]+fabs(vel_mean[ijk]))*phip + (vel_mean[ijk]-fabs(vel_mean[ijk]))*phim)*rho0[k];
+                    mean_flux[k] =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0[k];
 //                    mix_flux_phimean =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0[k];
 //                    mean_flux =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0[k];
 
@@ -566,15 +570,16 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
 
                     // mean_eddy_flux = rms(v')*rms(phi')*covar(v',phi') // ????? different computation of mean eddy-flux
                     eddy_flux[ijk] =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0_half[k];
-                    mix_flux_phiprime[ijk] =  0.5 * ((vel_mean[ijk]+fabs(vel_mean[ijk]))*phip + (vel_mean[ijk]-fabs(vel_mean[ijk]))*phim)*rho0_half[k];
+//                    mix_flux_phiprime[ijk] =  0.5 * ((vel_mean[ijk]+fabs(vel_mean[ijk]))*phip + (vel_mean[ijk]-fabs(vel_mean[ijk]))*phim)*rho0_half[k];
+                    mix_flux_phiprime[ijk] =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0_half[k];
 //                    eddy_flux =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0_half[k];
 //                    mix_flux_phiprime =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0_half[k];
 
                     phip = interp_weno5(phi_mean[ijk+sm2],phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2]);
                     phim = interp_weno5(phi_mean[ijk+sp3],phi_mean[ijk+sp2],phi_mean[ijk+sp1],phi_mean[ijk],phi_mean[ijk+sm1]);
-
                     mix_flux_phimean[ijk] =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0_half[k];
-                    mean_flux[k] =  0.5 * ((vel_mean[ijk]+fabs(vel_mean[ijk]))*phip + (vel_mean[ijk]-fabs(vel_mean[ijk]))*phim)*rho0_half[k];
+//                    mean_flux[k] =  0.5 * ((vel_mean[ijk]+fabs(vel_mean[ijk]))*phip + (vel_mean[ijk]-fabs(vel_mean[ijk]))*phim)*rho0_half[k];
+                    mean_flux[k] =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0_half[k];
 //                    mix_flux_phimean =  0.5 * ((vel_fluc[ijk]+fabs(vel_fluc[ijk]))*phip + (vel_fluc[ijk]-fabs(vel_fluc[ijk]))*phim)*rho0_half[k];
 //                    mean_flux =  0.5 * ((vel_mean[k]+fabs(vel_mean[k]))*phip + (vel_mean[k]-fabs(vel_mean[k]))*phim)*rho0_half[k];      // ?? 1D profile sufficient
 
@@ -607,7 +612,7 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
     free(mean_flux);
     free(vel_fluc);
     free(vel_mean);
-    free(vel_mean_);
+//    free(vel_mean_);
     free(phi_fluc);
     free(phi_mean);
     free(phi_mean_);
