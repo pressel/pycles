@@ -443,6 +443,7 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
     double *phi_mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
 
     for(ssize_t k=kmin;k<kmax;k++){
+
         phi_mean[k] = 0;
         vel_mean[k] = 0;
         }
