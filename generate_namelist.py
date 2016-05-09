@@ -466,7 +466,7 @@ def DYCOMS_RF01():
     namelist['time_stepping']['ts_type'] = 3
     namelist['time_stepping']['cfl_limit'] = 0.7
     namelist['time_stepping']['dt_initial'] = 1.0
-    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['dt_max'] = 4.0
     namelist['time_stepping']['t_max'] = 4.0 * 3600.0
 
     namelist['thermodynamics'] = {}
