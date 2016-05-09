@@ -63,10 +63,10 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                     vel_advecting_mean[ijk] = vel_advecting_mean_[k];
                     vel_advected_mean[ijk] = vel_advected_mean_[k];
 
-//                    vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean[ijk];
-//                    vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean[ijk];
-                    vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean_[k];
-                    vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean_[k];
+                    vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean[ijk];
+                    vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean[ijk];
+//                    vel_advecting_fluc[ijk] = vel_advecting[ijk] - vel_advecting_mean_[k];
+//                    vel_advected_fluc[ijk] = vel_advected[ijk] - vel_advected_mean_[k];
 
                     if(isnan(vel_advected_fluc[ijk])) {
                         printf("Nan in vel_advected_fluc\n");
