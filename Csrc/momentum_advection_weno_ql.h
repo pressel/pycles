@@ -136,7 +136,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
 //        double phim_fluc;
 //        double phip_mean;
 //        double phim_mean;
-        double vel_adv;
+//        double vel_adv;
 
         if (d_advected !=2 && d_advecting !=2){
             for(ssize_t i=imin;i<imax;i++){
@@ -159,7 +159,6 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
 //                                                 vel_advected_mean[ijk + sp2_ed]);
 //                        phip_mean = interp_weno5(vel_advected_mean_[k],vel_advected_mean_[k],vel_advected_mean_[k],vel_advected_mean_[k],vel_advected_mean_[k]);
 
-                        // Upwind for negative velocity
                         const double phim_fluc = interp_weno5(vel_advected_fluc[ijk + sp3_ed],
                                                  vel_advected_fluc[ijk + sp2_ed],
                                                  vel_advected_fluc[ijk + sp1_ed],
@@ -171,29 +170,28 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
 //                                                 vel_advected_mean[ijk],
 //                                                 vel_advected_mean[ijk + sm1_ed]);
 //                        phim_mean = interp_weno5(vel_advected_mean_[k],vel_advected_mean_[k],vel_advected_mean_[k],vel_advected_mean_[k],vel_advected_mean_[k]);
-                        phip_mean = vel_advected_mean_[k];  // interpolation of mean profiles in x-, y-direction has no effect
-                        phim_mean = vel_advected_mean_[k];  // interpolation of mean profiles in x-, y-direction has no effect
+                        const double phip_mean = vel_advected_mean_[k];  // interpolation of mean profiles in x-, y-direction has no effect
+                        const double phim_mean = vel_advected_mean_[k];  // interpolation of mean profiles in x-, y-direction has no effect
 
-
+//                        const double vel_adv_mean = interp_4(vel_advecting_mean[ijk + sm1_ing],
+//                                                             vel_advecting_mean[ijk],
+//                                                             vel_advecting_mean[ijk + sp1_ing],
+//                                                             vel_advecting_mean[ijk] + sp2_ing);
+                        const double vel_adv_mean = vel_advecting_mean_[k];
+                        const double vel_adv_fluc = interp_4(vel_advecting_fluc[ijk + sm1_ing],
+                                                            vel_advecting_fluc[ijk],
+                                                            vel_advecting_fluc[ijk + sp1_ing],
+                                                            vel_advecting_fluc[ijk + sp2_ing]);
 
                         // (a) mix_flux_one = <u_ing> u_ed'
                         // (b) mean_flux = <u_ing><u_ed>
-//                        vel_adv = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
-                        vel_adv = interp_4(vel_advecting_mean[ijk + sm1_ing],
-                                           vel_advecting_mean[ijk],
-                                           vel_advecting_mean[ijk + sp1_ing],
-                                           vel_advecting_mean[ijk] + sp2_ing);
-                        mix_flux_one[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_fluc + (vel_adv-fabs(vel_adv))*phim_fluc)*rho0_half[k] ;
-                        mean_flux[k] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_mean + (vel_adv-fabs(vel_adv))*phim_mean)*rho0_half[k] ;
+                        mix_flux_one[ijk] = 0.5 * ((vel_adv_mean+fabs(vel_adv_mean))*phip_fluc + (vel_adv_mean-fabs(vel_adv_mean))*phim_fluc)*rho0_half[k] ;
+                        mean_flux[k] = 0.5 * ((vel_adv_mean+fabs(vel_adv_mean))*phip_mean + (vel_adv_mean-fabs(vel_adv_mean))*phim_mean)*rho0_half[k] ;
 
                         // (c) mix_flux_two = u_ing'<u_ed>
                         // (d) eddy_flux = u_ing' u_ed'
-                        vel_adv = interp_4(vel_advecting_fluc[ijk + sm1_ing],
-                                           vel_advecting_fluc[ijk],
-                                           vel_advecting_fluc[ijk + sp1_ing],
-                                           vel_advecting_fluc[ijk + sp2_ing]);
-                        mix_flux_two[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_mean + (vel_adv-fabs(vel_adv))*phim_mean)*rho0_half[k] ;
-                        eddy_flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_fluc + (vel_adv-fabs(vel_adv))*phim_fluc)*rho0_half[k] ;
+                        mix_flux_two[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_mean + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_mean)*rho0_half[k] ;
+                        eddy_flux[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_fluc + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_fluc)*rho0_half[k] ;
 
                         flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
 
@@ -216,7 +214,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                          vel_advected[ijk],
                                                          vel_advected[ijk + sm1_ed]);
 
-                        vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
+                        const double vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing]);
@@ -260,25 +258,28 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
 //                                                 vel_advected_mean[ijk],
 //                                                 vel_advected_mean[ijk + sm1_ed]);
 
-                        phip_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
-                        phim_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
+                        const double phip_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
+                        const double phim_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
+
+
+//                        const double vel_adv_mean = interp_4(vel_advecting_mean[ijk + sm1_ing],
+//                                                            vel_advecting_mean[ijk],
+//                                                            vel_advecting_mean[ijk + sp1_ing],
+//                                                            vel_advecting_mean[ijk] + sp2_ing);
+                        const double vel_adv_mean = vel_advecting_mean_[k];
+                        const double vel_adv_fluc = interp_4(vel_advecting_fluc[ijk + sm1_ing],
+                                                            vel_advecting_fluc[ijk],
+                                                            vel_advecting_fluc[ijk + sp1_ing],
+                                                            vel_advecting_fluc[ijk + sp2_ing]);
 
                         // (a) mix_flux_one = <u_ing> u_ed' && mean_flux = <u_ing><u_ed>
 //                        vel_adv = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
-                        vel_adv = interp_4(vel_advecting_mean[ijk + sm1_ing],
-                                           vel_advecting_mean[ijk],
-                                           vel_advecting_mean[ijk + sp1_ing],
-                                           vel_advecting_mean[ijk] + sp2_ing);
-                        mix_flux_one[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_fluc + (vel_adv-fabs(vel_adv))*phim_fluc)*rho0_half[k+1] ;
-                        mean_flux[k] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_mean + (vel_adv-fabs(vel_adv))*phim_mean)*rho0_half[k+1] ;
+                        mix_flux_one[ijk] = 0.5 * ((vel_adv_mean+fabs(vel_adv_mean))*phip_fluc + (vel_adv_mean-fabs(vel_adv_mean))*phim_fluc)*rho0_half[k+1] ;
+                        mean_flux[k] = 0.5 * ((vel_adv_mean+fabs(vel_adv_mean))*phip_mean + (vel_adv_mean-fabs(vel_adv_mean))*phim_mean)*rho0_half[k+1] ;
 
                         // (b) mix_flux_two = u_ing'<u_ed> && eddy_flux = u_ing' u_ed'
-                        vel_adv = interp_4(vel_advecting_fluc[ijk + sm1_ing],
-                                           vel_advecting_fluc[ijk],
-                                           vel_advecting_fluc[ijk + sp1_ing],
-                                           vel_advecting_fluc[ijk + sp2_ing]);
-                        mix_flux_two[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_mean + (vel_adv-fabs(vel_adv))*phim_mean)*rho0_half[k+1] ;
-                        eddy_flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_fluc + (vel_adv-fabs(vel_adv))*phim_fluc)*rho0_half[k+1] ;
+                        mix_flux_two[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_mean + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_mean)*rho0_half[k+1] ;
+                        eddy_flux[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_fluc + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_fluc)*rho0_half[k+1] ;
 
                         flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
                         if(isnan(flux[ijk])) {
@@ -300,7 +301,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                          vel_advected[ijk],
                                                          vel_advected[ijk + sm1_ed]);
 
-                        vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
+                        const double vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing]);
@@ -343,25 +344,26 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
 //                                                 vel_advected_mean[ijk],
 //                                                 vel_advected_mean[ijk + sm1_ed]);
 
-                        phip_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
-                        phim_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
+                        const double phip_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
+                        const double phim_mean = vel_advected_mean_[k];   // interpolation of mean profiles in x-, y-direction has no effect
+
+//                        const double vel_adv_mean = interp_4(vel_advecting_mean[ijk + sm1_ing],
+//                                                            vel_advecting_mean[ijk],
+//                                                            vel_advecting_mean[ijk + sp1_ing],
+//                                                            vel_advecting_mean[ijk] + sp2_ing);
+                        const double vel_adv_mean = vel_advecting_mean_[k];
+                        const double vel_adv_fluc = interp_4(vel_advecting_fluc[ijk + sm1_ing],
+                                                            vel_advecting_fluc[ijk],
+                                                            vel_advecting_fluc[ijk + sp1_ing],
+                                                            vel_advecting_fluc[ijk + sp2_ing]);
 
                         // (a) mix_flux_one = <u_ing> u_ed' && mean_flux = <u_ing><u_ed>
-//                        vel_adv = vel_advecting_mean[k];    // interpolation of mean profiles in x-, y-direction has no effect
-                        vel_adv = interp_4(vel_advecting_mean[ijk + sm1_ing],
-                                           vel_advecting_mean[ijk],
-                                           vel_advecting_mean[ijk + sp1_ing],
-                                           vel_advecting_mean[ijk] + sp2_ing);
-                        mix_flux_one[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_fluc + (vel_adv-fabs(vel_adv))*phim_fluc)*rho0[k] ;
-                        mean_flux[k] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_mean + (vel_adv-fabs(vel_adv))*phim_mean)*rho0[k] ;
+                        mix_flux_one[ijk] = 0.5 * ((vel_adv_mean+fabs(vel_adv_mean))*phip_fluc + (vel_adv_mean-fabs(vel_adv_mean))*phim_fluc)*rho0[k] ;
+                        mean_flux[k] = 0.5 * ((vel_adv_mean+fabs(vel_adv_mean))*phip_mean + (vel_adv_mean-fabs(vel_adv_mean))*phim_mean)*rho0[k] ;
 
                         // (b) mix_flux_two = u_ing'<u_ed> && eddy_flux = u_ing' u_ed'
-                        vel_adv = interp_4(vel_advecting_fluc[ijk + sm1_ing],
-                                           vel_advecting_fluc[ijk],
-                                           vel_advecting_fluc[ijk + sp1_ing],
-                                           vel_advecting_fluc[ijk + sp2_ing]);
-                        mix_flux_two[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_mean + (vel_adv-fabs(vel_adv))*phim_mean)*rho0[k] ;
-                        eddy_flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip_fluc + (vel_adv-fabs(vel_adv))*phim_fluc)*rho0[k] ;
+                        mix_flux_two[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_mean + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_mean)*rho0[k] ;
+                        eddy_flux[ijk] = 0.5 * ((vel_adv_fluc+fabs(vel_adv_fluc))*phip_fluc + (vel_adv_fluc-fabs(vel_adv_fluc))*phim_fluc)*rho0[k] ;
 
                         flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + eddy_flux[ijk];
                         if(isnan(flux[ijk])) {
@@ -384,7 +386,7 @@ void weno_fifth_order_m_decomp(struct DimStruct *dims, double* restrict rho0, do
                                                          vel_advected[ijk],
                                                          vel_advected[ijk + sm1_ed]);
 
-                        vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
+                        const double vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing]);
