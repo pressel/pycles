@@ -40,7 +40,7 @@ def RadiationFactory(namelist, ParallelMPI.ParallelMPI Pa):
             return RadiationSmoke()
         else:
             return RadiationNone()
-        return
+
 
 
 cdef class RadiationBase:
