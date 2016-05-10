@@ -12,7 +12,6 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 
-# import pylab as plt
 import numpy as np
 cimport numpy as np
 import netCDF4 as nc
@@ -535,16 +534,7 @@ cdef class RadiationRRTM:
                 self.rv_ext[i] = pchip_interpolate(xi, ri, self.p_ext[i] )
                 self.t_ext[i] = pchip_interpolate(xi,ti, self.p_ext[i])
 
-        # Plotting to evaluate implementation of buffer zone
-        # plt.figure(1)
-        # plt.scatter(self.rv_ext,self.p_ext)
-        # plt.plot(vapor_mixing_ratios, pressures)
-        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
-        # plt.figure(2)
-        # plt.scatter(self.t_ext,self.p_ext)
-        # plt.plot(temperatures,pressures)
-        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw])
-        # plt.show()
+
 
         self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
         self.pi_full = np.zeros((self.n_ext+1+nz,),dtype=np.double)
@@ -913,10 +903,6 @@ cdef class RadiationRRTM:
         self.srf_sw_up= Pa.domain_scalar_sum(srf_sw_up_local)
         self.srf_sw_down= Pa.domain_scalar_sum(srf_sw_down_local)
 
-        # Plot to verify no kink is present at top of LES domain
-        # plt.figure(6)
-        # plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
-        # plt.show()
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
 
