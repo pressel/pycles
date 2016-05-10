@@ -658,7 +658,7 @@ cdef class RadiationRRTM:
                         wgtupp = (o3_pressure[m-1]-pmid)/(o3_pressure[m-1]-o3_pressure[m])
                         trpath_o3[i] = trpath_o3[i] + (plow-pupp)/g*(wgtlow*o3_trace[m-1]  + wgtupp*o3_trace[m])
                 if (self.pi_full[i]/100.0 < o3_pressure[o3_np-1]):
-                    trpath_o3[i] = trpath_o3[i] + (np.min((self.pi_full[i-1]/100.0,o3_pressure[CC-1]))-self.pi_full[i]/100.0)/g*o3_trace[o3_np-1]
+                    trpath_o3[i] = trpath_o3[i] + (np.min((self.pi_full[i-1]/100.0,o3_pressure[o3_np-1]))-self.pi_full[i]/100.0)/g*o3_trace[o3_np-1]
             tmpTrace_o3 = np.zeros( nz + self.n_ext, dtype=np.double, order='F')
             for k in xrange(nz + self.n_ext):
                 tmpTrace_o3[k] = g *100.0/(self.pi_full[k]-self.pi_full[k+1])*(trpath_o3[k+1]-trpath_o3[k])
