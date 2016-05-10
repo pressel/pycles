@@ -1042,14 +1042,16 @@ cdef class ForcingZGILS:
         # Pa.root_print('H_BL forcing is ' + str(h_BL))
 
         cdef double [:] xi_relax = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        cdef double z_h
         with nogil:
             for k in xrange(kmin, kmax):
-                if Gr.zl_half[k]/h_BL < 1.2:
+                z_h = Gr.zl_half[k]/h_BL
+                if z_h < 1.2:
                     xi_relax[k] = 0.0
-                elif Gr.zl_half[k]/h_BL > 1.5:
+                elif z_h > 1.5:
                     xi_relax[k] = self.tau_relax_inverse
                 else:
-                    xi_relax[k] = 0.5*self.tau_relax_inverse*cos((Gr.zl_half[k]/h_BL-1.2)/(1.5-1.2))
+                    xi_relax[k] = 0.5*self.tau_relax_inverse*(1.0 -   cos((z_h-1.2)/(1.5-1.2)))
 
         #Apply large scale source terms (BL advection, Free Tropo relaxation)
         with nogil:
