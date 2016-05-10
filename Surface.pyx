@@ -941,7 +941,7 @@ cdef class SurfaceZGILS(SurfaceBase):
             double [:] cm = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
             double ch=0.0
 
-            double pv_star = self.CC.LT.fast_lookup(Ref.Tg)
+            double pv_star = self.CC.LT.fast_lookup(self.T_surface)
             double qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
 
 

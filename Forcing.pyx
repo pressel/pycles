@@ -942,6 +942,9 @@ cdef class ForcingZGILS:
         # Initialize the reference profiles classe
         self.forcing_ref = AdjustedMoistAdiabat(namelist, LH, Pa)
 
+        self.CC = ClausiusClapeyron()
+        self.CC.initialize(namelist, LH, Pa)
+
         return
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -1021,6 +1024,7 @@ cdef class ForcingZGILS:
             double t
             double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
 
         #Apply Coriolis Forcing
 
@@ -1042,7 +1046,8 @@ cdef class ForcingZGILS:
         # Pa.root_print('H_BL forcing is ' + str(h_BL))
 
         cdef double [:] xi_relax = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        cdef double z_h
+        cdef double [:] source_rh_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        cdef double z_h, pv_star, qv_star
         with nogil:
             for k in xrange(kmin, kmax):
                 z_h = Gr.zl_half[k]/h_BL
@@ -1052,6 +1057,13 @@ cdef class ForcingZGILS:
                     xi_relax[k] = self.tau_relax_inverse
                 else:
                     xi_relax[k] = 0.5*self.tau_relax_inverse*(1.0 -   cos((z_h-1.2)/(1.5-1.2)))
+                # here we also set the nudging to 20% rh in the BL
+                if Gr.zl_half[k] < 2000.0:
+                    pv_star = self.CC.LT.fast_lookup(tmean[k])
+                    qv_star = eps_v * pv_star/(Ref.p0_half[k] + (eps_v-1.0)*pv_star)
+                    if qtmean[k]/qv_star < 0.2:
+                        source_rh_nudge[k] = -(qtmean[k] - qv_star*0.2)/3600.0
+
 
         #Apply large scale source terms (BL advection, Free Tropo relaxation)
         with nogil:
@@ -1070,8 +1082,8 @@ cdef class ForcingZGILS:
                         t  = DV.values[t_shift + ijk]
                         PV.tendencies[s_shift + ijk] += (cpm_c(qt)
                                                          * self.dtdt[k] * exner_c(p0) * rho0)/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
-                        PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*(self.dqtdt[k] + source_rh_nudge[k])
+                        PV.tendencies[qt_shift + ijk] += self.dqtdt[k] + source_rh_nudge[k]
 
                         PV.tendencies[s_shift + ijk] += -xi_relax[k] * (PV.values[s_shift + ijk]-self.forcing_ref.s[k])
                         PV.tendencies[qt_shift + ijk] += -xi_relax[k] * (PV.values[qt_shift + ijk]-self.forcing_ref.qt[k])

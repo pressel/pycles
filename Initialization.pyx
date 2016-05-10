@@ -1186,8 +1186,6 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         u[k] = min(-10.0 + (-4.0-(-10.0))/(500.0e2-1000.0e2)*(RS.p0_half[k]-1000.0e2),-4.0)
 
 
-
-
       #Set velocities for Galilean transformation
     RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
     RS.v0 = 0.5 * (np.amax(v)+np.amin(v))

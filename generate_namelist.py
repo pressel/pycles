@@ -1259,6 +1259,7 @@ def ZGILS(zgils_loc):
     elif zgils_loc == 6:
         namelist['surface_budget']['ocean_heat_flux'] = 60.0
 
+    # To run a fixed_sst case set fixed_sst_time > t_max of simulation
     namelist['surface_budget']['fixed_sst_time'] = 24.0 * 3600.0 * 3.0 # 3 days spinup
 
     namelist['radiation'] = {}
