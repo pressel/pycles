@@ -949,8 +949,8 @@ cdef class SurfaceZGILS(SurfaceBase):
             # Find the surface entropy
             double pd_star = Ref.Pg - pv_star
 
-            double theta_rho_g = theta_rho_c(Ref.Pg, Ref.Tg, qv_star, qv_star)
-            double s_star = sd_c(pd_star, Ref.Tg) * (1.0 - qv_star) + sv_c(pv_star, Ref.Tg) * qv_star
+            double theta_rho_g = theta_rho_c(Ref.Pg, self.T_surface, qv_star, qv_star)
+            double s_star = sd_c(pd_star,self.T_surface) * (1.0 - qv_star) + sv_c(pv_star, self.T_surface) * qv_star
 
             double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
 
