@@ -37,6 +37,8 @@ cdef class Forcing:
             self.scheme = ForcingRico()
         elif casename == 'StableBubble':
             self.scheme = ForcingNone()
+        elif casename == 'Reanalysis':
+            self.scheme = ForcingReanalysis()
         else:
             Pa.root_print('No focing for casename: ' +  casename)
             Pa.root_print('Killing simulation now!!!')
@@ -603,6 +605,25 @@ cdef class ForcingRico:
 
 
 
+cdef class ForcingReanalysis:
+
+    def __init__(self):
+        return
+
+
+    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
 
 cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):
 
