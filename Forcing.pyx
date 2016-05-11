@@ -408,32 +408,8 @@ cdef class ForcingDyCOMS_RF01:
 
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
-        #apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&DV.values[thetali_shift],&thetal_subs[0])
-        #apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&qt_subs[0])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
-
-        #Apply large scale source terms
-        #with nogil:
-        #    for i in xrange(imin,imax):
-        #        ishift = i * istride
-        #        for j in xrange(jmin,jmax):
-        #            jshift = j * jstride
-        #            for k in xrange(kmin,kmax):
-        #                ijk = ishift + jshift + k
-        #                p0 = Ref.p0_half[k]
-        #                rho0 = Ref.rho0_half[k]
-        #                qt = PV.values[qt_shift + ijk]
-        #                qv = qt - DV.values[ql_shift + ijk]
-        #                pd = pd_c(p0,qt,qv)
-        #                pv = pv_c(p0,qt,qv)
-        #                t  = DV.values[t_shift + ijk]
-        #                PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-        #                                                 * thetal_subs[ijk] * exner_c(p0) * rho0)/t
-        #                PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*qt_subs[ijk]
-        #                PV.tendencies[qt_shift + ijk] += qt_subs[ijk]
-
-
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
