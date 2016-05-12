@@ -722,6 +722,7 @@ cdef class SurfaceRico(SurfaceBase):
 
 cdef class SurfaceReanalysis(SurfaceBase):
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
+        self.input_str = str(namelist['Reanalysis']['input_file'])
         self.gustiness = 0.001
         self.z0 = 1.0e-3
         self.L_fp = LH.L_fp
@@ -733,7 +734,7 @@ cdef class SurfaceReanalysis(SurfaceBase):
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
         import cPickle
-        f = open('/Users/presselk/Dropbox/era_forcing/Forcing.pkl','r')
+        f = open(self.input_str ,'r')
         fd = cPickle.load(f)
         f.close()
 

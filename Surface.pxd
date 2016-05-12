@@ -124,6 +124,7 @@ cdef class SurfaceRico(SurfaceBase):
 
 cdef class SurfaceReanalysis(SurfaceBase):
     cdef:
+        str input_str
         Py_ssize_t loc
         bint is_p2
         ClausiusClapeyron CC
