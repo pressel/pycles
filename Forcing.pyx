@@ -18,6 +18,8 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
+
+import pylab as plt
 include 'parameters.pxi'
 
 cdef class Forcing:
@@ -985,6 +987,7 @@ cdef class ForcingZGILS:
                     self.dqtdt[k] = self.qt_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
 
 
+
         #Initialize Statistical Output
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
@@ -1043,26 +1046,34 @@ cdef class ForcingZGILS:
                 if qtmean[k] <= self.alpha_h * self.forcing_ref.qt[k]:
                     h_BL = Gr.zl_half[k]
 
-        # Pa.root_print('H_BL forcing is ' + str(h_BL))
+        Pa.root_print('H_BL forcing is ' + str(h_BL))
 
         cdef double [:] xi_relax = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         cdef double [:] source_rh_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         cdef double z_h, pv_star, qv_star
         with nogil:
-            for k in xrange(kmin, kmax):
+            for k in xrange(Gr.dims.nlg[2]):
                 z_h = Gr.zl_half[k]/h_BL
                 if z_h < 1.2:
                     xi_relax[k] = 0.0
                 elif z_h > 1.5:
                     xi_relax[k] = self.tau_relax_inverse
                 else:
-                    xi_relax[k] = 0.5*self.tau_relax_inverse*(1.0 -   cos((z_h-1.2)/(1.5-1.2)))
+                    xi_relax[k] = 0.5*self.tau_relax_inverse*(1.0 -   cos(pi*(z_h-1.2)/(1.5-1.2)))
                 # here we also set the nudging to 20% rh in the BL
                 if Gr.zl_half[k] < 2000.0:
                     pv_star = self.CC.LT.fast_lookup(tmean[k])
                     qv_star = eps_v * pv_star/(Ref.p0_half[k] + (eps_v-1.0)*pv_star)
                     if qtmean[k]/qv_star < 0.2:
                         source_rh_nudge[k] = -(qtmean[k] - qv_star*0.2)/3600.0
+
+        plt.figure(1)
+        plt.plot(source_rh_nudge, Gr.zl_half)
+        plt.title('RH source')
+        plt.figure(2)
+        plt.plot(np.multiply(xi_relax[:],86400), Gr.zl_half)
+        plt.title('Relaxation coeff')
+        plt.show()
 
 
         #Apply large scale source terms (BL advection, Free Tropo relaxation)
