@@ -527,12 +527,6 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                         const ssize_t ijk = ishift + jshift + k;
 
                         flux[ijk] = mean_flux[k] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_eddy_flux[k];
-//                        flux_ql[ijk] = mean_flux[k] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_eddy_flux[k];
-
-//                        if(isnan(flux_ql[ijk])) {
-                        if(isnan(flux[ijk])) {
-                            printf("Nan in QL flux, because of mean eddy flux\n");
-                        }
                     }
                 }
             }
