@@ -364,3 +364,189 @@ void fourth_order_ws_m_decomp(struct DimStruct *dims, double* restrict rho0, dou
         free(vel_ing_fluc);
         return;
     }
+
+
+
+void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+    double* restrict alpha0, double* restrict alpha0_half,
+    double* restrict vel_advected, double* restrict vel_advecting,
+    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+
+        if(d_advected==2 && d_advecting==2){
+            printf("4th order Momentum Transport decomp\n");}
+
+        // Dynamically allocate flux array
+        double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+
+        double *vel_ed_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *vel_ing_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *vel_ed_mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
+        double *vel_ing_mean_ = (double *)malloc(sizeof(double) * dims->nlg[2]);
+        double *vel_ed_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *vel_ing_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+
+        const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+        const ssize_t jstride = dims->nlg[2];
+
+        ssize_t imin = 0;
+        ssize_t jmin = 0;
+        ssize_t kmin = 0;
+
+        ssize_t imax = dims->nlg[0];
+        ssize_t jmax = dims->nlg[1];
+        ssize_t kmax = dims->nlg[2];
+
+        ssize_t i,j,k;
+
+        // (1) compute mean velocities
+        horizontal_mean(dims, &vel_advecting[0], &vel_ing_mean_[0]);
+        horizontal_mean(dims, &vel_advected[0], &vel_ed_mean_[0]);
+
+        for(i=imin; i<imax; i++){
+            const ssize_t ishift = i * istride;
+            for(j=jmin; j<jmax; j++){
+                const ssize_t jshift = j * jstride;
+                for(k=kmin; k<kmax; k++){
+                    const ssize_t ijk = ishift + jshift + k;
+                    vel_ing_mean[ijk] = vel_ing_mean_[k];
+                    vel_ed_mean[ijk] = vel_ed_mean_[k];
+
+                    vel_ing_fluc[ijk] = vel_advecting[ijk] - vel_ing_mean[ijk];
+                    vel_ed_fluc[ijk] = vel_advected[ijk] - vel_ed_mean[ijk];
+                }
+            }
+        }
+
+
+        // (2) compute flux
+        const ssize_t stencil[3] = {istride,jstride,1};
+        const ssize_t sp1_ed = stencil[d_advecting];
+        const ssize_t sp2_ed = 2 * sp1_ed ;
+        const ssize_t sm1_ed = -sp1_ed ;
+
+        const ssize_t sp1_ing = stencil[d_advected];
+        const ssize_t sp2_ing = 2 * sp1_ing;
+        const ssize_t sm1_ing = -sp1_ing;
+
+        imin = 1;
+        jmin = 1;
+        kmin = 1;
+
+        imax = dims->nlg[0]-2;
+        jmax = dims->nlg[1]-2;
+        kmax = dims->nlg[2]-2;
+
+        double *flux_eddy_mean = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *flux_mean_eddy = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *mean_eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
+        double *mean_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
+
+        if (d_advected != 2 && d_advecting !=2){
+            for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+                        const double flux_eddy = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k];
+                        const double flux_m1 = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k];
+                        const double flux_m2 = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k];
+                        const double flux_mean = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k];
+
+                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
+                        flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
+                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k];
+                    }
+                }
+            }
+        }
+        else if(d_advected == 2 && d_advecting == 2){
+            for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+                        const double flux_eddy = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k+1];
+                        const double flux_m1 = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k+1];
+                        const double flux_m2 = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k+1];
+                        const double flux_mean = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k+1];
+
+                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
+
+                        flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
+                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k+1];
+                    }
+                }
+            }
+        }
+        else{
+            for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+                        const double flux_eddy = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0[k+1];
+                        const double flux_m1 = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0[k+1];
+                        const double flux_m2 = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0[k+1];
+                        const double flux_mean = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                                                interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0[k+1];
+
+                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
+
+                        flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
+                                 interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0[k];
+                    }
+                }
+            }
+        }
+        int ok_nan = 0;
+        for(i=imin; i<imax; i++){
+            const ssize_t ishift = i * istride;
+            for(j=jmin; j<jmax; j++){
+                const ssize_t jshift = j * jstride;
+                for(k=kmin; k<kmax; k++){
+                    const ssize_t ijk = ishift + jshift + k;
+
+                    if(isnan(flux[ijk])){ok_nan = ok_nan + 1;}
+                }
+            }
+        }
+        if(ok_nan > 1){printf("problem nan flux: count = %d\n",ok_nan);}
+//        else{printf("no nans in MA fluxes\n");}
+
+        horizontal_mean(dims, &eddy_flux[0], &mean_eddy_flux[0]);
+
+
+        momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
+                                tendency, d_advected, d_advecting);
+        free(flux);
+        free(flux_old);
+        free(flux_eddy_mean);
+        free(flux_mean_eddy);
+        free(eddy_flux);
+        free(mean_eddy_flux);
+        free(mean_flux);
+
+        free(vel_ed_mean);
+        free(vel_ing_mean);
+        free(vel_ed_mean_);
+        free(vel_ing_mean_);
+        free(vel_ed_fluc);
+        free(vel_ing_fluc);
+        return;
+    }
