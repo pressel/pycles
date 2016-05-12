@@ -288,7 +288,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
     double* restrict velocity, double* restrict scalar, double* restrict flux, int d){
 
-    if(d==2){printf("4th order Scalar Transport decomp \n");}
+    if(d==2){printf("4th order Scalar Transport decomp QL\n");}
 
     double *vel_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
     double *phi_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);

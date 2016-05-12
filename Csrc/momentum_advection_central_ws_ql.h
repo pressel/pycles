@@ -373,7 +373,7 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
         if(d_advected==2 && d_advecting==2){
-            printf("4th order Momentum Transport decomp\n");}
+            printf("4th order Momentum Transport decomp QL\n");}
 
         // Dynamically allocate flux array
         double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
