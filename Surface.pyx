@@ -121,7 +121,6 @@ cdef class SurfaceBase:
             double dzi = 1.0/Gr.dims.dx[2]
             double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
-
         if self.dry_case:
             with nogil:
                 for i in xrange(gw, imax):
@@ -765,6 +764,7 @@ cdef class SurfaceCGILS(SurfaceBase):
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
+        self.dry_case = False
 
         return
 
@@ -884,6 +884,8 @@ cdef class SurfaceZGILS(SurfaceBase):
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
+
+        self.dry_case = False
         try:
             self.loc = namelist['meta']['ZGILS']['location']
             if self.loc !=12 and self.loc != 11 and self.loc != 6:
