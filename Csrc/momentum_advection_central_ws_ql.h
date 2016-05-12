@@ -378,6 +378,7 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
         // Dynamically allocate flux array
         double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         double *vel_ed_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *vel_ing_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -517,6 +518,27 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                 }
             }
         }
+
+
+        horizontal_mean(dims, &eddy_flux[0], &mean_eddy_flux[0]);
+        for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+
+                        flux_ql[ijk] = mean_flux[k] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_eddy_flux[k];
+//                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + mean_eddy_flux[k];
+
+                        if(isnan(flux_ql[ijk])) {
+//                        if(isnan(flux[ijk])) {
+                            printf("Nan in QL flux, because of mean eddy flux\n");
+                        }
+                    }
+                }
+            }
+
         int ok_nan = 0;
         for(i=imin; i<imax; i++){
             const ssize_t ishift = i * istride;
@@ -532,13 +554,11 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
         if(ok_nan > 1){printf("problem nan flux: count = %d\n",ok_nan);}
 //        else{printf("no nans in MA fluxes\n");}
 
-        horizontal_mean(dims, &eddy_flux[0], &mean_eddy_flux[0]);
-
-
         momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
                                 tendency, d_advected, d_advecting);
         free(flux);
         free(flux_old);
+        free(flux_ql);
         free(flux_eddy_mean);
         free(flux_mean_eddy);
         free(eddy_flux);
