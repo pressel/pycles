@@ -329,7 +329,7 @@ void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, dou
     double *mix_flux_phiprime = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mean_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
     double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-    double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//    double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
     const ssize_t stencil[3] = {istride,jstride,1};
     const ssize_t sp1 = stencil[d];
@@ -358,7 +358,7 @@ void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, dou
                                         * vel_mean[k] * rho0[k];
                     mean_flux[k] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])
                                         * vel_mean[k] * rho0[k];
-                    flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
+//                    flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
 
                     flux_old[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
                 } // End k loop
@@ -380,7 +380,7 @@ void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, dou
                                         * vel_mean[k] * rho0_half[k];
                     mean_flux[k] = interp_4(phi_mean[ijk+sm1],phi_mean[ijk],phi_mean[ijk+sp1],phi_mean[ijk+sp2])
                                         * vel_mean[k] * rho0_half[k];
-                    flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
+//                    flux[ijk] = eddy_flux[ijk] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_flux[k];
 
                     flux_old[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
                 } // End k loop
@@ -396,13 +396,12 @@ void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, dou
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
 
-//                        flux[ijk] = mean_flux[k] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_eddy_flux[k];
-                        flux_ql[ijk] = mean_flux[k] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_eddy_flux[k];
+                        flux[ijk] = mean_flux[k] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_eddy_flux[k];
+//                        flux_ql[ijk] = mean_flux[k] + mix_flux_phimean[ijk] + mix_flux_phiprime[ijk] + mean_eddy_flux[k];
 
-                        if(isnan(flux_ql[ijk])) {
-//                        if(isnan(flux[ijk])) {
-                            printf("Nan in QL flux, because of mean eddy flux\n");
-                }
+//                        if(isnan(flux_ql[ijk])) {
+//                            printf("Nan in QL flux, because of mean eddy flux\n");
+//                }
             }
         }
     }
@@ -427,7 +426,7 @@ void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, dou
     free(mix_flux_phimean);
     free(mean_flux);
     free(flux_old);
-    free(flux_ql);
+//    free(flux_ql);
     free(phi_fluc);
     free(phi_mean);
     free(phi_mean_);
