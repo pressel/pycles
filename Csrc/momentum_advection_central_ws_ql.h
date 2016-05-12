@@ -378,7 +378,7 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
         // Dynamically allocate flux array
         double *flux_old = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
-        double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//        double *flux_ql = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         double *vel_ed_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
         double *vel_ing_mean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -461,7 +461,7 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                                                 interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k];
 
 //                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
-                        flux[ijk] = eddy_flux[ijk] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_flux[k];
+//                        flux[ijk] = eddy_flux[ijk] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_flux[k];
                         flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
                                  interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k];
                     }
@@ -485,8 +485,7 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                                                 interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k+1];
 
 //                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
-                        flux[ijk] = eddy_flux[ijk] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_flux[k];
-
+//                        flux[ijk] = eddy_flux[ijk] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_flux[k];
                         flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
                                  interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k+1];
                     }
@@ -510,8 +509,7 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                                                 interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0[k+1];
 
 //                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
-                        flux[ijk] = eddy_flux[ijk] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_flux[k];
-
+//                        flux[ijk] = eddy_flux[ijk] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_flux[k];
                         flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
                                  interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0[k];
                     }
@@ -528,11 +526,11 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
 
-                        flux_ql[ijk] = mean_flux[k] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_eddy_flux[k];
-//                        flux[ijk] = mean_flux[k] + mix_flux_one[ijk] + mix_flux_two[ijk] + mean_eddy_flux[k];
+                        flux[ijk] = mean_flux[k] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_eddy_flux[k];
+//                        flux_ql[ijk] = mean_flux[k] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_eddy_flux[k];
 
-                        if(isnan(flux_ql[ijk])) {
-//                        if(isnan(flux[ijk])) {
+//                        if(isnan(flux_ql[ijk])) {
+                        if(isnan(flux[ijk])) {
                             printf("Nan in QL flux, because of mean eddy flux\n");
                         }
                     }
@@ -558,7 +556,7 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                                 tendency, d_advected, d_advecting);
         free(flux);
         free(flux_old);
-        free(flux_ql);
+//        free(flux_ql);
         free(flux_eddy_mean);
         free(flux_mean_eddy);
         free(eddy_flux);
