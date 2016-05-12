@@ -803,6 +803,9 @@ def Reanalysis():
 
     namelist = {}
 
+    namelist['Reanalysis'] = {}
+    namelist['Reanalysis']['input_file'] = './Forcing.pkl'
+
     namelist['grid'] = {}
     namelist['grid']['dims'] = 3
     namelist['grid']['nx'] = 16

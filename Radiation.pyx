@@ -374,6 +374,7 @@ cdef class RadiationRRTM:
         self.srf_lw_up = 0.0
         self.srf_sw_down = 0.0
 
+
         casename = namelist['meta']['casename']
         if casename == 'SHEBA':
             self.profile_name = 'sheba'
@@ -381,6 +382,7 @@ cdef class RadiationRRTM:
             self.profile_name = 'cgils_s12'
         elif casename == 'Reanalysis':
             self.profile_name = 'Reanalysis'
+            self.input_str = str(namelist['Reanalysis']['input_file'])
         else:
             self.profile_name = 'default'
 

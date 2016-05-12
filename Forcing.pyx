@@ -8,7 +8,6 @@ cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
-from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c
 import numpy as np
@@ -17,6 +16,7 @@ from libc.math cimport fabs, sin
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 include 'parameters.pxi'
+import cPickle
 
 cdef class Forcing:
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
@@ -586,16 +586,14 @@ cdef class ForcingReanalysis:
 
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
 
-        self.CC = ClausiusClapeyron()
-        self.CC.initialize(namelist, LH, Pa)
+        self.input_str = str(namelist['Reanalysis']['input_file'])
 
         return
 
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        import cPickle
-        f = open('/Users/presselk/Dropbox/era_forcing/Forcing.pkl','r')
+        f = open(self.input_str,'r')
         fd = cPickle.load(f)
         f.close()
 

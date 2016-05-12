@@ -73,6 +73,7 @@ cdef class RadiationSmoke(RadiationBase):
 cdef class RadiationRRTM(RadiationBase):
     cdef:
 
+        str input_str   #This is used for reanalysis input file.
         str profile_name
         Py_ssize_t n_buffer
         Py_ssize_t n_ext

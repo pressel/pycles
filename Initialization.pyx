@@ -43,7 +43,7 @@ def InitializationFactory(namelist):
         else:
             pass
 
-def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate reference profiles
@@ -86,7 +86,7 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitSaturatedBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate reference profiles
@@ -170,7 +170,7 @@ def InitSaturatedBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitSullivanPatton(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate the reference profiles
@@ -239,7 +239,7 @@ def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     PV.values[e_varshift + ijk] = 0.0
     return
 
-def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitBomex(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #First generate the reference profiles
@@ -342,7 +342,7 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitGabls(Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+def InitGabls(namelist, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Generate the reference profiles
@@ -419,7 +419,7 @@ def InitGabls(Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitDYCOMS_RF01(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     '''
@@ -557,7 +557,7 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
 
-def InitDYCOMS_RF02(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitDYCOMS_RF02(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
 
@@ -671,7 +671,7 @@ def InitDYCOMS_RF02(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitSmoke(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitSmoke(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
     '''
     Initialization for the smoke cloud case
@@ -765,7 +765,7 @@ def InitSmoke(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
-def InitReanalysis(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitReanalysis(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #Set up $\tehta_l$ and $\qt$ profiles
@@ -783,7 +783,7 @@ def InitReanalysis(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
 
 
-    f = open('/Users/presselk/Dropbox/era_forcing/Forcing.pkl','r')
+    f = open(namelist['Reanalysis']['input_file'],'r')
     fd = cPickle.load(f)
     f.close()
 
@@ -834,7 +834,7 @@ def InitReanalysis(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 
-def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+def InitRico(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
 
     #First generate the reference profiles

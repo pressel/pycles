@@ -100,6 +100,7 @@ cdef class ForcingReanalysis:
 
         ClausiusClapeyron CC
 
+        str input_str
         double [:] s
         double [:] qt
         double [:] ug
