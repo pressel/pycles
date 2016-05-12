@@ -493,7 +493,7 @@ cdef class RadiationRRTM:
         if self.profile_name == 'Reanalysis':
 
             import cPickle
-            f = open('/Users/presselk/Dropbox/era_forcing/Forcing.pkl','r')
+            f = open(self.input_str,'r')
             fd = cPickle.load(f)
             f.close()
 
