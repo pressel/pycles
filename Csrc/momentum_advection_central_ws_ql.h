@@ -450,16 +450,17 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        const double flux_eddy = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                        eddy_flux[ijk] = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k];
-                        const double flux_m1 = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                        flux_mean_eddy[ijk] = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k];
-                        const double flux_m2 = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                        flux_eddy_mean[ijk] = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k];
-                        const double flux_mean = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                        mean_flux[k] = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k];
 
-                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
+//                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
+                        flux[ijk] = eddy_flux[ijk] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_flux[k];
                         flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
                                  interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k];
                     }
@@ -473,16 +474,17 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        const double flux_eddy = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                        eddy_flux[ijk] = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k+1];
-                        const double flux_m1 = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                        flux_mean_eddy[ijk] = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0_half[k+1];
-                        const double flux_m2 = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                        flux_eddy_mean[ijk] = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k+1];
-                        const double flux_mean = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                        mean_flux[k] = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0_half[k+1];
 
-                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
+//                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
+                        flux[ijk] = eddy_flux[ijk] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_flux[k];
 
                         flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
                                  interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0_half[k+1];
@@ -497,16 +499,17 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                     const ssize_t jshift = j*jstride;
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        const double flux_eddy = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                        eddy_flux[ijk] = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0[k+1];
-                        const double flux_m1 = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                        flux_mean_eddy[ijk] = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_fluc[ijk+sm1_ed],vel_ed_fluc[ijk],vel_ed_fluc[ijk+sp1_ed],vel_ed_fluc[ijk+sp2_ed]) * rho0[k+1];
-                        const double flux_m2 = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
+                        flux_eddy_mean[ijk] = interp_2(vel_ing_fluc[ijk],vel_ing_fluc[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0[k+1];
-                        const double flux_mean = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
+                        mean_flux[k] = interp_2(vel_ing_mean[ijk],vel_ing_mean[ijk+sp1_ing]) *
                                                 interp_4(vel_ed_mean[ijk+sm1_ed],vel_ed_mean[ijk],vel_ed_mean[ijk+sp1_ed],vel_ed_mean[ijk+sp2_ed]) * rho0[k+1];
 
-                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
+//                        flux[ijk] = flux_eddy + flux_m1 + flux_m2 + flux_mean;
+                        flux[ijk] = eddy_flux[ijk] + flux_mean_eddy[ijk] + flux_eddy_mean[ijk] + mean_flux[k];
 
                         flux_old[ijk] = (interp_2(vel_advecting[ijk],vel_advecting[ijk+sp1_ing]) *
                                  interp_4(vel_advected[ijk+sm1_ed],vel_advected[ijk],vel_advected[ijk+sp1_ed],vel_advected[ijk+sp2_ed])) * rho0[k];
