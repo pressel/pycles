@@ -4,6 +4,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
+from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 
 cdef class Forcing:
     cdef:
@@ -96,6 +97,11 @@ cdef class ForcingRico:
 
 cdef class ForcingReanalysis:
     cdef:
+
+        ClausiusClapeyron CC
+
+        double [:] s
+        double [:] qt
         double [:] ug
         double [:] vg
         double [:] dtdt

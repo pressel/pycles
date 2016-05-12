@@ -38,6 +38,8 @@ def RadiationFactory(namelist, ParallelMPI.ParallelMPI Pa):
             return RadiationDyCOMS_RF01()
         elif casename == 'SMOKE':
             return RadiationSmoke()
+        elif casename == 'Reanalysis':
+            return RadiationRRTM(namelist)
         else:
             return RadiationNone()
 
@@ -377,6 +379,8 @@ cdef class RadiationRRTM:
             self.profile_name = 'sheba'
         elif casename == 'DYCOMS_RF01':
             self.profile_name = 'cgils_s12'
+        elif casename == 'Reanalysis':
+            self.profile_name = 'Reanalysis'
         else:
             self.profile_name = 'default'
 
@@ -393,7 +397,7 @@ cdef class RadiationRRTM:
         try:
             self.patch_pressure = namelist['radiation']['RRTM']['patch_pressure']
         except:
-            self.patch_pressure = 600.00*100.0
+            self.patch_pressure = 1000.00*100.0
 
         # Namelist options related to gas concentrations
         try:
@@ -454,7 +458,7 @@ cdef class RadiationRRTM:
             self.radiation_frequency = namelist['radiation']['RRTM']['frequency']
         except:
             print('radiation_frequency not set so RadiationRRTM takes default value: radiation_frequency = 0.0 (compute at every step).')
-            self.radiation_frequency = 0.0
+            self.radiation_frequency = 90.0
 
         self.next_radiation_calculate = 0.0
 
@@ -484,12 +488,37 @@ cdef class RadiationRRTM:
             Py_ssize_t i,k
 
 
-        # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
-        pressures = profile_data[self.profile_name]['pressure'][:]
-        temperatures = profile_data[self.profile_name]['temperature'][:]
-        vapor_mixing_ratios = profile_data[self.profile_name]['vapor_mixing_ratio'][:]
+        if self.profile_name == 'Reanalysis':
 
-        n_profile = len(pressures[pressures<=self.patch_pressure]) # nprofile = # of points in the fixed profile to use
+            import cPickle
+            f = open('/Users/presselk/Dropbox/era_forcing/Forcing.pkl','r')
+            fd = cPickle.load(f)
+            f.close()
+
+            self.coszen = fd['cos_zenith']
+            pressures = fd['p'][::-1] * 100.0
+            temperatures = fd['t'][::-1]
+            vapor_mixing_ratios = fd['qt'][::-1]
+            vapor_mixing_ratios = vapor_mixing_ratios / ( 1.0 - vapor_mixing_ratios)
+
+
+        else:
+            # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
+            pressures = profile_data[self.profile_name]['pressure'][:]
+            temperatures = profile_data[self.profile_name]['temperature'][:]
+            vapor_mixing_ratios = profile_data[self.profile_name]['vapor_mixing_ratio'][:]
+
+        # Sanity check that patch_pressure < minimum LES domain pressure
+        dp = np.abs(Ref.p0_half_global[nz + gw -1] - Ref.p0_half_global[nz + gw -2])
+        self.patch_pressure = np.minimum(self.patch_pressure, Ref.p0_half_global[nz + gw -1] - dp  )
+
+
+        #n_profile = len(pressures[pressures<=self.patch_pressure]) # nprofile = # of points in the fixed profile to use
+        # above syntax tends to cause problems so use a more robust way
+        n_profile = 0
+        for pressure in pressures:
+            if pressure <= self.patch_pressure:
+                n_profile += 1
         self.n_ext =  n_profile + self.n_buffer # n_ext = total # of points to add to LES domain (buffer portion + fixed profile portion)
 
 

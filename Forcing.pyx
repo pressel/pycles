@@ -8,6 +8,7 @@ cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
+from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c
 import numpy as np
@@ -18,7 +19,7 @@ cimport ParallelMPI
 include 'parameters.pxi'
 
 cdef class Forcing:
-    def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
+    def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
             self.scheme = ForcingSullivanPatton()
@@ -38,7 +39,7 @@ cdef class Forcing:
         elif casename == 'StableBubble':
             self.scheme = ForcingNone()
         elif casename == 'Reanalysis':
-            self.scheme = ForcingReanalysis()
+            self.scheme = ForcingReanalysis(namelist, LH, Pa)
         else:
             Pa.root_print('No focing for casename: ' +  casename)
             Pa.root_print('Killing simulation now!!!')
@@ -546,7 +547,7 @@ cdef class ForcingRico:
             apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
 
-                #Apply large scale source terms
+            #Apply large scale source terms
         with nogil:
             for i in xrange(imin,imax):
                 ishift = i * istride
@@ -583,7 +584,11 @@ cdef class ForcingRico:
 
 cdef class ForcingReanalysis:
 
-    def __init__(self):
+    def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
+
+        self.CC = ClausiusClapeyron()
+        self.CC.initialize(namelist, LH, Pa)
+
         return
 
 
@@ -597,10 +602,26 @@ cdef class ForcingReanalysis:
         cdef double [:] p = fd['p'] * 100.0
         self.ug = np.interp(Ref.p0_half, p, fd['ug'])
         self.vg = np.interp(Ref.p0_half, p, fd['vg'])
+        self.subsidence = np.interp(Ref.p0_half, p, fd['w'])
+
+
+        t = np.interp(Ref.p0_half, p, fd['t'])
+        self.qt = np.interp(Ref.p0_half, p, fd['qt'])
+        self.s = np.zeros((Gr.dims.nlg[2],),dtype=np.double, order='c')
+
+        for k in xrange(Gr.dims.nlg[2]):
+            pd = pd_c(Ref.p0_half[k], self.qt[k], self.qt[k])
+            pv = pv_c(Ref.p0_half[k], self.qt[k], self.qt[k])
+            self.s[k] = sd_c(pd, t[k]) * (1.0 - self.qt[k]) \
+                                  + sv_c(pv, t[k]) * self.qt[k]
+
+            self.subsidence[k] = -self.subsidence[k]*Ref.alpha0_half[k]/g
 
         latitude = fd['lat']
 
         self.coriolis_param = 2.0 * omega * sin(latitude * pi / 180.0 )
+
+
 
 
 
@@ -626,11 +647,33 @@ cdef class ForcingReanalysis:
             Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
+            double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
+            #double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            double [:] smean = Pa.HorizontalMean(Gr, &PV.values[s_shift])
 
+        cdef double itau = 1.0/(3600.0 * 12.0)
+        with nogil:
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        PV.tendencies[s_shift + ijk] += itau *(self.s[k] - smean[k])
+                        PV.tendencies[qt_shift + ijk] += itau *(self.qt[k] - qtmean[k])
 
-
+        #Apply Coriolis Forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+
+
+        #Apply subsidence
+        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+
+
+
+
 
         return
 

@@ -817,8 +817,8 @@ def InitReanalysis(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
 
-                PV.values[ijk + u_varshift] = 0.0 #u[k]
-                PV.values[ijk + v_varshift] = 0.0 #v[k]
+                PV.values[ijk + u_varshift] = u[k]
+                PV.values[ijk + v_varshift] = v[k]
                 PV.values[ijk + w_varshift] = 0.0
                 PV.values[ijk + qt_varshift]  = qt[k]
                 PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], t[k], qt[k], ql[k], 0.0)
@@ -827,6 +827,9 @@ def InitReanalysis(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 else:
                     s_pert_ = 0.0
                 PV.values[ijk + s_varshift] += s_pert_
+
+
+    #print np.array(PV.values[s_varshift:s_varshift+100])
 
     return
 
