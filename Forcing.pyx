@@ -645,8 +645,12 @@ cdef class ForcingReanalysis:
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
-            #double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
             double [:] smean = Pa.HorizontalMean(Gr, &PV.values[s_shift])
+
+
+
 
 
             double pd
@@ -656,6 +660,11 @@ cdef class ForcingReanalysis:
             double p0
             double rho0
             double t
+
+
+        cdef double ugal = umean[np.where(np.abs(umean) == np.amax(np.abs(umean)))[0][0]]
+        cdef double vgal = vmean[np.where(np.abs(vmean) == np.amax(np.abs(vmean)))[0][0]]
+
 
         cdef double itau = 1.0/(3600.0 * 12.0)
         with nogil:
@@ -681,6 +690,15 @@ cdef class ForcingReanalysis:
                                                          * self.dtdt[k]  * rho0)/t
                         PV.tendencies[qt_shift + ijk] += itau *(self.qt[k] - qtmean[k])
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
+
+
+                        PV.tendencies[u_shift + ijk] += Ref.u0 - ugal
+                        PV.tendencies[v_shift + ijk] += Ref.v0 - vgal
+
+
+        Ref.u0 = ugal
+        Ref.v0 = vgal
+
 
         #Apply Coriolis Forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
