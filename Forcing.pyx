@@ -601,7 +601,8 @@ cdef class ForcingReanalysis:
         self.ug = np.interp(Ref.p0_half, p, fd['ug'])
         self.vg = np.interp(Ref.p0_half, p, fd['vg'])
         self.subsidence = np.interp(Ref.p0_half, p, fd['w'])
-
+        self.dqtdt = np.interp(Ref.p0_half, p, fd['qt_ls'])
+        self.dtdt = np.interp(Ref.p0_half, p, fd['t_ls'])
 
         t = np.interp(Ref.p0_half, p, fd['t'])
         self.qt = np.interp(Ref.p0_half, p, fd['qt'])
@@ -618,8 +619,6 @@ cdef class ForcingReanalysis:
         latitude = fd['lat']
 
         self.coriolis_param = 2.0 * omega * sin(latitude * pi / 180.0 )
-
-
 
 
 
@@ -649,6 +648,15 @@ cdef class ForcingReanalysis:
             #double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
             double [:] smean = Pa.HorizontalMean(Gr, &PV.values[s_shift])
 
+
+            double pd
+            double pv
+            double qt
+            double qv
+            double p0
+            double rho0
+            double t
+
         cdef double itau = 1.0/(3600.0 * 12.0)
         with nogil:
             for i in xrange(imin,imax):
@@ -656,9 +664,23 @@ cdef class ForcingReanalysis:
                 for j in xrange(jmin,jmax):
                     jshift = j * jstride
                     for k in xrange(kmin,kmax):
+
                         ijk = ishift + jshift + k
+                        p0 = Ref.p0_half[k]
+                        rho0 = Ref.rho0_half[k]
+                        qt = PV.values[qt_shift + ijk]
+                        qv = qt - DV.values[ql_shift + ijk]
+                        pd = pd_c(p0,qt,qv)
+                        pv = pv_c(p0,qt,qv)
+                        t  = DV.values[t_shift + ijk]
+
+
                         PV.tendencies[s_shift + ijk] += itau *(self.s[k] - smean[k])
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
+                        PV.tendencies[s_shift + ijk] += (cpm_c(qt)
+                                                         * self.dtdt[k]  * rho0)/t
                         PV.tendencies[qt_shift + ijk] += itau *(self.qt[k] - qtmean[k])
+                        PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
         #Apply Coriolis Forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
