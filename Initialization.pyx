@@ -792,6 +792,8 @@ def InitReanalysis(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
     RS.Pg = np.mean(fd['sp'])
     RS.Tg = np.mean(fd['sst'])
     RS.qtg = fd['qt'][-1]
+    RS.u0 = 0.0
+    RS.v0 = 0.0
 
     RS.initialize(Gr ,Th, NS, Pa)
     cdef double [:] p = fd['p'] * 100.0
