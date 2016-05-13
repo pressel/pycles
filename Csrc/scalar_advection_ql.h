@@ -773,7 +773,7 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
 void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
                 const double* restrict velocity, const double* restrict scalar,
                 double* restrict flux, int d){
-    if (d==1){printf("Scalar Advection: WENO 5 decomposition QL\n");}
+    if (d==1){printf("SA: WENO 5 decomposition QL\n");}
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
 
