@@ -692,8 +692,8 @@ cdef class ForcingReanalysis:
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
 
-                        PV.tendencies[u_shift + ijk] += Ref.u0 - ugal
-                        PV.tendencies[v_shift + ijk] += Ref.v0 - vgal
+                        PV.values[u_shift + ijk] += Ref.u0 - ugal
+                        PV.values[v_shift + ijk] += Ref.v0 - vgal
 
 
         Ref.u0 = ugal
