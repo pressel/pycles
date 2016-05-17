@@ -15,6 +15,7 @@ cimport Surface
 from Forcing cimport AdjustedMoistAdiabat
 from Thermodynamics cimport LatentHeat
 # import pylab as plt
+
 import numpy as np
 cimport numpy as np
 import netCDF4 as nc
@@ -590,6 +591,7 @@ cdef class RadiationRRTM(RadiationBase):
                 self.rv_ext[i] = pchip_interpolate(xi, ri, self.p_ext[i] )
                 self.t_ext[i] = pchip_interpolate(xi,ti, self.p_ext[i])
 
+
         #--- Plotting to evaluate implementation of buffer zone
         #--- Comment out when not running locally
         for i in xrange(Gr.dims.nlg[2]):
@@ -608,6 +610,7 @@ cdef class RadiationRRTM(RadiationBase):
         # plt.gca().invert_yaxis()
         # plt.show()
         #---END Plotting to evaluate implementation of buffer zone
+
 
         self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
         self.pi_full = np.zeros((self.n_ext+1+nz,),dtype=np.double)
@@ -977,7 +980,6 @@ cdef class RadiationRRTM(RadiationBase):
         # plt.gca().invert_yaxis()
         # plt.show()
         #---END plotting
-
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
 
 

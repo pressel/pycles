@@ -13,4 +13,5 @@ build/
 figs/
 _static/
 _templates/
-*.png 
+*.png
+*.mod

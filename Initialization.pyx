@@ -1269,4 +1269,3 @@ def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
         PV.add_variable('smoke', 'm/s', "sym", "scalar", Pa)
         return
     return
-
