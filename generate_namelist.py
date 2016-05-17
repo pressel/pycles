@@ -1221,7 +1221,7 @@ def ZGILS(zgils_loc):
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
     namelist['damping']['Rayleigh'] = {}
-    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
     namelist['damping']['Rayleigh']['z_d'] = 500.0
 
     namelist['microphysics'] = {}
