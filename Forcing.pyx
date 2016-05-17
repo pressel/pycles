@@ -19,7 +19,7 @@ cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 
-import pylab as plt
+# import pylab as plt
 include 'parameters.pxi'
 
 cdef class Forcing:
@@ -955,7 +955,7 @@ cdef class ForcingZGILS:
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-
+        self.source_rh_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
         # compute the reference profiles for forcing/nudging
         cdef double Pg_parcel = 1000.0e2
@@ -995,7 +995,9 @@ cdef class ForcingZGILS:
         NS.add_profile('v_subsidence_tendency', Gr, Pa)
         NS.add_profile('u_coriolis_tendency', Gr, Pa)
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
+        NS.add_profile('qt_rh_nudging', Gr, Pa)
 
+        NS.add_ts('nudging_height', Gr, Pa)
         return
 
 
@@ -1040,20 +1042,19 @@ cdef class ForcingZGILS:
 
         # Prepare for nuding
         # Here we cheat a bit and ignore potential use of vertical domain decomp. in the future
-        cdef double h_BL = Gr.zl_half[kmax]
         with nogil:
             for k in xrange(kmax, kmin-1, -1):
                 if qtmean[k] <= self.alpha_h * self.forcing_ref.qt[k]:
-                    h_BL = Gr.zl_half[k]
+                    self.h_BL = Gr.zl_half[k]
 
-        Pa.root_print('H_BL forcing is ' + str(h_BL))
+
 
         cdef double [:] xi_relax = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        cdef double [:] source_rh_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         cdef double z_h, pv_star, qv_star
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
-                z_h = Gr.zl_half[k]/h_BL
+                self.source_rh_nudge[k] = 0.0
+                z_h = Gr.zl_half[k]/self.h_BL
                 if z_h < 1.2:
                     xi_relax[k] = 0.0
                 elif z_h > 1.5:
@@ -1065,15 +1066,15 @@ cdef class ForcingZGILS:
                     pv_star = self.CC.LT.fast_lookup(tmean[k])
                     qv_star = eps_v * pv_star/(Ref.p0_half[k] + (eps_v-1.0)*pv_star)
                     if qtmean[k]/qv_star < 0.2:
-                        source_rh_nudge[k] = -(qtmean[k] - qv_star*0.2)/3600.0
+                        self.source_rh_nudge[k] = -(qtmean[k] - qv_star*0.2)/3600.0
 
-        plt.figure(1)
-        plt.plot(source_rh_nudge, Gr.zl_half)
-        plt.title('RH source')
-        plt.figure(2)
-        plt.plot(np.multiply(xi_relax[:],86400), Gr.zl_half)
-        plt.title('Relaxation coeff')
-        plt.show()
+        # plt.figure(1)
+        # plt.plot(source_rh_nudge, Gr.zl_half)
+        # plt.title('RH source')
+        # plt.figure(2)
+        # plt.plot(np.multiply(xi_relax[:],86400), Gr.zl_half)
+        # plt.title('Relaxation coeff')
+        # plt.show()
 
 
         #Apply large scale source terms (BL advection, Free Tropo relaxation)
@@ -1093,8 +1094,8 @@ cdef class ForcingZGILS:
                         t  = DV.values[t_shift + ijk]
                         PV.tendencies[s_shift + ijk] += (cpm_c(qt)
                                                          * self.dtdt[k] * exner_c(p0) * rho0)/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*(self.dqtdt[k] + source_rh_nudge[k])
-                        PV.tendencies[qt_shift + ijk] += self.dqtdt[k] + source_rh_nudge[k]
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*(self.dqtdt[k] + self.source_rh_nudge[k])
+                        PV.tendencies[qt_shift + ijk] += self.dqtdt[k] + self.source_rh_nudge[k]
 
                         PV.tendencies[s_shift + ijk] += -xi_relax[k] * (PV.values[s_shift + ijk]-self.forcing_ref.s[k])
                         PV.tendencies[qt_shift + ijk] += -xi_relax[k] * (PV.values[qt_shift + ijk]-self.forcing_ref.qt[k])
@@ -1144,8 +1145,7 @@ cdef class ForcingZGILS:
 
         #Output Coriolis tendencies
         tmp_tendency[:] = 0.0
-        large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &tmp_tendency[0],
-                       &tmp_tendency_2[0], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
+
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
                        &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
@@ -1155,6 +1155,10 @@ cdef class ForcingZGILS:
         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('v_coriolis_tendency',mean_tendency_2[Gr.dims.gw:-Gr.dims.gw],Pa)
 
+
+        NS.write_profile('qt_rh_nudging',self.source_rh_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        NS.write_ts('nudging_height',self.h_BL, Pa)
         return
 
 

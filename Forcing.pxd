@@ -136,12 +136,14 @@ cdef class ForcingZGILS:
         double [:] subsidence
         double [:] ug
         double [:] vg
+        double [:] source_rh_nudge
         double coriolis_param
         double divergence
         double t_adv_max
         double qt_adv_max
         double tau_relax_inverse
         double alpha_h
+        double h_BL
         ClausiusClapeyron CC
         AdjustedMoistAdiabat forcing_ref
 
