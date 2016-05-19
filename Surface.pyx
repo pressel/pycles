@@ -824,8 +824,6 @@ cdef class SurfaceCGILS(SurfaceBase):
             double pv_star = self.CC.LT.fast_lookup(Ref.Tg)
             double qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
 
-
-
             # Find the surface entropy
             double pd_star = Ref.Pg - pv_star
 
@@ -955,7 +953,12 @@ cdef class SurfaceZGILS(SurfaceBase):
             double s_star = sd_c(pd_star,self.T_surface) * (1.0 - qv_star) + sv_c(pv_star, self.T_surface) * qv_star
 
             double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
+            double exner_0 = exner_c(Ref.Pg)
+            double exner_a = exner_c(Ref.p0_half[gw])
+            double theta_a
+            double theta_0 = self.T_surface /exner_0
 
+            double yv_2d, ya_2d, pv_2d, pa_2d, rhov_2d, rhod_2d, dsdT_2d, dsdyv_2d
 
 
         with nogil:
@@ -967,10 +970,27 @@ cdef class SurfaceZGILS(SurfaceBase):
                     Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
                     Ri = Nb2 * zb * zb/(windspeed[ij] * windspeed[ij])
                     exchange_coefficients_byun(Ri, zb, self.z0, &cm[ij], &ch, &self.obukhov_length[ij])
-                    self.s_flux[ij] = -ch *windspeed[ij] * (PV.values[s_shift + ijk] - s_star)
+                    theta_a = DV.values[t_shift + ijk] / exner_a
+                    t_flux = -ch * windspeed[ij] * (theta_a - theta_0) * exner_0
+                    # self.s_flux[ij] = -ch *windspeed[ij] * (PV.values[s_shift + ijk] - s_star)
                     self.qt_flux[ij] = -ch *windspeed[ij] *  (PV.values[qt_shift + ijk] - qv_star)
                     ustar = sqrt(cm[ij]) * windspeed[ij]
                     self.friction_velocity[ij] = ustar
+                    yv_2d = PV.values[qt_shift + ijk]
+                    ya_2d = 1.0 - yv_2d
+                    pv_2d = Ref.p0[gw] / (1.0 + (1.0/(yv_2d/ya_2d)) * (Rd/Rv))
+                    pa_2d = Ref.p0[gw]  - pv_2d
+                    rhov_2d = pv_2d / (Rv *  DV.values[t_shift + ijk] )
+                    rhod_2d = pa_2d / (Rd *  DV.values[t_shift + ijk] )
+                    dsdT_2d = (ya_2d * cpd + yv_2d * cpv)/ DV.values[t_shift + ijk]
+                    dsdyv_2d = ((cpv - cpd) * log(DV.values[t_shift + ijk] /T_tilde) + Rd * log(pa_2d/p_tilde) - Rv * log(pv_2d/p_tilde)
+                                 + sv_tilde + (ya_2d * Rd/pa_2d - yv_2d * Rv / pv_2d) * Ref.p0[gw]
+                                 * Rd / Rv * (ya_2d + yv_2d) / (yv_2d + Rd/Rv * ya_2d) / (yv_2d + Rd/Rv * ya_2d) )
+
+                    self.s_flux[ij] = (t_flux * dsdT_2d + self.qt_flux[ij]* dsdyv_2d ) / Ref.alpha0[gw]
+                                                              # * (rhov_2d[i,j] + rhod_2d[i,j])
+
+
 
 
             for i in xrange(gw, imax-gw):
