@@ -932,7 +932,8 @@ cdef class ForcingZGILS:
         self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.source_rh_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-
+        self.source_qt_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.source_t_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         # compute the reference profiles for forcing/nudging
         cdef double Pg_parcel = 1000.0e2
         cdef double Tg_parcel = 295.0
@@ -967,12 +968,11 @@ cdef class ForcingZGILS:
         #Initialize Statistical Output
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
-        NS.add_profile('u_subsidence_tendency', Gr, Pa)
-        NS.add_profile('v_subsidence_tendency', Gr, Pa)
         NS.add_profile('u_coriolis_tendency', Gr, Pa)
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
         NS.add_profile('qt_rh_nudging', Gr, Pa)
-
+        NS.add_profile('qt_ref_nudging', Gr, Pa)
+        NS.add_profile('temperature_ref_nudging', Gr, Pa)
         NS.add_ts('nudging_height', Gr, Pa)
         return
 
@@ -981,12 +981,10 @@ cdef class ForcingZGILS:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            Py_ssize_t imin = Gr.dims.gw
-            Py_ssize_t jmin = Gr.dims.gw
-            Py_ssize_t kmin = Gr.dims.gw
-            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
-            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - gw
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t i,j,k,ishift,jshift,ijk
@@ -1019,7 +1017,7 @@ cdef class ForcingZGILS:
         # Prepare for nuding
         # Here we cheat a bit and ignore potential use of vertical domain decomp. in the future
         with nogil:
-            for k in xrange(kmax, kmin-1, -1):
+            for k in xrange(kmax, gw-1, -1):
                 if qtmean[k] <= self.alpha_h * self.forcing_ref.qt[k]:
                     self.h_BL = Gr.zl_half[k]
 
@@ -1041,25 +1039,32 @@ cdef class ForcingZGILS:
                 if Gr.zl_half[k] < 2000.0:
                     pv_star = self.CC.LT.fast_lookup(tmean[k])
                     qv_star = eps_v * pv_star/(Ref.p0_half[k] + (eps_v-1.0)*pv_star)
-                    if qtmean[k]/qv_star < 0.2:
-                        self.source_rh_nudge[k] = -(qtmean[k] - qv_star*0.2)/3600.0
+                    if qtmean[k] < 0.2 * qv_star:
+                        self.source_rh_nudge[k] = (qv_star*0.2-qtmean[k])/3600.0
+                # Here we find the nudging rates
+                self.source_qt_nudge[k] = xi_relax[k] * (self.forcing_ref.qt[k]-qtmean[k])
+                self.source_t_nudge[k]  = xi_relax[k] * (self.forcing_ref.temperature[k]-tmean[k])
 
         # plt.figure(1)
-        # plt.plot(source_rh_nudge, Gr.zl_half)
+        # plt.plot(self.source_rh_nudge, Gr.zl_half)
         # plt.title('RH source')
         # plt.figure(2)
-        # plt.plot(np.multiply(xi_relax[:],86400), Gr.zl_half)
-        # plt.title('Relaxation coeff')
+        # plt.plot(self.source_qt_nudge, Gr.zl_half)
+        # plt.title('qt nudge')
+        # plt.figure(3)
+        # plt.plot(self.source_t_nudge, Gr.zl_half)
+        # plt.title('qt nudge')
         # plt.show()
 
+        cdef double total_t_source, total_qt_source
 
         #Apply large scale source terms (BL advection, Free Tropo relaxation)
         with nogil:
-            for i in xrange(imin,imax):
+            for i in xrange(gw,imax):
                 ishift = i * istride
-                for j in xrange(jmin,jmax):
+                for j in xrange(gw,jmax):
                     jshift = j * jstride
-                    for k in xrange(kmin,kmax):
+                    for k in xrange(gw,kmax):
                         ijk = ishift + jshift + k
                         p0 = Ref.p0_half[k]
                         rho0 = Ref.rho0_half[k]
@@ -1068,14 +1073,13 @@ cdef class ForcingZGILS:
                         pd = pd_c(p0,qt,qv)
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
+                        total_t_source = self.dtdt[k] + self.source_t_nudge[k]
+                        total_qt_source = self.dqtdt[k] + self.source_qt_nudge[k] + self.source_rh_nudge[k]
+
                         PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-                                                         * self.dtdt[k] * exner_c(p0) * rho0)/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*(self.dqtdt[k] + self.source_rh_nudge[k])
-                        PV.tendencies[qt_shift + ijk] += self.dqtdt[k] + self.source_rh_nudge[k]
-
-                        PV.tendencies[s_shift + ijk] += -xi_relax[k] * (PV.values[s_shift + ijk]-self.forcing_ref.s[k])
-                        PV.tendencies[qt_shift + ijk] += -xi_relax[k] * (PV.values[qt_shift + ijk]-self.forcing_ref.qt[k])
-
+                                                         * total_t_source * exner_c(p0) * rho0)/t
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * total_qt_source
+                        PV.tendencies[qt_shift + ijk] += total_qt_source
 
         return
 
@@ -1107,17 +1111,6 @@ cdef class ForcingZGILS:
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],
-                         &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('u_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
-
-        tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],
-                         &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('v_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         #Output Coriolis tendencies
         tmp_tendency[:] = 0.0
@@ -1133,7 +1126,8 @@ cdef class ForcingZGILS:
 
 
         NS.write_profile('qt_rh_nudging',self.source_rh_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
-
+        NS.write_profile('qt_ref_nudging',self.source_qt_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_profile('temperature_ref_nudging',self.source_t_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_ts('nudging_height',self.h_BL, Pa)
         return
 
