@@ -958,7 +958,7 @@ cdef class SurfaceZGILS(SurfaceBase):
             double theta_a
             double theta_0 = self.T_surface /exner_0
 
-            double yv_2d, ya_2d, pv_2d, pa_2d, rhov_2d, rhod_2d, dsdT_2d, dsdyv_2d
+            double yv_2d, ya_2d, pv_2d, pa_2d, dsdT_2d, dsdyv_2d, dpvdqt
 
 
         with nogil:
@@ -978,16 +978,15 @@ cdef class SurfaceZGILS(SurfaceBase):
                     self.friction_velocity[ij] = ustar
                     yv_2d = PV.values[qt_shift + ijk]
                     ya_2d = 1.0 - yv_2d
-                    pv_2d = Ref.p0[gw] / (1.0 + (1.0/(yv_2d/ya_2d)) * (Rd/Rv))
-                    pa_2d = Ref.p0[gw]  - pv_2d
-                    rhov_2d = pv_2d / (Rv *  DV.values[t_shift + ijk] )
-                    rhod_2d = pa_2d / (Rd *  DV.values[t_shift + ijk] )
-                    dsdT_2d = (ya_2d * cpd + yv_2d * cpv)/ DV.values[t_shift + ijk]
-                    dsdyv_2d = ((cpv - cpd) * log(DV.values[t_shift + ijk] /T_tilde) + Rd * log(pa_2d/p_tilde) - Rv * log(pv_2d/p_tilde)
-                                 + sv_tilde + (ya_2d * Rd/pa_2d - yv_2d * Rv / pv_2d) * Ref.p0[gw]
-                                 * Rd / Rv * (ya_2d + yv_2d) / (yv_2d + Rd/Rv * ya_2d) / (yv_2d + Rd/Rv * ya_2d) )
+                    pv_2d = pv_c(Ref.p0_half[gw],yv_2d,yv_2d)
+                    pa_2d = pd_c(Ref.p0_half[gw],yv_2d,yv_2d)
+                    dpvdqt = pv_2d/yv_2d - pv_2d*(eps_vi-1.0)/(1.0 + (eps_vi-1.0)*yv_2d)
 
-                    self.s_flux[ij] = (t_flux * dsdT_2d + self.qt_flux[ij]* dsdyv_2d ) / Ref.alpha0[gw]
+                    dsdT_2d = (ya_2d * cpd + yv_2d * cpv)/ DV.values[t_shift + ijk]
+                    dsdyv_2d = sv_c(pv_2d, DV.values[t_shift + ijk]) - sd_c(pa_2d, DV.values[t_shift + ijk]) \
+                               + ya_2d *Rd/pa_2d*dpvdqt -yv_2d*Rv/pv_2d*dpvdqt
+
+                    self.s_flux[ij] = (t_flux * dsdT_2d + self.qt_flux[ij]* dsdyv_2d )
                                                               # * (rhov_2d[i,j] + rhod_2d[i,j])
 
 
