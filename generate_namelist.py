@@ -1004,7 +1004,7 @@ def DCBLSoares_moist():
     # profile outputs
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['None']    # AuxiliaryStatistics
+    namelist['stats_io']['auxiliary'] = ['Fluxes']    # AuxiliaryStatistics
     namelist['stats_io']['frequency'] = 900.0
 
     # field outputs
