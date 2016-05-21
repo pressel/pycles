@@ -9,6 +9,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport Kinematics
 cimport ParallelMPI
+cimport Surface
 from NetCDFIO cimport NetCDFIO_Stats
 from libc.math cimport exp, sqrt
 cimport numpy as np
@@ -54,9 +55,9 @@ cdef class SGS:
         return
 
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke,Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
-        self.scheme.update(Gr,DV,PV,Ke,Pa)
+        self.scheme.update(Gr,DV,PV,Ke,Sur,Pa)
 
         return
 
@@ -89,7 +90,7 @@ cdef class UniformViscosity:
 
 
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
 
         cdef:
@@ -202,7 +203,7 @@ cdef class Smagorinsky:
         return
 
     cpdef update(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.SurfaceBase Sur,  ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -259,7 +260,8 @@ cdef class TKE:
         return
 
 
-    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV, PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV, PrognosticVariables.PrognosticVariables PV,
+                 Kinematics.Kinematics Ke, Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -300,10 +302,9 @@ cdef class TKE:
 
         tke_buoyant_production(&Gr.dims, &PV.tendencies[e_shift], &DV.values[diff_shift], &DV.values[bf_shift])
 
-        cdef Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr,'obukhov_length')
-        cdef Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr,'friction_velocity')
+
         if Pa.sub_z_rank == 0:
-            tke_surface(&Gr.dims, &PV.values[e_shift], &DV.values_2d[lmo_shift], &DV.values_2d[ustar_shift] , h_global, Gr.zl_half[Gr.dims.gw])
+            tke_surface(&Gr.dims, &PV.values[e_shift], &Sur.obukhov_length[0], &Sur.friction_velocity[0] , h_global, Gr.zl_half[Gr.dims.gw])
 
 
         return

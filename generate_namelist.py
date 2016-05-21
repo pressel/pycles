@@ -103,7 +103,7 @@ def SullivanPatton():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['None']
+    namelist['stats_io']['auxiliary'] = ['TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -351,7 +351,7 @@ def Bomex():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['auxiliary'] = ['Cumulus','TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -481,7 +481,7 @@ def DYCOMS_RF01():
     namelist['time_stepping']['ts_type'] = 3
     namelist['time_stepping']['cfl_limit'] = 0.7
     namelist['time_stepping']['dt_initial'] = 1.0
-    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['dt_max'] = 4.0
     namelist['time_stepping']['t_max'] = 4.0 * 3600.0
 
     namelist['thermodynamics'] = {}
@@ -524,7 +524,7 @@ def DYCOMS_RF01():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux']
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
