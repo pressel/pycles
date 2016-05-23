@@ -779,7 +779,6 @@ cdef class SurfaceReanalysis(SurfaceBase):
             double qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
 
 
-
             # Find the surface entropy
             double pd_star = Ref.Pg - pv_star
 
@@ -787,7 +786,10 @@ cdef class SurfaceReanalysis(SurfaceBase):
             double s_star = sd_c(pd_star,self.T_surface) * (1.0 - qv_star) + sv_c(pv_star, self.T_surface) * qv_star
 
             double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
+            double [:] qt_mean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
 
+
+        print "\t\t", qv_star, t_mean[gw], self.T_surface, qt_mean[gw]
         with nogil:
             for i in xrange(gw-1, imax-gw+1):
                 for j in xrange(gw-1,jmax-gw+1):

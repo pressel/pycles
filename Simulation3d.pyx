@@ -6,6 +6,7 @@ from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
 from Surface import SurfaceFactory
 from Radiation import RadiationFactory
+from SurfaceBudget import SurfaceBudgetFactory
 from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
@@ -54,6 +55,7 @@ class Simulation3d:
         self.Sur = SurfaceFactory(namelist, self.LH, self.Pa)
         self.Fo = Forcing.Forcing(namelist, self.LH, self.Pa)
         self.Ra = RadiationFactory(namelist, self.Pa)
+        self.Budg = SurfaceBudgetFactory(namelist)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
         self.CondStatsIO = NetCDFIO.NetCDFIO_CondStats()
@@ -124,6 +126,7 @@ class Simulation3d:
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
+        self.Budg.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Damping.initialize(self.Gr)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
@@ -163,6 +166,7 @@ class Simulation3d:
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.TS, self.Pa)
+                self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
@@ -233,6 +237,7 @@ class Simulation3d:
                 self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
                 self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
                 self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
+                self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
                 self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
                 self.StatsIO.close_files(self.Pa)
                 self.Pa.root_print('Finished Doing StatsIO')
@@ -301,6 +306,7 @@ class Simulation3d:
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
         self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
         self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
+        self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
         return
