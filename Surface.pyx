@@ -32,7 +32,7 @@ cdef extern from "thermodynamic_functions.h":
     inline double theta_rho_c(double p0, double T,double qt, double qv) nogil
     inline double cpm_c(double qt) nogil
 cdef extern from "surface.h":
-    double compute_(double windspeed, double buoyancy_flux, double z0, double z1) nogil
+    double compute_ustar(double windspeed, double buoyancy_flux, double z0, double z1) nogil
     inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0_b, double T_b, double qt_b, double qv_b) nogil
     void compute_windspeed(Grid.DimStruct *dims, double* u, double*  v, double*  speed, double u0, double v0, double gustiness ) nogil
     void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch, double* lmo) nogil
@@ -251,7 +251,7 @@ cdef class SurfaceSullivanPatton(SurfaceBase):
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
-                    self.friction_velocity[ij] = compute_(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
@@ -762,7 +762,7 @@ cdef class SurfaceIsdac(SurfaceBase):
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
-                    self.friction_velocity[ij] = compute_(windspeed[ij],self.b_flux[ij],self.z0, Gr.dims.dx[2]/2.0)
+                    self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.b_flux[ij],self.z0, Gr.dims.dx[2]/2.0)
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
@@ -828,7 +828,7 @@ cdef class SurfaceIsdacCC(SurfaceBase):
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
-                    self.friction_velocity[ij] = compute_(windspeed[ij],self.b_flux[ij],self.z0, Gr.dims.dx[2]/2.0)
+                    self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.b_flux[ij],self.z0, Gr.dims.dx[2]/2.0)
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
