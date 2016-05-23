@@ -804,7 +804,7 @@ def Reanalysis():
     namelist = {}
 
     namelist['Reanalysis'] = {}
-    namelist['Reanalysis']['input_file'] = './Forcing.pkl'
+    namelist['Reanalysis']['input_file'] = '/Users/presselk/Dropbox/era_forcing/StratoCumulus.pkl'
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 3

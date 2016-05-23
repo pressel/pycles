@@ -788,8 +788,6 @@ cdef class SurfaceReanalysis(SurfaceBase):
 
             double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
 
-
-
         with nogil:
             for i in xrange(gw-1, imax-gw+1):
                 for j in xrange(gw-1,jmax-gw+1):

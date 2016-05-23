@@ -600,6 +600,7 @@ cdef class ForcingReanalysis:
         cdef double [:] p = fd['p'] * 100.0
         self.ug = np.interp(Ref.p0_half, p, fd['ug'])
         self.vg = np.interp(Ref.p0_half, p, fd['vg'])
+        self.t = np.interp(Ref.p0_half, p, fd['t'])
         self.subsidence = np.interp(Ref.p0_half, p, fd['w'])
         self.dqtdt = np.interp(Ref.p0_half, p, fd['qt_ls'])
         self.dtdt = np.interp(Ref.p0_half, p, fd['t_ls'])
@@ -647,7 +648,8 @@ cdef class ForcingReanalysis:
             double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
             double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            double [:] smean = Pa.HorizontalMean(Gr, &PV.values[s_shift])
+            #double [:] smean = Pa.HorizontalMean(Gr, &PV.values[s_shift])
+            double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
 
 
 
@@ -684,8 +686,9 @@ cdef class ForcingReanalysis:
                         t  = DV.values[t_shift + ijk]
 
 
-                        PV.tendencies[s_shift + ijk] += itau *(self.s[k] - smean[k])
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
+                        #PV.tendencies[s_shift + ijk] += itau *(self.s[k] - smean[k])
+                        PV.tendencies[s_shift + ijk] += cpm_c(qt) * rho0 * itau *(self.t[k] - tmean[k])/t
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*(self.dqtdt[k] + itau *(self.qt[k] - qtmean[k]))
                         PV.tendencies[s_shift + ijk] += (cpm_c(qt)
                                                          * self.dtdt[k]  * rho0)/t
                         PV.tendencies[qt_shift + ijk] += itau *(self.qt[k] - qtmean[k])

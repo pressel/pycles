@@ -103,6 +103,7 @@ cdef class ForcingReanalysis:
         str input_str
         double [:] s
         double [:] qt
+        double [:] t 
         double [:] ug
         double [:] vg
         double [:] dtdt
