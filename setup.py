@@ -24,7 +24,8 @@ if sys.platform == 'darwin':
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
     netcdf_include = '/opt/local/include'
     netcdf_lib = '/opt/local/lib'
-    f_compiler = 'gfortran'
+    # f_compiler = 'gfortran'
+    f_compiler = 'gfortran-mp-4.8'
 elif 'euler' in platform.node():
     #Compile flags for euler @ ETHZ
     library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
