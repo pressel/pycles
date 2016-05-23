@@ -103,7 +103,7 @@ def SullivanPatton():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['None']
+    namelist['stats_io']['auxiliary'] = ['TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -343,7 +343,7 @@ def Bomex():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['auxiliary'] = ['Cumulus','TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -470,7 +470,7 @@ def DYCOMS_RF01():
     namelist['time_stepping']['ts_type'] = 3
     namelist['time_stepping']['cfl_limit'] = 0.7
     namelist['time_stepping']['dt_initial'] = 1.0
-    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['dt_max'] = 4.0
     namelist['time_stepping']['t_max'] = 4.0 * 3600.0
 
     namelist['thermodynamics'] = {}
@@ -516,7 +516,7 @@ def DYCOMS_RF01():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux']
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
@@ -930,8 +930,11 @@ def IsdacCC():
     #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     namelist['microphysics']['n0_ice'] = 1.0e7
 
-    namelist["sgs"] = {}
-    namelist["sgs"]['scheme'] = 'Smagorinsky'
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'UniformViscosity'
+    namelist['sgs']['UniformViscosity'] = {}
+    namelist['sgs']['UniformViscosity']['viscosity'] = 0.0
+    namelist['sgs']['UniformViscosity']['diffusivity'] = 0.0
 
     namelist["diffusion"] = {}
     namelist['diffusion']['qt_entropy_source'] = False
