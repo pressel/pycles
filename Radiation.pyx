@@ -584,6 +584,21 @@ cdef class RadiationRRTM:
 
     cpdef initialize(self, Grid.Grid Gr,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         RadiationBase.initialize(self, Gr, NS, Pa)
+
+        cdef:
+            Py_ssize_t nz = Gr.dims.n[2]
+            Py_ssize_t n_pencils = self.z_pencil.n_local_pencils
+
+        self.uflx_lw_pencils = np.zeros((n_pencils, nz), dtype=np.double, order='c')
+        self.dflx_lw_pencils = np.zeros((n_pencils, nz), dtype=np.double, order='c')
+        self.uflx_sw_pencils = np.zeros((n_pencils, nz), dtype=np.double, order='c')
+        self.dflx_sw_pencils = np.zeros((n_pencils, nz), dtype=np.double, order='c')
+
+        NS.add_profile('lw_flux_down', Gr, Pa)
+        NS.add_profile('lw_flux_up', Gr, Pa)
+        NS.add_profile('sw_flux_down', Gr, Pa)
+        NS.add_profile('sw_flux_up', Gr, Pa)
+
         return
 
 
