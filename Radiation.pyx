@@ -1071,6 +1071,7 @@ cdef class RadiationRRTM:
             double [:] lw_flux_down = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double [:] sw_flux_up = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double [:] sw_flux_down = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] tmp
 
         # Get radiative flux full arrays from pencils
         self.z_pencil.reverse_double(&Gr.dims, Pa, self.uflx_lw_pencils, &lw_flux_up[0])
