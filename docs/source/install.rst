@@ -81,7 +81,7 @@ $[sudo] port install python_select
 
 and then select python2.7 using::
 
-$[sudo] port select --set python python2.7
+$[sudo] port select --set python python27
 
 Once all dependencies have been installed, move to the directory created when you cloned the PyCLES Github_ repository.
 This probably requires something like::

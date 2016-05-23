@@ -12,7 +12,6 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 
-# import pylab as plt
 import numpy as np
 cimport numpy as np
 import netCDF4 as nc
@@ -22,51 +21,84 @@ from thermodynamic_functions cimport cpm_c
 include 'parameters.pxi'
 from profiles import profile_data
 
-
-cdef class Radiation:
-    def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
-        # if namelist specifies RRTM is to be used, this will override any case-specific radiation schemes
-        try:
-            use_rrtm = namelist['radiation']['use_RRTM']
-        except:
-            use_rrtm = False
-        if use_rrtm:
-            self.scheme = RadiationRRTM(namelist)
+def RadiationFactory(namelist, ParallelMPI.ParallelMPI Pa):
+    # if namelist specifies RRTM is to be used, this will override any case-specific radiation schemes
+    try:
+        use_rrtm = namelist['radiation']['use_RRTM']
+    except:
+        use_rrtm = False
+    if use_rrtm:
+        return RadiationRRTM(namelist)
+    else:
+        casename = namelist['meta']['casename']
+        if casename == 'DYCOMS_RF01':
+            return RadiationDyCOMS_RF01()
+        elif casename == 'DYCOMS_RF02':
+            #Dycoms RF01 and RF02 use the same radiation
+            return RadiationDyCOMS_RF01()
+        elif casename == 'SMOKE':
+            return RadiationSmoke()
         else:
-            casename = namelist['meta']['casename']
-            if casename == 'DYCOMS_RF01':
-                self.scheme = RadiationDyCOMS_RF01()
-            elif casename == 'DYCOMS_RF02':
-                #Dycoms RF01 and RF02 use the same radiation
-                self.scheme = RadiationDyCOMS_RF01()
-            elif casename == 'SMOKE':
-                self.scheme = RadiationSmoke()
-            else:
-                self.scheme = RadiationNone()
+            return RadiationNone()
+
+
+
+cdef class RadiationBase:
+    def __init__(self):
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.scheme.initialize(Gr, NS, Pa)
+        self.z_pencil = ParallelMPI.Pencil()
+        self.z_pencil.initialize(Gr, Pa, 2)
+        self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+
+        NS.add_profile('radiative_heating_rate', Gr, Pa)
+        NS.add_profile('radiative_entropy_tendency', Gr, Pa)
+        NS.add_ts('srf_lw_flux_up', Gr, Pa)
+        NS.add_ts('srf_lw_flux_down', Gr, Pa)
+        NS.add_ts('srf_sw_flux_up', Gr, Pa)
+        NS.add_ts('srf_sw_flux_down', Gr, Pa)
+
+
         return
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.scheme.initialize_profiles(Gr, Ref, DV, NS, Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
-        self.scheme.update(Gr, Ref, PV, DV, TS, Pa)
         return
 
     cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.scheme.stats_io(Gr,  DV, NS, Pa)
+
+        cdef:
+            Py_ssize_t i
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double [:] tmp
+
+        # Now update entropy tendencies
+        with nogil:
+            for i in xrange(Gr.dims.npg):
+                entropy_tendency[i] =  self.heating_rate[i] / DV.values[i + t_shift]
+
+        tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
+        NS.write_profile('radiative_heating_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &entropy_tendency[0])
+        NS.write_profile('radiative_entropy_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        NS.write_ts('srf_lw_flux_up',self.srf_lw_up, Pa ) # Units are W/m^2
+        NS.write_ts('srf_lw_flux_down', self.srf_lw_down, Pa)
+        NS.write_ts('srf_sw_flux_up', self.srf_sw_up, Pa)
+        NS.write_ts('srf_sw_flux_down', self.srf_sw_down, Pa)
         return
 
 
-cdef class RadiationNone:
+cdef class RadiationNone(RadiationBase):
     def __init__(self):
         return
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -83,7 +115,7 @@ cdef class RadiationNone:
         return
 
 
-cdef class RadiationDyCOMS_RF01:
+cdef class RadiationDyCOMS_RF01(RadiationBase):
     def __init__(self):
         self.alpha_z = 1.0
         self.kap = 85.0
@@ -91,14 +123,10 @@ cdef class RadiationDyCOMS_RF01:
         self.f1 = 22.0
         self.divergence = 3.75e-6
 
-        self.z_pencil = ParallelMPI.Pencil()
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.z_pencil.initialize(Gr, Pa, 2)
-        self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-        NS.add_profile('radiative_heating_rate', Gr, Pa)
-        NS.add_profile('radiative_entropy_tendency', Gr, Pa)
+        RadiationBase.initialize(self, Gr, NS, Pa)
 
         return
 
@@ -203,24 +231,7 @@ cdef class RadiationDyCOMS_RF01:
 
     cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-
-        cdef:
-            Py_ssize_t i
-            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-            double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-            double [:] tmp
-
-        # Now update entropy tendencies
-        with nogil:
-            for i in xrange(Gr.dims.npg):
-                entropy_tendency[i] =  self.heating_rate[i] / DV.values[i + t_shift]
-
-        tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
-        NS.write_profile('radiative_heating_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        tmp = Pa.HorizontalMean(Gr, &entropy_tendency[0])
-        NS.write_profile('radiative_entropy_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
+        RadiationBase.stats_io(self, Gr, DV, NS,  Pa)
 
 
         return
@@ -240,11 +251,11 @@ cdef class RadiationSmoke:
     def __init__(self):
         self.f0 = 60.0
         self.kap = 0.02
-        self.z_pencil = ParallelMPI.Pencil()
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.z_pencil.initialize(Gr, Pa, 2)
+        RadiationBase.initialize(self, Gr, NS, Pa)
         return
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -274,7 +285,7 @@ cdef class RadiationSmoke:
             double [:, :] smoke_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[smoke_shift])
             double[:, :] f_rad = np.zeros((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
             double[:, :] f_heat = np.zeros((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
-            double[:] heating_rate = np.zeros((Gr.dims.npg, ), dtype=np.double, order='c')
+
             double q_0
 
             double zi
@@ -302,7 +313,7 @@ cdef class RadiationSmoke:
                        (f_rad[pi, k + 1] - f_rad[pi, k]) * dzi / rho_half[k]
 
         # Now transpose the flux pencils
-        self.z_pencil.reverse_double(&Gr.dims, Pa, f_heat, &heating_rate[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, f_heat, &self.heating_rate[0])
 
 
         # Now update entropy tendencies
@@ -314,12 +325,13 @@ cdef class RadiationSmoke:
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
                         PV.tendencies[
-                            s_shift + ijk] +=  heating_rate[ijk] / DV.values[ijk + t_shift]
+                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
 
         return
 
     cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        RadiationBase.stats_io(self, Gr, DV, NS,  Pa)
 
         return
 
@@ -354,7 +366,6 @@ cdef extern:
 
 cdef class RadiationRRTM:
     def __init__(self, namelist):
-        self.z_pencil = ParallelMPI.Pencil()
         # Required for surface energy budget calculations, can also be used for stats io
         self.srf_lw_down = 0.0
         self.srf_sw_down = 0.0
@@ -454,19 +465,7 @@ cdef class RadiationRRTM:
 
     cpdef initialize(self, Grid.Grid Gr,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-
-        self.z_pencil.initialize(Gr, Pa, 2)
-        # Initialize the heating rate array
-        self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-
-        NS.add_profile('radiative_heating_rate', Gr, Pa)
-        NS.add_profile('radiative_entropy_tendency', Gr, Pa)
-
-        NS.add_ts('srf_lw_flux_up', Gr, Pa)
-        NS.add_ts('srf_lw_flux_down', Gr, Pa)
-        NS.add_ts('srf_sw_flux_up', Gr, Pa)
-        NS.add_ts('srf_sw_flux_down', Gr, Pa)
-
+        RadiationBase.initialize(self, Gr, NS, Pa)
         return
 
 
@@ -536,16 +535,7 @@ cdef class RadiationRRTM:
                 self.rv_ext[i] = pchip_interpolate(xi, ri, self.p_ext[i] )
                 self.t_ext[i] = pchip_interpolate(xi,ti, self.p_ext[i])
 
-        # Plotting to evaluate implementation of buffer zone
-        # plt.figure(1)
-        # plt.scatter(self.rv_ext,self.p_ext)
-        # plt.plot(vapor_mixing_ratios, pressures)
-        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
-        # plt.figure(2)
-        # plt.scatter(self.t_ext,self.p_ext)
-        # plt.plot(temperatures,pressures)
-        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw])
-        # plt.show()
+
 
         self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
         self.pi_full = np.zeros((self.n_ext+1+nz,),dtype=np.double)
@@ -644,12 +634,12 @@ cdef class RadiationRRTM:
             # o3_trace, o3_pressure
             trpath_o3 = np.zeros(nz + self.n_ext+1, dtype=np.double, order='F')
             # plev = self.pi_full/100.0
-            self.o3_np = o3_trace.shape[0]
+            o3_np = o3_trace.shape[0]
             for i in xrange(1, nz + self.n_ext+1):
                 trpath_o3[i] = trpath_o3[i-1]
                 if (self.pi_full[i-1]/100.0 > o3_pressure[0]):
                     trpath_o3[i] = trpath_o3[i] + (self.pi_full[i-1]/100.0 - np.max((self.pi_full[i]/100.0,o3_pressure[0])))/g*o3_trace[0]
-                for m in xrange(1,self.o3_np):
+                for m in xrange(1,o3_np):
                     #print i, m
                     plow = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m-1]))))
                     pupp = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m]))))
@@ -658,8 +648,8 @@ cdef class RadiationRRTM:
                         wgtlow = (pmid-o3_pressure[m])/(o3_pressure[m-1]-o3_pressure[m])
                         wgtupp = (o3_pressure[m-1]-pmid)/(o3_pressure[m-1]-o3_pressure[m])
                         trpath_o3[i] = trpath_o3[i] + (plow-pupp)/g*(wgtlow*o3_trace[m-1]  + wgtupp*o3_trace[m])
-                if (self.pi_full[i]/100.0 < o3_pressure[self.o3_np-1]):
-                    trpath_o3[i] = trpath_o3[i] + (np.min((self.pi_full[i-1]/100.0,o3_pressure[self.o3_np-1]))-self.pi_full[i]/100.0)/g*o3_trace[self.o3_np-1]
+                if (self.pi_full[i]/100.0 < o3_pressure[o3_np-1]):
+                    trpath_o3[i] = trpath_o3[i] + (np.min((self.pi_full[i-1]/100.0,o3_pressure[o3_np-1]))-self.pi_full[i]/100.0)/g*o3_trace[o3_np-1]
             tmpTrace_o3 = np.zeros( nz + self.n_ext, dtype=np.double, order='F')
             for k in xrange(nz + self.n_ext):
                 tmpTrace_o3[k] = g *100.0/(self.pi_full[k]-self.pi_full[k+1])*(trpath_o3[k+1]-trpath_o3[k])
@@ -914,10 +904,6 @@ cdef class RadiationRRTM:
         self.srf_sw_up= Pa.domain_scalar_sum(srf_sw_up_local)
         self.srf_sw_down= Pa.domain_scalar_sum(srf_sw_down_local)
 
-        # Plot to verify no kink is present at top of LES domain
-        # plt.figure(6)
-        # plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
-        # plt.show()
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
 
@@ -926,29 +912,8 @@ cdef class RadiationRRTM:
     cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-
-        cdef:
-            Py_ssize_t i
-            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-            double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-            double [:] tmp
+        RadiationBase.stats_io(self, Gr, DV, NS,  Pa)
 
 
-        # Now update entropy tendencies
-        with nogil:
-            for i in xrange(Gr.dims.npg):
-                entropy_tendency[i] =  self.heating_rate[i] / DV.values[i + t_shift]
-
-
-        tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
-        NS.write_profile('radiative_heating_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        tmp = Pa.HorizontalMean(Gr, &entropy_tendency[0])
-        NS.write_profile('radiative_entropy_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        NS.write_ts('srf_lw_flux_up',self.srf_lw_up, Pa ) # Units are W/m^2
-        NS.write_ts('srf_lw_flux_down', self.srf_lw_down, Pa)
-        NS.write_ts('srf_sw_flux_up', self.srf_sw_up, Pa)
-        NS.write_ts('srf_sw_flux_down', self.srf_sw_down, Pa)
 
         return
