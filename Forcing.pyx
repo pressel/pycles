@@ -589,7 +589,7 @@ cdef class ForcingIsdac:
         self.divergence = 5e-6
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, Namelist):
         self.initial_entropy = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.initial_qt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.nudge_coeff_velocities = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
