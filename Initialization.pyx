@@ -869,7 +869,7 @@ def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
 def InitIsdac(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+                ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, namelist):
 
     '''
     Initialize the ISDAC case described in Ovchinnikov et al. (2014):
