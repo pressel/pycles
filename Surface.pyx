@@ -57,6 +57,8 @@ def SurfaceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
             return SurfaceRico(LH)
         elif casename == 'Isdac':
             return SurfaceIsdac(namelist, LH)
+        elif casename == 'IsdacCC':
+            return SurfaceIsdacCC(namelist, LH)
         else:
             return SurfaceNone()
 
