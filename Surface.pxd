@@ -122,7 +122,7 @@ cdef class SurfaceRico(SurfaceBase):
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
-cdef class SurfaceSoares:
+cdef class SurfaceSoares(SurfaceBase):
     cdef:
         double theta_flux
         # double qt_flux
@@ -131,27 +131,21 @@ cdef class SurfaceSoares:
         double buoyancy_flux
         double theta_surface
         double qt_surface
-        double [:] s_flux
-        double [:] u_flux
-        double [:] v_flux
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
-cdef class SurfaceSoares_moist:
+cdef class SurfaceSoares_moist(SurfaceBase):
     cdef:
         double theta_flux
-        double qt_flux
+        # double qt_flux
         double z0
         double gustiness
         double buoyancy_flux
         double theta_surface
         double qt_surface
-        double [:] s_flux
-        double [:] u_flux
-        double [:] v_flux
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)

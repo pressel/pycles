@@ -41,7 +41,6 @@ cdef extern from "entropies.h":
     inline double sv_c(double pv, double T) nogil
 
 def SurfaceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
-
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
            return SurfaceSullivanPatton(LH)
@@ -56,7 +55,9 @@ def SurfaceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         elif casename == 'Rico':
             return SurfaceRico(LH)
         elif casename == 'DCBLSoares':
-            return SurfaceSoares()
+            return SurfaceSoares(LH)
+        elif casename == 'DCBLSoares_moist':
+            return SurfaceSoares_moist(LH)
         else:
             return SurfaceNone()
 
@@ -67,7 +68,6 @@ cdef class SurfaceBase:
         return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
         self.qt_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
@@ -191,6 +191,7 @@ cdef class SurfaceNone(SurfaceBase):
 
 
 
+# SULLIVAN
 cdef class SurfaceSullivanPatton(SurfaceBase):
     def __init__(self, LatentHeat LH):
         self.theta_flux = 0.24 # K m/s
@@ -280,7 +281,7 @@ cdef class SurfaceBomex(SurfaceBase):
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
-        self.qt_flux = np.add(self.qt_flux,5.2e-5) # m/s #self.qt_flux = 2*5.2e-5 # m/s (original: 5.2e-5)
+        self.qt_flux = np.add(self.qt_flux,5.2e-5) # m/s
 
         self.theta_flux = 8.0e-3 # K m/s
         self.ustar_ = 0.28 #m/s
@@ -289,8 +290,6 @@ cdef class SurfaceBomex(SurfaceBase):
         self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux[0]
                                                                    + self.qt_surface *self.theta_flux))
                               /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))
-
-
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
@@ -300,10 +299,8 @@ cdef class SurfaceBomex(SurfaceBase):
 
 
         cdef :
-            Py_ssize_t i
-            Py_ssize_t j
+            Py_ssize_t i, j, ij, ijk
             Py_ssize_t gw = Gr.dims.gw
-            Py_ssize_t ijk, ij
             Py_ssize_t imax = Gr.dims.nlg[0]
             Py_ssize_t jmax = Gr.dims.nlg[1]
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -368,7 +365,6 @@ cdef class SurfaceGabls(SurfaceBase):
         self.Lambda_fp = LH.Lambda_fp
 
         self.dry_case = True
-
 
         return
 
@@ -535,6 +531,8 @@ cdef class SurfaceDYCOMS_RF01(SurfaceBase):
         return
 
 
+
+
 cdef class SurfaceDYCOMS_RF02(SurfaceBase):
     def __init__(self,namelist, LatentHeat LH):
         self.ft = 16.0
@@ -554,9 +552,6 @@ cdef class SurfaceDYCOMS_RF02(SurfaceBase):
                               /(theta_surface*(1.0 + (eps_vi-1)*qt_surface)))
 
         self.dry_case = False
-
-
-
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
@@ -660,8 +655,6 @@ cdef class SurfaceRico(SurfaceBase):
         cdef double  pd_star = Ref.Pg - pv_star
         self.s_star = (1.0-Ref.qtg) * sd_c(pd_star, Ref.Tg) + Ref.qtg * sv_c(pv_star,Ref.Tg)
 
-
-
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
@@ -724,35 +717,39 @@ cdef class SurfaceRico(SurfaceBase):
 # SOARES
 # like in Sullivan case: z0 is given (ustar_fixed = 'False')
 # like in Bomex case: surface heat and moisture flux constant and prescribed
-cdef class SurfaceSoares:
-    def __init__(self):
-        self.theta_flux = 0.06 # K m/s
-        # self.qt_flux = 2.5e-5 # m/s
+cdef class SurfaceSoares(SurfaceBase):
+    def __init__(self, LatentHeat LH):
         self.z0 = 0.001 #m (Roughness length)
         self.gustiness = 0.001 #m/s, minimum surface windspeed for determination of u*
 
-        self.theta_surface = 300.0 # K
-        # self.qt_surface = 5.0e-3 # kg/kg
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+        self.dry_case = True
         return
 
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):     # Sullivan
+        self.theta_surface = 300.0 # K
+        self.qt_surface = 5.0e-3 # kg/kg
+
+        self.theta_flux = 0.06 # K m/s
+        # self.qt_flux = 2.5e-5 # m/s
 
         # Bomex:
-        # self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux + self.qt_surface *self.theta_flux))
+        # self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux[ij] + self.qt_surface *self.theta_flux))
         #                       /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))     # adopted from Bomex ??
         # Sullivan:
         T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
-        self.buoyancy_flux = self.theta_flux * exner(Ref.p0[Gr.dims.gw-1]) * g /T0
+        self.buoyancy_flux = self.theta_flux * exner(Ref.p0_half[Gr.dims.gw]) * g /T0
 
-        self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-        self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-        self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-
-        NS.add_ts('uw_surface_mean',Gr, Pa)
-        NS.add_ts('vw_surface_mean',Gr, Pa)
-        NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
         return
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
 # # update adopted and modified from Sullivan + Bomex
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         # Since this case is completely dry, the computation of entropy flux from sensible heat flux is very simple
@@ -761,10 +758,8 @@ cdef class SurfaceSoares:
             return
 
         cdef:
-            Py_ssize_t i
-            Py_ssize_t j
+            Py_ssize_t i, j, ijk, ij
             Py_ssize_t gw = Gr.dims.gw
-            Py_ssize_t ijk, ij
             Py_ssize_t imax = Gr.dims.nlg[0]
             Py_ssize_t jmax = Gr.dims.nlg[1]
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -774,8 +769,6 @@ cdef class SurfaceSoares:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             # Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             # Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
-            double dzi = 1.0/Gr.dims.dx[2]
-            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         # Scalar fluxes (adopted from Bomex)
         with nogil:
@@ -786,9 +779,7 @@ cdef class SurfaceSoares:
                     # Sullivan
                     self.s_flux[ij] = cpd * self.theta_flux*exner_c(Ref.p0_half[gw])/DV.values[temp_shift+ijk]
                     # Bomex (entropy flux includes qt flux)
-                    # self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
-                    PV.tendencies[s_shift + ijk] += self.s_flux[ij] * tendency_factor
-                    # PV.tendencies[qt_shift + ijk] += self.qt_flux * tendency_factor
+                    # self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux[ij], Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
 
         # Windspeed (adopted from Sullivan, equivalent to Bomex)
         cdef:
@@ -798,70 +789,68 @@ cdef class SurfaceSoares:
         compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0],Ref.u0, Ref.v0,self.gustiness)
 
        # Surface Values: friction velocity, obukhov lenght (adopted from Sullivan, since same Surface parameters prescribed)
-        cdef :
-            Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
-            Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
         with nogil:
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
-                    DV.values_2d[ustar_shift + ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
-                    DV.values_2d[lmo_shift + ij] = -DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]/self.buoyancy_flux/vkb
+                    # __ ???
+                    self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    # self.obukhov_length[ij] = -DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]/self.buoyancy_flux/vkb
+                    # __ ???
 
         # Get the shear stresses (adopted from Sullivan, since same Surface parameters prescribed)
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
-                    PV.tendencies[u_shift + ijk] += self.u_flux[ij] * tendency_factor
-                    PV.tendencies[v_shift + ijk] += self.v_flux[ij] * tendency_factor
+                    self.u_flux[ij] = -interp_2(self.friction_velocity[ij], self.friction_velocity[ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(self.friction_velocity[ij], self.friction_velocity[ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+
+
+        SurfaceBase.update(self, Gr, Ref, PV, DV, Pa, TS)
         return
 
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        cdef double tmp
-
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
-        NS.write_ts('uw_surface_mean',tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.v_flux[0])
-        NS.write_ts('vw_surface_mean', tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.s_flux[0])
-        NS.write_ts('s_flux_surface_mean', tmp, Pa)
-
+        SurfaceBase.stats_io(self, Gr, NS, Pa)
         return
 
 
 
-cdef class SurfaceSoares_moist:
-    def __init__(self):
-        self.theta_flux = 8.0e-3 # K m/s (Bomex)
-        self.qt_flux = 5.2e-5 # m/s (original: 5.2e-5) (Bomex)
+cdef class SurfaceSoares_moist(SurfaceBase):
+    def __init__(self, LatentHeat LH):
         self.z0 = 0.001 #m (Roughness length)
         self.gustiness = 0.001 #m/s, minimum surface windspeed for determination of u*
 
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+        self.dry_case = False
+        return
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):     # Sullivan
         self.theta_surface = 300.0 # K
         self.qt_surface = 5.0e-3 # kg/kg
-        return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):     # Sullivan
+        self.theta_flux = 8.0e-3 # K m/s (Bomex)
+        # self.qt_flux = 5.2e-5 # m/s (Soares: 2.5e-5) (Bomex: 5.2e-5)
+        self.qt_flux = np.add(self.qt_flux,2.5e-5)
+
         # Bomex:
-        # self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux + self.qt_surface *self.theta_flux))
-        #                       /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))     # adopted from Bomex ??
+        self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux[0] + self.qt_surface *self.theta_flux))
+                              /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))     # adopted from Bomex ??
         # Sullivan:
-        T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
-        self.buoyancy_flux = self.theta_flux * exner(Ref.p0[Gr.dims.gw-1]) * g /T0
+        # T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
+        # self.buoyancy_flux = self.theta_flux * exner(Ref.p0_half[Gr.dims.gw]) * g /T0
 
-        self.s_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-        self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-        self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-
-        NS.add_ts('uw_surface_mean',Gr, Pa)
-        NS.add_ts('vw_surface_mean',Gr, Pa)
-        NS.add_ts('s_flux_surface_mean', Gr, Pa)
+        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
         return
 
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
 # # update adopted and modified from Sullivan + Bomex
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         # Since this case is completely dry, the computation of entropy flux from sensible heat flux is very simple
@@ -870,10 +859,8 @@ cdef class SurfaceSoares_moist:
             return
 
         cdef:
-            Py_ssize_t i
-            Py_ssize_t j
+            Py_ssize_t i, j, ij, ijk
             Py_ssize_t gw = Gr.dims.gw
-            Py_ssize_t ijk, ij
             Py_ssize_t imax = Gr.dims.nlg[0]
             Py_ssize_t jmax = Gr.dims.nlg[1]
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -883,8 +870,6 @@ cdef class SurfaceSoares_moist:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
-            double dzi = 1.0/Gr.dims.dx[2]
-            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         # Scalar fluxes (adopted from Bomex)
         with nogil:
@@ -895,9 +880,8 @@ cdef class SurfaceSoares_moist:
                     # Sullivan
                     # self.s_flux[ij] = cpd * self.theta_flux*exner_c(Ref.p0_half[gw])/DV.values[temp_shift+ijk]
                     # Bomex (entropy flux includes qt flux)
-                    self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux, Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
-                    PV.tendencies[s_shift + ijk] += self.s_flux[ij] * tendency_factor
-                    PV.tendencies[qt_shift + ijk] += self.qt_flux * tendency_factor
+                    self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux[ij], Ref.p0_half[gw],
+                                                                        DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
 
         # Windspeed (adopted from Sullivan, equivalent to Bomex)
         cdef:
@@ -914,30 +898,26 @@ cdef class SurfaceSoares_moist:
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
-                    DV.values_2d[ustar_shift + ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
-                    DV.values_2d[lmo_shift + ij] = -DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]/self.buoyancy_flux/vkb
+                    self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    self.obukhov_length[ij] = -self.friction_velocity[ij]*self.friction_velocity[ij]*self.friction_velocity[ij]/self.buoyancy_flux/vkb
+                    # DV.values_2d[ustar_shift + ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    # DV.values_2d[lmo_shift + ij] = -DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]/self.buoyancy_flux/vkb
 
         # Get the shear stresses (adopted from Sullivan, since same Surface parameters prescribed)
             for i in xrange(1,imax-1):
                 for j in xrange(1,jmax-1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -interp_2(DV.values_2d[ustar_shift + ij], DV.values_2d[ustar_shift+ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
-                    PV.tendencies[u_shift + ijk] += self.u_flux[ij] * tendency_factor
-                    PV.tendencies[v_shift + ijk] += self.v_flux[ij] * tendency_factor
+                    self.u_flux[ij] = -interp_2(self.friction_velocity[ij], self.friction_velocity[ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(self.friction_velocity[ij], self.friction_velocity[ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    # PV.tendencies[u_shift + ijk] += self.u_flux[ij] * tendency_factor
+                    # PV.tendencies[v_shift + ijk] += self.v_flux[ij] * tendency_factor
+
+        SurfaceBase.update(self, Gr, Ref, PV, DV, Pa, TS)
         return
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        cdef double tmp
-
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.u_flux[0])
-        NS.write_ts('uw_surface_mean',tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.v_flux[0])
-        NS.write_ts('vw_surface_mean', tmp, Pa)
-        tmp = Pa.HorizontalMeanSurface(Gr, &self.s_flux[0])
-        NS.write_ts('s_flux_surface_mean', tmp, Pa)
-
+        SurfaceBase.stats_io(self, Gr, NS, Pa)
         return
 
 
@@ -948,4 +928,3 @@ cdef class SurfaceSoares_moist:
 cdef inline double compute_z0(double z1, double windspeed) nogil:
     cdef double z0 =z1*exp(-kappa/sqrt((0.4 + 0.079*windspeed)*1e-3))
     return z0
-
