@@ -1245,10 +1245,10 @@ def ZGILS(zgils_loc):
     namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 7
+    namelist['momentum_transport']['order'] = 5
 
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 7
+    namelist['scalar_transport']['order'] = 5
     namelist['scalar_transport']['order_sedimentation'] = 1
 
     namelist['surface_budget'] = {}
@@ -1260,7 +1260,7 @@ def ZGILS(zgils_loc):
         namelist['surface_budget']['ocean_heat_flux'] = 60.0
 
     # To run a fixed_sst case set fixed_sst_time > t_max of simulation
-    namelist['surface_budget']['fixed_sst_time'] = 24.0 * 3600.0 * 3.0 # 3 days spinup
+    namelist['surface_budget']['fixed_sst_time'] = 24.0 * 3600.0 * 30.0 # 3 days spinup
 
     namelist['radiation'] = {}
     namelist['radiation']['RRTM'] = {}
