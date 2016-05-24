@@ -90,6 +90,15 @@ cdef class SurfaceBase:
 
         return
 
+    cpdef init_from_restart(self, Restart):
+        self.T_surface = Restart.restart_data['surf']['T_surface']
+        return
+
+    cpdef restart(self, Restart):
+        Restart.restart_data['surf'] = {}
+        Restart.restart_data['surf']['T_surf'] = self.T_surface
+        return
+
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
@@ -789,7 +798,7 @@ cdef class SurfaceReanalysis(SurfaceBase):
             double [:] qt_mean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
 
 
-        print "\t\t", qv_star, t_mean[gw], self.T_surface, qt_mean[gw]
+        print "\t\t", qv_star, t_mean[gw], self.T_surface, qt_mean[gw], Ref.Pg
         with nogil:
             for i in xrange(gw-1, imax-gw+1):
                 for j in xrange(gw-1,jmax-gw+1):

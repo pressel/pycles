@@ -266,6 +266,7 @@ class Simulation3d:
                 self.Restart.restart_data['last_condstats_output'] = self.CondStatsIO.last_output_time
                 self.Restart.restart_data['last_vis_time'] = self.VO.last_vis_time
                 self.Gr.restart(self.Restart)
+                self.Sur.restart(self.Restart)
                 self.Ref.restart(self.Gr, self.Restart)
                 self.PV.restart(self.Gr, self.Restart)
                 self.TS.restart(self.Restart)
