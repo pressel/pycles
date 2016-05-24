@@ -755,9 +755,7 @@ cdef class SurfaceIsdac(SurfaceBase):
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
             double dzi = 1.0/Gr.dims.dx[2]
 
-            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
             double zb = Gr.dims.dx[2] * 0.5
-            double theta_rho_g = theta_rho_c(Ref.Pg,Ref.Tg,0.0,0.0)
 
         # Get the shear stresses
         with nogil:
@@ -784,6 +782,9 @@ cdef class SurfaceIsdacCC(SurfaceBase):
     def __init__(self,namelist, LatentHeat LH):
         self.gustiness = 0.0
         self.z0 = 4.0e-4
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+        self.dry_case = False
 
         self.ft = namelist['surface']['sensible']
         # sst = namelist['initial']['SST'] + namelist['initial']['dSST'] #Temperature at ground
@@ -821,9 +822,7 @@ cdef class SurfaceIsdacCC(SurfaceBase):
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
             double dzi = 1.0/Gr.dims.dx[2]
 
-            double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
             double zb = Gr.dims.dx[2] * 0.5
-            double theta_rho_g = theta_rho_c(Ref.Pg,Ref.Tg,0.0,0.0)
             
         # Get the shear stresses
         with nogil:
