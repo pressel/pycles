@@ -60,9 +60,11 @@ cdef class RadiationBase:
         self.z_pencil = ParallelMPI.Pencil()
         self.z_pencil.initialize(Gr, Pa, 2)
         self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.dTdt_rad = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
         NS.add_profile('radiative_heating_rate', Gr, Pa)
         NS.add_profile('radiative_entropy_tendency', Gr, Pa)
+        NS.add_profile('radiative_temperature_tendency',Gr, Pa)
         NS.add_ts('srf_lw_flux_up', Gr, Pa)
         NS.add_ts('srf_lw_flux_down', Gr, Pa)
         NS.add_ts('srf_sw_flux_up', Gr, Pa)
@@ -99,6 +101,10 @@ cdef class RadiationBase:
 
         tmp = Pa.HorizontalMean(Gr, &entropy_tendency[0])
         NS.write_profile('radiative_entropy_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.dTdt_rad[0])
+        NS.write_profile('radiative_temperature_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
 
         NS.write_ts('srf_lw_flux_up',self.srf_lw_up, Pa ) # Units are W/m^2
         NS.write_ts('srf_lw_flux_down', self.srf_lw_down, Pa)
@@ -767,6 +773,7 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
 
 
 
@@ -780,6 +787,7 @@ cdef class RadiationRRTM(RadiationBase):
                         ijk = ishift + jshift + k
                         PV.tendencies[
                             s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
+                        self.dTdt_rad[ijk] = self.heating_rate[ijk] * Ref.alpha0_half[k]/cpm_c(DV.values[ijk + qv_shift])
 
 
         return
@@ -981,6 +989,7 @@ cdef class RadiationRRTM(RadiationBase):
         # plt.show()
         #---END plotting
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
+
 
 
         return

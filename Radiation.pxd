@@ -11,6 +11,7 @@ from Forcing cimport AdjustedMoistAdiabat
 cdef class RadiationBase:
     cdef:
         double [:] heating_rate
+        double [:] dTdt_rad
         ParallelMPI.Pencil z_pencil
         double srf_lw_down
         double srf_lw_up
