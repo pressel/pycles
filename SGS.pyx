@@ -90,7 +90,7 @@ cdef class UniformViscosity:
 
 
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
 
         cdef:
@@ -136,7 +136,7 @@ cdef class UniformViscosity_cond:
 
 
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
