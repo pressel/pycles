@@ -9,6 +9,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport Kinematics
 cimport ParallelMPI
+cimport Surface
 from NetCDFIO cimport NetCDFIO_Stats
 from libc.math cimport exp, sqrt
 cimport numpy as np
@@ -29,10 +30,19 @@ cdef extern from "sgs.h":
                             double* strain_rate_mag, double cs, double prt)
     void smagorinsky_update_iles(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
                             double* strain_rate_mag, double cs, double prt)
+    double buoyancy_adjust(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
+                            double* strain_rate_mag, double prt)
+    void const_viscosity_update(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
+                            double* strain_rate_mag, double const_visc, double prt)
+
+
+
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
             self.scheme = UniformViscosity(namelist)
+        elif(namelist['sgs']['scheme'] == 'UniformViscosity_cond'):
+            self.scheme = UniformViscosity_cond(namelist)
         elif(namelist['sgs']['scheme'] == 'Smagorinsky'):
             self.scheme = Smagorinsky(namelist)
         elif(namelist['sgs']['scheme'] == 'TKE'):
@@ -45,9 +55,9 @@ cdef class SGS:
         return
 
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV,Kinematics.Kinematics Ke,Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
-        self.scheme.update(Gr,DV,PV,Ke,Pa)
+        self.scheme.update(Gr,DV,PV,Ke,Sur,Pa)
 
         return
 
@@ -55,6 +65,8 @@ cdef class SGS:
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.scheme.stats_io(Gr,DV,PV,Ke,NS,Pa)
         return
+
+
 
 cdef class UniformViscosity:
     def __init__(self,namelist):
@@ -78,7 +90,7 @@ cdef class UniformViscosity:
 
 
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
 
         cdef:
@@ -100,6 +112,63 @@ cdef class UniformViscosity:
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
+
+
+cdef class UniformViscosity_cond:
+    def __init__(self,namelist):
+        try:
+            self.const_diffusivity = namelist['sgs']['UniformViscosity']['diffusivity']
+        except:
+            self.const_diffusivity = 0.0
+
+        try:
+            self.const_viscosity = namelist['sgs']['UniformViscosity']['viscosity']
+        except:
+            self.const_viscosity = 0.0
+
+        self.prt = 1.0/3.0
+
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+
+    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
+            Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
+            Py_ssize_t bf_shift =   DV.get_varshift(Gr, 'buoyancy_frequency')
+
+        # Alternative to loop below:
+        const_viscosity_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+                               &Ke.strain_rate_mag[0],self.const_viscosity,self.prt)
+        # cdef double fb = 0
+        # cdef Py_ssize_t i
+        # printed = False
+        # with nogil:
+        #     for i in xrange(Gr.dims.npg):
+        #         with gil:
+        #             fb = buoyancy_adjust(&Gr.dims,&DV.values[visc_shift+i],&DV.values[diff_shift+i],&DV.values[bf_shift+i],
+        #                        &Ke.strain_rate_mag[0],self.prt)
+        #             if printed == False and fb == 0:
+        #                 Pa.root_print('Ri > 1: setting Viscosity to zero, i = ')
+        #                 Pa.root_print(i)
+        #                 printed = True
+        #         DV.values[diff_shift + i] = self.const_diffusivity * fb
+        #         DV.values[visc_shift + i] = self.const_viscosity * fb
+
+
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+
 
 cdef class Smagorinsky:
     def __init__(self,namelist):
@@ -134,7 +203,7 @@ cdef class Smagorinsky:
         return
 
     cpdef update(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.SurfaceBase Sur,  ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -161,10 +230,13 @@ cdef class Smagorinsky:
 
 cdef class TKE:
     def __init__(self,namelist):
+        # A Description of the Advanced Research WRF Version 3 (NCAR TECHNICAL NOTE, June 2008)
+        # ck: K = ck*l*sqrt(e)
+        # cn: l = cn*sqrt(e)/N (isotropic mixing)
         try:
             self.ck = namelist['sgs']['TKE']['ck']
         except:
-            self.ck = 0.1
+            self.ck = 0.1       #(0.15<ck<0.25)
         try:
             self.cn = namelist['sgs']['TKE']['cn']
         except:
@@ -188,7 +260,8 @@ cdef class TKE:
         return
 
 
-    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV, PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,  ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV, PrognosticVariables.PrognosticVariables PV,
+                 Kinematics.Kinematics Ke, Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
@@ -229,10 +302,9 @@ cdef class TKE:
 
         tke_buoyant_production(&Gr.dims, &PV.tendencies[e_shift], &DV.values[diff_shift], &DV.values[bf_shift])
 
-        cdef Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr,'obukhov_length')
-        cdef Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr,'friction_velocity')
+
         if Pa.sub_z_rank == 0:
-            tke_surface(&Gr.dims, &PV.values[e_shift], &DV.values_2d[lmo_shift], &DV.values_2d[ustar_shift] , h_global, Gr.zl_half[Gr.dims.gw])
+            tke_surface(&Gr.dims, &PV.values[e_shift], &Sur.obukhov_length[0], &Sur.friction_velocity[0] , h_global, Gr.zl_half[Gr.dims.gw])
 
 
         return

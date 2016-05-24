@@ -37,6 +37,10 @@ def InitializationFactory(namelist):
             return InitSmoke
         elif casename == 'Rico':
             return InitRico
+        elif casename == 'DCBLSoares':
+            return InitSoares
+        elif casename == 'DCBLSoares_moist':
+            return InitSoares_moist
         else:
             pass
 
@@ -421,13 +425,11 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     '''
     Initialize the DYCOMS_RF01 case described in
-
     Bjorn Stevens, Chin-Hoh Moeng, Andrew S. Ackerman, Christopher S. Bretherton, Andreas Chlond, Stephan de Roode,
     James Edwards, Jean-Christophe Golaz, Hongli Jiang, Marat Khairoutdinov, Michael P. Kirkpatrick, David C. Lewellen,
     Adrian Lock, Frank Müller, David E. Stevens, Eoin Whelan, and Ping Zhu, 2005: Evaluation of Large-Eddy Simulations
     via Observations of Nocturnal Marine Stratocumulus. Mon. Wea. Rev., 133, 1443–1462.
     doi: http://dx.doi.org/10.1175/MWR2930.1
-
     :param Gr: Grid cdef extension class
     :param PV: PrognosticVariables cdef extension class
     :param RS: ReferenceState cdef extension class
@@ -461,6 +463,7 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
         double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        Py_ssize_t e_varshift
 
     for k in xrange(Gr.dims.nlg[2]):
         if Gr.zl_half[k] <=840.0:
@@ -536,6 +539,18 @@ def InitDYCOMS_RF01(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     theta_pert_ = 0.0
                 T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
                 PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+
+
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    if Gr.zl_half[k] < 200.0:
+                        PV.values[e_varshift + ijk] = 0.0
 
     return
 
@@ -849,6 +864,216 @@ def InitRico(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
     return
+
+
+
+def InitSoares(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+# def InitSullivanPatton(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+#                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+
+    #Generate the reference profiles
+    RS.Pg = 1.0e5     #Pressure at ground (Soares)
+    RS.Tg = 300.0     #Temperature at ground (Soares)
+    RS.qtg = 5e-3     #Total water mixing ratio at surface: qt = 5 g/kg (Soares)
+    RS.u0 = 0.01   # velocities removed in Galilean transformation (Soares: u = 0.01 m/s, IOP: 0.0 m/s)
+    RS.v0 = 0.0   # (Soares: v = 0.0 m/s)
+    RS.initialize(Gr, Th, NS, Pa)       # initialize reference state; done for every case
+
+    #Get the variable number for each of the velocity components
+    np.random.seed(Pa.rank)
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        # Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')       # !!!! Problem: if dry Microphysics scheme chosen: qt is no PV
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift, e_varshift
+        Py_ssize_t ijk
+        double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double t
+
+        #Generate initial perturbations (here we are generating more than we need)      ??? where amplitude of perturbations given?
+        cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+        cdef double theta_pert_
+
+
+
+    # Initial theta (potential temperature) profile (Soares)
+    for k in xrange(Gr.dims.nlg[2]):
+        # if Gr.zl_half[k] <= 1350.0:
+        #     theta[k] = 300.0
+        # else:
+        #     theta[k] = 300.0 + 2.0/1000.0 * (Gr.zl_half[k] - 1350.0)
+        theta[k] = 297.3 + 2.0/1000.0 * (Gr.zl_half[k])
+
+    # # Initial qt profile (Soares)
+    # --> set to zero, since no vapor Thermodynamics without condensation given
+    #     if Gr.zl_half[k] <= 1350:
+    #         qt[k] = 5.0e-3 - (Gr.zl_half[k]) * 3.7e-4
+    #     if Gr.zl_half[k] > 1350:
+    #         qt[k] = 5.0e-3 - 1350.0 * 3.7e-4 - (Gr.zl_half[k] - 1350.0) * 9.4e-4
+
+    cdef double [:] p0 = RS.p0_half
+
+    # Now loop and set the initial condition
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = 0.0 - RS.u0       # original Soares: u = 0.1
+                PV.values[v_varshift + ijk] = 0.0 - RS.v0
+                PV.values[w_varshift + ijk] = 0.0
+
+                # Set the entropy prognostic variable including a potential temperature perturbation
+                # fluctuation height = 200m; fluctuation amplitude = 0.1 K
+                if Gr.zl_half[k] < 200.0:
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                else:
+                    theta_pert_ = 0.0
+                t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[e_varshift + ijk] = 0.0
+
+    return
+
+
+
+def InitSoares_moist(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
+    #Generate the reference profiles
+    RS.Pg = 1.0e5     #Pressure at ground (Soares)
+    RS.Tg = 300.0     #Temperature at ground (Soares)
+    RS.qtg = 5e-3     #Total water mixing ratio at surface: qt = 5 g/kg (Soares)
+    RS.u0 = 0.01   # velocities removed in Galilean transformation (Soares: u = 0.01 m/s, IOP: 0.0 m/s)
+    RS.v0 = 0.0   # (Soares: v = 0.0 m/s)
+    RS.initialize(Gr, Th, NS, Pa)       # initialize reference state; done for every case
+
+    #Get the variable number for each of the velocity components
+    np.random.seed(Pa.rank)
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')       # !!!! Problem: if dry Microphysics scheme chosen: qt is no PV
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift, e_varshift
+        Py_ssize_t ijk
+        double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double temp
+        double [:] temp_arr = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] qt_arr = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        Py_ssize_t count
+
+        #Generate initial perturbations (here we are generating more than we need)      ??? where amplitude of perturbations given?
+        theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
+        qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
+
+    # Initial theta (potential temperature) profile (Soares)
+    for k in xrange(Gr.dims.nlg[2]):
+        if Gr.zl_half[k] <= 1350.0:
+            thetal[k] = 300.0
+        else:
+            thetal[k] = 300.0 + 2.0/1000.0 * (Gr.zl_half[k] - 1350.0)
+        # thetal[k] = 297.3 + 2.0/1000.0 * (Gr.zl_half[k])
+
+    # # Initial qt profile (Soares)
+        if Gr.zl_half[k] <= 1350:
+            qt[k] = 5.0e-3 - (Gr.zl_half[k]) * 3.7e-4
+        if Gr.zl_half[k] > 1350:
+            qt[k] = 5.0e-3 - 1350.0 * 3.7e-4 - (Gr.zl_half[k] - 1350.0) * 9.4e-4
+    # __
+    if np.isnan(thetal).any():
+        print('nan in thetal')
+    else:
+        print('No nan in thetal')
+    if np.isnan(qt).any():
+        print('nan in qt')
+    else:
+        print('No nan in qt')
+    # __
+    cdef double [:] p0 = RS.p0_half
+
+    # Now loop and set the initial condition
+    count = 0
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = 0.0 - RS.u0       # original Soares: u = 0.1
+                PV.values[v_varshift + ijk] = 0.0 - RS.v0
+                PV.values[w_varshift + ijk] = 0.0
+                # Set the entropy prognostic variable including a potential temperature perturbation
+                # fluctuation height = 200m; fluctuation amplitude = 0.1 K
+                if Gr.zl_half[k] < 200.0:
+                    temp = (thetal[k] + theta_pert[count])*exner_c(RS.p0_half[k])
+                    temp_arr[k] = (thetal[k] + theta_pert[count])*exner_c(RS.p0_half[k])
+                    qt_ = qt[k]+qt_pert[count]
+                    qt_arr[k] = qt[k]+qt_pert[count]
+                else:
+                    temp = (thetal[k]) * exner_c(RS.p0_half[k])
+                    temp_arr[k] = (thetal[k]) * exner_c(RS.p0_half[k])
+                    qt_ = qt[k]
+                    qt_arr[k] = qt[k]
+                    # theta_pert_ = 0.0
+                # t = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
+                # PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)    # !!!!!!!! produces nans!!
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,0.0,0.0,0.0)    # !!!!!!!! produces nans!!
+                PV.values[qt_varshift + ijk] = qt_
+                count += 1
+
+        # __
+    if np.isnan(temp_arr).any():
+        print('nan in temp_arr')
+    else:
+        print('No nan in temp_arr')
+    if np.isnan(qt_arr).any():
+        print('nan in qt_arr')
+    else:
+        print('No nan in qt_arr')
+    if np.isnan(PV.values[s_varshift:qt_varshift]).any():   # nans
+        print('nan in s')
+    else:
+        print('No nan in s')
+    if np.isnan(PV.values[qt_varshift:-1]).any():
+        print('nan in qt')
+    else:
+        print('No nan in qt')
+
+    # __
+
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[e_varshift + ijk] = 0.0
+
+    return
+
+
+
+
 
 def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
                        DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):

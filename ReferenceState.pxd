@@ -9,6 +9,13 @@ cdef class ReferenceState:
         public double [:] rho0
         public double [:] rho0_half
 
+        public double [:] p0_global
+        public double [:] p0_half_global
+        public double [:] alpha0_global
+        public double [:] alpha0_half_global
+        public double [:] rho0_global
+        public double [:] rho0_half_global
+
         double sg
 
     cdef public:
@@ -21,4 +28,3 @@ cdef class ReferenceState:
 
     cpdef restart(self, Grid.Grid Gr, Restart.Restart Re)
     cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re)
-

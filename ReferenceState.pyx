@@ -26,6 +26,14 @@ cdef class ReferenceState:
         self.rho0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.rho0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
 
+
+        self.p0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.p0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.alpha0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.alpha0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.rho0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.rho0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+
         return
 
     def initialize(self, Grid.Grid Gr, Thermodynamics, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -75,6 +83,10 @@ cdef class ReferenceState:
         p = np.exp(p)
         p_half = np.exp(p_half)
 
+        self.p0_global = p
+        self.p0_half_global = p_half
+
+
         cdef double[:] p_ = p
         cdef double[:] p_half_ = p_half
         cdef double[:] temperature = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
@@ -112,6 +124,11 @@ cdef class ReferenceState:
                 Pa.kill()
 
 
+        self.alpha0_global = alpha
+        self.alpha0_half_global = alpha_half
+        self.rho0_global = 1.0/np.array(self.alpha0_global)
+        self.rho0_half_global = 1.0/np.array(self.alpha0_half_global)
+
         # print(np.array(Gr.extract_local_ghosted(alpha_half,2)))
         self.alpha0_half = Gr.extract_local_ghosted(alpha_half, 2)
         self.alpha0 = Gr.extract_local_ghosted(alpha, 2)
@@ -146,6 +163,11 @@ cdef class ReferenceState:
         Re.restart_data['Ref']['alpha0'] = np.array(self.alpha0)
         Re.restart_data['Ref']['alpha0_half'] = np.array(self.alpha0_half)
 
+        Re.restart_data['Ref']['p0_global'] = np.array(self.p0_global)
+        Re.restart_data['Ref']['p0_half_global'] = np.array(self.p0_half_global)
+        Re.restart_data['Ref']['alpha0_global'] = np.array(self.alpha0_global)
+        Re.restart_data['Ref']['alpha0_half_global'] = np.array(self.alpha0_half_global)
+
         Re.restart_data['Ref']['Tg'] = self.Tg
         Re.restart_data['Ref']['Pg'] = self.Pg
         Re.restart_data['Ref']['sg'] = self.sg
@@ -172,5 +194,13 @@ cdef class ReferenceState:
         self.rho0 = 1.0 / Re.restart_data['Ref']['alpha0']
         self.rho0_half = 1.0 / Re.restart_data['Ref']['alpha0_half']
 
-        return
+        self.p0_global = Re.restart_data['Ref']['p0_global']
+        self.p0_half_global = Re.restart_data['Ref']['p0_half_global']
+        self.alpha0_global = Re.restart_data['Ref']['alpha0_global']
+        self.alpha0_half_global = Re.restart_data['Ref']['alpha0_half_global']
+        self.rho0_global = 1.0 / Re.restart_data['Ref']['alpha0_global']
+        self.rho0_half_global = 1.0 / Re.restart_data['Ref']['alpha0_half_global']
 
+
+
+        return
