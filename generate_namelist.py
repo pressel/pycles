@@ -351,7 +351,7 @@ def Bomex():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus','TKE']
+    namelist['stats_io']['auxiliary'] = ['Cumulus','TKE','Flux']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -894,7 +894,7 @@ def DCBLSoares():
     # profile outputs
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['None']    # AuxiliaryStatistics
+    namelist['stats_io']['auxiliary'] = ['Flux']    # AuxiliaryStatistics
     namelist['stats_io']['frequency'] = 900.0
 
     # field outputs
