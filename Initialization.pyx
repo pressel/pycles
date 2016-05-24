@@ -1146,14 +1146,15 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
 
     reference_profiles = AdjustedMoistAdiabat(namelist, LH, Pa)
-
-    RS.Tg= 288.0
+    # RS.Tg = 288.0
+    RS.Tg= 289.472
     RS.Pg= 1018.0e2
-    rh_ref = 0.8
-
-    # Find the surface moisture and initialize the basic state
-    pv_ = Th.get_pv_star(RS.Tg)*rh_ref
-    RS.qtg =  eps_v * pv_ / (RS.Pg + (eps_v-1.0)*pv_)
+    # rh_ref = 0.8
+    #
+    # # Find the surface moisture and initialize the basic state
+    # pv_ = Th.get_pv_star(RS.Tg)*rh_ref
+    # RS.qtg =  eps_v * pv_ / (RS.Pg + (eps_v-1.0)*pv_)
+    RS.qtg = 0.008449
 
     RS.initialize(Gr ,Th, NS, Pa)
 
@@ -1183,7 +1184,7 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         if RS.p0_half[k]  > 920.0e2:
             thetal[k] = RS.Tg /exner_c(RS.Pg)
             qt[k] = RS.qtg
-        u[k] = min(-10.0 + (-4.0-(-10.0))/(500.0e2-1000.0e2)*(RS.p0_half[k]-1000.0e2),-4.0)
+        u[k] = min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(RS.p0_half[k]-1000.0e2),-4.0)
 
 
       #Set velocities for Galilean transformation
