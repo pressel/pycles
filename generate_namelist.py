@@ -840,11 +840,13 @@ def Isdac():
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic_1M'
-    #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     namelist['microphysics']['n0_ice'] = 1.0e7
 
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] = {}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['radiation'] = {}
     namelist['radiation']['use_RRTM'] = True
@@ -927,14 +929,13 @@ def IsdacCC():
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic_1M'
-    #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    # namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     namelist['microphysics']['n0_ice'] = 1.0e7
 
     namelist['sgs'] = {}
-    namelist['sgs']['scheme'] = 'UniformViscosity'
-    namelist['sgs']['UniformViscosity'] = {}
-    namelist['sgs']['UniformViscosity']['viscosity'] = 0.0
-    namelist['sgs']['UniformViscosity']['diffusivity'] = 0.0
+    namelist["sgs"]['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] = {}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist["diffusion"] = {}
     namelist['diffusion']['qt_entropy_source'] = False

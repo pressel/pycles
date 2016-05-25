@@ -106,8 +106,16 @@ cdef class Microphysics_Arctic_1M:
         except:
             self.order = namelist['scalar_transport']['order']
 
+        try:
+            if namelist['microphysics']['phase_partitioning'] == 'liquid_only':
+                self.Lambda_fp = lambda_constant_Arctic
+                Par.root_print('liquid only microphysics set Lambda = 1.0 ')
+            else:
+                self.Lambda_fp = lambda_Arctic
+        except:
+            self.Lambda_fp = lambda_Arctic
+
         self.L_fp = latent_heat_Arctic
-        self.Lambda_fp = lambda_Arctic
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 
