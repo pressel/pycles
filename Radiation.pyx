@@ -14,7 +14,7 @@ cimport TimeStepping
 cimport Surface
 from Forcing cimport AdjustedMoistAdiabat
 from Thermodynamics cimport LatentHeat
-# import pylab as plt
+import pylab as plt
 
 import numpy as np
 cimport numpy as np
@@ -604,17 +604,17 @@ cdef class RadiationRRTM(RadiationBase):
             qv_pencils[0,i] = qv_pencils[0, i]/ (1.0 - qv_pencils[0, i])
         #
         # Plotting to evaluate implementation of buffer zone
-        # plt.figure(1)
-        # plt.plot(self.rv_ext,self.p_ext,'or')
-        # plt.plot(vapor_mixing_ratios, pressures)
-        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw],'ob')
-        # plt.gca().invert_yaxis()
-        # plt.figure(2)
-        # plt.plot(self.t_ext,self.p_ext,'-or')
-        # plt.plot(temperatures,pressures)
-        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw],'-ob')
-        # plt.gca().invert_yaxis()
-        # plt.show()
+        plt.figure(1)
+        plt.plot(self.rv_ext,self.p_ext,'or')
+        plt.plot(vapor_mixing_ratios, pressures)
+        plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw],'ob')
+        plt.gca().invert_yaxis()
+        plt.figure(2)
+        plt.plot(self.t_ext,self.p_ext,'-or')
+        plt.plot(temperatures,pressures)
+        plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw],'-ob')
+        plt.gca().invert_yaxis()
+        plt.show()
         #---END Plotting to evaluate implementation of buffer zone
 
 
@@ -743,6 +743,12 @@ cdef class RadiationRRTM(RadiationBase):
         self.cfc22vmr = np.array( tmpTrace[:,7],dtype=np.double, order='F')
         self.ccl4vmr  =  np.array(tmpTrace[:,8],dtype=np.double, order='F')
 
+        plt.figure(20)
+
+        plt.plot(self.o3vmr,self.p_full,'-ob')
+        plt.gca().invert_yaxis()
+        plt.show()
+        #---END Plot
 
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -763,6 +769,7 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t imin = Gr.dims.gw
             Py_ssize_t jmin = Gr.dims.gw
             Py_ssize_t kmin = Gr.dims.gw
+
 
             Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
@@ -809,6 +816,7 @@ cdef class RadiationRRTM(RadiationBase):
             double [:,:] rl_full = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
             Py_ssize_t k, ip
             bint use_ice = False
+            Py_ssize_t gw = Gr.dims.gw
 
 
         if 'qi' in DV.name_index:
@@ -917,7 +925,7 @@ cdef class RadiationRRTM(RadiationBase):
                         reliq_in[ip, k] = fmin(fmax(reliq_in[ip, k]*rv_to_reff, 2.5), 60.0)
 
             for ip in xrange(n_pencils):
-                tlev_in[ip, 0] = Ref.Tg
+                tlev_in[ip, 0] = Sur.T_surface
                 plev_in[ip,0] = self.pi_full[0]/100.0
                 for k in xrange(1,nz_full):
                     tlev_in[ip, k] = 0.5*(tlay_in[ip,k-1]+tlay_in[ip,k])
@@ -972,7 +980,7 @@ cdef class RadiationRRTM(RadiationBase):
                srf_sw_up_local   +=  uflx_sw_out[ip,0] * nxny_i
                srf_sw_down_local += dflx_sw_out[ip,0] * nxny_i
                for k in xrange(nz):
-                   heating_rate_pencil[ip, k] = (hr_lw_out[ip,k] + hr_sw_out[ip,k]) * Ref.rho0_half_global[k] * cpm_c(qv_pencil[ip,k])/86400.0
+                   heating_rate_pencil[ip, k] = (hr_lw_out[ip,k] + hr_sw_out[ip,k]) * Ref.rho0_half_global[k+gw] * cpm_c(qv_pencil[ip,k])/86400.0
 
         self.srf_lw_up = Pa.domain_scalar_sum(srf_lw_up_local)
         self.srf_lw_down = Pa.domain_scalar_sum(srf_lw_down_local)
@@ -983,10 +991,43 @@ cdef class RadiationRRTM(RadiationBase):
         #----BEGIN Plotting to test implementation of buffer zone
         #---Comment out when not running locally
         # #---Plot to verify no kink is present at top of LES domain
-        # plt.figure(6)
-        # plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz])
-        # plt.gca().invert_yaxis()
-        # plt.show()
+        plt.figure(6)
+        plt.title('heating rate')
+        plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz],'-o')
+        plt.gca().invert_yaxis()
+
+        plt.figure(7)
+        plt.title('hr_lw')
+        plt.plot(hr_lw_out[0,0:nz], play_in[0,0:nz],'-o')
+        plt.gca().invert_yaxis()
+
+        plt.figure(8)
+        plt.title('hr_sw')
+        plt.plot(hr_sw_out[0,0:nz], play_in[0,0:nz],'-o')
+        plt.gca().invert_yaxis()
+
+
+        plt.figure(9)
+        plt.title('uflx_sw_out')
+        plt.plot(uflx_sw_out[0,0:nz+1], plev_in[0,0:nz+1],'-o')
+        plt.gca().invert_yaxis()
+
+        plt.figure(10)
+        plt.title('dflx_sw_out')
+        plt.plot(dflx_sw_out[0,0:nz+1], plev_in[0,0:nz+1],'-o')
+        plt.gca().invert_yaxis()
+
+        plt.figure(11)
+        plt.title('uflx_lw_out')
+        plt.plot(uflx_lw_out[0,0:nz+1], plev_in[0,0:nz+1],'-o')
+        plt.gca().invert_yaxis()
+
+        plt.figure(12)
+        plt.title('dflx_lw_out')
+        plt.plot(dflx_lw_out[0,0:nz+1], plev_in[0,0:nz+1],'-o')
+        plt.gca().invert_yaxis()
+
+        plt.show()
         #---END plotting
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
 
