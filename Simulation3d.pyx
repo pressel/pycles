@@ -108,6 +108,7 @@ class Simulation3d:
             self.TS.dt = self.Restart.restart_data['TS']['dt']
             self.Ref.init_from_restart(self.Gr, self.Restart)
             self.PV.init_from_restart(self.Gr, self.Restart)
+            self.Sur.init_from_restart(self.Restart)
             self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']
             self.CondStatsIO.last_output_time = self.Restart.restart_data['last_condstats_output']
             self.FieldsIO.last_output_time = self.Restart.restart_data['last_fields_output']
@@ -268,6 +269,7 @@ class Simulation3d:
                 self.Restart.restart_data['last_condstats_output'] = self.CondStatsIO.last_output_time
                 self.Restart.restart_data['last_vis_time'] = self.VO.last_vis_time
                 self.Gr.restart(self.Restart)
+                self.Sur.restart(self.Restart)
                 self.Ref.restart(self.Gr, self.Restart)
                 self.PV.restart(self.Gr, self.Restart)
                 self.TS.restart(self.Restart)

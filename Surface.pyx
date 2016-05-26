@@ -99,6 +99,13 @@ cdef class SurfaceBase:
         NS.add_ts('buoyancy_flux_surface_mean', Gr, Pa)
 
         return
+    cpdef init_from_restart(self, Restart):
+        self.T_surface = Restart.restart_data['surf']['T_surface']
+        return
+    cpdef restart(self, Restart):
+        Restart.restart_data['surf'] = {}
+        Restart.restart_data['surf']['T_surf'] = self.T_surface
+        return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
@@ -768,16 +775,21 @@ cdef class SurfaceCGILS(SurfaceBase):
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
 
-        # Find the scalar transfer coefficient
+        # Find the scalar transfer coefficient consistent with the vertical grid spacing
         cdef double z1 = Gr.dims.dx[2] * 0.5
         cdef double cq = 1.2e-3
-        cdef double u10m = 0.0
+        cdef double u10m=0.0, ct_ic=0.0, z1_ic=0.0
         if self.loc == 12:
-            u10m = 6.70518379089
+            ct_ic = 0.0104
+            z1_ic = 2.5
         elif self.loc == 11:
-            u10m = 7.01419275379
+            ct_ic = 0.0081
+            z1_ic = 12.5
         elif self.loc == 6:
-            u10m = 7.58724813403
+            ct_ic = 0.0081
+            z1_ic = 20.0
+
+        u10m = ct_ic/cq * np.log(z1_ic/self.z0)**2/np.log(10.0/self.z0)**2
 
         self.ct = cq * u10m * (np.log(10.0/self.z0)/np.log(z1/self.z0))**2
 
@@ -809,9 +821,6 @@ cdef class SurfaceCGILS(SurfaceBase):
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
-
-
-
             double zb = Gr.dims.dx[2] * 0.5
             double [:] cm = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
             double pv_star = self.CC.LT.fast_lookup(self.T_surface)

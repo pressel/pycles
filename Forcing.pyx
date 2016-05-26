@@ -680,17 +680,20 @@ cdef class ForcingCGILS:
         v_data = np.append(v_data, v_right)
 
         pressure = np.append(pressure, Ps)
-        self.subsidence = np.array(np.interp(Ref.p0_half, pressure, omega_data),dtype=np.double, order='c')
 
+        # interpolate the subsidence profile from the data (below we convert from dp--> dz)
+        self.subsidence = np.array(np.interp(Ref.p0_half, pressure, omega_data),dtype=np.double, order='c')
+        # interpolate large scale advection forcings
         self.dqtdt = np.array(np.interp(Ref.p0_half, pressure, divq_data),dtype=np.double, order='c')
         self.dtdt = np.array(np.interp(Ref.p0_half, pressure, divT_data),dtype=np.double, order='c')
 
-
+        # interpolate the reference profiles
         self.nudge_qt = np.array(np.interp(Ref.p0_half, pressure, q_data),dtype=np.double, order='c')
         self.nudge_temperature = np.array(np.interp(Ref.p0_half, pressure, temperature_data),dtype=np.double, order='c')
         self.nudge_u = np.array(np.interp(Ref.p0_half, pressure, u_data),dtype=np.double, order='c')
         self.nudge_v = np.array(np.interp(Ref.p0_half, pressure, v_data),dtype=np.double, order='c')
 
+        # Initialize arrays for the  nudging related source terms
         self.source_qt_floor = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.source_qt_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.source_t_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -700,10 +703,8 @@ cdef class ForcingCGILS:
         self.source_s_nudge = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
         self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
 
-        cdef:
-            Py_ssize_t k
-
-
+        # convert subsidence velocity to physical space
+        cdef Py_ssize_t k
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
                 self.subsidence[k] = -self.subsidence[k]*Ref.alpha0_half[k]/g
@@ -718,7 +719,7 @@ cdef class ForcingCGILS:
             self.floor_index = k
 
 
-
+        # initialize the inverse timescale coefficient arrays for nudging
         self.gamma_zhalf = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
         self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.double, order='c')
 
@@ -966,6 +967,7 @@ cdef class ForcingZGILS:
             Py_ssize_t k
             double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g
 
+        # initialize the profiles of geostrophic velocity, subsidence, and large scale advection
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
                 self.ug[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(Ref.p0_half[k]-1000.0e2),-4.0)
@@ -1041,13 +1043,8 @@ cdef class ForcingZGILS:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double pd
-            double pv
-            double qt
-            double qv
-            double p0
-            double rho0
-            double t
+            double pd, pv, qt, qv, p0, rho0, t
+
             double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
             double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
 
@@ -1060,15 +1057,15 @@ cdef class ForcingZGILS:
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
 
-        # Prepare for nuding
-        # Here we cheat a bit and ignore potential use of vertical domain decomp. in the future
+        # Prepare for nudging by finding the boundary layer height
+        self.h_BL = Gr.z_half[Gr.dims.n[2]]
         with nogil:
             for k in xrange(kmax, gw-1, -1):
                 if qtmean[k] <= self.alpha_h * self.forcing_ref.qt[k]:
                     self.h_BL = Gr.zl_half[k]
 
-
-
+        # Now set the relaxation coefficient (depends on time-varying BL height diagnosed above)
+        # Find the source term profiles for temperature, moisture nudging (2 components: free tropo and BL)
         cdef double [:] xi_relax = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         cdef double z_h, pv_star, qv_star
         with nogil:
@@ -1094,7 +1091,7 @@ cdef class ForcingZGILS:
 
         cdef double total_t_source, total_qt_source
 
-        #Apply large scale source terms (BL advection, Free Tropo relaxation)
+        #Apply large scale source terms (BL advection, Free Tropo relaxation, BL humidity nudging)
         with nogil:
             for i in xrange(gw,imax):
                 ishift = i * istride
@@ -1193,7 +1190,9 @@ cdef extern from "entropies.h":
     inline double sc_c(double L, double T) nogil
 
 
-
+# This class computes the reference profiles needed for ZGILS cases
+# Reference temperature profile correspondends to a moist adiabat
+# Reference moisture profile corresponds to a fixed relative humidity given the reference temperature profile
 cdef class AdjustedMoistAdiabat:
     def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
 
