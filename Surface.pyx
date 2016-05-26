@@ -800,7 +800,6 @@ cdef class SurfaceCGILS(SurfaceBase):
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-            Py_ssize_t th_shift = DV.get_varshift(Gr, 'theta_rho')
             double [:] windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
 
         compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0], Ref.u0, Ref.v0, self.gustiness)
@@ -815,24 +814,15 @@ cdef class SurfaceCGILS(SurfaceBase):
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
 
 
-            double ustar, t_flux, b_flux
-            double theta_rho_b, Nb2, Ri
+
             double zb = Gr.dims.dx[2] * 0.5
             double [:] cm = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-            double ch=0.0
-
-            double pv_star = self.CC.LT.fast_lookup(Ref.Tg)
+            double pv_star = self.CC.LT.fast_lookup(self.T_surface)
             double qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
-
-
-
-            # Find the surface entropy
-            double pd_star = Ref.Pg - pv_star
-
-            double theta_rho_g = theta_rho_c(Ref.Pg, Ref.Tg, qv_star, qv_star)
-            double s_star = sd_c(pd_star, Ref.Tg) * (1.0 - qv_star) + sv_c(pv_star, Ref.Tg) * qv_star
-
             double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
+            double buoyancy_flux, th_flux
+            double exner_b = exner_c(Ref.p0_half[gw])
+            double theta_0 = self.T_surface/exner_c(Ref.Pg)
 
 
 
@@ -841,14 +831,15 @@ cdef class SurfaceCGILS(SurfaceBase):
                 for j in xrange(gw-1,jmax-gw+1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    theta_rho_b = DV.values[th_shift + ijk]
-                    Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
-                    Ri = Nb2 * zb * zb/(windspeed[ij] * windspeed[ij])
-                    exchange_coefficients_byun(Ri, zb, self.z0, &cm[ij], &ch, &self.obukhov_length[ij])
-                    self.s_flux[ij] = self.ct * (s_star - PV.values[s_shift + ijk])
                     self.qt_flux[ij] = self.ct * (0.98 * qv_star - PV.values[qt_shift + ijk])
-                    ustar = sqrt(cm[ij]) * windspeed[ij]
-                    self.friction_velocity[ij] = ustar
+                    th_flux = self.ct * (theta_0 - DV.values[t_shift + ijk]/exner_b )
+                    buoyancy_flux = g * th_flux * exner_b/t_mean[gw] + g * (eps_vi-1.0)*self.qt_flux[ij]
+
+                    self.friction_velocity[ij] = compute_ustar(windspeed[ij],buoyancy_flux,self.z0, zb)
+                    self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(th_flux, self.qt_flux[ij],
+                                                                        Ref.p0_half[gw], DV.values[t_shift + ijk],
+                                                                        PV.values[qt_shift + ijk], PV.values[qt_shift + ijk])
+                    cm[ij] = (self.friction_velocity[ij]/windspeed[ij]) *  (self.friction_velocity[ij]/windspeed[ij])
 
 
             for i in xrange(gw, imax-gw):
@@ -867,7 +858,6 @@ cdef class SurfaceCGILS(SurfaceBase):
         SurfaceBase.stats_io(self, Gr, NS, Pa)
 
         return
-
 
 
 
@@ -955,7 +945,12 @@ cdef class SurfaceZGILS(SurfaceBase):
             double s_star = sd_c(pd_star,self.T_surface) * (1.0 - qv_star) + sv_c(pv_star, self.T_surface) * qv_star
 
             double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
+            double exner_0 = exner_c(Ref.Pg)
+            double exner_a = exner_c(Ref.p0_half[gw])
+            double theta_a
+            double theta_0 = self.T_surface /exner_0
 
+            double yv_2d, ya_2d, pv_2d, pa_2d, dsdT_2d, dsdyv_2d, dpvdqt
 
 
         with nogil:
@@ -967,10 +962,26 @@ cdef class SurfaceZGILS(SurfaceBase):
                     Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
                     Ri = Nb2 * zb * zb/(windspeed[ij] * windspeed[ij])
                     exchange_coefficients_byun(Ri, zb, self.z0, &cm[ij], &ch, &self.obukhov_length[ij])
-                    self.s_flux[ij] = -ch *windspeed[ij] * (PV.values[s_shift + ijk] - s_star)
+                    theta_a = DV.values[t_shift + ijk] / exner_a
+                    t_flux = -ch * windspeed[ij] * (theta_a - theta_0) * exner_0
+                    # self.s_flux[ij] = -ch *windspeed[ij] * (PV.values[s_shift + ijk] - s_star)
                     self.qt_flux[ij] = -ch *windspeed[ij] *  (PV.values[qt_shift + ijk] - qv_star)
                     ustar = sqrt(cm[ij]) * windspeed[ij]
                     self.friction_velocity[ij] = ustar
+                    yv_2d = PV.values[qt_shift + ijk]
+                    ya_2d = 1.0 - yv_2d
+                    pv_2d = pv_c(Ref.p0_half[gw],yv_2d,yv_2d)
+                    pa_2d = pd_c(Ref.p0_half[gw],yv_2d,yv_2d)
+                    dpvdqt = pv_2d/yv_2d - pv_2d*(eps_vi-1.0)/(1.0 + (eps_vi-1.0)*yv_2d)
+
+                    dsdT_2d = (ya_2d * cpd + yv_2d * cpv)/ DV.values[t_shift + ijk]
+                    dsdyv_2d = sv_c(pv_2d, DV.values[t_shift + ijk]) - sd_c(pa_2d, DV.values[t_shift + ijk]) \
+                               + ya_2d *Rd/pa_2d*dpvdqt -yv_2d*Rv/pv_2d*dpvdqt
+
+                    self.s_flux[ij] = (t_flux * dsdT_2d + self.qt_flux[ij]* dsdyv_2d )
+                                                              # * (rhov_2d[i,j] + rhod_2d[i,j])
+
+
 
 
             for i in xrange(gw, imax-gw):

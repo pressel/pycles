@@ -112,6 +112,10 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
     //doi: http://dx.doi.org/10.1175/1520-0450(1990)029<0652:OTASOF>2.0.CO;2
 
 
+
+    //HACK!!
+    const double logzh = log(zb/3.0e-5);
+    ////
     const double logz = log(zb/z0);
     const double zfactor = zb/(zb-z0)*logz;
     double zeta, zeta0, psi_m, psi_h, lmo_;
@@ -145,7 +149,10 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
         psi_h = psi_h_stable(zeta,zeta0);
     }
     const double cu = vkb/(logz-psi_m);
-    const double cth = vkb/(logz-psi_h)/Pr0;
+    //HACK!
+    //const double cth = vkb/(logz-psi_h)/Pr0;
+    const double cth = vkb/(logzh-psi_h)/Pr0;
+    ///
     *cm = cu * cu;
     *ch = cu * cth;
     *lmo = lmo_;

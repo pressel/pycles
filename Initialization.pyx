@@ -946,7 +946,7 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double p_inversion = 940.0 * 100.0 # for S11, S12: pressure at the inversion
-        double p_interp_les = 900 * 100.0 # for S11, S12:  pressure at which we start interpolating to the forcing profile
+        double p_interp_les = 880 * 100.0 # for S11, S12:  pressure at which we start interpolating to the forcing profile
         double p_interp_data = 860 * 100.0 # for S11, S12: pressure at which we blend full to forcing profile
 
     #Set up profiles. First create thetal from the forcing data, to be used for interpolation
@@ -967,7 +967,7 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     qt[k] = 9.374/1000.0
                 else:
                     thetal[k] = (3.50361862e+02 +  -5.11283538e-02 * RS.p0_half[k]/100.0)
-                    qt[k] = 3.47/1000.0
+                    qt[k] = 3.46/1000.0
         else:
             # P2K
             for k in xrange(Gr.dims.nlg[2]):
@@ -1006,7 +1006,8 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             if RS.p0_half[k] > p_interp_les:
                 pressure_interp = np.append(pressure_interp,RS.p0_half[k])
                 thetal_interp = np.append(thetal_interp,thetal[k])
-                qt_interp = np.append(qt_interp, qt[k]/(1.0+qt[k]))
+                # qt_interp = np.append(qt_interp, qt[k]/(1.0+qt[k]))
+                qt_interp = np.append(qt_interp, qt[k])
 
         pressure_interp = np.append(pressure_interp, pressure_data[pressure_data<p_interp_data] )
         thetal_interp = np.append(thetal_interp, thetal_data[pressure_data<p_interp_data] )
@@ -1131,7 +1132,6 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     theta_pert_ = 0.0
                 T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
                 PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
-
 
 
 

@@ -137,6 +137,10 @@ cdef class ForcingZGILS:
         double [:] ug
         double [:] vg
         double [:] source_rh_nudge
+        double [:] source_qt_nudge
+        double [:] source_t_nudge
+        double [:] source_s_nudge
+        double [:] s_ls_adv
         double coriolis_param
         double divergence
         double t_adv_max
