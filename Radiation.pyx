@@ -743,12 +743,6 @@ cdef class RadiationRRTM(RadiationBase):
         self.cfc22vmr = np.array( tmpTrace[:,7],dtype=np.double, order='F')
         self.ccl4vmr  =  np.array(tmpTrace[:,8],dtype=np.double, order='F')
 
-        # plt.figure(20)
-        # plt.semilogx(trace[0,:],lw_pressure,'-or')
-        # plt.semilogx(o3_trace,o3_pressure,'-ob')
-        # plt.gca().invert_yaxis()
-        # plt.show()
-        #---END Plot
 
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -988,47 +982,6 @@ cdef class RadiationRRTM(RadiationBase):
         self.srf_sw_down= Pa.domain_scalar_sum(srf_sw_down_local)
 
 
-        #----BEGIN Plotting to test implementation of buffer zone
-        #---Comment out when not running locally
-        # #---Plot to verify no kink is present at top of LES domain
-        # plt.figure(6)
-        # plt.title('heating rate')
-        # plt.plot(heating_rate_pencil[0,:], play_in[0,0:nz],'-o')
-        # plt.gca().invert_yaxis()
-        #
-        # plt.figure(7)
-        # plt.title('hr_lw')
-        # plt.plot(hr_lw_out[0,0:nz], play_in[0,0:nz],'-o')
-        # plt.gca().invert_yaxis()
-        #
-        # plt.figure(8)
-        # plt.title('hr_sw')
-        # plt.plot(hr_sw_out[0,0:nz], play_in[0,0:nz],'-o')
-        # plt.gca().invert_yaxis()
-        #
-        #
-        # plt.figure(9)
-        # plt.title('uflx_sw_out')
-        # plt.plot(uflx_sw_out[0,0:nz+1], plev_in[0,0:nz+1],'-o')
-        # plt.gca().invert_yaxis()
-        #
-        # plt.figure(10)
-        # plt.title('dflx_sw_out')
-        # plt.plot(dflx_sw_out[0,0:nz+1], plev_in[0,0:nz+1],'-o')
-        # plt.gca().invert_yaxis()
-        #
-        # plt.figure(11)
-        # plt.title('uflx_lw_out')
-        # plt.plot(uflx_lw_out[0,0:nz+1], plev_in[0,0:nz+1],'-o')
-        # plt.gca().invert_yaxis()
-        #
-        # plt.figure(12)
-        # plt.title('dflx_lw_out')
-        # plt.plot(dflx_lw_out[0,0:nz+1], plev_in[0,0:nz+1],'-o')
-        # plt.gca().invert_yaxis()
-        #
-        # plt.show()
-        #---END plotting
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
 
 
