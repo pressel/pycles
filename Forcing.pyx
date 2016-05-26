@@ -686,13 +686,19 @@ cdef class ForcingCGILS:
         self.dtdt = np.array(np.interp(Ref.p0_half, pressure, divT_data),dtype=np.double, order='c')
 
 
-        self.nudge_s = np.zeros((Gr.dims.nlg[2],),dtype=np.double, order='c')
-
         self.nudge_qt = np.array(np.interp(Ref.p0_half, pressure, q_data),dtype=np.double, order='c')
-        cdef double [:] nudge_temperature = np.array(np.interp(Ref.p0_half, pressure, temperature_data),dtype=np.double, order='c')
+        self.nudge_temperature = np.array(np.interp(Ref.p0_half, pressure, temperature_data),dtype=np.double, order='c')
         self.nudge_u = np.array(np.interp(Ref.p0_half, pressure, u_data),dtype=np.double, order='c')
         self.nudge_v = np.array(np.interp(Ref.p0_half, pressure, v_data),dtype=np.double, order='c')
 
+        self.source_qt_floor = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.source_qt_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.source_t_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.source_u_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.source_v_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+        self.source_s_nudge = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+        self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
 
         cdef:
             Py_ssize_t k
@@ -712,16 +718,6 @@ cdef class ForcingCGILS:
             self.floor_index = k
 
 
-        # Nudging profile is unsaturated, so we can calculate entropy simply
-        cdef double qv, pd, pv
-
-
-        with nogil:
-            for k in range(Gr.dims.nlg[2]):
-                pd = pd_c(Ref.p0_half[k], self.nudge_qt[k], self.nudge_qt[k])
-                pv = pv_c(Ref.p0_half[k], self.nudge_qt[k], self.nudge_qt[k])
-                self.nudge_s[k] = sd_c(pd, nudge_temperature[k]) * (1.0 - self.nudge_qt[k]) \
-                                  + sv_c(pv, nudge_temperature[k]) * self.nudge_qt[k]
 
         self.gamma_zhalf = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
         self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.double, order='c')
@@ -745,8 +741,35 @@ cdef class ForcingCGILS:
         #Initialize Statistical Output
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
-        NS.add_profile('u_subsidence_tendency', Gr, Pa)
-        NS.add_profile('v_subsidence_tendency', Gr, Pa)
+        NS.add_profile('qt_floor_nudging', Gr, Pa)
+        NS.add_profile('qt_ref_nudging', Gr, Pa)
+        NS.add_profile('temperature_ref_nudging', Gr, Pa)
+        NS.add_profile('s_ref_nudging', Gr, Pa)
+        NS.add_profile('s_ls_adv', Gr, Pa)
+
+        # Add profiles of fixed forcing profiles that do not depend on time
+        NS.add_reference_profile('subsidence_velocity', Gr, Pa)
+        NS.write_reference_profile('subsidence_velocity', self.subsidence[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        NS.add_reference_profile('temperature_ls_adv', Gr, Pa)
+        NS.write_reference_profile('temperature_ls_adv', self.dtdt[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        NS.add_reference_profile('qt_ls_adv', Gr, Pa)
+        NS.write_reference_profile('qt_ls_adv', self.dqtdt[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        NS.add_reference_profile('u_ref_profile', Gr, Pa)
+        NS.write_reference_profile('u_ref_profile', self.nudge_u[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        NS.add_reference_profile('v_ref_profile', Gr, Pa)
+        NS.write_reference_profile('v_ref_profile', self.nudge_v[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
+        NS.add_reference_profile('temperature_ref_profile', Gr, Pa)
+        NS.write_reference_profile('temperature_ref_profile', self.nudge_temperature[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        NS.add_reference_profile('qt_ref_profile', Gr, Pa)
+        NS.write_reference_profile('qt_ref_profile', self.nudge_qt[Gr.dims.gw:-Gr.dims.gw], Pa)
+
 
 
         return
@@ -774,12 +797,39 @@ cdef class ForcingCGILS:
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             double pd, pv, qt, qv, p0, rho0,t, qt_floor_nudge
 
-            double [:] u_mean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            double [:] v_mean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
+            double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
+            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
-            double[:] domain_mean
+
+        # Apply subsidence
+        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
 
 
+
+       # Calculate nudging
+        with nogil:
+            for k in xrange(kmin, kmax):
+                # Nudge s, qt to reference profiles in free troposphere
+                self.source_t_nudge[k] = -(tmean[k] - self.nudge_temperature[k]) * self.gamma_z[k]
+                self.source_qt_nudge[k]= -(qtmean[k] - self.nudge_qt[k]) * self.gamma_z[k]
+                # Nudge mean wind profiles through entire depth
+                self.source_u_nudge[k] = -(umean[k] + Ref.u0 - self.nudge_u[k]) * self.tau_vel_inverse
+                self.source_v_nudge[k] = -(vmean[k] + Ref.v0 - self.nudge_v[k]) * self.tau_vel_inverse
+
+        # Moisture floor nudging for S12 case
+        if self.loc == 12:
+            with nogil:
+                for k in xrange(kmin, self.floor_index):
+                    if qtmean[k] < self.qt_floor:
+                        self.source_qt_floor[k] = -(qtmean[k] - self.qt_floor) * self.tau_inverse
+                    else:
+                        self.source_qt_floor[k] = 0.0
+
+        cdef double total_qt_source
+        cdef double total_t_source
 
         #Apply large scale source terms
         with nogil:
@@ -796,53 +846,18 @@ cdef class ForcingCGILS:
                         pd = pd_c(p0,qt,qv)
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
-                        PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-                                                         * self.dtdt[k]  * rho0)/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
-                        PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
+                        total_qt_source = self.dqtdt[k] + self.source_qt_floor[k] + self.source_qt_nudge[k]
+                        total_t_source  = self.dtdt[k]  + self.source_t_nudge[k]
+                        PV.tendencies[s_shift  + ijk] += (cpm_c(qt) * total_t_source  * rho0)/t
+                        PV.tendencies[s_shift  + ijk] += (sv_c(pv,t) - sd_c(pd,t))*total_qt_source
+                        PV.tendencies[qt_shift + ijk] += total_qt_source
+                        PV.tendencies[u_shift  + ijk] += self.source_u_nudge[k]
+                        PV.tendencies[v_shift  + ijk] += self.source_v_nudge[k]
 
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
-        # apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
-        # apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
-
-
-        # Apply nudging
-        with nogil:
-            for i in xrange(imin, imax):
-                ishift = i * istride
-                for j in xrange(jmin, jmax):
-                    jshift = j * jstride
-                    for k in xrange(kmin, kmax):
-                        ijk = ishift + jshift + k
-                        # Nudge s, qt to reference profiles in free troposphere
-                        PV.tendencies[s_shift + ijk] -= (PV.values[s_shift + ijk] - self.nudge_s[k]) * self.gamma_z[k]
-                        PV.tendencies[qt_shift + ijk] -= (PV.values[qt_shift + ijk] - self.nudge_qt[k]) * self.gamma_z[k]
-                        # Nudge mean wind profiles through entire depth
-                        PV.tendencies[u_shift + ijk] -= (u_mean[k] + Ref.u0 - self.nudge_u[k]) * self.tau_vel_inverse
-                        PV.tendencies[v_shift + ijk] -= (v_mean[k] + Ref.v0 - self.nudge_v[k]) * self.tau_vel_inverse
-
-        # Moisture floor nudging for S12 case
-        if self.loc == 12:
-            domain_mean = Pa.HorizontalMean(Gr, & PV.values[qt_shift])
-            if np.amin(domain_mean[Gr.dims.gw:self.floor_index]) < self.qt_floor:
-                with nogil:
-                    for k in xrange(kmin, self.floor_index):
-                        if domain_mean[k] < self.qt_floor:
-                            qt_floor_nudge = -(domain_mean[k] - self.qt_floor) * self.tau_inverse
-                            for i in xrange(imin, imax):
-                                ishift = i * istride
-                                for j in xrange(jmin, jmax):
-                                    jshift = j * jstride
-                                    ijk = ishift + jshift + k
-                                    qt = PV.values[qt_shift + ijk]
-                                    qv = DV.values[qv_shift + ijk]
-                                    t = DV.values[t_shift + ijk]
-                                    pv = pv_c(Ref.p0_half[k],qt, qv)
-                                    pd = pd_c(Ref.p0_half[k],qt, qv)
-                                    PV.tendencies[qt_shift + ijk] += qt_floor_nudge
-                                    PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * qt_floor_nudge
-
+                        self.source_s_nudge[ijk] = ((sv_c(pv,t) - sd_c(pd,t)) * (self.source_qt_nudge[k] + self.source_qt_floor[k])
+                                                    +(cpm_c(qt) * self.source_t_nudge[k] * exner_c(p0) * rho0)/t)
+                        self.s_ls_adv[ijk]= ((sv_c(pv,t) - sd_c(pd,t)) * (self.dqtdt[k])
+                                                    +(cpm_c(qt) * self.dtdt[k] * exner_c(p0) * rho0)/t)
 
 
         return
@@ -875,17 +890,17 @@ cdef class ForcingCGILS:
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],
-                         &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('u_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        mean_tendency = Pa.HorizontalMean(Gr,&self.source_s_nudge[0])
+        NS.write_profile('s_ref_nudging',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],
-                         &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('v_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        mean_tendency = Pa.HorizontalMean(Gr,&self.s_ls_adv[0])
+        NS.write_profile('s_ls_adv',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+
+
+        NS.write_profile('qt_floor_nudging',self.source_qt_floor[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_profile('qt_ref_nudging',self.source_qt_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_profile('temperature_ref_nudging',self.source_t_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         return
 
@@ -912,6 +927,7 @@ cdef class ForcingZGILS:
         else:
             Pa.root_print('FORCING: Unrecognized ZGILS location ' + str(self.loc))
             Pa.kill()
+
 
         self.t_adv_max = -1.2/86400.0 # K/s BL tendency of temperature due to horizontal advection
         self.qt_adv_max = -0.6e-3/86400.0 # kg/kg/s BL tendency of qt due to horizontal advection
@@ -1033,7 +1049,6 @@ cdef class ForcingZGILS:
             double rho0
             double t
             double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
-            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
             double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
 
         #Apply Coriolis Forcing
@@ -1124,7 +1139,7 @@ cdef class ForcingZGILS:
             double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
             double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
             double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            # double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],

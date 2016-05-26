@@ -1146,14 +1146,9 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
 
     reference_profiles = AdjustedMoistAdiabat(namelist, LH, Pa)
-    # RS.Tg = 288.0
+
     RS.Tg= 289.472
     RS.Pg= 1018.0e2
-    # rh_ref = 0.8
-    #
-    # # Find the surface moisture and initialize the basic state
-    # pv_ = Th.get_pv_star(RS.Tg)*rh_ref
-    # RS.qtg =  eps_v * pv_ / (RS.Pg + (eps_v-1.0)*pv_)
     RS.qtg = 0.008449
 
     RS.initialize(Gr ,Th, NS, Pa)

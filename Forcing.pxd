@@ -114,9 +114,16 @@ cdef class ForcingCGILS:
         double[:] gamma_zhalf
         double[:] gamma_z
         double [:] nudge_qt
-        double [:] nudge_s
+        double [:] nudge_temperature
         double [:] nudge_u
         double [:] nudge_v
+        double [:] source_qt_floor
+        double [:] source_qt_nudge
+        double [:] source_t_nudge
+        double [:] source_u_nudge
+        double [:] source_v_nudge
+        double [:] source_s_nudge
+        double [:] s_ls_adv
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
