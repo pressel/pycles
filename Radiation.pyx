@@ -498,9 +498,9 @@ cdef class RadiationRRTM:
             f.close()
 
             self.coszen = fd['cos_zenith']
-            pressures = fd['p'][::-1] * 100.0
-            temperatures = fd['t'][::-1]
-            vapor_mixing_ratios = fd['qt'][::-1]
+            pressures = fd['p']
+            temperatures = np.mean(fd['temperature'],axis = 0)
+            vapor_mixing_ratios = np.mean(fd['qt'],axis = 0)
             vapor_mixing_ratios = vapor_mixing_ratios / ( 1.0 - vapor_mixing_ratios)
 
 

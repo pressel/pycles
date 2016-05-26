@@ -23,7 +23,7 @@ def SurfaceBudgetFactory(namelist):
     if namelist['meta']['casename'] == 'ZGILS':
         return SurfaceBudget(namelist)
     elif namelist['meta']['casename'] == 'Reanalysis':
-        return SurfaceBudget(namelist) 
+        return SurfaceBudgetNone()#SurfaceBudget(namelist)
     else:
         return SurfaceBudgetNone()
 

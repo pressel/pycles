@@ -789,18 +789,19 @@ def InitReanalysis(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
 
     #Generate reference profiles
-    RS.Pg = np.mean(fd['sp'])
-    RS.Tg = np.mean(fd['sst'])
-    RS.qtg = fd['qt'][-1]
+    RS.Pg = np.mean(fd['slp'])
+    RS.Tg = np.mean(fd['tskin'])
+    RS.qtg = np.mean(fd['qv2m'])
     RS.u0 = 0.0
     RS.v0 = 0.0
 
     RS.initialize(Gr ,Th, NS, Pa)
-    cdef double [:] p = fd['p'] * 100.0
-    cdef double [:] t = np.interp(RS.p0_half, p, fd['t'])
-    cdef double [:] qt = np.interp(RS.p0_half, p, fd['qt'])
-    cdef double [:] u  = np.interp(RS.p0_half, p, fd['u'])
-    cdef double [:] v = np.interp(RS.p0_half, p, fd['v'])
+    cdef double [:] p = fd['p']
+    cdef double [:] t = np.interp(RS.p0_half, p[::-1],  np.mean(fd['temperature'][:,::-1],axis=0))
+    cdef double [:] qt = np.interp(RS.p0_half, p[::-1], np.mean(fd['qt'][:,::-1],axis=0))
+
+    cdef double [:] u  = np.interp(RS.p0_half, p[::-1], np.mean(fd['u'][:,::-1],axis=0))
+    cdef double [:] v = np.interp(RS.p0_half, p[::-1], np.mean(fd['v'][:,::-1],axis=0))
     cdef double [:] ql = np.empty(Gr.dims.nlg[2], dtype=np.double, order='c')
     cdef double [:] qv = np.empty(Gr.dims.nlg[2], dtype=np.double, order='c')
 

@@ -597,17 +597,20 @@ cdef class ForcingReanalysis:
         fd = cPickle.load(f)
         f.close()
 
-        cdef double [:] p = fd['p'] * 100.0
-        self.ug = np.interp(Ref.p0_half, p, fd['ug'])
-        self.vg = np.interp(Ref.p0_half, p, fd['vg'])
-        self.t = np.interp(Ref.p0_half, p, fd['t'])
-        self.subsidence = np.interp(Ref.p0_half, p, fd['w'])
-        self.dqtdt = np.interp(Ref.p0_half, p, fd['qt_ls'])
-        self.dtdt = np.interp(Ref.p0_half, p, fd['t_ls'])
+        cdef double [:] p = fd['p']
+        self.ug = np.interp(Ref.p0_half, p[::-1], np.mean(fd['ug'][:,::-1], axis=0))
+        self.vg = np.interp(Ref.p0_half, p[::-1], np.mean(fd['vg'][:,::-1], axis=0))
+        self.t = np.interp(Ref.p0_half, p[::-1], np.mean(fd['temperature'][:,::-1], axis=0))
+        self.subsidence = np.interp(Ref.p0_half, p[::-1], np.mean(fd['omega'][:,::-1], axis=0))
+        self.dqtdt = np.interp(Ref.p0_half, p[::-1], np.mean(fd['qt_ls'][:,::-1], axis=0))
+        self.dtdt = np.interp(Ref.p0_half, p[::-1], np.mean(fd['t_ls'][:,::-1], axis=0))
 
-        t = np.interp(Ref.p0_half, p, fd['t'])
-        self.qt = np.interp(Ref.p0_half, p, fd['qt'])
+        t = np.interp(Ref.p0_half, p[::-1], np.mean(fd['temperature'][:,::-1], axis=0))
+        self.qt = np.interp(Ref.p0_half, p[::-1], np.mean(fd['qt'][:,::-1], axis=0))
         self.s = np.zeros((Gr.dims.nlg[2],),dtype=np.double, order='c')
+
+
+        print np.array(t), np.array(self.qt)
 
         for k in xrange(Gr.dims.nlg[2]):
             pd = pd_c(Ref.p0_half[k], self.qt[k], self.qt[k])
@@ -709,8 +712,8 @@ cdef class ForcingReanalysis:
 
 
         #Apply subsidence
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+        #apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
+        #apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
 
 
 
