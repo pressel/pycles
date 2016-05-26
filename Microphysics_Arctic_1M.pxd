@@ -11,7 +11,7 @@ from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
 
 cdef:
     double lambda_constant_Arctic(double T) nogil
-    double latent_heat_constant_Arctic(double T, double T) nogil
+    double latent_heat_constant_Arctic(double T, double Lambda) nogil
     double lambda_Arctic(double T) nogil
     double latent_heat_Arctic(double T, double Lambda) nogil
     double latent_heat_variable_Arctic(double T, double Lambda) nogil
