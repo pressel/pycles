@@ -83,9 +83,6 @@ cdef extern from "scalar_advection.h":
 cdef class Microphysics_Arctic_1M:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
 
-        LH.Lambda_fp = lambda_Arctic
-        LH.L_fp = latent_heat_Arctic
-
         self.thermodynamics_type = 'SA'
 
         #Get namelist variables
@@ -108,14 +105,22 @@ cdef class Microphysics_Arctic_1M:
 
         try:
             if namelist['microphysics']['phase_partitioning'] == 'liquid_only':
-                self.Lambda_fp = lambda_constant_Arctic
+                # self.Lambda_fp = lambda_constant_Arctic
+                LH.Lambda_fp = lambda_constant_Arctic
                 Par.root_print('liquid only microphysics set Lambda = 1.0 ')
             else:
-                self.Lambda_fp = lambda_Arctic
+                # self.Lambda_fp = lambda_Arctic
+                LH.Lambda_fp = lambda_Arctic
         except:
-            self.Lambda_fp = lambda_Arctic
+            # self.Lambda_fp = lambda_Arctic
+            LH.Lambda_fp = lambda_Arctic
 
-        self.L_fp = latent_heat_Arctic
+
+        LH.L_fp = latent_heat_Arctic
+
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 

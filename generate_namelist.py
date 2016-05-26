@@ -836,7 +836,7 @@ def Isdac():
     namelist['time_stepping']['t_max'] = 3600.0 * 8.0
 
     namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['latentheat'] = 'constant'
+    # namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic_1M'
@@ -925,7 +925,7 @@ def IsdacCC():
     namelist['time_stepping']['t_max'] = 3600.0 * 8.0
 
     namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['latentheat'] = 'constant'
+    # namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic_1M'
