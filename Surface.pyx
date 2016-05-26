@@ -730,8 +730,6 @@ cdef class SurfaceRico(SurfaceBase):
         return
 
 
-
-
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.stats_io(self, Gr, NS, Pa)
         return
@@ -756,7 +754,6 @@ cdef class SurfaceCGILS(SurfaceBase):
         except:
             Pa.root_print('Must specify if CGILS run is perturbed')
             Pa.kill()
-
 
         self.gustiness = 0.001
         self.z0 = 1.0e-4
