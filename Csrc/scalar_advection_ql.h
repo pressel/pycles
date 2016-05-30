@@ -131,6 +131,8 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
 
 
+
+// ??? do I need const velocity, scalar ?? (compare to original 4th order WS scheme) ???
 void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
     double* restrict velocity, double* restrict scalar, double* restrict flux, int d){
 
@@ -154,11 +156,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 
     ssize_t i,j,k;
 
-    // (1) compute mean fields
-//    for(k=kmin; k<kmax; k++){
-//        phi_mean_[k] = 0.0;
-//    }
-
+    // (1) compute mean and eddy fields
     horizontal_mean(dims, &velocity[0], &vel_mean[0]);
     horizontal_mean(dims, &scalar[0], &phi_mean_[0]);
 
@@ -168,8 +166,6 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
             const ssize_t jshift = j * jstride;
             for(k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-//                phi_mean[ijk] = 1.0; // !!!!!
-//                phi_mean_[k] = 1.0; // !!!!!
                 phi_mean[ijk] = phi_mean_[k];
                 phi_fluc[ijk] = scalar[ijk] - phi_mean[ijk];
             }
