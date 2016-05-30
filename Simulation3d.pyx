@@ -85,9 +85,6 @@ class Simulation3d:
         self.Micro.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
         self.PV.initialize(self.Gr, self.StatsIO, self.Pa)
-        # __
-        self.check_nans('00: ')
-        # __
         self.Ke.initialize(self.Gr, self.StatsIO, self.Pa)
 
         self.SA.initialize(self.Gr,self.PV, self.StatsIO, self.Pa)
@@ -96,11 +93,6 @@ class Simulation3d:
         self.MD.initialize(self.Gr,self.PV,self.DV,self.StatsIO, self.Pa)
 
         self.TS.initialize(namelist,self.PV,self.Pa)
-
-        # # __
-        print('Sim.initialise: before calling Initialization.pyx')
-        self.check_nans('01: ')
-        # # __
 
         if self.Restart.is_restart_run:
             self.Pa.root_print('This run is being restarted!')
@@ -126,17 +118,8 @@ class Simulation3d:
             SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa)
             del SetInitialConditions
 
-        #__
-        self.check_nans('01a: ')
-        #__
         self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
-        #__
-        self.check_nans('01b: ')
-        #__
         self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
-        #__
-        self.check_nans('01c: ')
-        #__
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
@@ -146,8 +129,7 @@ class Simulation3d:
 
         self.Pa.root_print('Initialization completed!')
         #__
-        self.check_nans('02: ')
-        print('Sim: finished initialization')
+        self.check_nans('Finished Initialization: ')
         #__
         return
 
@@ -166,41 +148,24 @@ class Simulation3d:
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
         self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.StatsIO,self.Pa)
 
-        #__
-        self.check_nans('03: ')
-        #__
-
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
             self.force_io()
 
-        self.Pa.root_print('Run started')
-
-        #____________________
-        self.check_nans('04: ')
-        #__
+        #_
         PV_.val_nan(self.Pa,'Nan checking in Simulation: time: '+str(self.TS.t))
-        print('444')
-
+        #_
 
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             self.Pa.root_print('time: '+str(self.TS.t))
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
-                # # __
-                self.check_nans('05: ')
-                # # __
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
-                # # __
-                if np.isnan(PV_.tendencies).any():
-                    print('!!!! PV Tendencies nan')
-                # else:
-                #     print('No nan in PV tendencies')
-                # # __
+
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
                 self.Damping.update(self.Gr,self.PV,self.Pa)
@@ -209,36 +174,20 @@ class Simulation3d:
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.TS, self.Pa)
-                if np.isnan(PV_.tendencies).any():
-                    print('!!!! PV Tendencies nan (1)')
-                # else:
-                #     print('No nan in PV tendencies (1)')
-                if np.isnan(PV_.values).any():
-                    print('!!!! PV Values nan (1)')
-                # else:
-                #     print('No nan in PV values (1)')
+
+                # if np.isnan(PV_.tendencies).any():
+                #     print('!!!! PV Tendencies nan (1)', 'rk step:', self.TS.rk_step, self.TS.n_rk_steps)
+                # # else:
+                # #     print('No nan in PV tendencies (1)')
+                # if np.isnan(PV_.values).any():
+                #     print('!!!! PV Values nan (1)')
+                # # else:
+                # #     print('No nan in PV values (1)')
 
                 self.TS.update(self.Gr, self.PV, self.Pa)
-
-                if np.isnan(PV_.values).any():
-                    print('!!!! PV Values nan (2), rk step: ', self.TS.rk_step, self.TS.n_rk_steps)
-                # else:
-                #     print('No nan in PV values (2)')
-
                 PV_.Update_all_bcs(self.Gr, self.Pa)
 
-                if np.isnan(PV_.values).any():
-                    print('!!!! PV Values nan (3), rk step: ', self.TS.rk_step)
-                # else:
-                #     print('No nan in PV values (3), rk step: ', self.TS.rk_step)
-
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
-                # self.Pa.root_print('ok until here')
-
-                if np.isnan(PV_.values).any():
-                    print('!!!! PV Values nan (4), rk step: ', self.TS.rk_step)
-                # else:
-                #     print('No nan in PV values (4)')
 
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
@@ -384,7 +333,6 @@ class Simulation3d:
 
 
     def check_nans(self,message):
-        # # __
         cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
 
         cdef:
@@ -395,8 +343,8 @@ class Simulation3d:
             Py_ssize_t qt_varshift = PV_.get_varshift(self.Gr,'qt')
 
         print(u_varshift, v_varshift, w_varshift, s_varshift, qt_varshift)
-        # # # __
-        #
+
+
         # # __
         nan = False
         if np.isnan(PV_.values[u_varshift:v_varshift]).any():
@@ -425,8 +373,9 @@ class Simulation3d:
         #     print('qt: No nan')
 
         if nan == True:
-            print(message, 'nans found')
+            a = message + ': Nans found'
         else:
-            print(message, 'No nans found')
+            a = message + ': No nans found'
+        self.Pa.root_print(a)
         return
         # __

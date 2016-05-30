@@ -328,8 +328,6 @@ def InitBomex(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 else:
                     temp = (thetal[k]) * exner_c(RS.p0_half[k])
                     qt_ = qt[k]
-                # print('temp !!!',thetal[k], theta_pert[count])
-                # print('temp',temp, exner_c(RS.p0_half[k]), RS.p0_half[k])
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)
                 PV.values[qt_varshift + ijk] = qt_
                 count += 1
@@ -906,7 +904,6 @@ def InitSoares(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         cdef double theta_pert_
 
 
-
     # Initial theta (potential temperature) profile (Soares)
     for k in xrange(Gr.dims.nlg[2]):
         # if Gr.zl_half[k] <= 1350.0:
@@ -915,12 +912,6 @@ def InitSoares(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         #     theta[k] = 300.0 + 2.0/1000.0 * (Gr.zl_half[k] - 1350.0)
         theta[k] = 297.3 + 2.0/1000.0 * (Gr.zl_half[k])
 
-    # # Initial qt profile (Soares)
-    # --> set to zero, since no vapor Thermodynamics without condensation given
-    #     if Gr.zl_half[k] <= 1350:
-    #         qt[k] = 5.0e-3 - (Gr.zl_half[k]) * 3.7e-4
-    #     if Gr.zl_half[k] > 1350:
-    #         qt[k] = 5.0e-3 - 1350.0 * 3.7e-4 - (Gr.zl_half[k] - 1350.0) * 9.4e-4
 
     cdef double [:] p0 = RS.p0_half
 
@@ -961,10 +952,10 @@ def InitSoares(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 def InitSoares_moist(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa ):
     # Generate the reference profiles
-    RS.Pg = 1.015e5  #Pressure at ground (Bomex)
-    # RS.Pg = 1.0e5     #Pressure at ground (Soares)
-    RS.Tg = 300.4  #Temperature at ground (Bomex)
-    # RS.Tg = 300.0     #Temperature at ground (Soares)
+    # RS.Pg = 1.015e5  #Pressure at ground (Bomex)
+    RS.Pg = 1.0e5     #Pressure at ground (Soares)
+    # RS.Tg = 300.4  #Temperature at ground (Bomex)
+    RS.Tg = 300.0     #Temperature at ground (Soares)
     # RS.qtg = 0.02245   #Total water mixing ratio at surface (Bomex)
     RS.qtg = 5e-3     #Total water mixing ratio at surface: qt = 5 g/kg (Soares)
     RS.u0 = 0.01   # velocities removed in Galilean transformation (Soares: u = 0.01 m/s, IOP: 0.0 m/s)
@@ -995,30 +986,13 @@ def InitSoares_moist(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
 
     for k in xrange(Gr.dims.nlg[2]):
-        # Initial thetal (potential temperature) profile
-        # if Gr.zl_half[k] <= 520.:
-        #     theta[k] = 298.7
-        # if Gr.zl_half[k] > 520.0 and Gr.zl_half[k] <= 1480.0:
-        #     theta[k] = 298.7 + (Gr.zl_half[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
-        # if Gr.zl_half[k] > 1480.0 and Gr.zl_half[k] <= 2000:
-        #     theta[k] = 302.4 + (Gr.zl_half[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
-        # if Gr.zl_half[k] > 2000.0:
-        #     theta[k] = 308.2 + (Gr.zl_half[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
+        # Initial theta profile (Soares)
         if Gr.zl_half[k] <= 1350.0:
             theta[k] = 300.0
         else:
             theta[k] = 300.0 + 2.0/1000.0 * (Gr.zl_half[k] - 1350.0)
         # theta[k] = 297.3 + 2.0/1000.0 * (Gr.zl_half[k])
 
-        #Set qt profile
-        # if Gr.zl_half[k] <= 520:
-        #     qt[k] = 17.0 + (Gr.zl_half[k]) * (16.3-17.0)/520.0
-        # if Gr.zl_half[k] > 520.0 and Gr.zl_half[k] <= 1480.0:
-        #     qt[k] = 16.3 + (Gr.zl_half[k] - 520.0)*(10.7 - 16.3)/(1480.0 - 520.0)
-        # if Gr.zl_half[k] > 1480.0 and Gr.zl_half[k] <= 2000.0:
-        #     qt[k] = 10.7 + (Gr.zl_half[k] - 1480.0) * (4.2 - 10.7)/(2000.0 - 1480.0)
-        # if Gr.zl_half[k] > 2000.0:
-        #     qt[k] = 4.2 + (Gr.zl_half[k] - 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0)
         # Initial qt profile (Soares)
         if Gr.zl_half[k] <= 1350:
             qt[k] = 5.0 - (Gr.zl_half[k]) * 3.7e-4
@@ -1027,34 +1001,6 @@ def InitSoares_moist(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
         #Change units to kg/kg
         qt[k]/= 1000.0
-
-        #Set u profile
-        # if Gr.zl_half[k] <= 700.0:
-        #     u[k] = -8.75
-        # if Gr.zl_half[k] > 700.0:
-        #     u[k] = -8.75 + (Gr.zl_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
-
-    # plt.figure(1)
-    # plt.plot(qt)
-    # # plt.show()
-    # plt.savefig('./BM_files/qt_profile.png')
-    # plt.close()
-    # plt.figure(2)
-    # plt.plot(theta)
-    # # plt.show()
-    # plt.savefig('./BM_files/thl_profile.png')
-    # plt.close()
-    # # plt.figure(3)
-    # # plt.plot(u)
-    # # plt.show()
-    # # plt.savefig('./BM_files/u_profile.png')
-    # # plt.close()
-
-    #Set velocities for Galilean transformation
-    # RS.v0 = 0.0
-    # RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
-
-
 
     #Now loop and set the initial condition
     #First set the velocities
@@ -1069,14 +1015,12 @@ def InitSoares_moist(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[v_varshift + ijk] = 0.0 - RS.v0
                 PV.values[w_varshift + ijk] = 0.0
                 if Gr.zl_half[k] < 200.0:
-                # if Gr.zl_half[k] <= 1600.0:
                     temp = (theta[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
                     qt_ = qt[k]+qt_pert[count]
                 else:
                     temp = (theta[k]) * exner_c(RS.p0_half[k])
                     qt_ = qt[k]
-                # print('temp !!!',theta[k], theta_pert[count])
-                # print('temp',temp, exner_c(RS.p0_half[k]), RS.p0_half[k])
+
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)
                 PV.values[qt_varshift + ijk] = qt_
                 count += 1
@@ -1093,15 +1037,7 @@ def InitSoares_moist(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
 
-    # __
-    # if np.isnan(temp_arr).any():
-    #     print('nan in temp_arr')
-    # else:
-    #     print('No nan in temp_arr')
-    # if np.isnan(qt_arr).any():
-    #     print('nan in qt_arr')
-    # else:
-    #     print('No nan in qt_arr')
+   # __
     if np.isnan(PV.values[s_varshift:qt_varshift]).any():   # nans
         print('nan in s')
     else:
