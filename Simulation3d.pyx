@@ -85,6 +85,9 @@ class Simulation3d:
         self.Micro.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
         self.PV.initialize(self.Gr, self.StatsIO, self.Pa)
+        # __
+        self.check_nans('00: ')
+        # __
         self.Ke.initialize(self.Gr, self.StatsIO, self.Pa)
 
         self.SA.initialize(self.Gr,self.PV, self.StatsIO, self.Pa)
@@ -95,36 +98,8 @@ class Simulation3d:
         self.TS.initialize(namelist,self.PV,self.Pa)
 
         # # __
-        # print('Sim.initialise: before calling Initialization.pyx')
-        # cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
-        # cdef:
-        #     Py_ssize_t u_varshift = PV_.get_varshift(self.Gr,'u')
-        #     Py_ssize_t v_varshift = PV_.get_varshift(self.Gr,'v')
-        #     Py_ssize_t w_varshift = PV_.get_varshift(self.Gr,'w')
-        #     Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
-        #     Py_ssize_t qt_varshift = PV_.get_varshift(self.Gr,'qt')
-        # print(u_varshift, v_varshift, w_varshift, s_varshift, qt_varshift)
-        # print(u_varshift - v_varshift, v_varshift - w_varshift, w_varshift - s_varshift, qt_varshift)
-        # if np.isnan(PV_.values[u_varshift:v_varshift]).any():
-        #     print('u: nan')
-        # else:
-        #     print('u: No nan')
-        # if np.isnan(PV_.values[v_varshift:w_varshift]).any():
-        #     print('v nan')
-        # else:
-        #     print('v: No nan')
-        # if np.isnan(PV_.values[w_varshift:s_varshift]).any():
-        #     print('w: nan')
-        # else:
-        #     print('w: No nan')
-        # if np.isnan(PV_.values[s_varshift:qt_varshift]).any():
-        #     print('s: nan')
-        # else:
-        #     print('s: No nan')
-        # if np.isnan(PV_.values[w_varshift:s_varshift]).any():
-        #     print('qt: nan')
-        # else:
-        #     print('qt: No nan')
+        print('Sim.initialise: before calling Initialization.pyx')
+        self.check_nans('01: ')
         # # __
 
         if self.Restart.is_restart_run:
@@ -151,33 +126,17 @@ class Simulation3d:
             SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa)
             del SetInitialConditions
 
-        # # __
-        # print('Sim.initialise: after calling Initialization.pyx')
-        # if np.isnan(PV_.values[u_varshift:v_varshift]).any():
-        #     print('u: nan')
-        # else:
-        #     print('u: No nan')
-        # if np.isnan(PV_.values[v_varshift:w_varshift]).any():
-        #     print('v nan')
-        # else:
-        #     print('v: No nan')
-        # if np.isnan(PV_.values[w_varshift:s_varshift]).any():
-        #     print('w: nan')
-        # else:
-        #     print('w: No nan')
-        # if np.isnan(PV_.values[s_varshift:qt_varshift]).any():
-        #     print('s: nan')
-        # else:
-        #     print('s: No nan')
-        # if np.isnan(PV_.values[w_varshift:s_varshift]).any():
-        #     print('qt: nan')
-        # else:
-        #     print('qt: No nan')
-        # # __
-
+        #__
+        self.check_nans('01a: ')
+        #__
         self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
-
+        #__
+        self.check_nans('01b: ')
+        #__
         self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
+        #__
+        self.check_nans('01c: ')
+        #__
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
@@ -186,35 +145,16 @@ class Simulation3d:
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
         self.Pa.root_print('Initialization completed!')
-
-        # # __
-        # print('Sim.initialise: checking nans')
-        # if np.isnan(PV_.values[u_varshift:v_varshift]).any():
-        #     print('u: nan')
-        # else:
-        #     print('u: No nan')
-        # if np.isnan(PV_.values[v_varshift:w_varshift]).any():
-        #     print('v nan')
-        # else:
-        #     print('v: No nan')
-        # if np.isnan(PV_.values[w_varshift:s_varshift]).any():
-        #     print('w: nan')
-        # else:
-        #     print('w: No nan')
-        # if np.isnan(PV_.values[s_varshift:qt_varshift]).any():
-        #     print('s: nan')
-        # else:
-        #     print('s: No nan')
-        # if np.isnan(PV_.values[w_varshift:s_varshift]).any():
-        #     print('qt: nan')
-        # else:
-        #     print('qt: No nan')
-        # self.PV.val_nan(self.Pa,'Nan checking in Simulation: initialisation')
-        # # __
-
+        #__
+        self.check_nans('02: ')
+        print('Sim: finished initialization')
+        #__
         return
 
+
+
     def run(self):
+        print('Sim: start run')
         cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
         cdef DiagnosticVariables.DiagnosticVariables DV_ = self.DV
         PV_.Update_all_bcs(self.Gr, self.Pa)
@@ -222,9 +162,14 @@ class Simulation3d:
         cdef Grid.Grid GR_ = self.Gr
         cdef ParallelMPI.ParallelMPI PA_ = self.Pa
         cdef int rk_step
+        print('111')
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
         self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.StatsIO,self.Pa)
+
+        #__
+        self.check_nans('03: ')
+        #__
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
@@ -232,40 +177,19 @@ class Simulation3d:
 
         self.Pa.root_print('Run started')
 
+        #____________________
+        self.check_nans('04: ')
+        #__
         PV_.val_nan(self.Pa,'Nan checking in Simulation: time: '+str(self.TS.t))
+        print('444')
 
-        # # __
-        cdef:
-            Py_ssize_t u_varshift = PV_.get_varshift(self.Gr,'u')
-            Py_ssize_t v_varshift = PV_.get_varshift(self.Gr,'v')
-            Py_ssize_t w_varshift = PV_.get_varshift(self.Gr,'w')
-            Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
-            Py_ssize_t qt_varshift = PV_.get_varshift(self.Gr,'qt')
-        # # __
 
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             self.Pa.root_print('time: '+str(self.TS.t))
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 # # __
-                if np.isnan(PV_.values).any():
-                    if np.isnan(PV_.values[u_varshift:v_varshift]).any():
-                        print('u: is nan')
-                    else:
-                        print('u (Sim): ', np.amax(PV_.values[u_varshift:v_varshift]))
-
-                    if np.isnan(PV_.values[v_varshift:w_varshift]).any():
-                        print('v: is nan')
-                    else:
-                        print('v (Sim): ', np.amax(PV_.values[v_varshift:w_varshift]))
-                    if np.isnan(PV_.values[w_varshift:s_varshift]).any():
-                        print('w: is nan')
-                    else:
-                        print('w (Sim): ', np.amax(PV_.values[w_varshift:s_varshift]))
-                    if np.isnan(PV_.values[s_varshift:-1]).any():
-                        print('s: is nan')
-                    else:
-                        print('s (Sim): ', np.amax(PV_.values[s_varshift:-1]))
+                self.check_nans('05: ')
                 # # __
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
@@ -458,3 +382,52 @@ class Simulation3d:
         self.StatsIO.close_files(self.Pa)
         return
 
+
+
+    def check_nans(self,message):
+        # # __
+        cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
+
+        cdef:
+            Py_ssize_t u_varshift = PV_.get_varshift(self.Gr,'u')
+            Py_ssize_t v_varshift = PV_.get_varshift(self.Gr,'v')
+            Py_ssize_t w_varshift = PV_.get_varshift(self.Gr,'w')
+            Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
+            Py_ssize_t qt_varshift = PV_.get_varshift(self.Gr,'qt')
+
+        print(u_varshift, v_varshift, w_varshift, s_varshift, qt_varshift)
+        # # # __
+        #
+        # # __
+        nan = False
+        if np.isnan(PV_.values[u_varshift:v_varshift]).any():
+            print('u: nan')
+        else:
+            print('u: No nan')
+        if np.isnan(PV_.values[v_varshift:w_varshift]).any():
+            print('v nan')
+            nan = True
+        else:
+            print('v: No nan')
+        if np.isnan(PV_.values[w_varshift:s_varshift]).any():
+            print('w: nan')
+            nan = True
+        else:
+            print('w: No nan')
+        if np.isnan(PV_.values[s_varshift:qt_varshift]).any():
+            print('s: nan')
+            nan = True
+        else:
+            print('s: No nan')
+        if np.isnan(PV_.values[qt_varshift:-1]).any():
+            print('qt: nan')
+            nan = True
+        else:
+            print('qt: No nan')
+
+        if nan == True:
+            print(message, 'nans found')
+        else:
+            print(message, 'No nans found')
+        return
+        # __

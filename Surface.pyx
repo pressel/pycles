@@ -731,8 +731,10 @@ cdef class SurfaceSoares(SurfaceBase):
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):     # Sullivan
+        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+
         self.theta_surface = 300.0 # K
-        self.qt_surface = 5.0e-3 # kg/kg
+        # self.qt_surface = 5.0e-3 # kg/kg
 
         self.theta_flux = 0.06 # K m/s
         # self.qt_flux = 2.5e-5 # m/s
@@ -744,7 +746,7 @@ cdef class SurfaceSoares(SurfaceBase):
         T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
         self.buoyancy_flux = self.theta_flux * exner(Ref.p0_half[Gr.dims.gw]) * g /T0
 
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+
         return
 
     @cython.boundscheck(False)
@@ -831,21 +833,30 @@ cdef class SurfaceSoares_moist(SurfaceBase):
     @cython.wraparound(False)   #Turn off numpy array wrap around indexing
     @cython.cdivision(True)
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):     # Sullivan
-        self.theta_surface = 300.0 # K
-        self.qt_surface = 5.0e-3 # kg/kg
+        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
 
-        self.theta_flux = 8.0e-3 # K m/s (Bomex)
+        # ### Bomex
+        # self.qt_flux = np.add(self.qt_flux,5.2e-5) # m/s
+        # self.theta_flux = 8.0e-3 # K m/s
+        # # self.ustar_ = 0.28 #m/s
+        # self.theta_surface = 299.1 #K
+        # self.qt_surface = 22.45e-3 # kg/kg
+
+        ### Soares_moist
         # self.qt_flux = 5.2e-5 # m/s (Soares: 2.5e-5) (Bomex: 5.2e-5)
         self.qt_flux = np.add(self.qt_flux,2.5e-5)
+        self.theta_flux = 8.0e-3 # K m/s (Bomex)
+        self.theta_surface = 300.0 # K
+        self.qt_surface = 5.0e-3 # kg/kg
+        #
+        # # Bomex:
+        self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux[0]
+                                                                   + self.qt_surface *self.theta_flux))
+                              /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))
+        # # Sullivan:
+        # # T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
+        # # self.buoyancy_flux = self.theta_flux * exner(Ref.p0_half[Gr.dims.gw]) * g /T0
 
-        # Bomex:
-        self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux[0] + self.qt_surface *self.theta_flux))
-                              /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))     # adopted from Bomex ??
-        # Sullivan:
-        # T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
-        # self.buoyancy_flux = self.theta_flux * exner(Ref.p0_half[Gr.dims.gw]) * g /T0
-
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
         return
 
     @cython.boundscheck(False)  #Turn off numpy array index bounds checking
@@ -899,9 +910,7 @@ cdef class SurfaceSoares_moist(SurfaceBase):
                 for j in xrange(1,jmax):
                     ij = i * istride_2d + j
                     self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
-                    self.obukhov_length[ij] = -self.friction_velocity[ij]*self.friction_velocity[ij]*self.friction_velocity[ij]/self.buoyancy_flux/vkb
-                    # DV.values_2d[ustar_shift + ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
-                    # DV.values_2d[lmo_shift + ij] = -DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]*DV.values_2d[ustar_shift + ij]/self.buoyancy_flux/vkb
+                    # self.obukhov_length[ij] = -self.friction_velocity[ij]*self.friction_velocity[ij]*self.friction_velocity[ij]/self.buoyancy_flux/vkb
 
         # Get the shear stresses (adopted from Sullivan, since same Surface parameters prescribed)
             for i in xrange(1,imax-1):

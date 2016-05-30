@@ -152,6 +152,15 @@ cdef class ThermodynamicsSA:
             double Lambda = self.Lambda_fp(T)
             double L = self.L_fp(T, Lambda)
 
+        # print('Th SA')
+        # print(T)
+        # print(qv, qd, p0, pd, pv)
+        # print(Lambda, L)
+        # print(sd_c(pd, T))
+        # print(sv_c(pv,T))
+        # print(sc_c(L,T))
+
+
         return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
 
     cpdef alpha(self, double p0, double T, double qt, double qv):
