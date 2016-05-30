@@ -162,7 +162,6 @@ class Simulation3d:
         cdef Grid.Grid GR_ = self.Gr
         cdef ParallelMPI.ParallelMPI PA_ = self.Pa
         cdef int rk_step
-        print('111')
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
         self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.StatsIO,self.Pa)
@@ -402,28 +401,28 @@ class Simulation3d:
         nan = False
         if np.isnan(PV_.values[u_varshift:v_varshift]).any():
             print('u: nan')
-        else:
-            print('u: No nan')
+        # else:
+        #     print('u: No nan')
         if np.isnan(PV_.values[v_varshift:w_varshift]).any():
             print('v nan')
             nan = True
-        else:
-            print('v: No nan')
+        # else:
+        #     print('v: No nan')
         if np.isnan(PV_.values[w_varshift:s_varshift]).any():
             print('w: nan')
             nan = True
-        else:
-            print('w: No nan')
+        # else:
+        #     print('w: No nan')
         if np.isnan(PV_.values[s_varshift:qt_varshift]).any():
             print('s: nan')
             nan = True
-        else:
-            print('s: No nan')
+        # else:
+        #     print('s: No nan')
         if np.isnan(PV_.values[qt_varshift:-1]).any():
             print('qt: nan')
             nan = True
-        else:
-            print('qt: No nan')
+        # else:
+        #     print('qt: No nan')
 
         if nan == True:
             print(message, 'nans found')

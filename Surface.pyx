@@ -902,9 +902,9 @@ cdef class SurfaceSoares_moist(SurfaceBase):
         compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0],Ref.u0, Ref.v0,self.gustiness)
 
        # Surface Values: friction velocity, obukhov lenght (adopted from Sullivan, since same Surface parameters prescribed)
-        cdef :
-            Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
-            Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
+       #  cdef :
+            # Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
+            # Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
         with nogil:
             for i in xrange(1,imax):
                 for j in xrange(1,jmax):
