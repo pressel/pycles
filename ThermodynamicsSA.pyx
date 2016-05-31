@@ -115,6 +115,15 @@ cdef class ThermodynamicsSA:
         NS.add_ts('theta_min', Gr, Pa)
 
 
+        NS.add_profile('rh_mean', Gr, Pa)
+        # NS.add_profile('rh_mean2', Gr, Pa)
+        # NS.add_profile('rh_mean3', Gr, Pa)
+        NS.add_profile('rh_max', Gr, Pa)
+        NS.add_profile('rh_min', Gr, Pa)
+        # NS.add_ts('rh_max', Gr, Pa)
+        # NS.add_ts('rh_min', Gr, Pa)
+
+
         NS.add_profile('cloud_fraction', Gr, Pa)
         NS.add_ts('cloud_fraction', Gr, Pa)
         NS.add_ts('cloud_top', Gr, Pa)
@@ -142,6 +151,8 @@ cdef class ThermodynamicsSA:
             double pv = pv_c(p0, qt, qv)
             double Lambda = self.Lambda_fp(T)
             double L = self.L_fp(T, Lambda)
+
+
 
         return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
 
@@ -340,6 +351,52 @@ cdef class ThermodynamicsSA:
         tmp = Pa.HorizontalMinimum(Gr, &data[0])
         NS.write_profile('theta_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('theta_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+
+        cdef:
+            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+            double pv_star, pv
+
+
+        # Ouput profiles of relative humidity
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        pv_star = self.CC.LT.fast_lookup(DV.values[t_shift + ijk])
+                        pv = pv_c(RS.p0_half[k], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
+                        data[count] = pv/pv_star
+
+                        count += 1
+
+
+
+        # Compute and write mean
+
+        tmp = Pa.HorizontalMean(Gr, &data[0])
+        NS.write_profile('rh_mean', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write mean of squres
+        # tmp = Pa.HorizontalMeanofSquares(Gr, &data[0], &data[0])
+        # NS.write_profile('rh_mean2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        #
+        # # Compute and write mean of cubes
+        # tmp = Pa.HorizontalMeanofCubes(Gr, &data[0], &data[0], &data[0])
+        # NS.write_profile('rh_mean3', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Compute and write maxes
+        tmp = Pa.HorizontalMaximum(Gr, &data[0])
+        NS.write_profile('rh_max', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        # NS.write_ts('rh_max', np.amax(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+        # Compute and write mins
+        tmp = Pa.HorizontalMinimum(Gr, &data[0])
+        NS.write_profile('rh_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        # NS.write_ts('rh_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
         #Output profiles of thetali  (liquid-ice potential temperature)
         # Compute additional stats

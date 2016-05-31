@@ -4,6 +4,8 @@ cimport numpy as np
 from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
+from Surface import SurfaceFactory
+from Radiation import RadiationFactory
 from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
@@ -23,10 +25,10 @@ cimport Kinematics
 cimport Damping
 cimport NetCDFIO
 cimport VisualizationOutput
-cimport Surface
 cimport Forcing
 cimport Radiation
 cimport Restart
+cimport Surface
 
 class Simulation3d:
 
@@ -49,9 +51,9 @@ class Simulation3d:
         self.MD = MomentumDiffusion.MomentumDiffusion(self.DV, self.Pa)
         self.Th = ThermodynamicsFactory(namelist, self.Micro, self.LH, self.Pa)
         self.Ref = ReferenceState.ReferenceState(self.Gr)
-        self.Sur = Surface.Surface(namelist, self.LH, self.Pa)
+        self.Sur = SurfaceFactory(namelist, self.LH, self.Pa)
         self.Fo = Forcing.Forcing(namelist, self.Pa)
-        self.Ra = Radiation.Radiation(namelist, self.Pa)
+        self.Ra = RadiationFactory(namelist, self.Pa)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
         self.CondStatsIO = NetCDFIO.NetCDFIO_CondStats()
@@ -116,21 +118,25 @@ class Simulation3d:
             SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa)
             del SetInitialConditions
 
-        self.Sur.initialize(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
-
+        self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
         self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
-        self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
+        self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Damping.initialize(self.Gr)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
         self.Pa.root_print('Initialization completed!')
-
+        #__
+        self.check_nans('Finished Initialization: ')
+        #__
         return
 
+
+
     def run(self):
+        self.Pa.root_print('Sim: start run')
         cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
         cdef DiagnosticVariables.DiagnosticVariables DV_ = self.DV
         PV_.Update_all_bcs(self.Gr, self.Pa)
@@ -140,12 +146,15 @@ class Simulation3d:
         cdef int rk_step
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
+        self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.StatsIO,self.Pa)
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
             self.force_io()
 
-        self.Pa.root_print('Run started')
+        #_
+        PV_.val_nan(self.Pa,'Nan checking in Simulation: time: '+str(self.TS.t))
+        #_
 
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
@@ -157,17 +166,16 @@ class Simulation3d:
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
-                self.SGS.update(self.Gr,self.DV,self.PV, self.Ke,self.Pa)
+                self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
                 self.Damping.update(self.Gr,self.PV,self.Pa)
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
-                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.TS, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
-                # self.Pa.root_print('ok until here')
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
@@ -175,6 +183,8 @@ class Simulation3d:
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
+
+        self.Restart.cleanup()
 
 
         return
@@ -234,6 +244,7 @@ class Simulation3d:
                 self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
                 self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
                 self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
+                self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
                 self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
                 self.StatsIO.close_files(self.Pa)
                 self.Pa.root_print('Finished Doing StatsIO')
@@ -301,7 +312,57 @@ class Simulation3d:
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
         self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
+        self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
         return
 
+
+
+    def check_nans(self,message):
+        cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
+
+        cdef:
+            Py_ssize_t u_varshift = PV_.get_varshift(self.Gr,'u')
+            Py_ssize_t v_varshift = PV_.get_varshift(self.Gr,'v')
+            Py_ssize_t w_varshift = PV_.get_varshift(self.Gr,'w')
+            Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
+            Py_ssize_t qt_varshift = PV_.get_varshift(self.Gr,'qt')
+
+        # self.Pa.root_print(u_varshift, v_varshift, w_varshift, s_varshift, qt_varshift)
+
+
+        # # __
+        nan = False
+        if np.isnan(PV_.values[u_varshift:v_varshift]).any():
+            self.Pa.root_print('u: nan')
+        # else:
+        #     self.Pa.root_print('u: No nan')
+        if np.isnan(PV_.values[v_varshift:w_varshift]).any():
+            self.Pa.root_print('v nan')
+            nan = True
+        # else:
+        #     self.Pa.root_print('v: No nan')
+        if np.isnan(PV_.values[w_varshift:s_varshift]).any():
+            self.Pa.root_print('w: nan')
+            nan = True
+        # else:
+        #     self.Pa.root_print('w: No nan')
+        if np.isnan(PV_.values[s_varshift:qt_varshift]).any():
+            self.Pa.root_print('s: nan')
+            nan = True
+        # else:
+        #     self.Pa.root_print('s: No nan')
+        if np.isnan(PV_.values[qt_varshift:-1]).any():
+            self.Pa.root_print('qt: nan')
+            nan = True
+        # else:
+        #     self.Pa.root_print('qt: No nan')
+
+        if nan == True:
+            a = message + ': Nans found'
+        else:
+            a = message + ': No nans found'
+        self.Pa.root_print(a)
+        return
+        # __
