@@ -24,7 +24,8 @@ from libc.math cimport pow, cbrt, exp, fmin, fmax
 from thermodynamic_functions cimport cpm_c
 include 'parameters.pxi'
 from profiles import profile_data
-
+import Pysolar
+import datetime
 
 def RadiationFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
     # if namelist specifies RRTM is to be used, this will override any case-specific radiation schemes
@@ -397,11 +398,10 @@ cdef class RadiationRRTM(RadiationBase):
         self.modified_adiabat = False
         if casename == 'SHEBA':
             self.profile_name = 'sheba'
-        elif casename == 'DYCOMS_RF01':
-            self.profile_name = 'cgils_s12'
         elif casename == 'Reanalysis':
             self.profile_name = 'Reanalysis'
             self.input_str = str(namelist['Reanalysis']['input_file'])
+        elif casename == 'DYCOMS_RF01':
             self.profile_name = 'cgils_ctl_s12'
         elif casename == 'CGILS':
             loc = namelist['meta']['CGILS']['location']
@@ -536,8 +536,25 @@ cdef class RadiationRRTM(RadiationBase):
             pressures = fd['p']
             temperatures = np.mean(fd['temperature'],axis = 0)
             vapor_mixing_ratios = np.mean(fd['qt'],axis = 0)
+            self.lat = fd['lat']
+            self.lon = fd['lon']
+            self.month = fd['month']
+            self.day = fd['day']
+            self.year = fd['year']
+
+            print fd['day'], fd['month'], fd['year'], fd['cos_zenith']
+
             vapor_mixing_ratios = vapor_mixing_ratios / ( 1.0 - vapor_mixing_ratios)
-            
+
+         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
+        elif self.modified_adiabat:
+            # pressures = profile_data[self.profile_name]['pressure'][:]
+            pressures = np.arange(25*100, 1015*100, 10*100)
+            pressures = np.array(pressures[::-1], dtype=np.double)
+            n_adiabat = np.shape(pressures)[0]
+            self.reference_profile.initialize(Pa, pressures, n_adiabat, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
+            temperatures =np.array( self.reference_profile.temperature)
+            vapor_mixing_ratios = np.array(self.reference_profile.rv)
 
         else:
             # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
@@ -557,32 +574,6 @@ cdef class RadiationRRTM(RadiationBase):
             if pressure <= self.patch_pressure:
                 n_profile += 1
 
-        # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
-        if self.modified_adiabat:
-            # pressures = profile_data[self.profile_name]['pressure'][:]
-            pressures = np.arange(25*100, 1015*100, 10*100)
-            pressures = np.array(pressures[::-1], dtype=np.double)
-            n_adiabat = np.shape(pressures)[0]
-            self.reference_profile.initialize(Pa, pressures, n_adiabat, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
-            temperatures =np.array( self.reference_profile.temperature)
-            vapor_mixing_ratios = np.array(self.reference_profile.rv)
-
-        else:
-            pressures = profile_data[self.profile_name]['pressure'][:]
-            temperatures = profile_data[self.profile_name]['temperature'][:]
-            vapor_mixing_ratios = profile_data[self.profile_name]['vapor_mixing_ratio'][:]
-
-
-        # Sanity check that patch_pressure < minimum LES domain pressure
-        dp = np.abs(Ref.p0_half_global[nz + gw -1] - Ref.p0_half_global[nz + gw -2])
-        self.patch_pressure = np.minimum(self.patch_pressure, Ref.p0_half_global[nz + gw -1] - dp  )
-
-        #n_profile = len(pressures[pressures<=self.patch_pressure]) # nprofile = # of points in the fixed profile to use
-        # above syntax tends to cause problems so use a more robust way
-        n_profile = 0
-        for pressure in pressures:
-            if pressure <= self.patch_pressure:
-                n_profile += 1
 
         self.n_ext =  n_profile + self.n_buffer # n_ext = total # of points to add to LES domain (buffer portion + fixed profile portion)
 
@@ -782,11 +773,18 @@ cdef class RadiationRRTM(RadiationBase):
                  Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,
                  ParallelMPI.ParallelMPI Pa):
 
-
         if TS.rk_step == 0:
             if self.radiation_frequency <= 0.0:
+                #Here we need to update the cos_zenith angle to get the diurnal cycle
+                shifted_date = datetime.datetime(int(self.year), int(self.month), int(self.day)) + datetime.timedelta(seconds=int(TS.t))
+                self.coszen = np.cos(np.pi/180.0 *(90.0 - Pysolar.GetAltitude(self.lat, self.lon, shifted_date)))
+                self.coszen = np.max([self.coszen, 0.0])
                 self.update_RRTM(Gr, Ref, PV, DV,Sur, Pa)
             elif TS.t >= self.next_radiation_calculate:
+                #Here we need to update the cos_zenith angle to get the diurnal cycle
+                shifted_date = datetime.datetime(int(self.year), int(self.month), int(self.day)) + datetime.timedelta(seconds=int(TS.t))
+                self.coszen = np.cos(np.pi/180.0 *(90.0 - Pysolar.GetAltitude(self.lat, self.lon, shifted_date)))
+                self.coszen = np.max([self.coszen, 0.0])
                 self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
                 self.next_radiation_calculate = (TS.t//self.radiation_frequency + 1.0) * self.radiation_frequency
 

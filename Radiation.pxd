@@ -77,6 +77,12 @@ cdef class RadiationSmoke(RadiationBase):
 cdef class RadiationRRTM(RadiationBase):
     cdef:
 
+        double day
+        double month
+        double year
+        double lat
+        double lon
+
         str input_str   #This is used for reanalysis input file.
         str profile_name
         bint modified_adiabat

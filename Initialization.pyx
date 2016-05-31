@@ -46,7 +46,7 @@ def InitializationFactory(namelist):
         elif casename == 'Rico':
             return InitRico
         elif casename == 'Reanalysis':
-            return InitReanalysis
+            return InitReanalysisTV
         elif casename == 'CGILS':
             return  InitCGILS
         elif casename == 'ZGILS':
@@ -817,6 +817,77 @@ def InitReanalysis(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables
 
     cdef double [:] u  = np.interp(RS.p0_half, p[::-1], np.mean(fd['u'][:,::-1],axis=0))
     cdef double [:] v = np.interp(RS.p0_half, p[::-1], np.mean(fd['v'][:,::-1],axis=0))
+    cdef double [:] ql = np.empty(Gr.dims.nlg[2], dtype=np.double, order='c')
+    cdef double [:] qv = np.empty(Gr.dims.nlg[2], dtype=np.double, order='c')
+
+    for i in range(RS.p0_half.shape[0]):
+        pvs = Th.get_pv_star(t[i])
+        ql[i] = fmax(qt[i] - qv_star_c(RS.p0_half[i], qt[i], pvs),0.0)
+        qv[i] = qt[i] - ql[i]
+
+    np.random.seed(Pa.rank)
+    cdef double [:] s_pert = np.random.random_sample(Gr.dims.npg)
+    cdef double s_pert_
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift = istride * i
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = jstride * j
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+
+                PV.values[ijk + u_varshift] = u[k]
+                PV.values[ijk + v_varshift] = v[k]
+                PV.values[ijk + w_varshift] = 0.0
+                PV.values[ijk + qt_varshift]  = qt[k]
+                PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], t[k], qt[k], ql[k], 0.0)
+                if Gr.zl_half[k] < 400.0:
+                    s_pert_ = (s_pert[ijk] - 0.5)
+                else:
+                    s_pert_ = 0.0
+                PV.values[ijk + s_varshift] += s_pert_
+
+
+    #print np.array(PV.values[s_varshift:s_varshift+100])
+
+    return
+
+
+def InitReanalysisTV(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+    #Set up $\tehta_l$ and $\qt$ profiles
+    cdef:
+        Py_ssize_t i
+        Py_ssize_t j
+        Py_ssize_t k
+        Py_ssize_t ijk, ishift, jshift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+
+
+    f = open(namelist['Reanalysis']['input_file'],'r')
+    fd = cPickle.load(f)
+    f.close()
+
+
+    #Generate reference profiles
+    RS.Pg = np.mean(fd['slp'])
+    RS.Tg = np.mean(fd['tskin'])
+    RS.qtg = np.mean(fd['qv2m'])
+    RS.u0 = 0.0
+    RS.v0 = 0.0
+
+    RS.initialize(Gr ,Th, NS, Pa)
+    cdef double [:] p = fd['p']
+    cdef double [:] t = np.interp(RS.p0_half, p[::-1],  fd['temperature'][0,::-1])
+    cdef double [:] qt = np.interp(RS.p0_half, p[::-1], fd['qt'][0,::-1])
+
+    cdef double [:] u  = np.interp(RS.p0_half, p[::-1], fd['u'][0,::-1])
+    cdef double [:] v = np.interp(RS.p0_half, p[::-1], fd['v'][0,::-1])
     cdef double [:] ql = np.empty(Gr.dims.nlg[2], dtype=np.double, order='c')
     cdef double [:] qv = np.empty(Gr.dims.nlg[2], dtype=np.double, order='c')
 
