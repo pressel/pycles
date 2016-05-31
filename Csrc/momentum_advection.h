@@ -22,9 +22,6 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
 
     switch(scheme){
         case 2:
-//            if( d_advected==1 && d_advecting==1 ){
-//                printf("2nd order full Momentum Transport \n");
-//                }
             second_order_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
@@ -99,15 +96,10 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
 
         // the following schemes are quasi-linear modifications of the cases 2 and 4
         case 102:
-//            if( d_advected==1 && d_advecting==1 ){
-//                printf("2nd order QL Momentum Transport \n");
-//                }
             second_order_m_ql(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
         case 104:
-//            if (d_advected==1 && d_advecting==1){
-//                printf("4th order QL Momentum Transport \n");}
             fourth_order_m_ql(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
@@ -120,12 +112,6 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
                 tendency, d_advected, d_advecting);
             break;
 
-
-
-        case 205:
-            weno_fifth_order_m_decomp(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
-                tendency, d_advected, d_advecting);
-            break;
 
         default:
             // Default to second order scheme.

@@ -1,5 +1,10 @@
 cimport Lookup
 cimport ParallelMPI
+cimport Grid
+cimport ReferenceState
+cimport PrognosticVariables
+cimport DiagnosticVariables
+from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
 
 
 cdef class LatentHeat:
@@ -19,7 +24,5 @@ cdef class ClausiusClapeyron:
 
     #def initialize(self,namelist,LatentHeat LH, ParallelMPI.ParallelMPI Par)
     cpdef finalize(self)
-
-
 
 

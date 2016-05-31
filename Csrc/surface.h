@@ -146,6 +146,7 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
     }
     const double cu = vkb/(logz-psi_m);
     const double cth = vkb/(logz-psi_h)/Pr0;
+
     *cm = cu * cu;
     *ch = cu * cth;
     *lmo = lmo_;
