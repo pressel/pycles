@@ -982,6 +982,7 @@ def InitSoares_moist(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         # double [:] u = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
         Py_ssize_t count
 
+        #Generate initial perturbations (here we are generating more than we need)      ??? where amplitude of perturbations given?
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
         qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
 
@@ -1014,6 +1015,8 @@ def InitSoares_moist(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[u_varshift + ijk] = 0.0 - RS.u0
                 PV.values[v_varshift + ijk] = 0.0 - RS.v0
                 PV.values[w_varshift + ijk] = 0.0
+                # Set the entropy prognostic variable including a potential temperature perturbation
+                # fluctuation height = 200m; fluctuation amplitude = 0.1 K
                 if Gr.zl_half[k] < 200.0:
                     temp = (theta[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
                     qt_ = qt[k]+qt_pert[count]
@@ -1025,15 +1028,7 @@ def InitSoares_moist(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[qt_varshift + ijk] = qt_
                 count += 1
 
-    if 'e' in PV.name_index:
-        e_varshift = PV.get_varshift(Gr, 'e')
-        for i in xrange(Gr.dims.nlg[0]):
-            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            for j in xrange(Gr.dims.nlg[1]):
-                jshift = j * Gr.dims.nlg[2]
-                for k in xrange(Gr.dims.nlg[2]):
-                    ijk = ishift + jshift + k
-                    PV.values[e_varshift + ijk] = 1.0-Gr.zl_half[k]/3000.0
+
 
 
 

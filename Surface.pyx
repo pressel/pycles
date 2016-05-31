@@ -206,7 +206,6 @@ cdef class SurfaceSullivanPatton(SurfaceBase):
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-
         T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
         self.buoyancy_flux = self.theta_flux * exner(Ref.p0_half[Gr.dims.gw]) * g /T0
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
@@ -345,8 +344,6 @@ cdef class SurfaceBomex(SurfaceBase):
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.stats_io(self, Gr, NS, Pa)
-
-
         return
 
 
@@ -371,7 +368,6 @@ cdef class SurfaceGabls(SurfaceBase):
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
-
 
         return
 
@@ -556,7 +552,6 @@ cdef class SurfaceDYCOMS_RF02(SurfaceBase):
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
         self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-
 
         return
 
@@ -745,7 +740,6 @@ cdef class SurfaceSoares(SurfaceBase):
         # Sullivan:
         T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
         self.buoyancy_flux = self.theta_flux * exner(Ref.p0_half[Gr.dims.gw]) * g /T0
-
 
         return
 
