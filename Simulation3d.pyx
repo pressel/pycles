@@ -54,7 +54,7 @@ class Simulation3d:
         self.Ref = ReferenceState.ReferenceState(self.Gr)
         self.Sur = SurfaceFactory(namelist, self.LH, self.Pa)
         self.Fo = Forcing.Forcing(namelist, self.LH, self.Pa)
-        self.Ra = RadiationFactory(namelist, self.Pa)
+        self.Ra = RadiationFactory(namelist,self.LH, self.Pa)
         self.Budg = SurfaceBudgetFactory(namelist)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
@@ -108,6 +108,7 @@ class Simulation3d:
             self.TS.dt = self.Restart.restart_data['TS']['dt']
             self.Ref.init_from_restart(self.Gr, self.Restart)
             self.PV.init_from_restart(self.Gr, self.Restart)
+            self.Sur.init_from_restart(self.Restart)
             self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']
             self.CondStatsIO.last_output_time = self.Restart.restart_data['last_condstats_output']
             self.FieldsIO.last_output_time = self.Restart.restart_data['last_fields_output']
@@ -117,17 +118,16 @@ class Simulation3d:
         else:
             self.Pa.root_print('This is not a restart run!')
             SetInitialConditions = InitializationFactory(namelist)
-            SetInitialConditions(namelist, self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa)
+            SetInitialConditions(namelist,self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa, self.LH)
             del SetInitialConditions
 
         self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
-
-        self.Fo.initialize(self.Gr, self.Ref, self.StatsIO, self.Pa)
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
+        self.Fo.initialize(self.Gr, self.Ref,self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Budg.initialize(self.Gr, self.StatsIO,self.Pa)
-        self.Damping.initialize(self.Gr)
+        self.Damping.initialize(self.Gr, self.Ref)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
@@ -158,13 +158,15 @@ class Simulation3d:
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
-                self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
+                self.Sur.update(self.Gr, self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
-                self.Damping.update(self.Gr,self.PV,self.Pa)
+                self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
+
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
-                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.TS, self.Pa)
+
+                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 #self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)

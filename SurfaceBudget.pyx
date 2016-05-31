@@ -110,6 +110,8 @@ cdef class SurfaceBudget:
 
 
         return
+
     cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         NS.write_ts('surface_temperature', Sur.T_surface, Pa)
         return
+
