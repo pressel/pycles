@@ -85,7 +85,6 @@ void second_order_m_ql(struct DimStruct *dims, double* restrict rho0, double* re
 //        int d_ing = d_advecting;
 //        printf("flux: %d, %d; vel_int[gw+2] = %f\n", d_ad, d_ing, values[0]);
         horizontal_mean(dims, &vel_int_ing[0], &vel_mean_ing[0]);
-//        printf("values[gw] = %f\n", values[0]);
         if (d_advected != d_advecting){
             horizontal_mean(dims, &vel_int_ed[0], &vel_mean_ed[0]);
             }
