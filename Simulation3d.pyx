@@ -163,8 +163,7 @@ class Simulation3d:
                 self.Damping.update(self.Gr,self.PV,self.Pa)
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
-
-                #self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+                self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.TS, self.Pa)
                 #self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)

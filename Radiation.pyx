@@ -502,7 +502,7 @@ cdef class RadiationRRTM:
             temperatures = np.mean(fd['temperature'],axis = 0)
             vapor_mixing_ratios = np.mean(fd['qt'],axis = 0)
             vapor_mixing_ratios = vapor_mixing_ratios / ( 1.0 - vapor_mixing_ratios)
-
+            
 
         else:
             # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)

@@ -603,7 +603,7 @@ cdef class ForcingReanalysis:
         self.t = np.interp(Ref.p0_half, p[::-1], np.mean(fd['temperature'][:,::-1], axis=0))
         self.subsidence = np.interp(Ref.p0_half, p[::-1], np.mean(fd['omega'][:,::-1], axis=0))
         self.dqtdt = np.interp(Ref.p0_half, p[::-1], np.mean(fd['qt_ls'][:,::-1], axis=0))
-        self.dtdt = np.interp(Ref.p0_half, p[::-1], np.mean(fd['t_ls'][:,::-1], axis=0))
+        self.dtdt =  np.interp(Ref.p0_half, p[::-1], np.mean(fd['t_ls'][:,::-1], axis=0))
 
         t = np.interp(Ref.p0_half, p[::-1], np.mean(fd['temperature'][:,::-1], axis=0))
         self.qt = np.interp(Ref.p0_half, p[::-1], np.mean(fd['qt'][:,::-1], axis=0))
@@ -620,6 +620,8 @@ cdef class ForcingReanalysis:
         latitude = fd['lat']
 
         self.coriolis_param = 2.0 * omega * sin(latitude * pi / 180.0 )
+
+
 
         return
 
@@ -648,10 +650,6 @@ cdef class ForcingReanalysis:
             double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
             #double [:] smean = Pa.HorizontalMean(Gr, &PV.values[s_shift])
             double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
-
-
-
-
 
             double pd
             double pv
@@ -709,11 +707,7 @@ cdef class ForcingReanalysis:
         #Apply subsidence
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
-
-
-
-
-
+        
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,

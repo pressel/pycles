@@ -156,5 +156,21 @@ cdef class SurfaceReanalysisPrescribedFlux(SurfaceBase):
                  DiagnosticVariables.DiagnosticVariables DV,   ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
+cdef class SurfaceReanalysisPrescribedFluxTV(SurfaceBase):
+    cdef:
+        str input_str
+        Py_ssize_t loc
+        bint is_p2
+        ClausiusClapeyron CC
+        double gustiness
+        double z0
+        double ct
+        double [:] tskin_in, shf_in, lhf_in, time_in
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,   ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
 cdef inline double compute_z0(double z1, double windspeed) nogil
 
