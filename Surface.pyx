@@ -982,9 +982,6 @@ cdef class SurfaceZGILS(SurfaceBase):
 
 
 
-
-
-
 # Anderson, R. J., 1993: A Study of Wind Stress and Heat Flux over the Open
 # Ocean by the Inertial-Dissipation Method. J. Phys. Oceanogr., 23, 2153--“2161.
 # See also: ARPS documentation
