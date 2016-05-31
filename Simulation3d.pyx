@@ -136,7 +136,7 @@ class Simulation3d:
 
 
     def run(self):
-        print('Sim: start run')
+        self.Pa.root_print('Sim: start run')
         cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
         cdef DiagnosticVariables.DiagnosticVariables DV_ = self.DV
         PV_.Update_all_bcs(self.Gr, self.Pa)
@@ -342,35 +342,35 @@ class Simulation3d:
             Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
             Py_ssize_t qt_varshift = PV_.get_varshift(self.Gr,'qt')
 
-        print(u_varshift, v_varshift, w_varshift, s_varshift, qt_varshift)
+        # self.Pa.root_print(u_varshift, v_varshift, w_varshift, s_varshift, qt_varshift)
 
 
         # # __
         nan = False
         if np.isnan(PV_.values[u_varshift:v_varshift]).any():
-            print('u: nan')
+            self.Pa.root_print('u: nan')
         # else:
-        #     print('u: No nan')
+        #     self.Pa.root_print('u: No nan')
         if np.isnan(PV_.values[v_varshift:w_varshift]).any():
-            print('v nan')
+            self.Pa.root_print('v nan')
             nan = True
         # else:
-        #     print('v: No nan')
+        #     self.Pa.root_print('v: No nan')
         if np.isnan(PV_.values[w_varshift:s_varshift]).any():
-            print('w: nan')
+            self.Pa.root_print('w: nan')
             nan = True
         # else:
-        #     print('w: No nan')
+        #     self.Pa.root_print('w: No nan')
         if np.isnan(PV_.values[s_varshift:qt_varshift]).any():
-            print('s: nan')
+            self.Pa.root_print('s: nan')
             nan = True
         # else:
-        #     print('s: No nan')
+        #     self.Pa.root_print('s: No nan')
         if np.isnan(PV_.values[qt_varshift:-1]).any():
-            print('qt: nan')
+            self.Pa.root_print('qt: nan')
             nan = True
         # else:
-        #     print('qt: No nan')
+        #     self.Pa.root_print('qt: No nan')
 
         if nan == True:
             a = message + ': Nans found'

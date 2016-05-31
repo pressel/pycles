@@ -15,8 +15,8 @@ from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c,
 cimport ReferenceState
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
-import matplotlib.cm as cm
-import pylab as plt
+# import matplotlib.cm as cm
+# import pylab as plt
 
 def InitializationFactory(namelist):
 
@@ -979,7 +979,7 @@ def InitSoares_moist(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         # double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] u = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        # double [:] u = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
         Py_ssize_t count
 
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
