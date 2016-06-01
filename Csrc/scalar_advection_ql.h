@@ -37,9 +37,6 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
     const ssize_t jmin = 0;
     const ssize_t kmin = 0;
 
-//    const ssize_t imax = dims->nlg[0]-1;
-//    const ssize_t jmax = dims->nlg[1]-1;
-//    const ssize_t kmax = dims->nlg[2]-1;
     ssize_t imax = dims->nlg[0];
     ssize_t jmax = dims->nlg[1];
     ssize_t kmax = dims->nlg[2];
@@ -430,6 +427,9 @@ void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, dou
 
     return;
 }
+
+
+
 
 
 
