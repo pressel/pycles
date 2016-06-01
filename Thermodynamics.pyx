@@ -11,6 +11,12 @@ from Thermodynamics cimport LatentHeat
 import numpy as np
 cimport numpy as np
 cimport Lookup
+cimport Grid
+cimport ReferenceState
+cimport PrognosticVariables
+cimport DiagnosticVariables
+from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
+
 
 from scipy.integrate import odeint
 
@@ -104,6 +110,7 @@ cdef class ClausiusClapeyron:
     cpdef finalize(self):
         self.LT.finalize()
         return
+
 
 def ThermodynamicsFactory(namelist, Micro, LatentHeat LH,ParallelMPI.ParallelMPI Par):
 

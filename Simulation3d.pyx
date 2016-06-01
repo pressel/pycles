@@ -6,6 +6,7 @@ from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
 from Surface import SurfaceFactory
 from Radiation import RadiationFactory
+from SurfaceBudget import SurfaceBudgetFactory
 from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
@@ -52,8 +53,9 @@ class Simulation3d:
         self.Th = ThermodynamicsFactory(namelist, self.Micro, self.LH, self.Pa)
         self.Ref = ReferenceState.ReferenceState(self.Gr)
         self.Sur = SurfaceFactory(namelist, self.LH, self.Pa)
-        self.Fo = Forcing.Forcing(namelist, self.Pa)
-        self.Ra = RadiationFactory(namelist, self.Pa)
+        self.Fo = Forcing.Forcing(namelist, self.LH, self.Pa)
+        self.Ra = RadiationFactory(namelist,self.LH, self.Pa)
+        self.Budg = SurfaceBudgetFactory(namelist)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
         self.FieldsIO = NetCDFIO.NetCDFIO_Fields()
         self.CondStatsIO = NetCDFIO.NetCDFIO_CondStats()
@@ -106,6 +108,7 @@ class Simulation3d:
             self.TS.dt = self.Restart.restart_data['TS']['dt']
             self.Ref.init_from_restart(self.Gr, self.Restart)
             self.PV.init_from_restart(self.Gr, self.Restart)
+            self.Sur.init_from_restart(self.Restart)
             self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']
             self.CondStatsIO.last_output_time = self.Restart.restart_data['last_condstats_output']
             self.FieldsIO.last_output_time = self.Restart.restart_data['last_fields_output']
@@ -115,15 +118,18 @@ class Simulation3d:
         else:
             self.Pa.root_print('This is not a restart run!')
             SetInitialConditions = InitializationFactory(namelist)
-            SetInitialConditions(self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa)
+            SetInitialConditions(namelist,self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa, self.LH)
             del SetInitialConditions
 
         self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
-        self.Fo.initialize(self.Gr, self.StatsIO, self.Pa)
+
+
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
+        self.Fo.initialize(self.Gr, self.Ref,self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
-        self.Damping.initialize(self.Gr)
+        self.Budg.initialize(self.Gr, self.StatsIO,self.Pa)
+        self.Damping.initialize(self.Gr, self.Ref)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
@@ -165,30 +171,19 @@ class Simulation3d:
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
-
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
-                self.Damping.update(self.Gr,self.PV,self.Pa)
+                self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
+
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
-                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.TS, self.Pa)
-
-                # if np.isnan(PV_.tendencies).any():
-                #     print('!!!! PV Tendencies nan (1)', 'rk step:', self.TS.rk_step, self.TS.n_rk_steps)
-                # # else:
-                # #     print('No nan in PV tendencies (1)')
-                # if np.isnan(PV_.values).any():
-                #     print('!!!! PV Values nan (1)')
-                # # else:
-                # #     print('No nan in PV values (1)')
-
+                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
+                self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
-
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
-
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
@@ -258,6 +253,7 @@ class Simulation3d:
                 self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
                 self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
                 self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
+                self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
                 self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
                 self.StatsIO.close_files(self.Pa)
                 self.Pa.root_print('Finished Doing StatsIO')
@@ -286,6 +282,7 @@ class Simulation3d:
                 self.Restart.restart_data['last_condstats_output'] = self.CondStatsIO.last_output_time
                 self.Restart.restart_data['last_vis_time'] = self.VO.last_vis_time
                 self.Gr.restart(self.Restart)
+                self.Sur.restart(self.Restart)
                 self.Ref.restart(self.Gr, self.Restart)
                 self.PV.restart(self.Gr, self.Restart)
                 self.TS.restart(self.Restart)
@@ -326,6 +323,7 @@ class Simulation3d:
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
         self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
         self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
+        self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
         return
