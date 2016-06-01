@@ -1172,7 +1172,7 @@ cdef class SurfaceReanalysisPrescribedFluxTV(SurfaceBase):
 
         #Update fluxes and surface temperature
         cdef double fdt = self.time_in[1] - self.time_in[0]
-        cdef double modt = TS.t%fdt;
+        cdef double modt = TS.t%fdt
         cdef Py_ssize_t ti = int(TS.t//fdt);
         cdef double dlh = (self.lhf_in[ti+1] - self.lhf_in[ti])/fdt
         cdef double dsh = (self.shf_in[ti+1] - self.shf_in[ti])/fdt
