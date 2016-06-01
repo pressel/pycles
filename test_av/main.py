@@ -14,18 +14,9 @@ def main():
     namelist = json.loads(file_namelist)
     del file_namelist
 
-
-
-    # a = np.linspace(0,99,100)
-    # print(a[0:5])
-    #
-    # k = 2
-    # m = 10
-    # b = np.ones((k,m))
-
-    import TestRun
-    Arr = TestRun.TestRun(namelist)
-    a = Arr.array()
+    # import TestRun
+    # Arr = TestRun.TestRun(namelist)
+    # a = Arr.array()
 
 
 
@@ -38,23 +29,15 @@ def main():
 def main3d(namelist):
     print('calling main3d')
 
-    # import TestArray_c
-    # import Simulation3d
     import TestRun
 
-    # test = TestArray_c.TestArray(namelist)
-    # Simulation = Simulation3d.Simulation3d(namelist)
     test = TestRun.TestRun(namelist)
 
-    #Simulation.initialize(namelist)
     test.initialize(namelist)
 
-    #Simulation.run()
-    # test.array_c()
     test.array()
     test.array_mean(namelist)
     test.hor_mean(namelist)
-
 
     return
 

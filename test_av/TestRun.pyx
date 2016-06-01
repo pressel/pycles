@@ -21,14 +21,13 @@ class TestRun:
         print('initialising TestArray')
         return
 
-    # def initialize(self):
     def initialize(self, namelist):
-        # a = ParallelMPI.ParallelMPI(namelist)
         self.Pa = ParallelMPI.ParallelMPI(namelist)
         self.Gr = Grid.Grid(namelist, self.Pa)
         self.PV = PrognosticVariables.PrognosticVariables(self.Gr)
 
         return
+
 
     def array(self):        # does NOT work with cdef
         k = 2
@@ -51,6 +50,7 @@ class TestRun:
         self.PV.add_variable('u', 'm/s', "sym", "velocity", self.Pa)
         self.PV.set_velocity_direction('u', 0, self.Pa)
         self.PV.initialize(self.Gr, self.Pa)
+
         u_val = self.PV.get_variable_array('u', self.Gr)
         print('u shape: ', u_val.shape)
 
@@ -65,35 +65,24 @@ class TestRun:
 
 
     def hor_mean(self,namelist):
-        print('TestArray_c.array_mean')
+        print('TestRun.hor_mean')
 
         mean = TestArray_c.TestArray(namelist)
 
-        mean.set_PV_values_const(self.PV, self.Gr)
-        for i in range(1):
-        # b = mean.array_c()
-            mean.array_mean(self.PV, self.Gr)
+        # mean.set_PV_values_const(self.PV, self.Gr)
+        # u_mean = np.zeros(self.Gr.dims.ng[2])
+        # mean.array_mean_return(self.PV, self.Gr, self.Pa)
 
-        mean.set_PV_values(self.PV, self.Gr)
+        mean.set_PV_values(self.PV, self.Gr, self.Pa)
         u_val = self.PV.get_variable_array('u', self.Gr)
-        # print('k = 0: ', u_val[:,0,0], u_val[0,0:3,0], u_val[1,0:3,0], u_val[-1,0,0])
-        # print('k = 1: ', u_val[:,0,1], u_val[0,0:3,1])
-        # print('k = 6: ', u_val[:,0,6], u_val[0,:,6], u_val[1,0:3,6], u_val[-1,0,6])
-        # mean.array_mean(self.PV, self.Gr)
+        mean.array_mean_return(self.PV, self.Gr, self.Pa)
 
-
-        print('TestArray_c.array_mean_return')
-        mean.set_PV_values_const(self.PV, self.Gr)
-        for i in range(1):
-            mean.array_mean_return(self.PV, self.Gr)
-
-        mean.set_PV_values(self.PV, self.Gr)
-        u_val = self.PV.get_variable_array('u', self.Gr)
-        # print('k = 0: ', u_val[:,0,0], u_val[0,0:3,0], u_val[1,0:3,0], u_val[-1,0,0])
-        # print('k = 1: ', u_val[:,0,1], u_val[0,0:3,1])
-        # print('k = 6: ', u_val[:,0,6], u_val[0,:,6], u_val[1,0:3,6], u_val[-1,0,6])
-        # mean.array_mean(self.PV, self.Gr)
+        # mean.set_PV_values(self.PV, self.Gr, self.Pa)
+        # u_val = self.PV.get_variable_array('u', self.Gr)
+        mean.array_mean_const(self.PV, self.Gr, self.Pa)
 
         print('finished TestRun')
+
+
 
         return

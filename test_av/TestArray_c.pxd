@@ -33,13 +33,14 @@ cdef class TestArray:
         double [:] b
 
         # double array(self)
-    cpdef array_c(self)
 
     cpdef array_mean(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
-    cpdef array_mean_return(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
+    cpdef array_mean_return(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
+    cpdef array_mean_const(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
+
 
     cpdef set_PV_values_const(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
-    cpdef set_PV_values(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr)
+    cpdef set_PV_values(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
 
 
 

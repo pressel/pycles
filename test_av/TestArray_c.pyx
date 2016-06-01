@@ -11,8 +11,12 @@ cimport ParallelMPI
 cimport PrognosticVariables
 
 cdef extern from "cc_statistics.h":
-    void horizontal_mean(Grid.DimStruct *dims, double *values)
-    void horizontal_mean_return(Grid.DimStruct *dims, double *values, double *mean)
+    # void horizontal_mean(Grid.DimStruct *dims, double *values)
+    void horizontal_mean(Grid.DimStruct *dims, double *values, double *mean)
+    # void horizontal_mean_const(Grid.DimStruct *dims, const double restrict *values, double restrict *mean)
+    void horizontal_mean_const(Grid.DimStruct *dims, const double *values, double *mean)
+
+
 
 cdef class TestArray:
     def __init__(self,namelist):
@@ -26,46 +30,57 @@ cdef class TestArray:
         # self.Gr = Grid.Grid(namelist, self.Pa)
         return
 
-    cpdef array_c(self):
-        k = 2
-        m = 10
-        b = np.empty((k,m))
-        # self.array_mean()
-        return b
 
     cpdef array_mean(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr):
-        print('calling TestArray_c.array_mean')
-        # # horizontal_mean()
-        # cdef dims = Gr.dims
-        # print(dims)
-        # cdef nxg = dims.ng[0]
-        # cdef nyg = dims.ng[1]
-        # cdef nzg = dims.ng[2]
-
-        # # cdef double [:,:,:,:] b = self.array_c
-        u_val = PV.get_variable_array('u', Gr)
-
-        cdef Py_ssize_t shift_u = PV.velocity_directions[0] * Gr.dims.npg
-        horizontal_mean(&Gr.dims, &PV.values[shift_u])
 
         return
 
 
-    cpdef array_mean_return(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr):
+    cpdef array_mean_return(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
         print('calling TestArray_c.array_mean_return')
 
         u_val = PV.get_variable_array('u', Gr)
-        # cdef double [:] u_mean = np.empty(shape = u_val.shape[2])
         cdef double [:] u_mean = np.zeros(Gr.dims.ng[2])
-        print('!!!', u_mean.shape, Gr.dims.ng[2])
-        print('!!! before !!!')
-        print(np.array(u_mean))
+
+        if Pa.rank == 0:
+            print('!!!', u_mean.shape, Gr.dims.ng[2], u_val.shape)
+            print('!!! before !!!')
+            print('u_mean:', np.array(u_mean))
+        # print('u_val, (:,0,0):', u_val[:,0,0])
+        # print('u_val, (0,:,0):', u_val[0,:,0])
+
 
         cdef Py_ssize_t shift_u = PV.velocity_directions[0] * Gr.dims.npg
-        horizontal_mean_return(&Gr.dims, &PV.values[shift_u], &u_mean[0])
+        horizontal_mean(&Gr.dims, &PV.values[shift_u], &u_mean[0])
 
-        print('!!! after !!!')
-        print(np.array(u_mean))
+        print('processor:', Pa.rank)
+        if Pa.rank == 0:
+            print('!!! after !!!')
+            # print('u_val, (:,:,0):', u_val[:,:,0])
+            print(np.array(u_mean))
+
+        return
+
+
+    cpdef array_mean_const(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+        print('calling TestArray_c.array_mean_return')
+
+        u_val = PV.get_variable_array('u', Gr)
+        cdef double [:] u_mean = np.zeros(Gr.dims.ng[2])
+
+        if Pa.rank == 0:
+            print('const - ', u_mean.shape, Gr.dims.ng[2], u_val.shape)
+            print('! before const !')
+            print('u_mean:', np.array(u_mean))
+
+        cdef Py_ssize_t shift_u = PV.velocity_directions[0] * Gr.dims.npg
+        horizontal_mean_const(&Gr.dims, &PV.values[shift_u], &u_mean[0])
+
+        print('processor:', Pa.rank)
+        if Pa.rank == 0:
+            print('! after const !')
+            # print('u_val, (:,:,0):', u_val[:,:,0])
+            print(np.array(u_mean))
 
         return
 
@@ -81,9 +96,11 @@ cdef class TestArray:
         return
 
 
-    cpdef set_PV_values(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr):
+    cpdef set_PV_values(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
         cdef:
             # Py_ssize_t shift_flux = i_advected * Gr.dims.dims * Gr.dims.npg + i_advecting * Gr.dims.npg
+            Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+
             Py_ssize_t i, j, k, ijk, ishift, jshift
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
@@ -96,8 +113,11 @@ cdef class TestArray:
             Py_ssize_t jmax = Gr.dims.nlg[1]
             Py_ssize_t kmax = Gr.dims.nlg[2]
 
+            Py_ssize_t rank = Pa.rank
+
         for i in range(Gr.dims.npg):
             PV.values[i] = 0.0
+
 
         for i in xrange(imin, imax):
                 # print(i)
@@ -105,7 +125,11 @@ cdef class TestArray:
                 for j in xrange(jmin, jmax):
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
-                        PV.values[0+ishift+jshift+k] = i-Gr.dims.gw
+                        ijk = ishift + jshift + k
+                        PV.values[0+ishift+jshift+k] = (i-Gr.dims.gw) * (rank+1)
+                        # PV.values[u_varshift + ijk] = i * (rank+1)
                         # print(PV.values[0+ishift+jshift+k])
+
+
         return
 

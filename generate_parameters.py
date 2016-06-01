@@ -35,9 +35,9 @@ def main():
 
     # Surface Monin-Obukhov related parameters
     parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
-    parameters['Pr0'] = 0.74 
-    parameters['beta_m'] = 4.7 
-    parameters['beta_h'] = parameters['beta_m']/parameters['Pr0'] 
+    parameters['Pr0'] = 0.74
+    parameters['beta_m'] = 4.7
+    parameters['beta_h'] = parameters['beta_m']/parameters['Pr0']
     parameters['gamma_m'] = 15.0
     parameters['gamma_h'] = 9.0
 
