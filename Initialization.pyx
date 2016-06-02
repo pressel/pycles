@@ -1340,7 +1340,7 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
     # RS.Tg = 300.4  #Temperature at ground (Bomex)
     RS.Tg = 300.0     #Temperature at ground (Soares)
     # RS.qtg = 0.02245   #Total water mixing ratio at surface (Bomex)
-    RS.qtg = 5e-3     #Total water mixing ratio at surface: qt = 5 g/kg (Soares)
+    RS.qtg = 5.0e-3     #Total water mixing ratio at surface: qt = 5 g/kg (Soares)
     RS.u0 = 0.01   # velocities removed in Galilean transformation (Soares: u = 0.01 m/s, IOP: 0.0 m/s)
     RS.v0 = 0.0   # (Soares: v = 0.0 m/s)
 
