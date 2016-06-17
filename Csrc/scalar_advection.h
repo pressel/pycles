@@ -730,7 +730,7 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
             break;
 
 
-
+        // quasi-linear (QL) modifications of the cases 2, 4 and 5
         case 102:
             second_order_a_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
@@ -741,6 +741,7 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
             weno_fifth_order_a_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
 
+        // fluxes calculated as composed by individual fluxes (full and QL)
         case 204:
             fourth_order_a_decomp(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
@@ -758,8 +759,9 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
 
 
         default:
+            printf("Scalar Advection scheme: no scheme indicated, using 4th order central");
             // Make WENO5 default case. The central schemes may not be necessarily stable, however WENO5 should be.
-            weno_fifth_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            fourth_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
     };
 };
