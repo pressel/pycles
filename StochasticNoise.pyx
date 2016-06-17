@@ -16,15 +16,32 @@ cimport numpy as np
 import pylab as plt
 
 cdef class StochasticNoise:
-    def __init__(self):
+    def __init__(self, namelist):
+        # try:
+        #     self.stoch_noise = namelist['stochastic_noise']['flag']
+        # except:
+        #     return
 
         return
 
-    cpdef initialize(self):
+    cpdef initialize(self,namelist):
+        try:
+            self.stoch_noise = namelist['stochastic_noise']['flag']
+        except:
+            return
 
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,  Th, ParallelMPI.ParallelMPI Pa):
+
+        if self.stoch_noise:
+            self.add_theta_noise(Gr, RS, PV, Th, Pa)
+
+        return
+
+
+
+    cpdef add_theta_noise(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,  Th, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t i,j,k

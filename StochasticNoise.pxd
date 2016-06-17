@@ -6,7 +6,8 @@ from NetCDFIO cimport NetCDFIO_Stats
 
 cdef class StochasticNoise:
     cdef:
-        Py_ssize_t order
+        bint stoch_noise
 
-    cpdef initialize(self)
+    cpdef initialize(self,namelist)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs, PrognosticVariables.PrognosticVariables PV, Th, ParallelMPI.ParallelMPI Pa)
+    cpdef add_theta_noise(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs, PrognosticVariables.PrognosticVariables PV, Th, ParallelMPI.ParallelMPI Pa)

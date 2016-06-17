@@ -67,7 +67,7 @@ class Simulation3d:
         self.Damping = Damping.Damping(namelist, self.Pa)
         self.TS = TimeStepping.TimeStepping()
         # __
-        self.SN = StochasticNoise.StochasticNoise()
+        self.SN = StochasticNoise.StochasticNoise(namelist)
         # __
 
         # Add new prognostic variables
@@ -102,7 +102,7 @@ class Simulation3d:
 
         self.TS.initialize(namelist,self.PV,self.Pa)
         # __
-        self.SN.initialize()
+        self.SN.initialize(namelist)
         # __
 
         if self.Restart.is_restart_run:
