@@ -6,7 +6,7 @@
 #include<stdio.h>
 
 // !!!!!! control if doing the right thing !!!!!!
-void fourth_order_ws_m_ql   (struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
+void fourth_order_ws_m_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
     double* restrict alpha0, double* restrict alpha0_half,
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){

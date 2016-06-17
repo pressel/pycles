@@ -30,6 +30,9 @@ cimport Forcing
 cimport Radiation
 cimport Restart
 cimport Surface
+# __
+cimport StochasticNoise
+# __
 
 class Simulation3d:
 
@@ -63,6 +66,9 @@ class Simulation3d:
         self.VO = VisualizationOutput.VisualizationOutput(namelist, self.Pa)
         self.Damping = Damping.Damping(namelist, self.Pa)
         self.TS = TimeStepping.TimeStepping()
+        # __
+        self.SN = StochasticNoise.StochasticNoise()
+        # __
 
         # Add new prognostic variables
         self.PV.add_variable('u', 'm/s', "sym", "velocity", self.Pa)
@@ -95,6 +101,9 @@ class Simulation3d:
         self.MD.initialize(self.Gr,self.PV,self.DV,self.StatsIO, self.Pa)
 
         self.TS.initialize(namelist,self.PV,self.Pa)
+        # __
+        self.SN.initialize()
+        # __
 
         if self.Restart.is_restart_run:
             self.Pa.root_print('This run is being restarted!')
@@ -171,6 +180,9 @@ class Simulation3d:
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
+                # __
+                self.SN.update(self.Gr,self.Ref,PV_,self.Th,self.Pa)
+                # __
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
