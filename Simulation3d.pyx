@@ -10,6 +10,7 @@ from SurfaceBudget import SurfaceBudgetFactory
 from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
+from Tracers import TracersFactory
 cimport ParallelMPI
 cimport Grid
 cimport PrognosticVariables
@@ -63,6 +64,7 @@ class Simulation3d:
         self.VO = VisualizationOutput.VisualizationOutput(namelist, self.Pa)
         self.Damping = Damping.Damping(namelist, self.Pa)
         self.TS = TimeStepping.TimeStepping()
+        self.Tr = TracersFactory(namelist)
 
         # Add new prognostic variables
         self.PV.add_variable('u', 'm/s', "sym", "velocity", self.Pa)
@@ -86,6 +88,7 @@ class Simulation3d:
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Micro.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
+        self.Tr.initialize(self.Gr, self.PV,self.StatsIO, self.Pa)
         self.PV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ke.initialize(self.Gr, self.StatsIO, self.Pa)
 
@@ -158,6 +161,7 @@ class Simulation3d:
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
+                self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 self.Sur.update(self.Gr, self.Ref,self.PV, self.DV,self.Pa,self.TS)
@@ -170,6 +174,7 @@ class Simulation3d:
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
+                self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
@@ -239,6 +244,7 @@ class Simulation3d:
                 self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
                 self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
                 self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
+                self.Tr.stats_io( self.Gr, self.StatsIO, self.Pa)
                 self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
                 self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
                 self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
@@ -309,6 +315,7 @@ class Simulation3d:
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
         self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
+        self.Tr.stats_io( self.Gr, self.StatsIO, self.Pa)
         self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
         self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
