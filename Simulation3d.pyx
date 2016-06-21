@@ -169,6 +169,7 @@ class Simulation3d:
 
         #_
         PV_.val_nan(self.Pa,'Nan checking in Simulation: time: '+str(self.TS.t))
+        self.debug_tend('before loop')
         #_
 
         while (self.TS.t < self.TS.t_max):
@@ -176,27 +177,78 @@ class Simulation3d:
             self.Pa.root_print('time: '+str(self.TS.t))
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
+                #_
+                self.debug_tend('Ke')
+                #_
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
+                #_
+                self.debug_tend('Th')
+                #_
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
+                #_
+                self.debug_tend('Micro')
+                #_
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
+                #_
+                self.debug_tend('SA')
+                #_
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
+                #_
+                self.debug_tend('MA')
+                #_
                 # __
                 self.SN.update(self.Gr,self.Ref,PV_,self.Th,self.Pa)
                 # __
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
+                #_
+                self.debug_tend('Sur')
+                #_
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
+                #_
+                self.debug_tend('SGS')
+                #_
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
+                #_
+                self.debug_tend('Damping')
+                #_
 
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
+                #_
+                self.debug_tend('SD')
+                #_
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
+                #_
+                self.debug_tend('MD')
+                #_
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+                #_
+                self.debug_tend('Fo')
+                #_
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
+                #_
+                self.debug_tend('Ra')
+                #_
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
+                #_
+                self.debug_tend('Budg')
+                #_
                 self.TS.update(self.Gr, self.PV, self.Pa)
+                #_
+                self.debug_tend('TS update')
+                #_
                 PV_.Update_all_bcs(self.Gr, self.Pa)
+                #_
+                self.debug_tend('bcs')
+                #_
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
+                #_
+                self.debug_tend('Pr')
+                #_
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
+                #_
+                self.debug_tend('TS adjust timestep')
+                #_
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
                 # self.Pa.root_print('rk_step: '+str(self.TS.rk_step)+' (total steps: '+str(self.TS.n_rk_steps)+')')
@@ -389,3 +441,53 @@ class Simulation3d:
         self.Pa.root_print(a)
         return
         # __
+
+
+    def debug_tend(self,message):
+        cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
+
+        cdef:
+            Py_ssize_t u_varshift = PV_.get_varshift(self.Gr,'u')
+            Py_ssize_t v_varshift = PV_.get_varshift(self.Gr,'v')
+            Py_ssize_t w_varshift = PV_.get_varshift(self.Gr,'w')
+            Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
+            Py_ssize_t qt_varshift = PV_.get_varshift(self.Gr,'qt')
+
+        u_max = np.max(PV_.tendencies[u_varshift:v_varshift])
+        uk_max = np.argmax(PV_.tendencies[u_varshift:v_varshift])
+        u_min = np.min(PV_.tendencies[u_varshift:v_varshift])
+        uk_min = np.argmax(PV_.tendencies[u_varshift:v_varshift])
+        v_max = np.max(PV_.tendencies[v_varshift:w_varshift])
+        vk_max = np.argmax(PV_.tendencies[v_varshift:w_varshift])
+        v_min = np.min(PV_.tendencies[v_varshift:w_varshift])
+        vk_min = np.argmax(PV_.tendencies[v_varshift:w_varshift])
+        w_max = np.max(PV_.tendencies[w_varshift:s_varshift])
+        wk_max = np.argmax(PV_.tendencies[w_varshift:s_varshift])
+        w_min = np.min(PV_.tendencies[w_varshift:s_varshift])
+        wk_min = np.argmax(PV_.tendencies[w_varshift:s_varshift])
+        if self.Pa.rank == 0:
+            print(message, 'debugging: ')
+            print(u_max, uk_max, u_min, uk_min)
+            print(v_max, vk_max, v_min, vk_min, w_max, wk_max, w_min, wk_min)
+
+        if 'qt' in PV_.name_index:
+            s_max = np.max(PV_.tendencies[s_varshift:qt_varshift])
+            sk_max = np.argmax(PV_.tendencies[s_varshift:qt_varshift])
+            s_min = np.min(PV_.tendencies[s_varshift:qt_varshift])
+            sk_min = np.argmax(PV_.tendencies[s_varshift:qt_varshift])
+            qt_max = np.max(PV_.tendencies[qt_varshift:-1])
+            qtk_max = np.argmax(PV_.tendencies[qt_varshift:-1])
+            qt_min = np.min(PV_.tendencies[qt_varshift:-1])
+            qtk_min = np.argmax(PV_.tendencies[qt_varshift:-1])
+            if self.Pa.rank == 0:
+                self.Pa.root_print(s_max, sk_max, s_min, sk_min, qt_max, qtk_max, qt_min, qtk_min)
+        else:
+            s_max = np.max(PV_.tendencies[s_varshift:-1])
+            sk_max = np.argmax(PV_.tendencies[s_varshift:-1])
+            s_min = np.min(PV_.tendencies[s_varshift:-1])
+            sk_min = np.argmax(PV_.tendencies[s_varshift:-1])
+            if self.Pa.rank == 0:
+                print(s_max, sk_max, s_min, sk_min)
+
+
+
