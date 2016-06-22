@@ -102,7 +102,7 @@ cdef class SurfaceBase:
 
         return
     cpdef init_from_restart(self, Restart):
-        self.T_surface = Restart.restart_data['surf']['T_surface']
+        self.T_surface = Restart.restart_data['surf']['T_surf']
         return
     cpdef restart(self, Restart):
         Restart.restart_data['surf'] = {}
