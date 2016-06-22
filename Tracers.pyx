@@ -35,7 +35,7 @@ def TracersFactory(namelist):
 
 
 cdef class TracersNone:
-    def __init__(self, namelist):
+    def __init__(self):
         return
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
