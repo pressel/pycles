@@ -31,7 +31,7 @@ def TracersFactory(namelist):
     if use_tracers:
         return UpdraftTracers(namelist)
     else:
-        return TracersNone()
+        return TracersNone(namelist)
 
 
 cdef class TracersNone:
