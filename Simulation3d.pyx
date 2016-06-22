@@ -480,7 +480,7 @@ class Simulation3d:
             qt_min = np.min(PV_.tendencies[qt_varshift:-1])
             qtk_min = np.argmax(PV_.tendencies[qt_varshift:-1])
             if self.Pa.rank == 0:
-                self.Pa.root_print(s_max, sk_max, s_min, sk_min, qt_max, qtk_max, qt_min, qtk_min)
+                print(s_max, sk_max, s_min, sk_min, qt_max, qtk_max, qt_min, qtk_min)
         else:
             s_max = np.max(PV_.tendencies[s_varshift:-1])
             sk_max = np.argmax(PV_.tendencies[s_varshift:-1])
