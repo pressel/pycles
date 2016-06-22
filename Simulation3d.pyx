@@ -186,11 +186,11 @@ class Simulation3d:
                 #_
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 #_
-                self.debug_tend('Th')
+                self.debug_tend('Th')   # only w-tendencies != 0 ?!!!
                 #_
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 #_
-                self.debug_tend('Micro')
+                self.debug_tend('Micro') # only w-tendencies != 0 ?!!!
                 #_
                 self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 #_
@@ -244,16 +244,10 @@ class Simulation3d:
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 #_
-                self.debug_tend('TS update')
+                self.debug_tend('TS update') # tendencies set to zero
                 #_
                 PV_.Update_all_bcs(self.Gr, self.Pa)
-                #_
-                self.debug_tend('bcs')
-                #_
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
-                #_
-                self.debug_tend('Pr')
-                #_
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 #_
                 self.debug_tend('TS adjust timestep')
@@ -455,13 +449,17 @@ class Simulation3d:
 
 
     def debug_tend(self,message):
-        cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
+        cdef:
+            PrognosticVariables.PrognosticVariables PV_ = self.PV
+            DiagnosticVariables.DiagnosticVariables DV_ = self.DV
+            Grid.Grid Gr_ = self.Gr
 
         cdef:
             Py_ssize_t u_varshift = PV_.get_varshift(self.Gr,'u')
             Py_ssize_t v_varshift = PV_.get_varshift(self.Gr,'v')
             Py_ssize_t w_varshift = PV_.get_varshift(self.Gr,'w')
             Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
+
             Py_ssize_t qt_varshift = PV_.get_varshift(self.Gr,'qt')
 
         u_max = np.max(PV_.tendencies[u_varshift:v_varshift])
@@ -482,6 +480,16 @@ class Simulation3d:
             print(v_max, vk_max, v_min, vk_min, w_max, wk_max, w_min, wk_min)
 
         if 'qt' in PV_.name_index:
+            qt_varshift = PV_.get_varshift(self.Gr,'qt')
+            ql_shift = DV_.get_varshift(self.Gr,'ql')
+
+            istride = Gr_.dims.nlg[1] * Gr_.dims.nlg[2]
+            jstride = Gr_.dims.nlg[2]
+            imax = Gr_.dims.nlg[0]
+            jmax = Gr_.dims.nlg[1]
+            kmax = Gr_.dims.nlg[2]
+            ijk_max = imax*istride + jmax*jstride + kmax
+
             s_max = np.max(PV_.tendencies[s_varshift:qt_varshift])
             sk_max = np.argmax(PV_.tendencies[s_varshift:qt_varshift])
             s_min = np.min(PV_.tendencies[s_varshift:qt_varshift])
@@ -490,8 +498,13 @@ class Simulation3d:
             qtk_max = np.argmax(PV_.tendencies[qt_varshift:-1])
             qt_min = np.min(PV_.tendencies[qt_varshift:-1])
             qtk_min = np.argmax(PV_.tendencies[qt_varshift:-1])
+
+            ql_max = np.max(DV_.values[ql_shift:(ql_shift+ijk_max)])
+            ql_min = np.min(DV_.values[ql_shift:(ql_shift+ijk_max)])
+
             if self.Pa.rank == 0:
                 print(s_max, sk_max, s_min, sk_min, qt_max, qtk_max, qt_min, qtk_min)
+            self.Pa.root_print('ql: ' + str(ql_max) + ', ' + str(ql_min))
         else:
             s_max = np.max(PV_.tendencies[s_varshift:-1])
             sk_max = np.argmax(PV_.tendencies[s_varshift:-1])
