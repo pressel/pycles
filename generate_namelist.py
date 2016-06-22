@@ -57,8 +57,10 @@ def main():
         namelist = DCBLSoares()
     elif case_name == 'DCBLSoares_moist':
         namelist = DCBLSoares_moist()
+    # elif case_name == 'DCBLSoares_mod':
+    #     namelist = DCBLSoares_mod()
     else:
-        print('Not a vaild case name')
+        print('Not a valid case name')
         exit()
 
     write_file(namelist)
@@ -1434,6 +1436,7 @@ def DCBLSoares():
 
     namelist['stochastic_noise'] = {}
     namelist['stochastic_noise']['flag'] = True
+    namelist['stochastic_noise']['amplitude'] = 0.05
 
     return namelist
 

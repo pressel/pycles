@@ -17,18 +17,25 @@ import pylab as plt
 
 cdef class StochasticNoise:
     def __init__(self, namelist):
-        # try:
-        #     self.stoch_noise = namelist['stochastic_noise']['flag']
-        # except:
-        #     return
-
-        return
-
-    cpdef initialize(self,namelist):
         try:
             self.stoch_noise = namelist['stochastic_noise']['flag']
         except:
             return
+
+        try:
+            self.ampl = namelist['stochastic_noise']['amplitude']
+        except:
+            self.ampl = 0.01
+
+        return
+
+
+
+    cpdef initialize(self,ParallelMPI.ParallelMPI Pa):
+
+        if self.stoch_noise == True:
+            Pa.root_print('Stochastic Noise activated in every timestep, A = ' + str(self.ampl))
+
 
         return
 
@@ -69,7 +76,7 @@ cdef class StochasticNoise:
                     ijk = ishift + jshift + k
                     # potential temperature perturbation
                     if Gr.zl_half[k] < 200.0:
-                        theta_pert_ = (theta_pert[ijk] - 0.5)* 0.01
+                        theta_pert_ = (theta_pert[ijk] - 0.5)* self.ampl
                     else:
                         theta_pert_ = 0.0
                     t = theta_pert_*exner_c(RS.p0_half[k])

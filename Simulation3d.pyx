@@ -106,7 +106,7 @@ class Simulation3d:
 
         self.TS.initialize(namelist,self.PV,self.Pa)
         # __
-        self.SN.initialize(namelist)
+        self.SN.initialize(self.Pa)
         # __
 
         if self.Restart.is_restart_run:
