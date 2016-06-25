@@ -123,6 +123,8 @@ class Simulation3d:
             self.PV.init_from_restart(self.Gr, self.Restart)
             self.Sur.init_from_restart(self.Restart)
             self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']
+            #self.Pa.root_print('Restart output times')
+            #self.Pa.root_print(str(self.Restart.restart_data['last_stats_output']) + ', ' + str(self.Restart.restart_data['last_condstats_output']) + ', ' + str(self.Restart.restart_data['last_vis_time']))
             self.CondStatsIO.last_output_time = self.Restart.restart_data['last_condstats_output']
             self.FieldsIO.last_output_time = self.Restart.restart_data['last_fields_output']
             self.Restart.last_restart_time = self.Restart.restart_data['last_restart_time']

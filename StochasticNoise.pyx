@@ -49,7 +49,7 @@ cdef class StochasticNoise:
 
 
     cpdef add_theta_noise(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,  Th, ParallelMPI.ParallelMPI Pa):
-
+        Pa.root_print('SN!!!: updating Stochastic Noise')
         cdef:
             Py_ssize_t i,j,k
             Py_ssize_t ishift, jshift
