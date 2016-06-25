@@ -1,6 +1,12 @@
 import time
 import numpy as np
 cimport numpy as np
+# __
+# import matplotlib as plt
+import pylab as plt
+import os
+from mpi4py import MPI
+# __
 from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
@@ -38,6 +44,7 @@ cimport StochasticNoise
 class Simulation3d:
 
     def __init__(self, namelist):
+
         return
 
     def initialize(self, namelist):
@@ -70,6 +77,8 @@ class Simulation3d:
         self.Tr = TracersFactory(namelist)
         # __
         self.SN = StochasticNoise.StochasticNoise(namelist)
+        uuid = str(namelist['meta']['uuid'])
+        self.outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + uuid[-5:]))
         # __
 
 
@@ -450,6 +459,10 @@ class Simulation3d:
         # __
 
 
+
+
+
+
     def debug_tend(self,message):
         cdef:
             PrognosticVariables.PrognosticVariables PV_ = self.PV
@@ -462,58 +475,155 @@ class Simulation3d:
             Py_ssize_t w_varshift = PV_.get_varshift(self.Gr,'w')
             Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
 
-            Py_ssize_t qt_varshift = PV_.get_varshift(self.Gr,'qt')
+            Py_ssize_t istride = Gr_.dims.nlg[1] * Gr_.dims.nlg[2]
+            Py_ssize_t jstride = Gr_.dims.nlg[2]
+            Py_ssize_t imax = Gr_.dims.nlg[0]
+            Py_ssize_t jmax = Gr_.dims.nlg[1]
+            Py_ssize_t kmax = Gr_.dims.nlg[2]
+            Py_ssize_t ijk_max = imax*istride + jmax*jstride + kmax
 
-        u_max = np.max(PV_.tendencies[u_varshift:v_varshift])
-        uk_max = np.argmax(PV_.tendencies[u_varshift:v_varshift])
-        u_min = np.min(PV_.tendencies[u_varshift:v_varshift])
-        uk_min = np.argmax(PV_.tendencies[u_varshift:v_varshift])
-        v_max = np.max(PV_.tendencies[v_varshift:w_varshift])
-        vk_max = np.argmax(PV_.tendencies[v_varshift:w_varshift])
-        v_min = np.min(PV_.tendencies[v_varshift:w_varshift])
-        vk_min = np.argmax(PV_.tendencies[v_varshift:w_varshift])
-        w_max = np.max(PV_.tendencies[w_varshift:s_varshift])
-        wk_max = np.argmax(PV_.tendencies[w_varshift:s_varshift])
-        w_min = np.min(PV_.tendencies[w_varshift:s_varshift])
-        wk_min = np.argmax(PV_.tendencies[w_varshift:s_varshift])
+        u_max = np.nanmax(PV_.tendencies[u_varshift:v_varshift])
+        uk_max = np.nanargmax(PV_.tendencies[u_varshift:v_varshift])
+        u_min = np.nanmin(PV_.tendencies[u_varshift:v_varshift])
+        uk_min = np.nanargmin(PV_.tendencies[u_varshift:v_varshift])
+        v_max = np.nanmax(PV_.tendencies[v_varshift:w_varshift])
+        vk_max = np.nanargmax(PV_.tendencies[v_varshift:w_varshift])
+        v_min = np.nanmin(PV_.tendencies[v_varshift:w_varshift])
+        vk_min = np.nanargmin(PV_.tendencies[v_varshift:w_varshift])
+        w_max = np.nanmax(PV_.tendencies[w_varshift:s_varshift])
+        wk_max = np.nanargmax(PV_.tendencies[w_varshift:s_varshift])
+        w_min = np.nanmin(PV_.tendencies[w_varshift:s_varshift])
+        wk_min = np.nanargmin(PV_.tendencies[w_varshift:s_varshift])
+
+        u_nan = np.isnan(PV_.tendencies[u_varshift:v_varshift]).any()
+        uk_nan = np.argmax(PV_.tendencies[u_varshift:v_varshift])
+        v_nan = np.isnan(PV_.tendencies[v_varshift:w_varshift]).any()
+        vk_nan = np.argmax(PV_.tendencies[v_varshift:w_varshift])
+        w_nan = np.isnan(PV_.tendencies[w_varshift:s_varshift]).any()
+        wk_nan = np.argmax(PV_.tendencies[w_varshift:s_varshift])
+
         if self.Pa.rank == 0:
             print(message, 'debugging: ')
-            print(u_max, uk_max, u_min, uk_min)
-            print(v_max, vk_max, v_min, vk_min, w_max, wk_max, w_min, wk_min)
+            print('shifts', u_varshift, v_varshift, w_varshift, s_varshift)
+            print('u: ', u_max, uk_max, u_min, uk_min, u_nan, uk_nan)
+            print('v: ', v_max, vk_max, v_min, vk_min, v_nan, vk_nan)
+            print('w: ', w_max, wk_max, w_min, wk_min, w_nan, wk_nan)
 
         if 'qt' in PV_.name_index:
             qt_varshift = PV_.get_varshift(self.Gr,'qt')
             ql_shift = DV_.get_varshift(self.Gr,'ql')
 
-            istride = Gr_.dims.nlg[1] * Gr_.dims.nlg[2]
-            jstride = Gr_.dims.nlg[2]
-            imax = Gr_.dims.nlg[0]
-            jmax = Gr_.dims.nlg[1]
-            kmax = Gr_.dims.nlg[2]
-            ijk_max = imax*istride + jmax*jstride + kmax
+            s_max = np.nanmax(PV_.tendencies[s_varshift:qt_varshift])
+            sk_max = np.nanargmax(PV_.tendencies[s_varshift:qt_varshift])
+            s_min = np.nanmin(PV_.tendencies[s_varshift:qt_varshift])
+            sk_min = np.nanargmin(PV_.tendencies[s_varshift:qt_varshift])
+            qt_max = np.nanmax(PV_.tendencies[qt_varshift:-1])
+            qtk_max = np.nanargmax(PV_.tendencies[qt_varshift:-1])
+            qt_min = np.nanmin(PV_.tendencies[qt_varshift:-1])
+            qtk_min = np.nanargmin(PV_.tendencies[qt_varshift:-1])
 
-            s_max = np.max(PV_.tendencies[s_varshift:qt_varshift])
-            sk_max = np.argmax(PV_.tendencies[s_varshift:qt_varshift])
-            s_min = np.min(PV_.tendencies[s_varshift:qt_varshift])
-            sk_min = np.argmax(PV_.tendencies[s_varshift:qt_varshift])
-            qt_max = np.max(PV_.tendencies[qt_varshift:-1])
-            qtk_max = np.argmax(PV_.tendencies[qt_varshift:-1])
-            qt_min = np.min(PV_.tendencies[qt_varshift:-1])
-            qtk_min = np.argmax(PV_.tendencies[qt_varshift:-1])
+            ql_max = np.nanmax(DV_.values[ql_shift:(ql_shift+ijk_max)])
+            ql_min = np.nanmin(DV_.values[ql_shift:(ql_shift+ijk_max)])
 
-            ql_max = np.max(DV_.values[ql_shift:(ql_shift+ijk_max)])
-            ql_min = np.min(DV_.values[ql_shift:(ql_shift+ijk_max)])
+            s_nan = np.isnan(PV_.tendencies[s_varshift:qt_varshift]).any()
+            sk_nan = np.argmax(PV_.tendencies[s_varshift:qt_varshift])
+            qt_nan = np.isnan(PV_.tendencies[qt_varshift:-1]).any()
+            qtk_nan = np.argmax(PV_.tendencies[qt_varshift:-1])
 
             if self.Pa.rank == 0:
-                print(s_max, sk_max, s_min, sk_min, qt_max, qtk_max, qt_min, qtk_min)
-            self.Pa.root_print('ql: ' + str(ql_max) + ', ' + str(ql_min))
+                print('s: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
+                print('qt: ', qt_max, qtk_max, qt_min, qtk_min, qt_nan, qtk_nan)
+                print('ql: ', ql_max, ql_min)
+            #self.Pa.root_print('ql: ' + str(ql_max) + ', ' + str(ql_min))
+
         else:
-            s_max = np.max(PV_.tendencies[s_varshift:-1])
-            sk_max = np.argmax(PV_.tendencies[s_varshift:-1])
-            s_min = np.min(PV_.tendencies[s_varshift:-1])
-            sk_min = np.argmax(PV_.tendencies[s_varshift:-1])
+            s_max = np.nanmax(PV_.tendencies[s_varshift:-1])
+            sk_max = np.nanargmax(PV_.tendencies[s_varshift:-1])
+            s_min = np.nanmin(PV_.tendencies[s_varshift:-1])
+            sk_min = np.nanargmin(PV_.tendencies[s_varshift:-1])
+            s_nan = np.isnan(PV_.tendencies[s_varshift:-1]).any()
+            sk_nan = np.argmax(PV_.tendencies[s_varshift:-1])
+
             if self.Pa.rank == 0:
-                print(s_max, sk_max, s_min, sk_min)
+                print('s: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
+
+
+        # cdef:
+        #     Py_ssize_t i,j,k,ijk
+        #     Py_ssize_t global_shift_i = Gr_.dims.indx_lo[0]
+        #     Py_ssize_t global_shift_j = Gr_.dims.indx_lo[1]
+        #     Py_ssize_t global_shift_k = Gr_.dims.indx_lo[2]
+        #
+        #     Py_ssize_t var_shift
+        #     Py_ssize_t i2d, j2d, k2d
+        #
+        #     Py_ssize_t ishift, jshift
+        #     Py_ssize_t gw = Gr_.dims.gw
+        #
+        #     Py_ssize_t imin = Gr_.dims.gw
+        #     Py_ssize_t jmin = Gr_.dims.gw
+        #     Py_ssize_t kmin = Gr_.dims.gw
+        #     Py_ssize_t imax_ = Gr_.dims.nlg[0] - Gr_.dims.gw
+        #     Py_ssize_t jmax_ = Gr_.dims.nlg[1] - Gr_.dims.gw
+        #     Py_ssize_t kmax_ = Gr_.dims.nlg[2] - Gr_.dims.gw
+        #     Py_ssize_t i_s, i_w
+        #
+        # comm = MPI.COMM_WORLD
+        #
+        # cdef:
+        #     double [:,:] local_var
+        #     double [:,:] reduced_var
+        #     list pv_vars = ['s', 'w']
+        #
+        # if np.isnan(PV_.tendencies).any():
+        #     if s_nan == True:
+        #         print('s nan')
+        #         a = np.unravel_index(sk_nan, (imax,jmax,kmax))
+        #         i_s = a[0]
+        #         print(i_s)
+        #     # if qt_nan == True:
+        #     #     a = np.unravel_index(qtk_nan, (imax,jmax,kmax))
+        #     #     i_qt = a[0]
+        #     if w_nan == True:
+        #         print('w nan')
+        #         a = np.unravel_index(wk_nan, (imax,jmax,kmax))
+        #         i_w = a[0]
+        #     # how to find indices of nan value?
+        #     # i_s = np.argwhere(x==1)
+        #     for var in pv_vars:
+        #         local_var = np.zeros((Gr_.dims.n[1], Gr_.dims.n[2]), dtype=np.double, order='c')
+        #         reduced_var = np.zeros((Gr_.dims.n[1], Gr_.dims.n[2]), dtype=np.double, order='c')
+        #         var_shift = PV_.get_varshift(self.Gr, var)
+        #
+        #         if var == 'w':
+        #             i = i_w
+        #         elif var == 's':
+        #             print('')
+        #             i = i_s
+        #         with nogil:
+        #             if global_shift_i == 0:
+        #                 # i = 0
+        #                 ishift = i * istride
+        #                 for j in xrange(jmin, jmax_):
+        #                     jshift = j * jstride
+        #                     for k in xrange(kmin, kmax_):
+        #                         ijk = ishift + jshift + k
+        #                         j2d = global_shift_j + j - gw
+        #                         k2d = global_shift_k + k - gw
+        #                         local_var[j2d, k2d] = PV_.values[var_shift + ijk]
+        #         comm.Reduce(local_var, reduced_var, op=MPI.SUM)
+        #         del local_var
+        #
+        #         plt.figure(1)
+        #         plt.contourf(reduced_var.T)
+        #         plt.title(var + ', ' + message)
+        #         # plt.show()
+        #         plt.savefig(self.outpath + '/' + var + '_' + message + '.png')
+        #         plt.close()
+
+        # PV_.values[s_varshift+1] = np.nan
+
+        return
 
 
 
