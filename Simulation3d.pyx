@@ -509,7 +509,7 @@ class Simulation3d:
 
         if 'qt' in PV_.name_index:
             qt_varshift = PV_.get_varshift(self.Gr,'qt')
-            ql_shift = DV_.get_varshift(self.Gr,'ql')
+            ql_varshift = DV_.get_varshift(self.Gr,'ql')
 
             s_max = np.nanmax(PV_.tendencies[s_varshift:qt_varshift])
             sk_max = np.nanargmax(PV_.tendencies[s_varshift:qt_varshift])
@@ -520,18 +520,31 @@ class Simulation3d:
             qt_min = np.nanmin(PV_.tendencies[qt_varshift:-1])
             qtk_min = np.nanargmin(PV_.tendencies[qt_varshift:-1])
 
-            ql_max = np.nanmax(DV_.values[ql_shift:(ql_shift+ijk_max)])
-            ql_min = np.nanmin(DV_.values[ql_shift:(ql_shift+ijk_max)])
-
             s_nan = np.isnan(PV_.tendencies[s_varshift:qt_varshift]).any()
             sk_nan = np.argmax(PV_.tendencies[s_varshift:qt_varshift])
             qt_nan = np.isnan(PV_.tendencies[qt_varshift:-1]).any()
             qtk_nan = np.argmax(PV_.tendencies[qt_varshift:-1])
 
+            qt_max_val = np.nanmax(PV_.values[qt_varshift:-1])
+            qtk_max_val = np.nanargmax(PV_.values[qt_varshift:-1])
+            qt_min_val = np.nanmin(PV_.values[qt_varshift:-1])
+            qtk_min_val = np.nanargmin(PV_.values[qt_varshift:-1])
+            qt_nan_val = np.isnan(PV_.values[qt_varshift:-1]).any()
+            qtk_nan_val = np.argmax(PV_.values[qt_varshift:-1])
+
+            ql_max_val = np.nanmax(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
+            ql_min_val = np.nanmin(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
+            qlk_max_val = np.nanargmax(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
+            qlk_min_val = np.nanargmin(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
+            ql_nan_val = np.isnan(DV_.values[ql_varshift:(ql_varshift+ijk_max)]).any()
+            qlk_nan_val = np.argmax(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
+
+
             if self.Pa.rank == 0:
                 print('s: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
                 print('qt: ', qt_max, qtk_max, qt_min, qtk_min, qt_nan, qtk_nan)
-                print('ql: ', ql_max, ql_min)
+                print('qt val: ', qt_max_val, qtk_max_val, qt_min_val, qtk_min_val, qt_nan_val, qtk_nan_val)
+                print('ql: ', ql_max_val, qlk_max_val, ql_min_val, qlk_min_val, ql_nan_val, qlk_nan_val)
             #self.Pa.root_print('ql: ' + str(ql_max) + ', ' + str(ql_min))
 
         else:
