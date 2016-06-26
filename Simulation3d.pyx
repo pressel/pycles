@@ -503,11 +503,11 @@ class Simulation3d:
         wk_nan = np.argmax(PV_.tendencies[w_varshift:s_varshift])
 
         if self.Pa.rank == 0:
-            print(message, 'debugging: ')
+            print(message, 'debugging (max, min, nan): ')
             print('shifts', u_varshift, v_varshift, w_varshift, s_varshift)
-            print('u: ', u_max, uk_max, u_min, uk_min, u_nan, uk_nan)
-            print('v: ', v_max, vk_max, v_min, vk_min, v_nan, vk_nan)
-            print('w: ', w_max, wk_max, w_min, wk_min, w_nan, wk_nan)
+            print('u tend: ', u_max, uk_max, u_min, uk_min, u_nan, uk_nan)
+            print('v tend: ', v_max, vk_max, v_min, vk_min, v_nan, vk_nan)
+            print('w tend: ', w_max, wk_max, w_min, wk_min, w_nan, wk_nan)
 
         if 'qt' in PV_.name_index:
             qt_varshift = PV_.get_varshift(self.Gr,'qt')
@@ -543,10 +543,10 @@ class Simulation3d:
 
 
             if self.Pa.rank == 0:
-                print('s: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
-                print('qt: ', qt_max, qtk_max, qt_min, qtk_min, qt_nan, qtk_nan)
+                print('s tend: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
+                print('qt tend: ', qt_max, qtk_max, qt_min, qtk_min, qt_nan, qtk_nan)
                 print('qt val: ', qt_max_val, qtk_max_val, qt_min_val, qtk_min_val, qt_nan_val, qtk_nan_val)
-                print('ql: ', ql_max_val, qlk_max_val, ql_min_val, qlk_min_val, ql_nan_val, qlk_nan_val)
+                print('ql val: ', ql_max_val, qlk_max_val, ql_min_val, qlk_min_val, ql_nan_val, qlk_nan_val)
             #self.Pa.root_print('ql: ' + str(ql_max) + ', ' + str(ql_min))
 
         else:
@@ -558,7 +558,7 @@ class Simulation3d:
             sk_nan = np.argmax(PV_.tendencies[s_varshift:-1])
 
             if self.Pa.rank == 0:
-                print('s: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
+                print('s tend: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
 
 
         # cdef:
