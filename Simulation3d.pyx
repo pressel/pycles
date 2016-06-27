@@ -285,6 +285,7 @@ class Simulation3d:
             double min_dt = 0.0
 
         if self.TS.t > 0 and self.TS.rk_step == self.TS.n_rk_steps - 1:
+            self.Pa.root_print('io:' + str(self.TS.t) + ', ' + str(self.TS.rk_step))
             # Adjust time step for output if necessary
             fields_dt = self.FieldsIO.last_output_time + self.FieldsIO.frequency - self.TS.t
             stats_dt = self.StatsIO.last_output_time + self.StatsIO.frequency - self.TS.t
@@ -310,7 +311,8 @@ class Simulation3d:
                 self.Pa.root_print('Finished Doing 3D FieldIO')
 
             # If time to ouput stats do output
-            if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t:
+            self.Pa.root_print('StatsIO freq: ' + str(self.StatsIO.frequency) + ', ' + str(self.StatsIO.last_output_time) + ', ' + str(self.TS.t))
+            if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t or self.StatsIO.last_output_time + self.StatsIO.frequency + 10.0 == self.TS.t:
                 self.Pa.root_print('Doing StatsIO')
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.open_files(self.Pa)
