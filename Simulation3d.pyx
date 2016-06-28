@@ -532,6 +532,8 @@ class Simulation3d:
             qt_max_val = np.nanmax(PV_.values[qt_varshift:-1])
             qtk_max_val = np.nanargmax(PV_.values[qt_varshift:-1])
             qt_min_val = np.nanmin(PV_.values[qt_varshift:-1])
+            if qt_min_val < 0:
+                self.Pa.root_print('qt val negative')
             qtk_min_val = np.nanargmin(PV_.values[qt_varshift:-1])
             qt_nan_val = np.isnan(PV_.values[qt_varshift:-1]).any()
             qtk_nan_val = np.argmax(PV_.values[qt_varshift:-1])
