@@ -13,7 +13,8 @@ cimport ParallelMPI
 from NetCDFIO cimport NetCDFIO_Stats
 import cython
 
-from libc.math cimport sqrt, log, fabs,atan, exp, fmax
+from libc.math cimport fmax
+
 cimport numpy as np
 import numpy as np
 include "parameters.pxi"
@@ -24,7 +25,34 @@ cdef extern from "thermodynamic_functions.h":
     inline double pv_c(double p0, double qt, double qv) nogil
 
 
-cdef class Tracers:
+def TracersFactory(namelist):
+    try:
+        use_tracers = namelist['tracers']['use_tracers']
+    except:
+        use_tracers = False
+    if use_tracers:
+        return UpdraftTracers(namelist)
+    else:
+        return TracersNone()
+
+
+cdef class TracersNone:
+    def __init__(self):
+        return
+    cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+        return
+    cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+        return
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+
+
+cdef class UpdraftTracers:
+
     def __init__(self, namelist):
 
         if namelist['microphysics']['scheme'] == 'None_SA' or namelist['microphysics']['scheme'] == 'SB_Liquid':
@@ -37,13 +65,26 @@ cdef class Tracers:
         return
 
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        # Perhaps this could be cleaned up by creating a dictionary of tracers (name, tau, init level)
-        #  and looping over it...
-        PV.add_variable('c_srf_15', '-', "sym", "scalar", Pa)
-        PV.add_variable('c_srf_60', '-', "sym", "scalar", Pa)
+
+
+        # Assemble a dictionary with the tracer information
+        # Can be expanded for different init heights or timescales
+        self.tracer_dict = {}
+        self.tracer_dict['surface'] = {}
+        self.tracer_dict['surface']['c_srf_15'] = {}
+        self.tracer_dict['surface']['c_srf_15']['timescale'] = 15.0 * 60.0
         if self.lcl_tracers:
-            PV.add_variable('c_lcl_15', '-', "sym", "scalar", Pa)
-            PV.add_variable('c_lcl_60', '-', "sym", "scalar", Pa)
+            self.tracer_dict['lcl'] = {}
+            self.tracer_dict['lcl']['c_lcl_15'] = {}
+            self.tracer_dict['lcl']['c_lcl_15']['timescale'] = 15.0 * 60.0
+
+        for var in self.tracer_dict['surface'].keys():
+            PV.add_variable(var, '-', "sym", "scalar", Pa)
+
+
+        if self.lcl_tracers:
+            for var in self.tracer_dict['lcl'].keys():
+                PV.add_variable(var, '-', "sym", "scalar", Pa)
             NS.add_ts('grid_lcl', Gr, Pa )
 
         return
@@ -55,38 +96,30 @@ cdef class Tracers:
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t i,j,k,ishift,jshift,ijk
 
+            Py_ssize_t var_shift
+            double tau
 
-            Py_ssize_t c_srf_15_shift = PV.get_varshift(Gr, 'c_srf_15')
-            Py_ssize_t c_srf_60_shift = PV.get_varshift(Gr, 'c_srf_60')
-            Py_ssize_t c_lcl_15_shift, c_lcl_60_shift
-
-
-        if self.lcl_tracers:
-            c_lcl_15_shift = PV.get_varshift(Gr, 'c_lcl_15')
-            c_lcl_60_shift = PV.get_varshift(Gr, 'c_lcl_60')
-            with nogil:
-                for i in xrange(Gr.dims.npg):
-                    PV.tendencies[c_srf_15_shift + i] += -fmax(PV.values[c_srf_15_shift + i],0.0)/(15.0*60.0)
-                    PV.tendencies[c_srf_60_shift + i] += -fmax(PV.values[c_srf_60_shift + i],0.0)/(60.0*60.0)
-                    PV.tendencies[c_lcl_15_shift + i] += -fmax(PV.values[c_lcl_15_shift + i],0.0)/(15.0*60.0)
-                    PV.tendencies[c_lcl_60_shift + i] += -fmax(PV.values[c_lcl_60_shift + i],0.0)/(60.0*60.0)
-        else:
-            with nogil:
-                for i in xrange(Gr.dims.npg):
-                    PV.tendencies[c_srf_15_shift + i] += -fmax(PV.values[c_srf_15_shift + i],0.0)/(15.0*60.0)
-                    PV.tendencies[c_srf_60_shift + i] += -fmax(PV.values[c_srf_60_shift + i],0.0)/(60.0*60.0)
-
+        # Set the source term
+        for level in self.tracer_dict.keys():
+            for var in self.tracer_dict[level].keys():
+                var_shift = PV.get_varshift(Gr, var)
+                tau = self.tracer_dict[level][var]['timescale']
+                with nogil:
+                    for i in xrange(Gr.dims.npg):
+                        PV.tendencies[var_shift + i] += -fmax(PV.values[var_shift + i],0.0)/tau
 
         #Below we assume domain uses only x-y decomposition, for the general case we should use pencils
         #but we don't address that complication for now
 
         # Set the value of the surface based tracers
-        with nogil:
-            for i in xrange(Gr.dims.nlg[0]):
-                for j in xrange(Gr.dims.nlg[1]):
-                    ijk = i * istride + j * jstride + Gr.dims.gw
-                    PV.values[c_srf_15_shift + ijk] = 1.0
-                    PV.values[c_srf_60_shift + ijk] = 1.0
+        for var in self.tracer_dict['surface'].keys():
+            var_shift = PV.get_varshift(Gr, var)
+            with nogil:
+                for i in xrange(Gr.dims.nlg[0]):
+                    for j in xrange(Gr.dims.nlg[1]):
+                        ijk = i * istride + j * jstride + Gr.dims.gw
+                        PV.values[var_shift + ijk] = 1.0
+
 
 
         # Find surface thermodynamic properties to compute LCL (lifting condensation level)
@@ -121,22 +154,20 @@ cdef class Tracers:
                         count += 1
             lcl_ = np.sum(z_lcl) * nxny_i
             lcl = Pa.domain_scalar_sum(lcl_)
-            Pa.root_print('LCL is ' + str(lcl))
 
             for k in xrange(Gr.dims.nlg[2]-Gr.dims.gw, Gr.dims.gw-1, -1):
                 if Gr.zl_half[k] <= lcl:
                     self.index_lcl = k
-                    Pa.root_print(str(k))
                     break
 
-            Pa.root_print('Grid LCL ' + str(Gr.zl_half[self.index_lcl]))
-            with nogil:
-                for i in xrange( Gr.dims.nlg[0]):
-                    for j in xrange( Gr.dims.nlg[1]):
-                        ijk = i * istride + j * jstride + self.index_lcl
-                        PV.values[c_lcl_15_shift + ijk] = 1.0
-                        PV.values[c_lcl_60_shift + ijk] = 1.0
-
+            # Pa.root_print('Grid LCL ' + str(Gr.zl_half[self.index_lcl]))
+            for var in self.tracer_dict['lcl'].keys():
+                var_shift = PV.get_varshift(Gr, var)
+                with nogil:
+                    for i in xrange( Gr.dims.nlg[0]):
+                        for j in xrange( Gr.dims.nlg[1]):
+                            ijk = i * istride + j * jstride + self.index_lcl
+                            PV.values[var_shift + ijk] = 1.0
 
 
         return
@@ -148,47 +179,35 @@ cdef class Tracers:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t i,j,k,ishift,jshift,ijk
-
-
-            Py_ssize_t c_srf_15_shift = PV.get_varshift(Gr, 'c_srf_15')
-            Py_ssize_t c_srf_60_shift = PV.get_varshift(Gr, 'c_srf_60')
-            Py_ssize_t c_lcl_15_shift, c_lcl_60_shift
+            Py_ssize_t var_shift
 
 
         #Below we assume domain uses only x-y decomposition, for the general case we should use pencils
         #but we don't address that complication for now
 
         # Set the value of the surface based tracers
-        with nogil:
-            for i in xrange(Gr.dims.nlg[0]):
-                for j in xrange(Gr.dims.nlg[1]):
-                    ijk = i * istride + j * jstride + Gr.dims.gw
-                    PV.tendencies[c_srf_15_shift + ijk] = 0.0
-                    PV.tendencies[c_srf_60_shift + ijk] = 0.0
-                    for k in xrange( Gr.dims.nlg[2]):
-                        ijk = i * istride + j * jstride + k
-                        PV.values[c_srf_15_shift + ijk] = fmax(PV.values[c_srf_15_shift + ijk],0.0)
-                        PV.values[c_srf_60_shift + ijk] = fmax(PV.values[c_srf_60_shift + ijk],0.0)
 
+        for var in self.tracer_dict['surface'].keys():
+            var_shift = PV.get_varshift(Gr, var)
+            with nogil:
+                for i in xrange(Gr.dims.nlg[0]):
+                    for j in xrange(Gr.dims.nlg[1]):
+                        ijk = i * istride + j * jstride + Gr.dims.gw
+                        PV.tendencies[var_shift + ijk] = 0.0
+                        for k in xrange( Gr.dims.nlg[2]):
+                            ijk = i * istride + j * jstride + k
+                            PV.values[var_shift + ijk] = fmax(PV.values[var_shift + ijk],0.0)
 
-
-
-        if self.lcl_tracers:
-
-            c_lcl_15_shift = PV.get_varshift(Gr, 'c_lcl_15')
-            c_lcl_60_shift = PV.get_varshift(Gr, 'c_lcl_60')
-
-
+        for var in self.tracer_dict['lcl'].keys():
+            var_shift = PV.get_varshift(Gr, var)
             with nogil:
                 for i in xrange( Gr.dims.nlg[0]):
                     for j in xrange( Gr.dims.nlg[1]):
                         ijk = i * istride + j * jstride + self.index_lcl
-                        PV.tendencies[c_lcl_15_shift + ijk] = 0.0
-                        PV.tendencies[c_lcl_60_shift + ijk] = 0.0
+                        PV.tendencies[var_shift + ijk] = 0.0
                         for k in xrange( Gr.dims.nlg[2]):
                             ijk = i * istride + j * jstride + k
-                            PV.values[c_lcl_15_shift + ijk] = fmax(PV.values[c_lcl_15_shift + ijk],0.0)
-                            PV.values[c_lcl_60_shift + ijk] = fmax(PV.values[c_lcl_60_shift + ijk],0.0)
+                            PV.values[var_shift + ijk] = fmax(PV.values[var_shift + ijk],0.0)
 
 
         return
@@ -198,3 +217,4 @@ cdef class Tracers:
         if self.lcl_tracers:
             NS.write_ts('grid_lcl',Gr.zl_half[self.index_lcl], Pa)
         return
+

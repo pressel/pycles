@@ -91,14 +91,20 @@ cdef class NetCDFIO_Stats:
         profile_grp.createDimension('t', None)
         z = profile_grp.createVariable('z', 'f8', ('z'))
         z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
+        z_half = profile_grp.createVariable('z_half', 'f8', ('z'))
+        z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
         profile_grp.createVariable('t', 'f8', ('t'))
         del z
+        del z_half
 
         reference_grp = root_grp.createGroup('reference')
         reference_grp.createDimension('z', Gr.dims.n[2])
         z = reference_grp.createVariable('z', 'f8', ('z'))
         z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
+        z_half = reference_grp.createVariable('z_half', 'f8', ('z'))
+        z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
         del z
+        del z_half
 
         ts_grp = root_grp.createGroup('timeseries')
         ts_grp.createDimension('t', None)
