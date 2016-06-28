@@ -212,6 +212,9 @@ cdef class NetCDFIO_Fields:
     cpdef initialize(self, dict namelist, ParallelMPI.ParallelMPI Pa):
 
         self.last_output_time = 0.0
+        # __
+        self.count = 0
+        # __
         self.uuid = str(namelist['meta']['uuid'])
         self.frequency = namelist['fields_io']['frequency']
 
@@ -235,9 +238,13 @@ cdef class NetCDFIO_Fields:
         return
 
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
-
+        # new_dir = os.path.join(
+        #     self.fields_path, str(int(self.last_output_time)))
+        # __
         new_dir = os.path.join(
-            self.fields_path, str(int(self.last_output_time)))
+            self.fields_path, str(int(self.last_output_time))+'_'+str(self.count))
+        self.count += 1
+        # __
 
         if Pa.rank == 0 and not os.path.exists(new_dir):
             try:

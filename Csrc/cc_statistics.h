@@ -68,6 +68,9 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values, double* re
 //        printf("mean[gw] = %f\n", mean[gw]);
 //        printf("mean[10] = %f\n", mean[10]);
 //        printf("finished horizontal mean \n");
+        free(mean_);
+        free(mean_local);
+
         return;
 }
         /*
@@ -201,6 +204,8 @@ void horizontal_mean_const(struct DimStruct *dims, const double* restrict values
 //        printf("mean[gw] = %f\n", mean[gw]);
 //        printf("mean[10] = %f\n", mean[10]);
 //        printf("finished horizontal mean \n");
+        free(mean_);
+        free(mean_local);
         return;
 }
 
