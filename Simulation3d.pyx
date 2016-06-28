@@ -303,8 +303,8 @@ class Simulation3d:
 
             self.TS.dt = np.amin(dts[dts > 0.0])
             # If time to ouptut fields do output
-            #if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
-            if (1==1):
+            if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
+            #if (1==1):
                 self.Pa.root_print('Doing 3D FieldIO')
                 self.FieldsIO.last_output_time = self.TS.t
                 self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
@@ -314,8 +314,8 @@ class Simulation3d:
 
             # If time to ouput stats do output
             self.Pa.root_print('StatsIO freq: ' + str(self.StatsIO.frequency) + ', ' + str(self.StatsIO.last_output_time) + ', ' + str(self.TS.t))
-            #if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t or self.StatsIO.last_output_time + self.StatsIO.frequency + 10.0 == self.TS.t:
-            if (1==1):
+            if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t or self.StatsIO.last_output_time + self.StatsIO.frequency + 10.0 == self.TS.t:
+            #if (1==1):
                 self.Pa.root_print('Doing StatsIO')
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.open_files(self.Pa)
@@ -344,8 +344,8 @@ class Simulation3d:
 
 
             # If time to ouput stats do output
-            #if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
-            if (1==1):
+            if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
+            #if (1==1):
                 self.Pa.root_print('Doing CondStatsIO')
                 self.CondStatsIO.last_output_time = self.TS.t
                 self.CondStatsIO.write_condstat_time(self.TS.t, self.Pa)
@@ -354,8 +354,8 @@ class Simulation3d:
                 self.Pa.root_print('Finished Doing CondStatsIO')
 
 
-            #if self.VO.last_vis_time + self.VO.frequency == self.TS.t:
-            if (1==1):
+            if self.VO.last_vis_time + self.VO.frequency == self.TS.t:
+            #if (1==1):
                 self.Pa.root_print('Dumping Visualisation File!')
                 self.VO.last_vis_time = self.TS.t
                 self.VO.write(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
