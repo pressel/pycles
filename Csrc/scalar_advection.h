@@ -737,6 +737,9 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
         case 104:
             fourth_order_a_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
+        case 1044:
+            fourth_order_a_ql_debug(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            break;
         case 105:
             weno_fifth_order_a_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
