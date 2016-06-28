@@ -459,6 +459,16 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
     const ssize_t sp2 = 2 * sp1;
     const ssize_t sm1 = -sp1 ;
 
+    double f_full_max = -9999.9;
+    double f_full_min = 9999.9;
+    double f_max = -9999.9;
+    double f_min = 9999.9;
+    double ef_max = -9999.9;
+    double ef_min = 9999.9;
+    double mef_max = -9999.9;
+    double mef_min = 9999.9;
+
+
 
     // (1) interpolation
     //     (a) velocity fields --> not necessary, since only scalars interpolated
@@ -474,7 +484,6 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
         }
     }
 
-
     // (2) average velocity field and interpolated scalar field
 //    for(ssize_t k=kmin;k<kmax;k++){
 //        phi_int_mean[k] = 0;
@@ -483,7 +492,6 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
 //        }
     horizontal_mean(dims, &phi_int[0], &phi_int_mean[0]);
     horizontal_mean(dims, &velocity[0], &vel_mean[0]);
-
 
     // (3) compute eddy flux: (vel - mean_vel)**2 AND compute total flux
     if(d==2){
@@ -496,6 +504,10 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
 //                    phi_int_fluc[ijk] = phi_int[ijk] - phi_int_mean[k];
                     eddy_flux[ijk] = (phi_int[ijk] - phi_int_mean[k]) * (velocity[ijk] - vel_mean[k]) * rho0[k];
                     flux[ijk] = phi_int[ijk] * velocity[ijk] * rho0[k];
+                    f_full_max = fmax(f_full_max, flux[ijk]);
+                    f_full_min = fmin(f_full_min, flux[ijk]);
+                    ef_max = fmax(ef_max, eddy_flux[ijk]);
+                    ef_min = fmin(ef_min, eddy_flux[ijk]);
                     // flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0[k];
                 } // End k loop
             } // End j loop
@@ -510,6 +522,10 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
                     const ssize_t ijk = ishift + jshift + k ;
                     eddy_flux[ijk] = (phi_int[ijk] - phi_int_mean[k]) * (velocity[ijk] - vel_mean[k]) * rho0_half[k];
                     flux[ijk] = phi_int[ijk] * velocity[ijk] * rho0_half[k];
+                    f_full_max = fmax(f_full_max, flux[ijk]);
+                    f_full_min = fmin(f_full_min, flux[ijk]);
+                    ef_max = fmax(ef_max, eddy_flux[ijk]);
+                    ef_min = fmin(ef_min, eddy_flux[ijk]);
                     // flux[ijk] = interp_4(scalar[ijk+sm1],scalar[ijk],scalar[ijk+sp1],scalar[ijk+sp2])*velocity[ijk]*rho0_half[k];
                 } // End k loop
             } // End j loop
@@ -529,10 +545,16 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
             for(ssize_t k=kmin;k<kmax;k++){
                 const ssize_t ijk = ishift + jshift + k ;
                 flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
+                f_max = fmax(f_max,flux[ijk]);
+                f_min = fmin(f_min,flux[ijk]);
 //                flux[ijk] = flux[ijk];
             }
         }
     }
+
+    printf("d: %d, f_max: %f, f_min: %f \n", d, f_max, f_min);
+    printf("ef_max: %f, ef_min: %f, mef_max: %f, mef_min: %f\n", ef_max, ef_min, mef_max, mef_min);
+    printf("full flux max: %f, full flux min: %f\n", f_full_max, f_full_min);
 
     free(eddy_flux);
     free(mean_eddy_flux);
