@@ -280,6 +280,7 @@ cdef class SurfaceSullivanPatton(SurfaceBase):
                     self.v_flux[ij] = -interp_2(self.friction_velocity[ij], self.friction_velocity[ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) \
                                       * (PV.values[v_shift + ijk] + Ref.v0)
 
+
         SurfaceBase.update(self, Gr, Ref, PV, DV, Pa, TS)
         return
 
