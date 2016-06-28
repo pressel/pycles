@@ -46,6 +46,9 @@ cdef class VisualizationOutput:
 
     cpdef initialize(self):
         self.last_vis_time = 0.0
+        #__
+        self.count = 0
+        #__
 
         return
 
@@ -81,6 +84,7 @@ cdef class VisualizationOutput:
             double dz = Gr.dims.dx[2]
 
             dict out_dict = {}
+
 
         comm = MPI.COMM_WORLD
         try:
@@ -176,7 +180,12 @@ cdef class VisualizationOutput:
 
 
         if Pa.rank == 0:
-            with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time)) +  '.pkl', 'wb') as f:
+            #__
+            with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time) + self.count) + '.pkl', 'wb') as f:
                 pickle.dump(out_dict, f, protocol=2)
+            self.count += 1
+            #__
+            # with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time)) +  '.pkl', 'wb') as f:
+            #     pickle.dump(out_dict, f, protocol=2)
 
         return
