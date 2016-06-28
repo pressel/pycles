@@ -181,7 +181,7 @@ cdef class VisualizationOutput:
 
         if Pa.rank == 0:
             #__
-            with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time) + self.count) + '.pkl', 'wb') as f:
+            with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time)) + '_' + str(self.count) + '.pkl', 'wb') as f:
                 pickle.dump(out_dict, f, protocol=2)
             self.count += 1
             #__
