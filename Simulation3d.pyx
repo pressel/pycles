@@ -44,7 +44,6 @@ cimport StochasticNoise
 class Simulation3d:
 
     def __init__(self, namelist):
-
         return
 
     def initialize(self, namelist):
@@ -314,7 +313,8 @@ class Simulation3d:
 
             # If time to ouput stats do output
             self.Pa.root_print('StatsIO freq: ' + str(self.StatsIO.frequency) + ', ' + str(self.StatsIO.last_output_time) + ', ' + str(self.TS.t))
-            if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t or self.StatsIO.last_output_time + self.StatsIO.frequency + 10.0 == self.TS.t:
+            if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t:
+            #if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t or self.StatsIO.last_output_time + self.StatsIO.frequency + 10.0 == self.TS.t:
             #if (1==1):
                 self.Pa.root_print('Doing StatsIO')
                 self.StatsIO.last_output_time = self.TS.t
