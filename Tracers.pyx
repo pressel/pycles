@@ -9,11 +9,12 @@ cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ParallelMPI
+cimport TimeStepping
 
 from NetCDFIO cimport NetCDFIO_Stats
 import cython
 
-from libc.math cimport fmax
+from libc.math cimport fmax, sqrt
 
 cimport numpy as np
 import numpy as np
@@ -31,7 +32,9 @@ def TracersFactory(namelist):
     except:
         use_tracers = False
     if use_tracers:
-        return UpdraftTracers(namelist)
+        # return UpdraftTracers(namelist)
+        print('In TracersFactory')
+        return PurityTracers(namelist)
     else:
         return TracersNone()
 
@@ -42,7 +45,7 @@ cdef class TracersNone:
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
@@ -66,7 +69,6 @@ cdef class UpdraftTracers:
 
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-
         # Assemble a dictionary with the tracer information
         # Can be expanded for different init heights or timescales
         self.tracer_dict = {}
@@ -81,16 +83,16 @@ cdef class UpdraftTracers:
         for var in self.tracer_dict['surface'].keys():
             PV.add_variable(var, '-', "sym", "scalar", Pa)
 
-
         if self.lcl_tracers:
             for var in self.tracer_dict['lcl'].keys():
                 PV.add_variable(var, '-', "sym", "scalar", Pa)
-            NS.add_ts('grid_lcl', Gr, Pa )
+
+        NS.add_ts('grid_lcl', Gr, Pa )
 
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
@@ -217,4 +219,152 @@ cdef class UpdraftTracers:
         if self.lcl_tracers:
             NS.write_ts('grid_lcl',Gr.zl_half[self.index_lcl], Pa)
         return
+
+
+
+
+cdef class PurityTracers:
+    def __init__(self, namelist):
+        cdef UpdraftTracers TracersUpdraft
+        self.TracersUpdraft = UpdraftTracers(namelist)
+        return
+
+    cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.TracersUpdraft.initialize(Gr, PV, NS, Pa)
+        # Here we need to add purity + origin info tracers for each of the updraft diagnostic tracers
+        # To get this working, we assume only 15 min timescale diagnostic tracers
+        PV.add_variable('purity_srf', '-', "sym", "scalar", Pa)
+        PV.add_variable('time_srf', '-', "sym", "scalar", Pa)
+        PV.add_variable('qt_srf', '-', "sym", "scalar", Pa)
+        PV.add_variable('s_srf', '-', "sym", "scalar", Pa)
+
+        if self.TracersUpdraft.lcl_tracers:
+
+            PV.add_variable('purity_lcl', '-', "sym", "scalar", Pa)
+            PV.add_variable('time_lcl', '-', "sym", "scalar", Pa)
+            PV.add_variable('qt_lcl', '-', "sym", "scalar", Pa)
+            PV.add_variable('s_lcl', '-', "sym", "scalar", Pa)
+
+        return
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+
+        self.TracersUpdraft.update(Gr,Ref, PV, DV, TS, Pa)
+
+        # First do the surface tracers
+        cdef:
+            Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
+            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_15')
+            Py_ssize_t p_shift = PV.get_varshift(Gr,'purity_srf')
+            Py_ssize_t pt_shift = PV.get_varshift(Gr,'time_srf')
+            Py_ssize_t pq_shift = PV.get_varshift(Gr,'qt_srf')
+            Py_ssize_t ps_shift = PV.get_varshift(Gr,'s_srf')
+            Py_ssize_t index_lcl
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t ishift, jshift, ijk, i,j,k
+
+
+            double [:] tracer_normed = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
+            double [:] mean = Pa.HorizontalMean(Gr, &PV.values[c_shift])
+            double [:] mean_square = Pa.HorizontalMeanofSquares(Gr, &PV.values[c_shift], &PV.values[c_shift])
+
+        updraft_anomaly(&Gr.dims, &PV.values[c_shift], &tracer_normed[0], &mean[0], &mean_square[0])
+
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                for j in xrange(Gr.dims.nlg[1]):
+                    for k in xrange( Gr.dims.nlg[2]):
+                        ijk = i * istride + j * jstride + k
+                        if tracer_normed[ijk] < 1.0:
+                            PV.values[p_shift + ijk] = 0.0
+                            PV.values[pt_shift + ijk] = 0.0
+                            PV.values[pq_shift + ijk] = 0.0
+                            PV.values[ps_shift + ijk] = 0.0
+                    ijk = i * istride + j * jstride + Gr.dims.gw
+                    PV.values[p_shift + ijk] = 1.0
+                    PV.values[pt_shift + ijk] = TS.t
+                    PV.values[pq_shift + ijk] = PV.values[q_shift + ijk]
+                    PV.values[ps_shift + ijk] = PV.values[s_shift + ijk]
+
+        if self.TracersUpdraft.lcl_tracers:
+            index_lcl = self.TracersUpdraft.index_lcl
+
+            c_shift = PV.get_varshift(Gr,'c_lcl_15')
+            p_shift = PV.get_varshift(Gr,'purity_lcl')
+            pt_shift = PV.get_varshift(Gr,'time_lcl')
+            pq_shift = PV.get_varshift(Gr,'qt_lcl')
+            ps_shift = PV.get_varshift(Gr,'s_lcl')
+            mean = Pa.HorizontalMean(Gr, &PV.values[c_shift])
+            mean_square = Pa.HorizontalMeanofSquares(Gr, &PV.values[c_shift], &PV.values[c_shift])
+
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                for j in xrange(Gr.dims.nlg[1]):
+                    for k in xrange(0,index_lcl+1):
+                        ijk = i * istride + j * jstride + k
+                        PV.values[p_shift + ijk] = 1.0
+                        PV.values[pt_shift + ijk] = TS.t
+                        PV.values[pq_shift + ijk] = PV.values[q_shift + ijk]
+                        PV.values[ps_shift + ijk] = PV.values[s_shift + ijk]
+                    for k in xrange(index_lcl+1, Gr.dims.nlg[2]):
+                        ijk = i * istride + j * jstride + k
+                        if tracer_normed[ijk] < 1.0:
+                            PV.values[p_shift + ijk] = 0.0
+                            PV.values[pt_shift + ijk] = 0.0
+                            PV.values[pq_shift + ijk] = 0.0
+                            PV.values[ps_shift + ijk] = 0.0
+
+
+
+
+        return
+
+    cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+        self.TracersUpdraft.update_cleanup(Gr, Ref, PV, DV, Pa)
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.TracersUpdraft.stats_io(Gr, NS, Pa)
+        return
+
+
+
+
+cdef updraft_anomaly(Grid.DimStruct *dims, double *tracer_raw, double *tracer_normed, double *mean, double *meansquare_sigma):
+    cdef:
+        Py_ssize_t imax = dims.nlg[0]
+        Py_ssize_t jmax = dims.nlg[1]
+        Py_ssize_t kmax = dims.nlg[2]
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k
+        double sigma_min
+        double sigma_sum = 0.0
+
+
+
+    # Trickery! Force normed anomaly to be very small when the variance itself becomes small by dividing by a large number
+    # We reuse the variance array input as the std. dev array
+    with nogil:
+        for k in xrange(kmax):
+            meansquare_sigma[k] = meansquare_sigma[k] - mean[k] * mean[k]
+            meansquare_sigma[k] = sqrt(fmax(meansquare_sigma[k],0.0))
+            sigma_sum += meansquare_sigma[k]
+            sigma_min = sigma_sum/(k+1.0) * 0.05
+            if meansquare_sigma[k] < sigma_min:
+                meansquare_sigma[k] = 1.0e6
+
+        for i in xrange(imax):
+            ishift = i*istride
+            for j in xrange(jmax):
+                jshift = j*jstride
+                for k in xrange(kmax):
+                    ijk = ishift + jshift + k
+                    tracer_normed[ijk] = (tracer_raw[ijk] - mean[k])/ meansquare_sigma[k]
+
+    return
 
