@@ -254,6 +254,7 @@ cdef class PurityTracers:
 
         # First do the surface tracers
         cdef:
+            Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
             Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
             Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_15')
@@ -278,7 +279,7 @@ cdef class PurityTracers:
                 for j in xrange(Gr.dims.nlg[1]):
                     for k in xrange( Gr.dims.nlg[2]):
                         ijk = i * istride + j * jstride + k
-                        if tracer_normed[ijk] < 1.0:
+                        if tracer_normed[ijk] < 1.0 or PV.values[w_shift+ijk] < 1e-5:
                             PV.values[p_shift + ijk] = 0.0
                             PV.values[pt_shift + ijk] = 0.0
                             PV.values[pq_shift + ijk] = 0.0
