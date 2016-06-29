@@ -312,7 +312,7 @@ cdef class PurityTracers:
                         PV.values[ps_shift + ijk] = PV.values[s_shift + ijk]
                     for k in xrange(index_lcl+1, Gr.dims.nlg[2]):
                         ijk = i * istride + j * jstride + k
-                        if tracer_normed[ijk] < 1.0:
+                        if tracer_normed[ijk] < 1.0 or PV.values[w_shift+ijk] < 1e-5:
                             PV.values[p_shift + ijk] = 0.0
                             PV.values[pt_shift + ijk] = 0.0
                             PV.values[pq_shift + ijk] = 0.0
