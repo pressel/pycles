@@ -255,8 +255,10 @@ cdef class TimeStepping:
                         # problem: second term is nan
         Pa.root_print('cfl_max_local: '+ str(cfl_max_local))
         Pa.root_print(str(self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2])))  # is a nan
-        Pa.root_print('u: '+str(PV.values[u_shift + ijk]))
-        Pa.root_print('v: '+str(PV.values[v_shift+ijk]))
+        #Pa.root_print('u: '+str(PV.values[u_shift + ijk]))
+        #Pa.root_print('v: '+str(PV.values[v_shift+ijk]))
+        Pa.root_print('u: '+str(np.amax(PV.values[u_shift:v_shift])) + ', '+ str(np.amin(PV.values[u_shift:v_shift])))
+        Pa.root_print('v: '+str(np.amax(PV.values[v_shift:w_shift])) + ', '+ str(np.amin(PV.values[v_shift:w_shift])))
         Pa.root_print('w: '+str(w))
         # Pa.root_print('u: '+str(fmax(PV.values)))
         # Pa.root_print('w: '+str(fabs(w)))
