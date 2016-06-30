@@ -497,7 +497,6 @@ class Simulation3d:
             # int [:] qtk_arr = np.zeros(1, dtype=int)
         sk_arr = np.zeros(1,dtype=np.int)
         qtk_arr = np.zeros(1,dtype=np.int)
-        print('????????', sk_arr, sk_arr.shape)
 
         u_max = np.nanmax(PV_.tendencies[u_varshift:v_varshift])
         uk_max = np.nanargmax(PV_.tendencies[u_varshift:v_varshift])
@@ -587,8 +586,6 @@ class Simulation3d:
                                 sk_arr = np.append(sk_arr,ijk)
                             if np.isnan(PV_.values[qt_varshift+ijk]):
                                 qtk_arr = np.append(qtk_arr,ijk)
-
-
 
 
         else:
