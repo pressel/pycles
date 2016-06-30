@@ -586,6 +586,11 @@ class Simulation3d:
                                 sk_arr = np.append(sk_arr,ijk)
                             if np.isnan(PV_.values[qt_varshift+ijk]):
                                 qtk_arr = np.append(qtk_arr,ijk)
+            if np.size(sk_arr) > 1:
+                self.Pa.root_print('sk_arr: ', sk_arr)
+            if np.size(qtk_arr) > 1:
+                self.Pa.root_print('qtk_arr: ', qtk_arr)
+
 
 
         else:
@@ -617,7 +622,8 @@ class Simulation3d:
                             ijk = ishift + jshift + k
                             if np.isnan(PV_.values[s_varshift+ijk]):
                                 sk_arr = np.append(sk_arr,ijk)
-
+            if np.size(sk_arr) > 1:
+                self.Pa.root_print('sk_arr: ', sk_arr)
 
         # cdef:
         #     Py_ssize_t i,j,k,ijk
