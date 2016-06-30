@@ -14,7 +14,7 @@ cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 import cython
 
-from libc.math cimport fmax, sqrt
+from libc.math cimport fmax, sqrt, copysign
 
 cimport numpy as np
 import numpy as np
@@ -158,8 +158,8 @@ cdef class UpdraftTracers:
             lcl = Pa.domain_scalar_sum(lcl_)
 
             for k in xrange(Gr.dims.nlg[2]-Gr.dims.gw, Gr.dims.gw-1, -1):
-                if Gr.zl_half[k] <= lcl:
-                    self.index_lcl = k
+                if Gr.zl_half[k] < lcl:
+                    self.index_lcl = k + 1
                     break
 
             # Pa.root_print('Grid LCL ' + str(Gr.zl_half[self.index_lcl]))
@@ -266,29 +266,36 @@ cdef class PurityTracers:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t ishift, jshift, ijk, i,j,k
+            Py_ssize_t gw = Gr.dims.gw
 
 
             double [:] tracer_normed = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] mean = Pa.HorizontalMean(Gr, &PV.values[c_shift])
             double [:] mean_square = Pa.HorizontalMeanofSquares(Gr, &PV.values[c_shift], &PV.values[c_shift])
+            double max_x, max_y, max_z, total_max
 
-        updraft_anomaly(&Gr.dims, &PV.values[c_shift], &tracer_normed[0], &mean[0], &mean_square[0])
+        updraft_indicator(&Gr.dims, &PV.values[c_shift], &tracer_normed[0], &mean[0], &mean_square[0], &PV.values[w_shift])
 
         with nogil:
-            for i in xrange(Gr.dims.nlg[0]):
-                for j in xrange(Gr.dims.nlg[1]):
-                    for k in xrange( Gr.dims.nlg[2]):
-                        ijk = i * istride + j * jstride + k
-                        if tracer_normed[ijk] < 1.0 or PV.values[w_shift+ijk] < 1e-5:
-                            PV.values[p_shift + ijk] = 0.0
-                            PV.values[pt_shift + ijk] = 0.0
-                            PV.values[pq_shift + ijk] = 0.0
-                            PV.values[ps_shift + ijk] = 0.0
+            for i in xrange(gw, Gr.dims.nlg[0]-gw):
+                for j in xrange(gw, Gr.dims.nlg[1]-gw):
                     ijk = i * istride + j * jstride + Gr.dims.gw
                     PV.values[p_shift + ijk] = 1.0
                     PV.values[pt_shift + ijk] = TS.t
                     PV.values[pq_shift + ijk] = PV.values[q_shift + ijk]
                     PV.values[ps_shift + ijk] = PV.values[s_shift + ijk]
+                    for k in xrange(gw + 1, Gr.dims.nlg[2]-gw):
+                        ijk = i * istride + j * jstride + k
+                        max_x = fmax(tracer_normed[ijk-istride],tracer_normed[ijk+istride])
+                        max_y = fmax(tracer_normed[ijk-jstride],tracer_normed[ijk+jstride])
+                        max_z = fmax(tracer_normed[ijk-1],tracer_normed[ijk+1])
+                        total_max = fmax(fmax(fmax(max_x,max_y),max_z), tracer_normed[ijk])
+                        if total_max < 1.0:
+                            PV.values[p_shift + ijk] = 0.0
+                            PV.values[pt_shift + ijk] = 0.0
+                            PV.values[pq_shift + ijk] = 0.0
+                            PV.values[ps_shift + ijk] = 0.0
+
 
         if self.TracersUpdraft.lcl_tracers:
             index_lcl = self.TracersUpdraft.index_lcl
@@ -301,25 +308,28 @@ cdef class PurityTracers:
             mean = Pa.HorizontalMean(Gr, &PV.values[c_shift])
             mean_square = Pa.HorizontalMeanofSquares(Gr, &PV.values[c_shift], &PV.values[c_shift])
 
-        with nogil:
-            for i in xrange(Gr.dims.nlg[0]):
-                for j in xrange(Gr.dims.nlg[1]):
-                    for k in xrange(0,index_lcl+1):
-                        ijk = i * istride + j * jstride + k
-                        PV.values[p_shift + ijk] = 1.0
-                        PV.values[pt_shift + ijk] = TS.t
-                        PV.values[pq_shift + ijk] = PV.values[q_shift + ijk]
-                        PV.values[ps_shift + ijk] = PV.values[s_shift + ijk]
-                    for k in xrange(index_lcl+1, Gr.dims.nlg[2]):
-                        ijk = i * istride + j * jstride + k
-                        if tracer_normed[ijk] < 1.0 or PV.values[w_shift+ijk] < 1e-5:
-                            PV.values[p_shift + ijk] = 0.0
-                            PV.values[pt_shift + ijk] = 0.0
-                            PV.values[pq_shift + ijk] = 0.0
-                            PV.values[ps_shift + ijk] = 0.0
+            updraft_indicator(&Gr.dims, &PV.values[c_shift], &tracer_normed[0], &mean[0], &mean_square[0], &PV.values[w_shift])
 
-
-
+            with nogil:
+                for i in xrange(gw, Gr.dims.nlg[0]-gw):
+                    for j in xrange(gw, Gr.dims.nlg[1]-gw):
+                        ijk = i * istride + j * jstride + Gr.dims.gw
+                        for k in xrange(gw,index_lcl+1):
+                            PV.values[p_shift + ijk] = 1.0
+                            PV.values[pt_shift + ijk] = TS.t
+                            PV.values[pq_shift + ijk] = PV.values[q_shift + ijk]
+                            PV.values[ps_shift + ijk] = PV.values[s_shift + ijk]
+                        for k in xrange(index_lcl+1, Gr.dims.nlg[2]-gw):
+                            ijk = i * istride + j * jstride + k
+                            max_x = fmax(tracer_normed[ijk-istride],tracer_normed[ijk+istride])
+                            max_y = fmax(tracer_normed[ijk-jstride],tracer_normed[ijk+jstride])
+                            max_z = fmax(tracer_normed[ijk-1],tracer_normed[ijk+1])
+                            total_max = fmax(fmax(fmax(max_x,max_y),max_z), tracer_normed[ijk])
+                            if total_max < 1.0:
+                                PV.values[p_shift + ijk] = 0.0
+                                PV.values[pt_shift + ijk] = 0.0
+                                PV.values[pq_shift + ijk] = 0.0
+                                PV.values[ps_shift + ijk] = 0.0
 
         return
 
@@ -335,7 +345,7 @@ cdef class PurityTracers:
 
 
 
-cdef updraft_anomaly(Grid.DimStruct *dims, double *tracer_raw, double *tracer_normed, double *mean, double *meansquare_sigma):
+cdef updraft_indicator(Grid.DimStruct *dims, double *tracer_raw, double *tracer_normed, double *mean, double *meansquare_sigma, double *w):
     cdef:
         Py_ssize_t imax = dims.nlg[0]
         Py_ssize_t jmax = dims.nlg[1]
@@ -347,9 +357,6 @@ cdef updraft_anomaly(Grid.DimStruct *dims, double *tracer_raw, double *tracer_no
         double sigma_sum = 0.0
 
 
-
-    # Trickery! Force normed anomaly to be very small when the variance itself becomes small by dividing by a large number
-    # We reuse the variance array input as the std. dev array
     with nogil:
         for k in xrange(kmax):
             meansquare_sigma[k] = meansquare_sigma[k] - mean[k] * mean[k]
@@ -357,15 +364,19 @@ cdef updraft_anomaly(Grid.DimStruct *dims, double *tracer_raw, double *tracer_no
             sigma_sum += meansquare_sigma[k]
             sigma_min = sigma_sum/(k+1.0) * 0.05
             if meansquare_sigma[k] < sigma_min:
-                meansquare_sigma[k] = 1.0e6
-
-        for i in xrange(imax):
-            ishift = i*istride
-            for j in xrange(jmax):
-                jshift = j*jstride
-                for k in xrange(kmax):
-                    ijk = ishift + jshift + k
-                    tracer_normed[ijk] = (tracer_raw[ijk] - mean[k])/ meansquare_sigma[k]
+               for i in xrange(imax):
+                    ishift = i*istride
+                    for j in xrange(jmax):
+                        jshift = j*jstride
+                        ijk = ishift + jshift + k
+                        tracer_normed[ijk] = 0.0
+            else:
+               for i in xrange(imax):
+                    ishift = i*istride
+                    for j in xrange(jmax):
+                        jshift = j*jstride
+                        ijk = ishift + jshift + k
+                        tracer_normed[ijk] = copysign( (tracer_raw[ijk] - mean[k])/ meansquare_sigma[k]    , w[ijk] - 1.0e-10)
 
     return
 
