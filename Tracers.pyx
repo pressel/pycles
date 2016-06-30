@@ -330,6 +330,8 @@ cdef class PurityTracers:
                                 PV.values[pt_shift + ijk] = 0.0
                                 PV.values[pq_shift + ijk] = 0.0
                                 PV.values[ps_shift + ijk] = 0.0
+        # Update the boundary points
+        PV.Update_all_bcs(Gr, Pa )
 
         return
 
