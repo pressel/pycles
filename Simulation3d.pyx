@@ -587,9 +587,11 @@ class Simulation3d:
                             if np.isnan(PV_.values[qt_varshift+ijk]):
                                 qtk_arr = np.append(qtk_arr,ijk)
             if np.size(sk_arr) > 1:
-                self.Pa.root_print('sk_arr: ', sk_arr)
+                if self.Pa.rank == 0:
+                    print('sk_arr: ', sk_arr)
             if np.size(qtk_arr) > 1:
-                self.Pa.root_print('qtk_arr: ', qtk_arr)
+                if self.Pa.rank == 0:
+                    print('qtk_arr: ', qtk_arr)
 
 
 
