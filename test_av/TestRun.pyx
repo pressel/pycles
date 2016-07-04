@@ -1,7 +1,7 @@
 import numpy as np
 cimport numpy as np
 
-cimport TestArray_c
+cimport TestArray
 
 cimport Grid
 cimport ParallelMPI
@@ -29,17 +29,17 @@ class TestRun:
         return
 
 
-    def array(self):        # does NOT work with cdef
-        k = 2
-        m = 10
-        b = np.empty((k,m))
-
-        aux = np.linspace(0,m-1,m)
-        b[0,:] = aux
-        b[1,:] = aux
-
-        # print(b[0,:])
-        return b
+    # def array(self):        # does NOT work with cdef
+    #     k = 2
+    #     m = 10
+    #     b = np.empty((k,m))
+    #
+    #     aux = np.linspace(0,m-1,m)
+    #     b[0,:] = aux
+    #     b[1,:] = aux
+    #
+    #     # print(b[0,:])
+    #     return b
 
 
     def array_mean(self, namelist):
@@ -55,7 +55,7 @@ class TestRun:
         print('u shape: ', u_val.shape)
 
         # d = self.PV.velocity_directions[0]
-        # mean = TestArray_c.TestArray(namelist)
+        # mean = TestArray.TestArray(namelist)
         # mean.array_mean(self.PV, self.Gr)
 
         # cdef Py_ssize_t shift_u = self.PV.velocity_directions[0] * self.Gr.dims.npg     # cannot take the address of a Python variable
@@ -67,16 +67,20 @@ class TestRun:
     def hor_mean(self,namelist):
         print('TestRun.hor_mean')
 
-        mean = TestArray_c.TestArray(namelist)
+        mean = TestArray.TestArray(namelist)
 
-        # mean.set_PV_values_const(self.PV, self.Gr)
-        # u_mean = np.zeros(self.Gr.dims.ng[2])
-        # mean.array_mean_return(self.PV, self.Gr, self.Pa)
+        self.Pa.root_print('(1) const PV values')
+        mean.set_PV_values_const(self.PV, self.Gr)
+        mean.array_mean_return(self.PV, self.Gr, self.Pa)
 
+        self.Pa.root_print('')
+        self.Pa.root_print('(2) varying PV values')
+        self.Pa.root_print('(2a) array_mean_return')
         mean.set_PV_values(self.PV, self.Gr, self.Pa)
         u_val = self.PV.get_variable_array('u', self.Gr)
         mean.array_mean_return(self.PV, self.Gr, self.Pa)
 
+        self.Pa.root_print('(2b) array_mean_const')
         # mean.set_PV_values(self.PV, self.Gr, self.Pa)
         # u_val = self.PV.get_variable_array('u', self.Gr)
         mean.array_mean_const(self.PV, self.Gr, self.Pa)

@@ -34,8 +34,7 @@ def main3d(namelist):
     test = TestRun.TestRun(namelist)
 
     test.initialize(namelist)
-
-    test.array()
+    # test.array()
     test.array_mean(namelist)
     test.hor_mean(namelist)
 

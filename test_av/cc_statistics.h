@@ -130,7 +130,7 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values, double* re
         }
         printf("averaging number (nx*ny) = %f, %f\n", n_horizontal_i, 1/n_horizontal_i);
         printf("mean_local[gw] = %f\n", mean_local[gw]);
-        printf("mean_local[10] = %f\n", mean_local[10]);
+        printf("mean_local[7] = %f\n", mean_local[7]);
 
 //        //#Here we call MPI_Allreduce on the sub_xy communicator as we only need communication among
 //        //#processes with the the same vertical rank
@@ -141,8 +141,10 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values, double* re
             mean[k] = mean_[k] * n_horizontal_i;
         }
         printf("mean[gw] = %f\n", mean[gw]);
-        printf("mean[10] = %f\n", mean[10]);
+        printf("mean[7] = %f\n", mean[7]);
         printf("Done \n");
+        free(mean_);
+        free(mean_local);
 
         return;
 }
@@ -278,8 +280,8 @@ void horizontal_mean_const(struct DimStruct *dims, const double* restrict values
 //        printf("mean[gw] = %f\n", mean[gw]);
 //        printf("mean[10] = %f\n", mean[10]);
 //        printf("finished horizontal mean \n");
+        free(mean_);
+        free(mean_local);
         return;
 }
-
-
 

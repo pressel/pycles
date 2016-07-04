@@ -20,7 +20,7 @@ cdef extern from "cc_statistics.h":
 
 cdef class TestArray:
     def __init__(self,namelist):
-        print('initialising TestArray_c')
+        print('initialising TestArray')
         return
 
     # def initialize(self):
@@ -36,14 +36,14 @@ cdef class TestArray:
         return
 
 
-    cpdef array_mean_return(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
-        print('calling TestArray_c.array_mean_return')
+    cpdef array_mean_return_3d(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+        print('calling TestArray.array_mean_return')
 
         u_val = PV.get_variable_array('u', Gr)
-        cdef double [:] u_mean = np.zeros(Gr.dims.ng[2])
+        cdef double [:] u_mean = np.zeros((Gr.dims.ng[2]))
+        print(u_mean.size, u_mean.shape, Gr.dims.ng[2], u_val.shape)
 
         if Pa.rank == 0:
-            print('!!!', u_mean.shape, Gr.dims.ng[2], u_val.shape)
             print('!!! before !!!')
             print('u_mean:', np.array(u_mean))
         # print('u_val, (:,0,0):', u_val[:,0,0])
@@ -53,7 +53,7 @@ cdef class TestArray:
         cdef Py_ssize_t shift_u = PV.velocity_directions[0] * Gr.dims.npg
         horizontal_mean(&Gr.dims, &PV.values[shift_u], &u_mean[0])
 
-        print('processor:', Pa.rank)
+        # print('processor:', Pa.rank)
         if Pa.rank == 0:
             print('!!! after !!!')
             # print('u_val, (:,:,0):', u_val[:,:,0])
@@ -62,8 +62,35 @@ cdef class TestArray:
         return
 
 
+    cpdef array_mean_return(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+        print('calling TestArray.array_mean_return')
+
+        u_val = PV.values[:]
+        # u_val = PV.get_variable_array('u', Gr)
+        cdef double [:] u_mean = np.zeros((Gr.dims.ng[2]))
+        if Pa.rank == 0:
+            print('u_mean', u_mean.size, u_mean.shape, Gr.dims.ng[2])
+            print('u_val', u_val.shape, Gr.dims.npg)
+
+        if Pa.rank == 0:
+            print('! before: !')
+            print('u_mean:', np.array(u_mean))
+
+        cdef Py_ssize_t shift_u = PV.velocity_directions[0] * Gr.dims.npg
+        horizontal_mean(&Gr.dims, &PV.values[shift_u], &u_mean[0])
+
+        # print('processor:', Pa.rank)
+        if Pa.rank == 0:
+            print('! after: !')
+            # print('u_val, (:,:,0):', u_val[:,:,0])
+            print(np.array(u_mean))
+
+        return
+
+
+
     cpdef array_mean_const(self, PrognosticVariables.PrognosticVariables PV, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
-        print('calling TestArray_c.array_mean_return')
+        print('calling TestArray.array_mean_const')
 
         u_val = PV.get_variable_array('u', Gr)
         cdef double [:] u_mean = np.zeros(Gr.dims.ng[2])
@@ -83,6 +110,11 @@ cdef class TestArray:
             print(np.array(u_mean))
 
         return
+
+
+
+
+
 
 
 
