@@ -313,8 +313,8 @@ cdef class PurityTracers:
             with nogil:
                 for i in xrange(gw, Gr.dims.nlg[0]-gw):
                     for j in xrange(gw, Gr.dims.nlg[1]-gw):
-                        ijk = i * istride + j * jstride + Gr.dims.gw
                         for k in xrange(gw,index_lcl+1):
+                            ijk = i * istride + j * jstride + k
                             PV.values[p_shift + ijk] = 1.0
                             PV.values[pt_shift + ijk] = TS.t
                             PV.values[pq_shift + ijk] = PV.values[q_shift + ijk]
