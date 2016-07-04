@@ -80,10 +80,10 @@ class TestRun:
         u_val = self.PV.get_variable_array('u', self.Gr)
         mean.array_mean_return(self.PV, self.Gr, self.Pa)
 
-        self.Pa.root_print('(2b) array_mean_const')
-        # mean.set_PV_values(self.PV, self.Gr, self.Pa)
-        # u_val = self.PV.get_variable_array('u', self.Gr)
-        mean.array_mean_const(self.PV, self.Gr, self.Pa)
+        # self.Pa.root_print('(2b) array_mean_const')
+        # # mean.set_PV_values(self.PV, self.Gr, self.Pa)
+        # # u_val = self.PV.get_variable_array('u', self.Gr)
+        # mean.array_mean_const(self.PV, self.Gr, self.Pa)
 
         print('finished TestRun')
 

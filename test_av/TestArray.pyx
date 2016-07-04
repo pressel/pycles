@@ -79,11 +79,13 @@ cdef class TestArray:
         cdef Py_ssize_t shift_u = PV.velocity_directions[0] * Gr.dims.npg
         horizontal_mean(&Gr.dims, &PV.values[shift_u], &u_mean[0])
 
-        # print('processor:', Pa.rank)
         if Pa.rank == 0:
             print('! after: !')
             # print('u_val, (:,:,0):', u_val[:,:,0])
-            print(np.array(u_mean))
+            # print(np.array(u_mean))
+        print('processor:', Pa.rank, np.array(u_mean))
+
+
 
         return
 
@@ -158,7 +160,8 @@ cdef class TestArray:
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
-                        PV.values[0+ishift+jshift+k] = (i-Gr.dims.gw) * (rank+1)
+                        # PV.values[0+ishift+jshift+k] = (i-Gr.dims.gw) * (rank+1)
+                        PV.values[0+ishift+jshift+k] = (i-Gr.dims.gw)
                         # PV.values[u_varshift + ijk] = i * (rank+1)
                         # print(PV.values[0+ishift+jshift+k])
 
