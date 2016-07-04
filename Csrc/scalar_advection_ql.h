@@ -659,6 +659,8 @@ void fourth_order_a_ql_debug(struct DimStruct *dims, double* restrict rho0, doub
                 flux[ijk] = flux[ijk] - eddy_flux[ijk] + mean_eddy_flux[k];
                 f_max = fmax(f_max,flux[ijk]);
                 f_min = fmin(f_min,flux[ijk]);
+                mef_max = fmax(mef_max,mean_eddy_flux[k]);
+                mef_min = fmin(mef_min,mean_eddy_flux[k]);
 //                flux[ijk] = flux[ijk];
             }
         }
