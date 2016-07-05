@@ -140,6 +140,11 @@ void horizontal_mean(struct DimStruct *dims, double* restrict values, double* re
         //return mean;
 
 
+        // MPI Reduce vs. Allreduce
+        // MPI_Reduce: takes an array of input elements on each process and returns an array of output elements to the root process
+        // MPI_Allreduce: reduces the values and distributes the results to all processes
+
+
 void horizontal_mean_const(struct DimStruct *dims, const double* restrict values, double* restrict mean){
 //        printf("calling horizontal mean \n");
 //        /*
