@@ -264,7 +264,7 @@ class Simulation3d:
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 #_
-                self.debug_tend('TS update') # tendencies set to zero
+               # self.debug_tend('TS update') # tendencies set to zero
                 #_
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
@@ -354,8 +354,8 @@ class Simulation3d:
 
 
             # If time to ouput stats do output
-            #if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
-            if (1==1):
+            if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
+            #if (1==1):
                 self.Pa.root_print('Doing CondStatsIO')
                 self.CondStatsIO.last_output_time = self.TS.t
                 self.CondStatsIO.write_condstat_time(self.TS.t, self.Pa)
