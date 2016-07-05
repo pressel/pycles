@@ -740,9 +740,9 @@ class Simulation3d:
         if self.Pa.rank == 0:
             try:
                 os.mkdir(out_path)
-                print('doing out_path')
+                # print('doing out_path')
             except:
-                print('NOT doing out_path')
+                # print('NOT doing out_path')
                 pass
             try:
                 path = out_path + '/' + name + 'k_arr' + str(np.int(self.TS.t))
