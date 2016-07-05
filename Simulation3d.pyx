@@ -85,6 +85,7 @@ class Simulation3d:
         self.SN = StochasticNoise.StochasticNoise(namelist)
         uuid = str(namelist['meta']['uuid'])
         self.outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + uuid[-5:]))
+        self.count = 0
         # self.Nan = NanStatistics(self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa) # -> problem when calling
         # self.Nan.nan_checking('hoi', self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
         # __
@@ -597,18 +598,19 @@ class Simulation3d:
                                 sk_arr = np.append(sk_arr,ijk)
                             if np.isnan(PV_.values[qt_varshift+ijk]):
                                 qtk_arr = np.append(qtk_arr,ijk)
+                self.output_nan_array(sk_arr,'s')
+                self.output_nan_array(qtk_arr,'qt')
             if np.size(sk_arr) > 1:
                 if self.Pa.rank == 0:
                     print('sk_arr size: ', sk_arr.shape)
                     print('sk_arr:', sk_arr)
-                    self.output_nan_array()
+                    # self.output_nan_array()
             if np.size(qtk_arr) > 1:
                 if self.Pa.rank == 0:
                     print('qtk_arr size: ', qtk_arr.shape)
                     print('qtk_arr: ', qtk_arr)
 
-            self.output_nan_array(sk_arr,'s')
-            self.output_nan_array(qtk_arr,'qt')
+
 
 
 
@@ -641,12 +643,14 @@ class Simulation3d:
                             ijk = ishift + jshift + k
                             if np.isnan(PV_.values[s_varshift+ijk]):
                                 sk_arr = np.append(sk_arr,ijk)
+                self.output_nan_array(sk_arr,'s')
+
             if np.size(sk_arr) > 1:
                 if self.Pa.rank == 0:
                     print('sk_arr size: ', sk_arr.shape)
                     print('sk_arr:', sk_arr)
 
-            self.output_nan_array(sk_arr,'s')
+
 
 
         # cdef:
@@ -740,14 +744,15 @@ class Simulation3d:
         if self.Pa.rank == 0:
             try:
                 os.mkdir(out_path)
-                # print('doing out_path')
+                print('doing out_path', self.outpath)
             except:
                 # print('NOT doing out_path')
                 pass
             try:
-                path = out_path + '/' + name + 'k_arr' + str(np.int(self.TS.t))
+                path = out_path + '/' + name + 'k_arr' + str(np.int(self.TS.t)) + '_' + str(np.int(self.count))
                 # path = out_path + '/sk_arr_' + str(np.int(self.TS.t))
                 os.mkdir(path)
+                print('doing out_path', path)
             except:
                 pass
 
@@ -755,6 +760,9 @@ class Simulation3d:
         # path = out_path + '/sk_arr_' + str(np.int(self.TS.t))
         with open(path+ '/' + str(self.Pa.rank) + '.pkl', 'wb') as f:       # 'wb' = write binary file
             # pass
+            print('dumping nan pickle: ', self.Pa.rank, path+ '/' + str(self.Pa.rank) + '.pkl')
             pickle.dump(arr, f,protocol=2)
+
+        self.count += 1
 
         return
