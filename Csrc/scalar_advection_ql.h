@@ -1093,7 +1093,7 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
 
 
 void weno_fifth_order_a_ql(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
-
+    if (d==1){printf("SA: WENO5 QL\n");}
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
 
