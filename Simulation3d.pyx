@@ -6,6 +6,10 @@ cimport numpy as np
 import pylab as plt
 import os
 from mpi4py import MPI
+try:
+    import cPickle as pickle
+except:
+    import pickle as pickle # for Python 3 users
 # __
 from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
@@ -15,6 +19,9 @@ from Radiation import RadiationFactory
 from SurfaceBudget import SurfaceBudgetFactory
 from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
+# __
+# from ConditionalStatistics import NanStatistics
+# __
 from Thermodynamics cimport LatentHeat
 from Tracers import TracersFactory
 cimport ParallelMPI
@@ -78,6 +85,8 @@ class Simulation3d:
         self.SN = StochasticNoise.StochasticNoise(namelist)
         uuid = str(namelist['meta']['uuid'])
         self.outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + uuid[-5:]))
+        # self.Nan = NanStatistics(self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa) # -> problem when calling
+        # self.Nan.nan_checking('hoi', self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
         # __
 
         # Add new prognostic variables
@@ -190,20 +199,22 @@ class Simulation3d:
             self.Pa.root_print('time: '+str(self.TS.t))
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
-                #_
+                # __
                 self.debug_tend('Ke')
-                #_
+                # self.Nan.nan_checking('hoi', self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
+                # __
+
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 #_
                 self.debug_tend('Th')   # only w-tendencies != 0 ?!!!
                 #_
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 #_
-                self.debug_tend('Micro') # only w-tendencies != 0 ?!!!
+                # self.debug_tend('Micro') # only w-tendencies != 0 ?!!!
                 #_
                 self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 #_
-                self.debug_tend('Tr')
+                # self.debug_tend('Tr')
                 #_
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 #_
@@ -244,11 +255,11 @@ class Simulation3d:
                 #_
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 #_
-                self.debug_tend('Ra')
+                # self.debug_tend('Ra')
                 #_
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 #_
-                self.debug_tend('Budg')
+                # self.debug_tend('Budg')
                 #_
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
@@ -259,7 +270,7 @@ class Simulation3d:
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 #_
-                self.debug_tend('TS adjust timestep')
+                # self.debug_tend('TS adjust timestep')
                 #_
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
@@ -343,8 +354,8 @@ class Simulation3d:
 
 
             # If time to ouput stats do output
-            if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
-            #if (1==1):
+            #if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
+            if (1==1):
                 self.Pa.root_print('Doing CondStatsIO')
                 self.CondStatsIO.last_output_time = self.TS.t
                 self.CondStatsIO.write_condstat_time(self.TS.t, self.Pa)
@@ -588,10 +599,16 @@ class Simulation3d:
                                 qtk_arr = np.append(qtk_arr,ijk)
             if np.size(sk_arr) > 1:
                 if self.Pa.rank == 0:
-                    print('sk_arr: ', sk_arr)
+                    print('sk_arr size: ', sk_arr.shape)
+                    print('sk_arr:', sk_arr)
+                    self.output_nan_array()
             if np.size(qtk_arr) > 1:
                 if self.Pa.rank == 0:
+                    print('qtk_arr size: ', qtk_arr.shape)
                     print('qtk_arr: ', qtk_arr)
+
+            self.output_nan_array(sk_arr,'s')
+            self.output_nan_array(qtk_arr,'qt')
 
 
 
@@ -625,7 +642,12 @@ class Simulation3d:
                             if np.isnan(PV_.values[s_varshift+ijk]):
                                 sk_arr = np.append(sk_arr,ijk)
             if np.size(sk_arr) > 1:
-                self.Pa.root_print('sk_arr: ', sk_arr)
+                if self.Pa.rank == 0:
+                    print('sk_arr size: ', sk_arr.shape)
+                    print('sk_arr:', sk_arr)
+
+            self.output_nan_array(sk_arr,'s')
+
 
         # cdef:
         #     Py_ssize_t i,j,k,ijk
@@ -705,4 +727,34 @@ class Simulation3d:
         return
 
 
+    def output_nan_array(self,arr,name):
+        self.Pa.root_print('!!! output nan array')
+        print(self.outpath)
+        # if 's' in self.PV.name_index:
+        #     self.NC.write_condstat('sk_arr', 'nan_array', self.sk_arr[:,:], self.Pa)
+        # if 'qt' in self.PV.name_index:
+        #     self.NC.write_condstat('qtk_arr', 'nan_array', self.qt_arr[:,:], self.Pa)
 
+        out_path = os.path.join(self.outpath, 'Nan')
+        print(out_path)
+        if self.Pa.rank == 0:
+            try:
+                os.mkdir(out_path)
+                print('doing out_path')
+            except:
+                print('NOT doing out_path')
+                pass
+            try:
+                path = out_path + '/' + name + 'k_arr' + str(np.int(self.TS.t))
+                # path = out_path + '/sk_arr_' + str(np.int(self.TS.t))
+                os.mkdir(path)
+            except:
+                pass
+
+        # path = self.outpath + 'Nan/sk_arr_' + str(np.int(self.TS.t))
+        # path = out_path + '/sk_arr_' + str(np.int(self.TS.t))
+        with open(path+ '/' + str(self.Pa.rank) + '.pkl', 'wb') as f:       # 'wb' = write binary file
+            # pass
+            pickle.dump(arr, f,protocol=2)
+
+        return
