@@ -265,7 +265,7 @@ class Simulation3d:
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 #_
-                self.debug_tend('TS update') # tendencies set to zero
+               # self.debug_tend('TS update') # tendencies set to zero
                 #_
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
@@ -355,8 +355,8 @@ class Simulation3d:
 
 
             # If time to ouput stats do output
-            #if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
-            if (1==1):
+            if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
+            #if (1==1):
                 self.Pa.root_print('Doing CondStatsIO')
                 self.CondStatsIO.last_output_time = self.TS.t
                 self.CondStatsIO.write_condstat_time(self.TS.t, self.Pa)
@@ -483,6 +483,7 @@ class Simulation3d:
 
 
     def debug_tend(self,message):
+        print('debug_tend, rank: ', self.Pa.rank)
         cdef:
             PrognosticVariables.PrognosticVariables PV_ = self.PV
             DiagnosticVariables.DiagnosticVariables DV_ = self.DV
@@ -732,7 +733,8 @@ class Simulation3d:
 
 
     def output_nan_array(self,arr,name):
-        self.Pa.root_print('!!! output nan array')
+        # self.Pa.root_print('!!! output nan array, rank: ' + str(self.Pa.rank))
+        print(('!!! output nan array, rank: ' + str(self.Pa.rank)))
         print(self.outpath)
         # if 's' in self.PV.name_index:
         #     self.NC.write_condstat('sk_arr', 'nan_array', self.sk_arr[:,:], self.Pa)
@@ -767,4 +769,5 @@ class Simulation3d:
 
         self.count += 1
         print('finished dumping nan pickle')
+
         return
