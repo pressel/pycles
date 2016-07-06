@@ -599,8 +599,8 @@ class Simulation3d:
                                 sk_arr = np.append(sk_arr,ijk)
                             if np.isnan(PV_.values[qt_varshift+ijk]):
                                 qtk_arr = np.append(qtk_arr,ijk)
-                self.output_nan_array(sk_arr,'s')
-                self.output_nan_array(qtk_arr,'qt')
+                self.output_nan_array(sk_arr,'s',self.Pa)
+                self.output_nan_array(qtk_arr,'qt',self.Pa)
             if np.size(sk_arr) > 1:
                 if self.Pa.rank == 0:
                     print('sk_arr size: ', sk_arr.shape)
@@ -644,7 +644,7 @@ class Simulation3d:
                             ijk = ishift + jshift + k
                             if np.isnan(PV_.values[s_varshift+ijk]):
                                 sk_arr = np.append(sk_arr,ijk)
-                self.output_nan_array(sk_arr,'s')
+                self.output_nan_array(sk_arr,'s',self.Pa)
 
             if np.size(sk_arr) > 1:
                 if self.Pa.rank == 0:
@@ -732,9 +732,9 @@ class Simulation3d:
         return
 
 
-    def output_nan_array(self,arr,name):
+    def output_nan_array(self,arr,name,ParallelMPI.ParallelMPI Pa):
         # self.Pa.root_print('!!! output nan array, rank: ' + str(self.Pa.rank))
-        print(('!!! output nan array, rank: ' + str(self.Pa.rank)))
+        print(('!!! output nan array, rank: ' + str(Pa.rank)))
         print(self.outpath)
         # if 's' in self.PV.name_index:
         #     self.NC.write_condstat('sk_arr', 'nan_array', self.sk_arr[:,:], self.Pa)
@@ -743,7 +743,7 @@ class Simulation3d:
 
         out_path = os.path.join(self.outpath, 'Nan')
         print('outpath', out_path)
-        if self.Pa.rank == 0:
+        if Pa.rank == 0:
             try:
                 os.mkdir(out_path)
                 print('doing out_path', self.outpath)
@@ -751,7 +751,6 @@ class Simulation3d:
                 print('NOT doing out_path')
                 pass
             try:
-
                 path = out_path + '/' + name + 'k_arr' + str(np.int(self.TS.t)) + '_' + str(np.int(self.count))
                 # path = out_path + '/sk_arr_' + str(np.int(self.TS.t))
                 os.mkdir(path)
@@ -759,12 +758,13 @@ class Simulation3d:
             except:
                 print('NOT doing path')
                 pass
+        Pa.barrier()
 
         # path = self.outpath + 'Nan/sk_arr_' + str(np.int(self.TS.t))
         # path = out_path + '/sk_arr_' + str(np.int(self.TS.t))
-        with open(path+ '/' + str(self.Pa.rank) + '.pkl', 'wb') as f:       # 'wb' = write binary file
+        with open(path+ '/' + str(Pa.rank) + '.pkl', 'wb') as f:       # 'wb' = write binary file
             # pass
-            print('dumping nan pickle: ', self.Pa.rank, path+ '/' + str(self.Pa.rank) + '.pkl')
+            print('dumping nan pickle: ', Pa.rank, path+ '/' + str(Pa.rank) + '.pkl')
             pickle.dump(arr, f,protocol=2)
 
         self.count += 1
