@@ -201,13 +201,13 @@ class Simulation3d:
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
                 # __
-                self.debug_tend('Ke')
+                #self.debug_tend('Ke')
                 # self.Nan.nan_checking('hoi', self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
                 # __
 
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 #_
-                self.debug_tend('Th')   # only w-tendencies != 0 ?!!!
+                #self.debug_tend('Th')   # only w-tendencies != 0 ?!!!
                 #_
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 #_
@@ -223,36 +223,36 @@ class Simulation3d:
                 #_
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 #_
-                self.debug_tend('MA')
+                # self.debug_tend('MA')
                 #_
                 # __
                 self.SN.update(self.Gr,self.Ref,PV_,self.Th,self.Pa)
                 # __
                 self.Sur.update(self.Gr,self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 #_
-                self.debug_tend('Sur')
+                # self.debug_tend('Sur')
                 #_
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
                 #_
-                self.debug_tend('SGS')
+                # self.debug_tend('SGS')
                 #_
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
                 #_
-                self.debug_tend('Damping')
+                # self.debug_tend('Damping')
                 #_
 
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 #_
-                self.debug_tend('SD')
+                # self.debug_tend('SD')
                 #_
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
                 #_
-                self.debug_tend('MD')
+                # self.debug_tend('MD')
                 #_
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 #_
-                self.debug_tend('Fo')
+                # self.debug_tend('Fo')
                 #_
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 #_
@@ -599,8 +599,8 @@ class Simulation3d:
                                 sk_arr = np.append(sk_arr,ijk)
                             if np.isnan(PV_.values[qt_varshift+ijk]):
                                 qtk_arr = np.append(qtk_arr,ijk)
-                self.output_nan_array(sk_arr,'s',self.Pa)
-                self.output_nan_array(qtk_arr,'qt',self.Pa)
+                self.output_nan_array(sk_arr,'s',message, self.Pa)
+                self.output_nan_array(qtk_arr,'qt',message, self.Pa)
             if np.size(sk_arr) > 1:
                 if self.Pa.rank == 0:
                     print('sk_arr size: ', sk_arr.shape)
@@ -644,7 +644,7 @@ class Simulation3d:
                             ijk = ishift + jshift + k
                             if np.isnan(PV_.values[s_varshift+ijk]):
                                 sk_arr = np.append(sk_arr,ijk)
-                self.output_nan_array(sk_arr,'s',self.Pa)
+                self.output_nan_array(sk_arr,'s',message, self.Pa)
 
             if np.size(sk_arr) > 1:
                 if self.Pa.rank == 0:
@@ -732,7 +732,9 @@ class Simulation3d:
         return
 
 
-    def output_nan_array(self,arr,name,ParallelMPI.ParallelMPI Pa):
+    def output_nan_array(self,arr,name,message,ParallelMPI.ParallelMPI Pa):
+
+        # return
         # self.Pa.root_print('!!! output nan array, rank: ' + str(self.Pa.rank))
         print(('!!! output nan array, rank: ' + str(Pa.rank)))
         print(self.outpath)
@@ -743,6 +745,7 @@ class Simulation3d:
 
         out_path = os.path.join(self.outpath, 'Nan')
         print('outpath', out_path)
+        print('time', self.TS.t, str(self.TS.t))
         if Pa.rank == 0:
             try:
                 os.mkdir(out_path)
@@ -751,7 +754,8 @@ class Simulation3d:
                 print('NOT doing out_path')
                 pass
             try:
-                path = out_path + '/' + name + 'k_arr' + str(np.int(self.TS.t)) + '_' + str(np.int(self.count))
+                path = out_path + '/' + name + 'k_arr' + str(self.TS.t) + '_' + message[0:2]
+                # path = out_path + '/' + name + 'k_arr' + str(np.int(self.TS.t)) + '_' + str(np.int(self.count))
                 # path = out_path + '/sk_arr_' + str(np.int(self.TS.t))
                 os.mkdir(path)
                 print('doing path', path)
@@ -767,7 +771,7 @@ class Simulation3d:
             print('dumping nan pickle: ', Pa.rank, path+ '/' + str(Pa.rank) + '.pkl')
             pickle.dump(arr, f,protocol=2)
 
-        self.count += 1
+        # self.count += 1
         print('finished dumping nan pickle')
 
         return
