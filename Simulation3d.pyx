@@ -740,20 +740,22 @@ class Simulation3d:
         #     self.NC.write_condstat('qtk_arr', 'nan_array', self.qt_arr[:,:], self.Pa)
 
         out_path = os.path.join(self.outpath, 'Nan')
-        print(out_path)
+        print('outpath', out_path)
         if self.Pa.rank == 0:
             try:
                 os.mkdir(out_path)
                 print('doing out_path', self.outpath)
             except:
-                # print('NOT doing out_path')
+                print('NOT doing out_path')
                 pass
             try:
+
                 path = out_path + '/' + name + 'k_arr' + str(np.int(self.TS.t)) + '_' + str(np.int(self.count))
                 # path = out_path + '/sk_arr_' + str(np.int(self.TS.t))
                 os.mkdir(path)
-                print('doing out_path', path)
+                print('doing path', path)
             except:
+                print('NOT doing path')
                 pass
 
         # path = self.outpath + 'Nan/sk_arr_' + str(np.int(self.TS.t))
@@ -764,5 +766,5 @@ class Simulation3d:
             pickle.dump(arr, f,protocol=2)
 
         self.count += 1
-
+        print('finished dumping nan pickle')
         return
