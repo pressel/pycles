@@ -31,11 +31,11 @@ def TracersFactory(namelist):
     if use_tracers:
         return UpdraftTracers(namelist)
     else:
-        return TracersNone(namelist)
+        return TracersNone()
 
 
 cdef class TracersNone:
-    def __init__(self, namelist):
+    def __init__(self):
         return
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
