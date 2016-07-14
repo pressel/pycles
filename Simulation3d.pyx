@@ -755,7 +755,7 @@ class Simulation3d:
 
         out_path = os.path.join(self.outpath, 'Nan')
         print('outpath', out_path)
-        print('time', self.TS.t, str(self.TS.t))
+        # print('time', self.TS.t, str(self.TS.t))
         if Pa.rank == 0:
             try:
                 os.mkdir(out_path)

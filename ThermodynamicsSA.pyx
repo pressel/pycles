@@ -21,8 +21,13 @@ from libc.math cimport fmax, fmin
 cdef extern from "thermodynamics_sa.h":
     inline double alpha_c(double p0, double T, double qt, double qv) nogil
     void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
+    # __
+    void eos_c_refstate(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
     void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
-                    double * qv, double * ql, double * qi, double * alpha)
+                    double * qv, double * ql, double * qi, double * alpha, int * n_nan)
+    # __
+    # void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
+    #                 double * qv, double * ql, double * qi, double * alpha)
     void buoyancy_update_sa(Grid.DimStruct *dims, double *alpha0, double *alpha, double *buoyancy, double *wt)
     void bvf_sa(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *T, double *qt, double *qv, double *theta_rho, double *bvf)
     void thetali_update(Grid.DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double *p0, double *T, double *qt, double *ql, double *qi, double *thetali)
@@ -172,7 +177,8 @@ cdef class ThermodynamicsSA:
     cpdef eos(self, double p0, double s, double qt):
         cdef:
             double T, qv, qc, ql, qi, lam
-        eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
+        # eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
+        eos_c_refstate(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
         return T, ql, qi
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
@@ -193,6 +199,8 @@ cdef class ThermodynamicsSA:
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t thl_shift = DV.get_varshift(Gr, 'thetali')
 
+            int n_nan = 0
+
 
         '''Apply qt clipping if requested. Defaults to on. Call this before other thermodynamic routines. Note that this
         changes the values in the qt array directly. Perhaps we should eventually move this to the timestepping function
@@ -204,12 +212,15 @@ cdef class ThermodynamicsSA:
         self.debug_tend('000',PV,DV,Gr)#,Pa)
         #  __
 
-
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                     &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
-                    &DV.values[qi_shift], &DV.values[alpha_shift])
+                    &DV.values[qi_shift], &DV.values[alpha_shift], &n_nan)
+        # eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
+        #             &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
+        #             &DV.values[qi_shift], &DV.values[alpha_shift])
 
         # __
+        print('number of nans in T:' + str(n_nan))
         self.debug_tend('111',PV,DV,Gr)#,Pa)        # nans in T
         # __
 
