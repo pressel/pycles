@@ -4,6 +4,7 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
+
 import netCDF4 as nc
 cimport Grid
 cimport ReferenceState
@@ -13,7 +14,7 @@ from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c
 import numpy as np
 import cython
-from libc.math cimport fabs, sin, cos
+from libc.math cimport fabs, sin, cos, exp, fmax, fmin
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport Lookup
@@ -715,6 +716,10 @@ cdef class ForcingReanalysis:
                         PV.values[v_shift + ijk] += Ref.v0 - vgal
 
 
+
+
+
+
         Ref.u0 = ugal
         Ref.v0 = vgal
 
@@ -752,8 +757,8 @@ cdef class ForcingReanalysisTV:
         f.close()
 
         self.p = np.array(fd['p'][::-1],dtype=np.double)
-        self.ug = np.array(fd['ug'][:,::-1],dtype=np.double) #np.interp(Ref.p0_half, p[::-1], np.mean(fd['ug'][:,::-1], axis=0))
-        self.vg = np.array(fd['vg'][:,::-1],dtype=np.double) #np.interp(Ref.p0_half, p[::-1], np.mean(fd['vg'][:,::-1], axis=0))
+        self.ug = np.array(fd['u'][:,::-1],dtype=np.double) #np.interp(Ref.p0_half, p[::-1], np.mean(fd['ug'][:,::-1], axis=0))
+        self.vg = np.array(fd['v'][:,::-1],dtype=np.double) #np.interp(Ref.p0_half, p[::-1], np.mean(fd['vg'][:,::-1], axis=0))
         self.t = np.array(fd['temperature'][:,::-1],dtype=np.double) #np.interp(Ref.p0_half, p[::-1], np.mean(fd['temperature'][:,::-1], axis=0))
         self.subsidence = np.array(fd['omega'][:,::-1],dtype=np.double) #np.interp(Ref.p0_half, p[::-1], np.mean(fd['omega'][:,::-1], axis=0))
         self.dqtdt = np.array(fd['qt_ls'][:,::-1], dtype=np.double) #np.interp(Ref.p0_half, p[::-1], np.mean(fd['qt_ls'][:,::-1], axis=0))
@@ -762,6 +767,8 @@ cdef class ForcingReanalysisTV:
         t = fd['temperature'][:,::-1] #np.interp(Ref.p0_half, p[::-1], np.mean(fd['temperature'][:,::-1], axis=0))
         self.qt = np.array(fd['qt'][:,::-1], dtype=np.double)  #np.interp(Ref.p0_half, p[::-1], np.mean(fd['qt'][:,::-1], axis=0))
         self.time_in = np.array(fd['time_3d'][:], dtype=np.double)
+
+
         #self.s = np.zeros((Gr.dims.nlg[2],),dtype=np.double, order='c')
 
         #for k in xrange(Gr.dims.nlg[2]):
@@ -820,6 +827,11 @@ cdef class ForcingReanalysisTV:
         cdef double modt
         cdef Py_ssize_t ti
         cdef double [:] tmp
+
+        cdef int max_i,  min_i
+        cdef double fppmax, fppmin
+        cdef double [:] qt_2
+
         if TS.rk_step == 0:
             fdt = self.time_in[1] - self.time_in[0]
             modt = TS.t%fdt
@@ -836,15 +848,39 @@ cdef class ForcingReanalysisTV:
                 tmp[k] = self.vg[ti,k] +  modt * (self.vg[ti+1,k] - self.vg[ti,k])/fdt
             self.vg_force = np.interp(Ref.p0_half, self.p, tmp)
 
-            tmp = np.empty(self.t.shape[1],dtype=np.double)
-            for k in range(tmp.shape[0]):
-                tmp[k] = self.t[ti,k] +  modt * (self.t[ti+1,k] - self.t[ti,k])/fdt
-            self.t_force = np.interp(Ref.p0_half, self.p, tmp)
 
             tmp = np.empty(self.qt.shape[1],dtype=np.double)
             for k in range(tmp.shape[0]):
                 tmp[k] = self.qt[ti,k] +  modt * (self.qt[ti+1,k] - self.qt[ti,k])/fdt
             self.qt_force = np.interp(Ref.p0_half, self.p, tmp)
+
+
+            tmp = np.empty(self.t.shape[1],dtype=np.double)
+            for k in range(tmp.shape[0]):
+                tmp[k] = self.t[ti,k] +  modt * (self.t[ti+1,k] - self.t[ti,k])/fdt
+            self.t_force = np.interp(Ref.p0_half, self.p, tmp)
+
+
+            #Sharpen the profiles at the inversion
+            max_i = 0
+            min_i = 0
+
+            qt_2 = self.qt_force
+            for i in range(1, qt_2.shape[0] -1):
+                fpp = qt_2[i+1] - 2 * qt_2[i] + qt_2[i-1]
+                if(fpp == np.max([fpp, fppmax])):
+                    fppmax = fpp
+                    max_i = i
+
+                if(fpp == np.min([fpp,fppmin])):
+                    fppmin = fpp
+                    min_i = i
+
+            qt_2[min_i: max_i+1] = qt_2[max_i + 1]
+            qt_2[:min_i] = qt_2[10]
+
+            self.qt_force = qt_2
+            self.t_force[min_i: max_i+1] = self.t_force[max_i + 1]
 
             tmp = np.empty(self.dqtdt.shape[1],dtype=np.double)
             for k in range(tmp.shape[0]):
@@ -865,10 +901,13 @@ cdef class ForcingReanalysisTV:
                 self.subsidence_force[k] = -self.subsidence_force[k]*Ref.alpha0_half[k]/g
 
 
-        cdef double ugal = umean[np.where(np.abs(umean) == np.amax(np.abs(umean)))[0][0]]
-        cdef double vgal = vmean[np.where(np.abs(vmean) == np.amax(np.abs(vmean)))[0][0]]
+        #cdef double ugal = umean[np.where(np.abs(umean) == np.amax(np.abs(umean)))[0][0]]
+        #cdef double vgal = vmean[np.where(np.abs(vmean) == np.amax(np.abs(vmean)))[0][0]]
 
+        ugal = 0.0
+        vgal = 0.0
 
+        cdef double itau_wind;
         cdef double itau = 1.0/(3600.0 * 12.0)
         with nogil:
             for i in xrange(imin,imax):
@@ -896,8 +935,17 @@ cdef class ForcingReanalysisTV:
                         PV.tendencies[qt_shift + ijk] += self.dqtdt_force[k]
 
 
+                        itau_wind = 100.0*exp((Gr.z_half[k]+100.)/300.0)
+                        itau_wind = 1.0/fmin(itau_wind, 3600.0 * 3.0)
+
+                        PV.tendencies[u_shift + ijk] += itau_wind * (self.ug_force[k] - (umean[k] - Ref.u0))
+                        PV.tendencies[v_shift + ijk] += itau_wind * (self.vg_force[k] - (vmean[k] - Ref.v0))
+
                         PV.values[u_shift + ijk] += Ref.u0 - ugal
                         PV.values[v_shift + ijk] += Ref.v0 - vgal
+
+        #print np.array(self.ug_force) - np.array(umean) + Ref.u0, Ref.u0
+        #import sys; sys.exit()
 
 
         Ref.u0 = ugal
@@ -905,8 +953,8 @@ cdef class ForcingReanalysisTV:
 
 
         #Apply Coriolis Forcing
-        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug_force[0], &self.vg_force[0],self.coriolis_param, Ref.u0, Ref.v0  )
+        #coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
+        #               &PV.tendencies[v_shift],&self.ug_force[0], &self.vg_force[0],self.coriolis_param, Ref.u0, Ref.v0  )
 
 
         #Apply subsidence
@@ -1671,4 +1719,5 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                     tendencies[ijk] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k]
 
     return
+
 

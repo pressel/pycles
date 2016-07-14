@@ -890,11 +890,54 @@ def InitReanalysisTV(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariabl
     cdef double [:] v = np.interp(RS.p0_half, p[::-1], fd['v'][0,::-1])
     cdef double [:] ql = np.empty(Gr.dims.nlg[2], dtype=np.double, order='c')
     cdef double [:] qv = np.empty(Gr.dims.nlg[2], dtype=np.double, order='c')
+    cdef double [:] s = np.empty(Gr.dims.nlg[2], dtype=np.double, order='c')
+
+    cdef double blh = fd['pblh'][0]
+
+
+    #Correct bl top
+    max_i = 0
+    min_i = 0
+    fppmax = -99999999
+    fppmin = 99999999
+
+    qt_2 = np.array(qt)
+    for i in range(1, qt_2.shape[0] -1):
+        fpp = qt_2[i+1] - 2 * qt_2[i] + qt_2[i-1]
+        if(fpp == np.max([fpp, fppmax])):
+            fppmax = fpp
+            max_i = i
+
+        if(fpp == np.min([fpp,fppmin])):
+            fppmin = fpp
+            min_i = i
+
+
+
+    t[min_i: max_i+1] = t[max_i + 1]
+
+    qt_2[min_i: max_i+1] = qt_2[max_i + 1]
+    qt_2[:min_i] = qt_2[10]
+
+
+    qt = qt_2;
+
+
+
 
     for i in range(RS.p0_half.shape[0]):
         pvs = Th.get_pv_star(t[i])
         ql[i] = fmax(qt[i] - qv_star_c(RS.p0_half[i], qt[i], pvs),0.0)
         qv[i] = qt[i] - ql[i]
+
+
+
+
+    #import pylab as plt
+    #plt.plot(t, Gr.z_half[:])
+    #plt.show()
+    #mport sys; sys.exit()
+
 
     np.random.seed(Pa.rank)
     cdef double [:] s_pert = np.random.random_sample(Gr.dims.npg)
