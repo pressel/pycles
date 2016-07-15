@@ -526,29 +526,29 @@ cdef class ThermodynamicsSA:
                      Grid.Grid Gr_):#, ParallelMPI.ParallelMPI Pa):
         # print('debug_tend, rank: ', Pa.rank)
         # message = 'hoi'
-        cdef:
-            Py_ssize_t u_varshift = PV_.get_varshift(Gr_,'u')
-            Py_ssize_t v_varshift = PV_.get_varshift(Gr_,'v')
-            Py_ssize_t w_varshift = PV_.get_varshift(Gr_,'w')
-            Py_ssize_t s_varshift = PV_.get_varshift(Gr_,'s')
-            Py_ssize_t b_shift = DV.get_varshift(Gr_, 'buoyancy')
-            Py_ssize_t alpha_shift = DV.get_varshift(Gr_, 'alpha')
-            Py_ssize_t t_shift = DV.get_varshift(Gr_, 'temperature')
-
-            Py_ssize_t istride = Gr_.dims.nlg[1] * Gr_.dims.nlg[2]
-            Py_ssize_t jstride = Gr_.dims.nlg[2]
-            Py_ssize_t imax = Gr_.dims.nlg[0]
-            Py_ssize_t jmax = Gr_.dims.nlg[1]
-            Py_ssize_t kmax = Gr_.dims.nlg[2]
-            Py_ssize_t gw = Gr_.dims.gw
-            Py_ssize_t ijk_max = imax*istride + jmax*jstride + kmax
-
-            Py_ssize_t i, j, k, ijk, ishift, jshift
-            Py_ssize_t imin = 0#Gr_.dims.gw
-            Py_ssize_t jmin = 0#Gr_.dims.gw
-            Py_ssize_t kmin = 0#Gr_.dims.gw
-            # int [:] sk_arr = np.zeros(1, dtype=np.int)
-            # int [:] qtk_arr = np.zeros(1, dtype=int)
+        # cdef:
+        #     Py_ssize_t u_varshift = PV_.get_varshift(Gr_,'u')
+        #     Py_ssize_t v_varshift = PV_.get_varshift(Gr_,'v')
+        #     Py_ssize_t w_varshift = PV_.get_varshift(Gr_,'w')
+        #     Py_ssize_t s_varshift = PV_.get_varshift(Gr_,'s')
+        #     Py_ssize_t b_shift = DV.get_varshift(Gr_, 'buoyancy')
+        #     Py_ssize_t alpha_shift = DV.get_varshift(Gr_, 'alpha')
+        #     Py_ssize_t t_shift = DV.get_varshift(Gr_, 'temperature')
+        #
+        #     Py_ssize_t istride = Gr_.dims.nlg[1] * Gr_.dims.nlg[2]
+        #     Py_ssize_t jstride = Gr_.dims.nlg[2]
+        #     Py_ssize_t imax = Gr_.dims.nlg[0]
+        #     Py_ssize_t jmax = Gr_.dims.nlg[1]
+        #     Py_ssize_t kmax = Gr_.dims.nlg[2]
+        #     Py_ssize_t gw = Gr_.dims.gw
+        #     Py_ssize_t ijk_max = imax*istride + jmax*jstride + kmax
+        #
+        #     Py_ssize_t i, j, k, ijk, ishift, jshift
+        #     Py_ssize_t imin = 0#Gr_.dims.gw
+        #     Py_ssize_t jmin = 0#Gr_.dims.gw
+        #     Py_ssize_t kmin = 0#Gr_.dims.gw
+        #     # int [:] sk_arr = np.zeros(1, dtype=np.int)
+        #     # int [:] qtk_arr = np.zeros(1, dtype=int)
         # sk_arr = np.zeros(1,dtype=np.int)
         # qtk_arr = np.zeros(1,dtype=np.int)
         #
