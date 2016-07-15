@@ -40,6 +40,7 @@ cdef class NetCDFIO_Fields:
         str uuid
         list diagnostic_fields
 
+        int glue_count
         public double last_output_time
         public double frequency
         public bint do_output
@@ -48,6 +49,7 @@ cdef class NetCDFIO_Fields:
 
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
 
+    cpdef glue_fields(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef create_fields_file(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
 
     cpdef dump_prognostic_variables(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)

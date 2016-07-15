@@ -154,6 +154,7 @@ class Simulation3d:
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
             self.force_io()
+            self.FieldsIO.glue_fields(self.Gr, self.Pa)
 
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
@@ -222,6 +223,7 @@ class Simulation3d:
                 self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
                 self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
                 self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)
+                self.FieldsIO.glue_fields(self.Gr, self.Pa)
                 self.Pa.root_print('Finished Doing 3D FieldIO')
 
             # If time to ouput stats do output

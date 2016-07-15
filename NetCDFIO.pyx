@@ -15,7 +15,10 @@ cimport Grid
 import numpy as np
 cimport numpy as np
 import cython
+import shutil
+import subprocess
 
+import combine3d
 cdef class NetCDFIO_Stats:
     def __init__(self):
         self.root_grp = None
@@ -213,7 +216,7 @@ cdef class NetCDFIO_Fields:
         self.last_output_time = 0.0
         self.uuid = str(namelist['meta']['uuid'])
         self.frequency = namelist['fields_io']['frequency']
-
+        self.glue_count = 1000000
         self.diagnostic_fields = namelist['fields_io']['diagnostic_fields']
 
         # Setup the statistics output path
@@ -252,6 +255,127 @@ cdef class NetCDFIO_Fields:
                     Pa.rank) + '.nc'))
         self.create_fields_file(Gr, Pa)
         self.do_output = True
+
+
+        return
+
+    cpdef glue_fields(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+
+        Pa.barrier() #Make sure tha all output has finished
+
+        if Pa.rank == 0:
+            #Rename current output directory
+            dir = None
+            dir_files = os.listdir(self.fields_path)
+            for df in dir_files:
+                if '_glue' not in df:
+                    dir = df
+
+            tmp_path = self.fields_path + '/tmp_files'
+            out_path = self.fields_path + '/' + dir
+
+            os.rename(out_path, tmp_path)
+
+
+            #Create a new directory with the correct name
+            os.mkdir(out_path + '_glue')
+
+            #Get list of files
+            file_list = os.listdir(tmp_path)
+            #open first file in list
+            print file_list, tmp_path, out_path
+            rt_grp = nc.Dataset(tmp_path + '/' + file_list[0],'r')
+
+            fields = rt_grp['fields']
+            dims = rt_grp.groups['dims'].variables
+            vars = fields.variables.keys()
+
+            #Get the input dimensions
+            n_0_in = dims['n_0'][0]
+            n_1_in = dims['n_1'][0]
+            n_2_in = dims['n_2'][0]
+            rt_grp.close()
+
+            #Setup output file
+            out_rt_grp = nc.Dataset(out_path + '_glue' + '/0.nc','w',format='NETCDF3_64BIT' )
+
+            #Set up output in paraview in compatible untisl
+            xd = out_rt_grp.createDimension('x', n_0_in)
+            yd = out_rt_grp.createDimension('y', n_1_in)
+            zd = out_rt_grp.createDimension('z', n_2_in)
+            td = out_rt_grp.createDimension('Times', 1)
+
+            xv = out_rt_grp.createVariable('x','f8',('x',))
+            xv[:] = np.arange(1, n_0_in + 1,dtype=np.double) * Gr.dims.dx[0] -  Gr.dims.dx[0]/2.0
+            xv.units = 'm'
+            yv = out_rt_grp.createVariable('y','f8',('y',))
+            yv[:] = np.arange(1, n_1_in + 1,dtype=np.double) * Gr.dims.dx[1] -  Gr.dims.dx[1]/2.0
+            yv.units = 'm'
+            zv = out_rt_grp.createVariable('z','f8',('z',))
+            zv[:] = np.arange(1, n_2_in + 1,dtype=np.double) * Gr.dims.dx[2] -  Gr.dims.dx[2]/2.0
+            zv.units = 'm'
+            tv = out_rt_grp.createVariable('Times','f8',('Times',))
+            tv.units = "<time length> since <date>"
+            tv[:] = 0.0
+            out_rt_grp.sync()
+
+            #Setup output file in COADS format
+
+
+            for v in vars:
+                v_data = out_rt_grp.createVariable(v, 'f8', ('Times', 'z', 'y', 'x',))
+                v_data.units = ""
+                out_rt_grp.sync()
+
+            for tf in file_list:
+                print tmp_path + '/' + tf
+                print os.listdir(self.fields_path)
+                rt_grp = nc.Dataset(tmp_path + '/' + tf,'r')
+                fields = rt_grp['fields'].variables
+                dims = rt_grp.groups['dims'].variables
+                nl_0_in = dims['nl_0'][0]
+                nl_1_in = dims['nl_1'][0]
+                nl_2_in = dims['nl_2'][0]
+
+
+                indx_lo_0 = dims['indx_lo_0'][0]
+                indx_lo_1 = dims['indx_lo_1'][0]
+                indx_lo_2 = dims['indx_lo_2'][0]
+                for v in vars:
+                    d_3d = np.empty((nl_2_in, nl_1_in, nl_0_in), dtype=np.double)
+                    f_data = fields[v][:]
+
+                    combine3d.to_3d(
+                        f_data, nl_0_in, nl_1_in, nl_2_in, indx_lo_0, indx_lo_1, indx_lo_2, d_3d)
+
+                    vd = out_rt_grp.variables[v][0,
+                         indx_lo_2:indx_lo_2+nl_2_in,
+                         indx_lo_1:indx_lo_1+nl_1_in,
+                         indx_lo_0:indx_lo_0+nl_0_in] = d_3d[:,:,:]
+
+
+                out_rt_grp.sync()
+
+                rt_grp.close()
+
+
+
+            out_rt_grp.close()
+
+            #Danger Danger Danger
+            shutil.rmtree(tmp_path)
+
+            #Now setup commands to call visualization scripts
+            run_script = 'pvbatch dcbl_plot.py ' + out_path + '_glue' + '/0.nc' + ' ./paraview_figs/' + str(self.glue_count) + ".png"
+            subprocess.call([run_script], shell=True)
+
+            shutil.rmtree(out_path + '_glue')
+
+        self.glue_count += 1
+
+
+
+
         return
 
     cpdef create_fields_file(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):

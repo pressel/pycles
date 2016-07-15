@@ -57,7 +57,7 @@ def main():
 
                     indx_lo_0 = dims['indx_lo_0'][0]
                     indx_lo_1 = dims['indx_lo_1'][0]
-                    indx_lo_2 = dims['indx_lo_2'][:]
+                    indx_lo_2 = dims['indx_lo_2'][0]
 
                     f_data = fields[f][:]
 

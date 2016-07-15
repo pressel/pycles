@@ -229,6 +229,12 @@ _ext = Extension('VisualizationOutput', ['VisualizationOutput.pyx'], include_dir
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
+
+_ext = Extension('combine3d', ['combine3d.pyx'], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
+extensions.append(_ext)
+
 #Build RRTMG
 
 rrtmg_compiled = os.path.exists('./RRTMG/rrtmg_build/rrtmg_combined.o')
