@@ -72,8 +72,8 @@ void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*
             f_1 = f_2;
             delta_T  = fabs(T_2 - T_1);
             count ++;
-        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
-//        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 3);
+//        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
+        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 1);
         *T  = T_2;
         *qv = qv_star_2;
         *ql = lam_2 * sigma_2;
@@ -100,11 +100,11 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     double pv_star_1 = lookup(LT, T_1);
     double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
 
-    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
+//    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
 
     // If not saturated
     if(qt <= qv_star_1){
-        printf("eos_c: not saturated\n");
+//        printf("eos_c: not saturated\n");
         *T = T_1;
         // __
         /*printf("no iteration\n");
@@ -118,7 +118,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         return;
     }
     else{
-        printf("eos_c: saturated\n");
+//        printf("eos_c: saturated\n");
         double sigma_1 = qt - qv_star_1;
         double lam_1 = lam_fp(T_1);
         double L_1 = L_fp(T_1,lam_1);       // L_fp = ThermdynamicsSA.L_fp = Thermodynamics/LatentHeat.L_fp --> LatentHeat.L_fp = LatentHeat.L
@@ -131,13 +131,14 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         double lam_2;
         // __
         int count = 0;
+        /*
         int max_count = 0;
         double pv_star_2 = lookup(LT, T_2);
         qv_star_2 = qv_star_c(p0,qt,pv_star_2);
         sigma_2 = qt - qv_star_2;
-        lam_2 = lam_fp(T_2);
+        lam_2 = lam_fp(T_2);*/
         // __
-/*        do{
+        do{
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
             double pv_2 = pv_c(p0,qt,qv_star_2);
@@ -153,7 +154,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             f_1 = f_2;
             delta_T  = fabs(T_2 - T_1);
             count ++;
-        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );*/
+        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
 //        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 2);*/
         *T  = T_2;
         *qv = qv_star_2;
@@ -164,7 +165,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         /*if(max_count < count){
             max_count = count;
             printf("max count = %d\n", max_count);}*/
-        printf("ql = %f\n", *ql);
+//        printf("ql = %f\n", *ql);
         // __
         return;
     }
@@ -173,7 +174,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
 void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
     double* restrict p0, double* restrict s, double* restrict qt, double* restrict T,
     double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha, int* n_nan ){
-    printf("eos_update\n");
+//    printf("eos_update\n");
     ssize_t i,j,k;
     // __
     int i_,j_,k_;
@@ -187,8 +188,8 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2];
     // __
-    int ijk_;
-    int a = 0;       // if defined as int, no nan shown in T; if double: Bus error
+//    int ijk_;
+//    int a = 0;       // if defined as int, no nan shown in T; if double: Bus error
     // __
 
     for (i=imin; i<imax; i++){
@@ -202,7 +203,7 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
 
 //                    a = T[ijk];
                     if(isnan(T[ijk])){
-                        ijk_ = ijk;
+//                        ijk_ = ijk;
                         n_nan++;}
 //                        printf("hoi\n");}
 //                        j_ = j;
