@@ -609,13 +609,13 @@ class Simulation3d:
                                 qtk_arr = np.append(qtk_arr,ijk)
 
             if np.size(sk_arr) > 1:
-                self.output_nan_array(sk_arr,'s',message, self.Pa)
+                # self.output_nan_array(sk_arr,'s',message, self.Pa)
                 if self.Pa.rank == 0:
                     print('sk_arr size: ', sk_arr.shape)
                     print('sk_arr:', sk_arr)
                     # self.output_nan_array()
             if np.size(qtk_arr) > 1:
-                self.output_nan_array(qtk_arr,'qt',message, self.Pa)
+                # self.output_nan_array(qtk_arr,'qt',message, self.Pa)
                 if self.Pa.rank == 0:
                     print('qtk_arr size: ', qtk_arr.shape)
                     print('qtk_arr: ', qtk_arr)
@@ -656,7 +656,7 @@ class Simulation3d:
 
 
             if np.size(sk_arr) > 1:
-                self.output_nan_array(sk_arr,'s',message, self.Pa)
+                # self.output_nan_array(sk_arr,'s',message, self.Pa)
                 if self.Pa.rank == 0:
                     print('sk_arr size: ', sk_arr.shape)
                     print('sk_arr:', sk_arr)
