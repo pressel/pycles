@@ -16,7 +16,7 @@ inline double temperature_no_ql(double pd, double pv, double s, double qt){
 
 void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                     const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
-    printf("doing reference state saturation adjustment (eos_c_refstate)\n");
+//    printf("doing reference state saturation adjustment (eos_c_refstate)\n");
     *qv = qt;
     *ql = 0.0;
     *qi = 0.0;
@@ -25,19 +25,19 @@ void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*
     double T_1 = temperature_no_ql(pd_1,pv_1,s,qt);
     double pv_star_1 = lookup(LT, T_1);
     double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
-    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
+//    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
 
     // If not saturated
     if(qt <= qv_star_1){
-        printf("eos_c: not saturated\n");
+//        printf("eos_c: not saturated\n");
         *T = T_1;
         // __
-        printf("no iteration\n");
+//        printf("no iteration\n");
         // __
         return;
     }
     else{
-        printf("eos_c: saturated\n");
+//        printf("eos_c: saturated\n");
         double sigma_1 = qt - qv_star_1;
         double lam_1 = lam_fp(T_1);
         double L_1 = L_fp(T_1,lam_1);       // L_fp = ThermdynamicsSA.L_fp = Thermodynamics/LatentHeat.L_fp --> LatentHeat.L_fp = LatentHeat.L
@@ -72,15 +72,15 @@ void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*
             f_1 = f_2;
             delta_T  = fabs(T_2 - T_1);
             count ++;
-//        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
-        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 1);
+        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
+//        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 2);
         *T  = T_2;
         *qv = qv_star_2;
         *ql = lam_2 * sigma_2;
         *qi = (1.0 - lam_2) * sigma_2;
         // __
         printf("eos_c iterations: count = %d\n",count);
-        printf("ql = %f\n", *ql);
+//        printf("ql = %f\n", *ql);
         // __
         return;
     }
