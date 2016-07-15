@@ -104,7 +104,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
 
     // If not saturated
     if(qt <= qv_star_1){
-        printf("eos_c: not saturated\n");
+//        printf("eos_c: not saturated\n");
         *T = T_1;
         // __
         /*printf("no iteration\n");
