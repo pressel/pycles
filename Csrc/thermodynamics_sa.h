@@ -140,8 +140,8 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
 
 void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
     double* restrict p0, double* restrict s, double* restrict qt, double* restrict T,
-    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){
-
+    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha, int* n_nan ){
+//    printf("eos_update\n");
     ssize_t i,j,k;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
