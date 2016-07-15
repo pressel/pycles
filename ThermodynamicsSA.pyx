@@ -489,3 +489,9 @@ cdef class ThermodynamicsSA:
         NS.write_ts('lwp', lwp_weighted_sum, Pa)
 
         return
+
+
+# _______________
+    cpdef debug_tend(self, message, PrognosticVariables.PrognosticVariables PV_, DiagnosticVariables.DiagnosticVariables DV,
+                     Grid.Grid Gr_):#, ParallelMPI.ParallelMPI Pa):
+        return
