@@ -483,7 +483,7 @@ class Simulation3d:
 
 
     def debug_tend(self,message):
-        print('debug_tend Sim, rank: ', self.Pa.rank)
+        # print('debug_tend Sim, rank: ', self.Pa.rank)
         cdef:
             PrognosticVariables.PrognosticVariables PV_ = self.PV
             DiagnosticVariables.DiagnosticVariables DV_ = self.DV
