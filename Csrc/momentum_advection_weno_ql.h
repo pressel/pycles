@@ -912,7 +912,7 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
 
-                        //Upwind for positive velocity
+                        /*//Upwind for positive velocity
                         const double phip = interp_weno5(vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
@@ -930,12 +930,13 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing]);
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;*/
 
                         const double vel_ed_fluc_m = vel_ed_int_m[ijk] - vel_ed_mean_m[k];
                         const double vel_ed_fluc_p = vel_ed_int_p[ijk] - vel_ed_mean_p[k];
                         const double vel_ing_fluc = vel_ing_int[ijk] - vel_ing_mean[k];
                         eddy_flux[ijk] = 0.5 * ((vel_ing_fluc+fabs(vel_ing_fluc))*vel_ed_fluc_p + (vel_ing_fluc-fabs(vel_ing_fluc))*vel_ed_fluc_m)*rho0_half[k] ;
-                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
+                        flux[ijk] = 0.5 * ((vel_ing_int[ijk]+fabs(vel_ing_int[ijk]))*vel_ed_int_p[ijk] + (vel_ing_int[ijk]-fabs(vel_ing_int[ijk]))*vel_ed_int_m[ijk])*rho0_half[k] ;
                     }
                 }
             }
@@ -948,7 +949,7 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
 
-                        //Upwind for positive velocity
+                        /*//Upwind for positive velocity
                         const double phip = interp_weno5(vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
@@ -966,12 +967,13 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing]);
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];*/
 
                         const double vel_ed_fluc_m = vel_ed_int_m[ijk] - vel_ed_mean_m[k];
                         const double vel_ed_fluc_p = vel_ed_int_p[ijk] - vel_ed_mean_p[k];
                         const double vel_ing_fluc = vel_ing_int[ijk] - vel_ing_mean[k];
                         eddy_flux[ijk] = 0.5 * ((vel_ing_fluc+fabs(vel_ing_fluc))*vel_ed_fluc_p + (vel_ing_fluc-fabs(vel_ing_fluc))*vel_ed_fluc_m)*rho0_half[k+1] ;
-                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
+                        flux[ijk] = 0.5 * ((vel_ing_int[ijk]+fabs(vel_ing_int[ijk]))*vel_ed_int_p[ijk] + (vel_ing_int[ijk]-fabs(vel_ing_int[ijk]))*vel_ed_int_m[ijk])*rho0_half[k+1] ;
                     }
                 }
             }
@@ -985,7 +987,7 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
 
-                        //Upwind for positive velocity
+                        /*//Upwind for positive velocity
                         const double phip = interp_weno5(vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
@@ -1003,12 +1005,13 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing]);
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];*/
 
                         const double vel_ed_fluc_m = vel_ed_int_m[ijk] - vel_ed_mean_m[k];
                         const double vel_ed_fluc_p = vel_ed_int_p[ijk] - vel_ed_mean_p[k];
                         const double vel_ing_fluc = vel_ing_int[ijk] - vel_ing_mean[k];
                         eddy_flux[ijk] = 0.5 * ((vel_ing_fluc+fabs(vel_ing_fluc))*vel_ed_fluc_p + (vel_ing_fluc-fabs(vel_ing_fluc))*vel_ed_fluc_m)*rho0[k] ;
-                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                        flux[ijk] = 0.5 * ((vel_ing_int[ijk]+fabs(vel_ing_int[ijk]))*vel_ed_int_p[ijk] + (vel_ing_int[ijk]-fabs(vel_ing_int[ijk]))*vel_ed_int_m[ijk])*rho0[k] ;
                     }
                 }
             }
