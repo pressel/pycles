@@ -522,7 +522,7 @@ cdef class ThermodynamicsSA:
 # _______________
     cpdef debug_tend(self, message, PrognosticVariables.PrognosticVariables PV_, DiagnosticVariables.DiagnosticVariables DV,
                      Grid.Grid Gr_):#, ParallelMPI.ParallelMPI Pa):
-        print('debug_tend, rank: ', Pa.rank)
+        print('debug_tend, rank: ')
         # message = 'hoi'
         cdef:
             Py_ssize_t u_varshift = PV_.get_varshift(Gr_,'u')
