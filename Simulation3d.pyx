@@ -191,8 +191,11 @@ class Simulation3d:
             self.force_io()
 
         #_
+        self.Pa.root_print('before loop 1')
         PV_.val_nan(self.Pa,'Nan checking in Simulation: time: '+str(self.TS.t))
+        self.Pa.root_print('before loop 2')
         self.debug_tend('before loop')
+        self.Pa.root_print('before loop 3')
         #_
 
         while (self.TS.t < self.TS.t_max):
