@@ -400,7 +400,7 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
 
         ssize_t i,j,k;
 
-        // (1) compute mean velocities
+        // (1) Compute Mean Velocities & Eddy Velocities
         horizontal_mean(dims, &vel_advecting[0], &vel_ing_mean_[0]);
         horizontal_mean(dims, &vel_advected[0], &vel_ed_mean_[0]);
 
@@ -420,7 +420,11 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
         }
 
 
-        // (2) compute flux
+        // (2) Compute Fluxes
+        // flux_mean_eddy = <u>u'
+        // flux_eddy_mean = u' <u>
+        // eddy_flux = u' u'
+        // mean_flux = <u><u>
         const ssize_t stencil[3] = {istride,jstride,1};
         const ssize_t sp1_ed = stencil[d_advecting];
         const ssize_t sp2_ed = 2 * sp1_ed ;
@@ -517,8 +521,10 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
             }
         }
 
-
+        // (3) Compute Mean Eddy Flux
         horizontal_mean(dims, &eddy_flux[0], &mean_eddy_flux[0]);
+
+        // (4) Compute Total Flux
         for(ssize_t i=imin;i<imax;i++){
                 const ssize_t ishift = i*istride;
                 for(ssize_t j=jmin;j<jmax;j++){

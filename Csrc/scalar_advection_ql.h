@@ -300,9 +300,11 @@ void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, dou
     ssize_t kmax = dims->nlg[2];
     ssize_t i,j,k;
 
+    // (1) average velocity and scalar field
     horizontal_mean(dims, &velocity[0], &vel_mean[0]);
     horizontal_mean(dims, &scalar[0], &phi_mean_[0]);
 
+    // (2) compute eddy fields
     for(i=imin; i<imax; i++){
         const ssize_t ishift = i * istride;
         for(j=jmin; j<jmax; j++){
@@ -315,7 +317,11 @@ void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, dou
         }
     }
 
-    // (2) compute flux
+    // (3) Compute Fluxes
+    // eddy_flux = u' phi'
+    // mix_flux_phimean = u' <phi>
+    // mix_flux_phiprime = <u>phi'
+    // mean_flux = <u><phi>
     double *eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mean_eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mix_flux_phimean = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -381,7 +387,10 @@ void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, dou
         } // End i loop
     } // end else
 
+    // (4) compute mean eddy flux
     horizontal_mean(dims, &eddy_flux[0], &mean_eddy_flux[0]);
+
+    // (5) compute total flux
     for(ssize_t i=imin;i<imax;i++){
                 const ssize_t ishift = i*istride;
                 for(ssize_t j=jmin;j<jmax;j++){
@@ -921,7 +930,7 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
     const ssize_t sm1 = -sp1 ;
     const ssize_t sm2 = -2*sp1;
 
-    // (1) average velocity and scalar field
+    // (1) Average Velocity and Scalar Field
     double *vel_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *vel_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
     double *phi_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -931,7 +940,7 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
     horizontal_mean_const(dims, &velocity[0], &vel_mean[0]);
     horizontal_mean_const(dims, &scalar[0], &phi_mean_[0]);
 
-    // (2) compute eddy fields
+    // (2) Compute Eddy Fields
     for(ssize_t i=imin;i<imax;i++){
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin;j<jmax;j++){
@@ -1061,8 +1070,10 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
         } // End i loop
     } // End else
 
+    // (4) Compute Mean Eddy Flux
     horizontal_mean_const(dims, &eddy_flux[0], &mean_eddy_flux[0]);
 
+    // (5) Compute Total Flux
     for(ssize_t i=imin;i<imax;i++){
             const ssize_t ishift = i*istride ;
             for(ssize_t j=jmin;j<jmax;j++){
