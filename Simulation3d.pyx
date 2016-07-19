@@ -196,7 +196,7 @@ class Simulation3d:
         self.Pa.root_print('before loop 2')
         # self.debug_tend('before loop')
         self.Pa.root_print('before loop 3')
-        self.Pa.barrier()
+        # self.Pa.barrier()
         #_
 
         while (self.TS.t < self.TS.t_max):
