@@ -207,7 +207,7 @@ cdef class ThermodynamicsSA:
         if self.do_qt_clipping:
             clip_qt(&Gr.dims, &PV.values[qt_shift], 1e-11)
         # __
-        self.debug_tend('000',PV,DV,Gr)#,Pa)
+        # self.debug_tend('000',PV,DV,Gr)#,Pa)
         #  __
 
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
@@ -218,14 +218,14 @@ cdef class ThermodynamicsSA:
         #             &DV.values[qi_shift], &DV.values[alpha_shift])
 
         # __
-        print('number of nans in T:' + str(n_nan))
-        self.debug_tend('111',PV,DV,Gr)#,Pa)        # nans in T
+        # print('number of nans in T:' + str(n_nan))
+        # self.debug_tend('111',PV,DV,Gr)#,Pa)        # nans in T
         # __
 
         buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
 
         # __
-        self.debug_tend('222',PV,DV,Gr)#,Pa)        # nans in
+        # self.debug_tend('222',PV,DV,Gr)#,Pa)        # nans in
         # __
 
         bvf_sa( &Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[thr_shift], &DV.values[bvf_shift])
@@ -522,7 +522,7 @@ cdef class ThermodynamicsSA:
 # _______________
     cpdef debug_tend(self, message, PrognosticVariables.PrognosticVariables PV_, DiagnosticVariables.DiagnosticVariables DV,
                      Grid.Grid Gr_):#, ParallelMPI.ParallelMPI Pa):
-        # print('debug_tend, rank: ', Pa.rank)
+        print('debug_tend, rank: ', Pa.rank)
         # message = 'hoi'
         cdef:
             Py_ssize_t u_varshift = PV_.get_varshift(Gr_,'u')
