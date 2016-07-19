@@ -103,18 +103,17 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
 //    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
 
     // If not saturated
-//    if(qt <= qv_star_1){
-    if(qt <= 99999999999.9){
+    if(qt <= qv_star_1){
 //        printf("eos_c: not saturated\n");
         *T = T_1;
         // __
-        //printf("no iteration\n");
+        /*printf("no iteration\n");
         double sigma_1 = qt - qv_star_1;
         double lam_1 = lam_fp(T_1);         // = lambda(T_1)?
         *ql = lam_1 * sigma_1;              // from paper: q_l,1 = lambda_1(T_1)*sigma_1
                                             // *ql = lam_2 * sigma_2;
         *qi = (1.0 - lam_1) * sigma_1;      // from paper: q_i,1 = [1-lambda(T_1)] * sigma_1
-                                            // *qi = (1.0 - lam_2) * sigma_2;
+                                            // *qi = (1.0 - lam_2) * sigma_2;*/
         // __
         return;
     }
