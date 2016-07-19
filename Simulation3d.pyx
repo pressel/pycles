@@ -397,6 +397,7 @@ class Simulation3d:
 
     def force_io(self):
         # output stats here
+        self.Pa.root_print('Sim.force_io')
 
         self.Pa.root_print('Doing 3D FiledIO')
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
@@ -409,8 +410,10 @@ class Simulation3d:
         self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
 
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
+        self.Pa.root_print('Sim.force_io: DV.stats_io finished')
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Pa.root_print('Sim.force_io: Fo.stats_io finished')
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
