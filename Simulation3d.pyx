@@ -437,7 +437,9 @@ class Simulation3d:
         self.Tr.stats_io( self.Gr, self.StatsIO, self.Pa)
         self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
         self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
+        self.Pa.root_print('Sim.force_io: Budg.stats_io finished')
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
+        self.Pa.root_print('Sim.force_io: Aux.stats_io finished')
         self.StatsIO.close_files(self.Pa)
 
         self.Pa.root_print('Sim.force_io finished')
