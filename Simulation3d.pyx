@@ -188,7 +188,7 @@ class Simulation3d:
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
-            self.force_io()
+            self.force_io(self.Pa)
 
         #_
         self.Pa.root_print('before loop 1')
@@ -399,7 +399,8 @@ class Simulation3d:
 
         return
 
-    def force_io(self):
+    def force_io(self, ParallelMPI.ParallelMPI Pa):
+        Pa.barrier()
         # output stats here
         self.Pa.root_print('Sim.force_io')
 
