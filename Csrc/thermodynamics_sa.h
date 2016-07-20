@@ -104,13 +104,22 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     if(qt <= qv_star_1){
 //        printf("eos_c: not saturated\n");
         *T = T_1;
+        // __
+        /*printf("no iteration\n");
+        double sigma_1 = qt - qv_star_1;
+        double lam_1 = lam_fp(T_1);         // = lambda(T_1)?
+        *ql = lam_1 * sigma_1;              // from paper: q_l,1 = lambda_1(T_1)*sigma_1
+                                            // *ql = lam_2 * sigma_2;
+        *qi = (1.0 - lam_1) * sigma_1;      // from paper: q_i,1 = [1-lambda(T_1)] * sigma_1
+                                            // *qi = (1.0 - lam_2) * sigma_2;*/
+        // __
         return;
     }
     else{
 //        printf("eos_c: saturated\n");
         double sigma_1 = qt - qv_star_1;
         double lam_1 = lam_fp(T_1);
-        double L_1 = L_fp(T_1,lam_1);
+        double L_1 = L_fp(T_1,lam_1);       // L_fp = ThermdynamicsSA.L_fp = Thermodynamics/LatentHeat.L_fp --> LatentHeat.L_fp = LatentHeat.L
         double s_1 = sd_c(pd_1,T_1) * (1.0 - qt) + sv_c(pv_1,T_1) * qt + sc_c(L_1,T_1)*sigma_1;
         double f_1 = s - s_1;
         double T_2 = T_1 + sigma_1 * L_1 /((1.0 - qt)*cpd + qv_star_1 * cpv);
