@@ -33,7 +33,7 @@ def InitializationFactory(namelist):
         elif casename == 'SaturatedBubble':
             return InitSaturatedBubble
         elif casename == 'Bomex':
-            print('case = ', casename)
+            # print('case = ', casename)
             return InitBomex
         elif casename == 'Gabls':
             return InitGabls
