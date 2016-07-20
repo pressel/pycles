@@ -128,4 +128,3 @@ cdef class RadiationRRTM(RadiationBase):
                      Surface.SurfaceBase Sur,ParallelMPI.ParallelMPI Pa)
     cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
