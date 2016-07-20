@@ -188,8 +188,7 @@ class Simulation3d:
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
-            pass
-            # self.force_io(self.Pa)
+            self.force_io(self.Pa)
 
         #_
         self.Pa.root_print('before loop 1')
@@ -401,69 +400,69 @@ class Simulation3d:
         return
 
     def force_io(self, ParallelMPI.ParallelMPI Pa):
-        Pa.barrier()
+        # Pa.barrier()
         # output stats here
         self.Pa.root_print('Sim.force_io')
 
         self.Pa.root_print('Doing 3D FiledIO')
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
-        Pa.barrier()
+        # Pa.barrier()
         self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.Pa.root_print('Finished Doing 3D FieldIO')
 
         self.StatsIO.open_files(self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
 
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.Pa.root_print('Sim.force_io: DV.stats_io finished')
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.Pa.root_print('Sim.force_io: Fo.stats_io finished')
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.Pa.root_print('Sim.force_io: Th.stats_io finished')
         self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.Pa.root_print('Sim.force_io: Micro.stats_io finished')
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke ,self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
 
         self.Pa.root_print('Sim.force_io: MD.stats_io finished')
-        Pa.barrier()
+        # Pa.barrier()
         self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
 
         self.Pa.root_print('Sim.force_io: Kinematics.stats_io finished')
-        Pa.barrier()
+        # Pa.barrier()
         self.Tr.stats_io( self.Gr, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.Ra.stats_io(self.Gr, self.DV, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.Pa.root_print('Sim.force_io: Budg.stats_io finished')
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
         self.Pa.root_print('Sim.force_io: Aux.stats_io finished')
         self.StatsIO.close_files(self.Pa)
-        Pa.barrier()
+        # Pa.barrier()
 
         self.Pa.root_print('Sim.force_io finished')
 
