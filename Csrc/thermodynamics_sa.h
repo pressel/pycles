@@ -127,6 +127,9 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         double qv_star_2;
         double sigma_2;
         double lam_2;
+        // __
+        int count = 0;
+        // __
         do{
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
