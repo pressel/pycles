@@ -30,19 +30,10 @@ cdef extern from "sgs.h":
                             double* strain_rate_mag, double cs, double prt)
     void smagorinsky_update_iles(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
                             double* strain_rate_mag, double cs, double prt)
-    double buoyancy_adjust(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
-                            double* strain_rate_mag, double prt)
-    void const_viscosity_update(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
-                            double* strain_rate_mag, double const_visc, double prt)
-
-
-
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
             self.scheme = UniformViscosity(namelist)
-        elif(namelist['sgs']['scheme'] == 'UniformViscosity_cond'):
-            self.scheme = UniformViscosity_cond(namelist)
         elif(namelist['sgs']['scheme'] == 'Smagorinsky'):
             self.scheme = Smagorinsky(namelist)
         elif(namelist['sgs']['scheme'] == 'TKE'):
@@ -66,8 +57,6 @@ cdef class SGS:
         self.scheme.stats_io(Gr,DV,PV,Ke,NS,Pa)
         return
 
-
-
 cdef class UniformViscosity:
     def __init__(self,namelist):
         try:
@@ -90,7 +79,7 @@ cdef class UniformViscosity:
 
 
     cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
 
         cdef:
@@ -112,63 +101,6 @@ cdef class UniformViscosity:
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
-
-
-cdef class UniformViscosity_cond:
-    def __init__(self,namelist):
-        try:
-            self.const_diffusivity = namelist['sgs']['UniformViscosity']['diffusivity']
-        except:
-            self.const_diffusivity = 0.0
-
-        try:
-            self.const_viscosity = namelist['sgs']['UniformViscosity']['viscosity']
-        except:
-            self.const_viscosity = 0.0
-
-        self.prt = 1.0/3.0
-
-        return
-
-    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-
-        return
-
-
-    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
-        cdef:
-            Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
-            Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
-            Py_ssize_t bf_shift =   DV.get_varshift(Gr, 'buoyancy_frequency')
-
-        # Alternative to loop below:
-        const_viscosity_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
-                               &Ke.strain_rate_mag[0],self.const_viscosity,self.prt)
-        # cdef double fb = 0
-        # cdef Py_ssize_t i
-        # printed = False
-        # with nogil:
-        #     for i in xrange(Gr.dims.npg):
-        #         with gil:
-        #             fb = buoyancy_adjust(&Gr.dims,&DV.values[visc_shift+i],&DV.values[diff_shift+i],&DV.values[bf_shift+i],
-        #                        &Ke.strain_rate_mag[0],self.prt)
-        #             if printed == False and fb == 0:
-        #                 Pa.root_print('Ri > 1: setting Viscosity to zero, i = ')
-        #                 Pa.root_print(i)
-        #                 printed = True
-        #         DV.values[diff_shift + i] = self.const_diffusivity * fb
-        #         DV.values[visc_shift + i] = self.const_viscosity * fb
-
-
-        return
-
-    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
-                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-
-        return
-
-
 
 cdef class Smagorinsky:
     def __init__(self,namelist):
@@ -230,13 +162,10 @@ cdef class Smagorinsky:
 
 cdef class TKE:
     def __init__(self,namelist):
-        # A Description of the Advanced Research WRF Version 3 (NCAR TECHNICAL NOTE, June 2008)
-        # ck: K = ck*l*sqrt(e)
-        # cn: l = cn*sqrt(e)/N (isotropic mixing)
         try:
             self.ck = namelist['sgs']['TKE']['ck']
         except:
-            self.ck = 0.1       #(0.15<ck<0.25)
+            self.ck = 0.1
         try:
             self.cn = namelist['sgs']['TKE']['cn']
         except:

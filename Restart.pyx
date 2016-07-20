@@ -117,7 +117,7 @@ cdef class Restart:
                 os.mkdir(path)
         Pa.barrier()
 
-        with open(path + '/' + str(Pa.rank) + '.pkl', 'wb') as f:
+        with open(path+ '/' + str(Pa.rank) + '.pkl', 'wb') as f:
             pickle.dump(self.restart_data, f,protocol=2)
 
         # No point keeping data in dictionary so empty it now

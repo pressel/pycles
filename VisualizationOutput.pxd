@@ -11,9 +11,6 @@ cdef class VisualizationOutput:
         str uuid
         public double last_vis_time
         public double frequency
-        #__
-        Py_ssize_t count
-        #__
 
     cpdef initialize(self)
     cpdef write(self, Grid.Grid Gr,  ReferenceState.ReferenceState RS,

@@ -9,7 +9,6 @@ cimport PrognosticVariables as PrognosticVariables
 cimport DiagnosticVariables as DiagnosticVariables
 cimport Grid as Grid
 cimport Restart
-#cimport mpi4py.mpi_c as mpi
 cimport mpi4py.libmpi as mpi
 
 import numpy as np
@@ -221,7 +220,7 @@ cdef class TimeStepping:
         return
 
     cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
-        Pa.root_print('Computing CFL Max')
+
         cdef:
             double cfl_max_local = -9999.0
             double [3] dxi = Gr.dims.dxi
@@ -252,17 +251,6 @@ cdef class TimeStepping:
                             w = fmax(fabs( DV.values[DV.sedv_index[isedv]*Gr.dims.npg + ijk ] + PV.values[w_shift+ijk]), w)
 
                         cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2]))
-                        # problem: second term is nan
-        Pa.root_print('cfl_max_local: '+ str(cfl_max_local))
-        Pa.root_print(str(self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2])))  # is a nan
-        #Pa.root_print('u: '+str(PV.values[u_shift + ijk]))
-        #Pa.root_print('v: '+str(PV.values[v_shift+ijk]))
-        Pa.root_print('u: '+str(np.amax(PV.values[u_shift:v_shift])) + ', '+ str(np.amin(PV.values[u_shift:v_shift])))
-        Pa.root_print('v: '+str(np.amax(PV.values[v_shift:w_shift])) + ', '+ str(np.amin(PV.values[v_shift:w_shift])))
-        Pa.root_print('w: '+str(w))
-        # Pa.root_print('u: '+str(fmax(PV.values)))
-        # Pa.root_print('w: '+str(fabs(w)))
-        # all three fields are nan
 
         mpi.MPI_Allreduce(&cfl_max_local,&self.cfl_max,1,
                           mpi.MPI_DOUBLE,mpi.MPI_MAX,Pa.comm_world)

@@ -203,10 +203,7 @@ cdef class ParallelMPI:
         :param values1: pointer to array of type double containing first value in product
         :return: memoryview type double with dimension Gr.dims.nlg[2]
         '''
-        # Gr.dims.n[i] = namelist['grid']['ni'] (e.g. n[0] = 'nx')      --> total number of pts
-        # Gr.dims.nl[i] = Gr.dims.n[i] // mpi_dims[i]                   --> local number of pts (per processor)
-        # Gr.dims.nlg[i] = Gr.dims.nl[i] + 2*gw                         --> local number of pts incl ghost points
-        # i = 0,1,2
+
         cdef:
             double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
             double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')

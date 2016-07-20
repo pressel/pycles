@@ -32,7 +32,6 @@ cdef class NetCDFIO_Stats:
 
         # Setup the statistics output path
         outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
-        Pa.root_print(outpath)
 
         if Pa.rank == 0:
             try:
@@ -212,9 +211,6 @@ cdef class NetCDFIO_Fields:
     cpdef initialize(self, dict namelist, ParallelMPI.ParallelMPI Pa):
 
         self.last_output_time = 0.0
-        # __
-        # self.count = 0
-        # __
         self.uuid = str(namelist['meta']['uuid'])
         self.frequency = namelist['fields_io']['frequency']
 
@@ -241,11 +237,6 @@ cdef class NetCDFIO_Fields:
 
         new_dir = os.path.join(
             self.fields_path, str(int(self.last_output_time)))
-        # __
-        #new_dir = os.path.join(
-            #self.fields_path, str(int(self.last_output_time))+'_'+str(self.count))
-        # self.count += 1
-        # __
 
         if Pa.rank == 0 and not os.path.exists(new_dir):
             try:
@@ -460,10 +451,6 @@ cdef class NetCDFIO_CondStats:
             sub_grp.createVariable('t', 'f8', ('t'))
             del z
             del dim
-            # __
-            # nz = np.arange(Gr.dims.n[2], dtype=np.double) * Gr.dims.dx[2]
-            # sub_grp.createDimension('nz', Gr.dims.npd)
-            # __
             root_grp.close()
         return
 
@@ -506,15 +493,3 @@ cdef class NetCDFIO_CondStats:
             except:
                 pass
         return
-
-    # cpdef open_files(self, ParallelMPI.ParallelMPI Pa):
-    #     if Pa.rank == 0:
-    #         self.root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
-    #         self.profiles_grp = self.root_grp.groups['spectra']
-    #         self.ts_grp = self.root_grp.groups['nan_array']
-    #     return
-    #
-    # cpdef close_files(self, ParallelMPI.ParallelMPI Pa):
-    #     if Pa.rank == 0:
-    #         self.root_grp.close()
-    #     return

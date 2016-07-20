@@ -23,7 +23,6 @@ cdef class MomentumAdvection:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         try:
             self.order = namelist['momentum_transport']['order']
-            Pa.root_print('momentum transport: order: ' + np.str(self.order))
         except:
             Pa.root_print(
                 'momentum_transport order not given in namelist')
@@ -40,6 +39,7 @@ cdef class MomentumAdvection:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+
         cdef:
             Py_ssize_t i_advecting  # Direction of advecting velocity
             Py_ssize_t i_advected  # Direction of momentum component
@@ -63,7 +63,6 @@ cdef class MomentumAdvection:
                     i_advecting] * Gr.dims.npg
 
                 # Compute the fluxes
-                # print('Flux: ', i_advecting, i_advected, 'vel:', PV.values[shift_advecting+Gr.dims.gw], PV.values[shift_advected+Gr.dims.gw])
                 compute_advective_tendencies_m(&Gr.dims, &Rs.rho0[0], &Rs.rho0_half[0], &Rs.alpha0[0], &Rs.alpha0_half[0],
                                             &PV.values[shift_advected], &PV.values[shift_advecting],
                                            &PV.tendencies[shift_advected], i_advected, i_advecting, self.order)

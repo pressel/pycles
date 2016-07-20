@@ -4,10 +4,6 @@
 #include "thermodynamic_functions.h"
 #include "entropies.h"
 
-#include "scalar_advection_ql.h"        // contains modules to compute QL fluxes
-#include "cc_statistics.h"              // contains horizontal averaging function
-
-
 void second_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -690,13 +686,8 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
 
 
 
-
-
-
 void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, double* rho0_half ,double* restrict velocity, double* restrict scalar,
                                 double* restrict flux, int d, int scheme){
-//void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, double* rho0_half ,double* restrict velocity, double* restrict scalar,
-//                                double* restrict flux, double* restrict flux_old, int d, int scheme){
     switch(scheme){
         case 1:
             upwind_first_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
@@ -728,43 +719,9 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
         case 11:
             weno_eleventh_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
-
-
-        // quasi-linear (QL) modifications of the cases 2, 4 and 5
-        case 102:
-            second_order_a_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
-            break;
-        case 104:
-            fourth_order_a_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
-            break;
-        case 1044:
-            fourth_order_a_ql_debug(dims, rho0, rho0_half, velocity, scalar, flux, d);
-            break;
-        case 105:
-            weno_fifth_order_a_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
-            break;
-
-        // fluxes calculated as composed by individual fluxes (full and QL)
-        case 204:
-            fourth_order_a_decomp(dims, rho0, rho0_half, velocity, scalar, flux, d);
-            break;
-        case 205:
-            weno_fifth_order_a_decomp(dims, rho0, rho0_half, velocity, scalar, flux, d);
-            break;
-
-        case 304:
-            fourth_order_a_decomp_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
-            break;
-        case 305:
-            weno_fifth_order_a_decomp_ql(dims, rho0, rho0_half, velocity, scalar, flux, d);
-            break;
-
-
-
         default:
-            printf("Scalar Advection scheme: no scheme indicated, using 4th order central");
             // Make WENO5 default case. The central schemes may not be necessarily stable, however WENO5 should be.
-            fourth_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
+            weno_fifth_order_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
             break;
     };
 };

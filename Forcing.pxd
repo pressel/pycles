@@ -167,17 +167,6 @@ cdef class ForcingZGILS:
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
-
-cdef class ForcingSoares:
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
-
-
 cdef class AdjustedMoistAdiabat:
     cdef:
         double [:] s
@@ -192,4 +181,3 @@ cdef class AdjustedMoistAdiabat:
     cpdef eos(self, double p0, double s, double qt)
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
                      double Pg, double Tg, double RH)
-
