@@ -85,7 +85,6 @@ cdef class VisualizationOutput:
 
             dict out_dict = {}
 
-
         comm = MPI.COMM_WORLD
         try:
             var_shift =  DV.get_varshift(Gr, 'ql')
@@ -181,11 +180,11 @@ cdef class VisualizationOutput:
 
         if Pa.rank == 0:
             #__
-            with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time)) + '_' + str(self.count) + '.pkl', 'wb') as f:
-                pickle.dump(out_dict, f, protocol=2)
-            self.count += 1
-            #__
-            # with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time)) +  '.pkl', 'wb') as f:
+            # with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time)) + '_' + str(self.count) + '.pkl', 'wb') as f:
             #     pickle.dump(out_dict, f, protocol=2)
+            # self.count += 1
+            #__
+            with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time)) +  '.pkl', 'wb') as f:
+                pickle.dump(out_dict, f, protocol=2)
 
         return
