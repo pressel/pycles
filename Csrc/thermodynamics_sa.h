@@ -83,13 +83,11 @@ void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*
 //        printf("ql = %f\n", *ql);
         // __
         return;
-    }
 }
 
 
 void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                     const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
-//    printf("doing saturation adjustment (eos_c)\n");
     *qv = qt;
     *ql = 0.0;
     *qi = 0.0;
@@ -99,24 +97,11 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     double pv_star_1 = lookup(LT, T_1);
     double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
 
-//    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
-    // If not saturated
     if(qt <= qv_star_1){
-//        printf("eos_c: not saturated\n");
         *T = T_1;
-        // __
-        /*printf("no iteration\n");
-        double sigma_1 = qt - qv_star_1;
-        double lam_1 = lam_fp(T_1);         // = lambda(T_1)?
-        *ql = lam_1 * sigma_1;              // from paper: q_l,1 = lambda_1(T_1)*sigma_1
-                                            // *ql = lam_2 * sigma_2;
-        *qi = (1.0 - lam_1) * sigma_1;      // from paper: q_i,1 = [1-lambda(T_1)] * sigma_1
-                                            // *qi = (1.0 - lam_2) * sigma_2;*/
-        // __
         return;
     }
     else{
-//        printf("eos_c: saturated\n");
         double sigma_1 = qt - qv_star_1;
         double lam_1 = lam_fp(T_1);
         double L_1 = L_fp(T_1,lam_1);       // L_fp = ThermdynamicsSA.L_fp = Thermodynamics/LatentHeat.L_fp --> LatentHeat.L_fp = LatentHeat.L
@@ -127,13 +112,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         double qv_star_2;
         double sigma_2;
         double lam_2;
-        // __
         int count = 0;
-        /*double pv_star_2 = lookup(LT, T_2);
-        qv_star_2 = qv_star_c(p0,qt,pv_star_2);
-        sigma_2 = qt - qv_star_2;
-        lam_2 = lam_fp(T_2);*/
-        // __
         do{
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
@@ -151,15 +130,11 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             delta_T  = fabs(T_2 - T_1);
             count ++;
         } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
-//        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 2);*/
         *T  = T_2;
         *qv = qv_star_2;
         *ql = lam_2 * sigma_2;
         *qi = (1.0 - lam_2) * sigma_2;
-        // __
-//        printf("eos_c iterations: count = %d\n",count);
-//        printf("ql = %f\n", *ql);
-        // __
+
         return;
     }
 }
@@ -185,10 +160,6 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
     const ssize_t imax = dims->nlg[0];
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2];
-    // __
-//    int ijk_;
-//    int a = 0;       // if defined as int, no nan shown in T; if double: Bus error
-    // __
 
     for (i=imin; i<imax; i++){
        const ssize_t ishift = i * istride;
@@ -198,82 +169,12 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
                     const ssize_t ijk = ishift + jshift + k;
                     eos_c(LT, lam_fp, L_fp, p0[k], s[ijk],qt[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk],qt[ijk],qv[ijk]);
-
-//                    a = T[ijk];
-//                    if(isnan(T[ijk])){
-////                        ijk_ = ijk;
-//                        n_nan++;}
-//                        printf("hoi\n");}
-//                        j_ = j;
-//                        i_ = i;
-//                        k_ = k;
-//                        printf("??? T is nan at: %d, (%d, %d, %d)\n",ijk_,i_,j_,k_);}
                 } // End k loop
             } // End j loop
         } // End i loop
-//    printf("number of nans = %d\n",a);
-//    printf("finished eos_update\n");
-/*
-
-    for (i=0; i<imax; i++){
-       const ssize_t ishift = i * istride;
-        for (j=0;j<jmax;j++){
-            const ssize_t jshift = j * jstride;
-                for (k=0;k<kmax;k++){
-                    const ssize_t ijk = ishift + jshift + k;
-                    a = alpha[ijk]; // ok
-                    if(isnan(a)){            // Bus error: 10
-                        ijk_ = ijk;
-                        i_ = i;
-                        j_ = j;
-                        k_ = k;
-                        printf("??? alpha is nan at: %d, (%d, %d, %d)\n",ijk_,i_,j_,k_);}
-//                    a = qt[ijk];
-//                    if(isnan(a)){
-//                        ijk_ = ijk;
-//                        i_ = i;
-//                        j_ = j;
-//                        k_ = k;
-//                        printf("??? qt is nan at: %d, (%d, %d, %d)\n",ijk_,i_,j_,k_);}
-//                    a = qv[ijk];
-//                    if(isnan(a)){
-//                        ijk_ = ijk;
-//                        i_ = i;
-//                        j_ = j;
-//                        k_ = k;
-//                        printf("??? qv is nan at: %d, (%d, %d, %d)\n",ijk_,i_,j_,k_);}
-                    a = T[ijk];
-                    if(isnan(a)){
-                        ijk_ = ijk;
-                        j_ = j;
-                        i_ = i;
-                        k_ = k;
-                        printf("??? T is nan at: %d, (%d, %d, %d)\n",ijk_,i_,j_,k_);}
-//                    a = p0[k];
-//                    if(isnan(a)){
-//                        ijk_ = k;
-//                        i_ = i;
-//                        k_ = k;
-//                        printf("??? T is nan at: %d, (%d, %d, %d)\n",ijk_,i_,j_,k_);}
-//                        printf("??? p0 is nan at: %d, (%d, %d, %d)\n",ijk_,i,j,k);}
-                } // End k loop
-            } // End j loop
-        } // End i loop
-*/
 
     return;
-
-     /*
-     Bus errors occur when your processor cannot even attempt the memory access requested. A bus error is trying to
-     access memory that can't possibly be there. You've used an address that's meaningless to the system, or the wrong
-     kind of address for that operation.
-     Segmentation faults occur when accessing memory which does not belong to your process
-     (accessing memory that you're not allowed to access), they are very common and are typically the result of:
-        - using a pointer to something that was deallocated.
-        - using an uninitialized hence bogus pointer.
-        - using a null pointer.
-        - overflowing a buffer. */
-    }
+}
 
 void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double* restrict alpha, double* restrict buoyancy, double* restrict wt){
 
@@ -286,46 +187,19 @@ void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double*
     const ssize_t imax = dims->nlg[0];
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2]-1;
-    // __
-    int ijk_;
-    // __
+
     for (i=imin; i<imax; i++){
        const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
             const ssize_t jshift = j * jstride;
             for (k=kmin;k<kmax;k++){
                 const ssize_t ijk = ishift + jshift + k;
-                if(isnan(alpha[ijk])){
-                    ijk_ = ijk;
-                    printf("!?! alpha is nan at: %d!!!\n",ijk_);}
-                if(isnan(alpha0[k])){
-                    ijk_ = k;
-                    printf("!?! alpha0 is nan at: k = %d!!!\n",ijk_);}
-//                else{printf("!?! no nan in eos\n");}
                 buoyancy[ijk] = buoyancy_c(alpha0[k],alpha[ijk]);
-                if(isnan(buoyancy[ijk])){
-                    ijk_ = ijk;
-                    printf("!!! buoyancy is nan at: %d!!!\n",ijk_);}
-                if(isnan(alpha[ijk])){
-                    ijk_ = ijk;
-                    printf("!!! alpha is nan at: %d!!!\n",ijk_);}
-                if(isnan(alpha0[k])){
-                    ijk_ = k;
-                    printf("!!! alpha is nan at: k = %d!!!\n",ijk_);}
             } // End k loop
         } // End j loop
     } // End i loop
 
-    for (i=imin; i<imax; i++){
-       const ssize_t ishift = i * istride;
-        for (j=jmin;j<jmax;j++){
-            const ssize_t jshift = j * jstride;
-            for (k=kmin+1;k<kmax-2;k++){
-                const ssize_t ijk = ishift + jshift + k;
-                wt[ijk] = wt[ijk] + interp_2(buoyancy[ijk],buoyancy[ijk+1]);
-            } // End k loop
-        } // End j loop
-    } // End i loop
+
     return;
 }
 
