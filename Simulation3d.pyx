@@ -188,7 +188,8 @@ class Simulation3d:
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
-            self.force_io(self.Pa)
+            pass
+            # self.force_io(self.Pa)
 
         #_
         self.Pa.root_print('before loop 1')
@@ -461,7 +462,7 @@ class Simulation3d:
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         Pa.barrier()
         self.Pa.root_print('Sim.force_io: Aux.stats_io finished')
-        # self.StatsIO.close_files(self.Pa)
+        self.StatsIO.close_files(self.Pa)
         Pa.barrier()
 
         self.Pa.root_print('Sim.force_io finished')
