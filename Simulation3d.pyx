@@ -461,7 +461,7 @@ class Simulation3d:
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         Pa.barrier()
         self.Pa.root_print('Sim.force_io: Aux.stats_io finished')
-        self.StatsIO.close_files(self.Pa)
+        # self.StatsIO.close_files(self.Pa)
         Pa.barrier()
 
         self.Pa.root_print('Sim.force_io finished')
