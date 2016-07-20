@@ -172,13 +172,13 @@ cdef class ThermodynamicsSA:
     cpdef eos(self, double p0, double s, double qt):
         cdef:
             double T, qv, qc, ql, qi, lam
-        # eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
-        eos_c_refstate(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
+        eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
+        # eos_c_refstate(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
         return T, ql, qi
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
-        print('Th_SA.update')
+        # print('Th_SA.update')
         # Get relevant variables shifts
         cdef:
             Py_ssize_t buoyancy_shift = DV.get_varshift(Gr, 'buoyancy')
@@ -194,7 +194,7 @@ cdef class ThermodynamicsSA:
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t thl_shift = DV.get_varshift(Gr, 'thetali')
 
-            int n_nan = 0
+            # int n_nan = 0
 
 
         '''Apply qt clipping if requested. Defaults to on. Call this before other thermodynamic routines. Note that this
