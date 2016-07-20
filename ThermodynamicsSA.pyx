@@ -24,7 +24,7 @@ cdef extern from "thermodynamics_sa.h":
     # __
     void eos_c_refstate(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
     void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
-                    double * qv, double * ql, double * qi, double * alpha)
+                    double * qv, double * ql, double * qi, double * alpha, int * n_nan)
     # __
     # void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
     #                 double * qv, double * ql, double * qi, double * alpha)
@@ -194,6 +194,8 @@ cdef class ThermodynamicsSA:
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t thl_shift = DV.get_varshift(Gr, 'thetali')
 
+            int n_nan = 0
+
 
         '''Apply qt clipping if requested. Defaults to on. Call this before other thermodynamic routines. Note that this
         changes the values in the qt array directly. Perhaps we should eventually move this to the timestepping function
@@ -207,7 +209,15 @@ cdef class ThermodynamicsSA:
 
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                     &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
-                    &DV.values[qi_shift], &DV.values[alpha_shift])
+                    &DV.values[qi_shift], &DV.values[alpha_shift], &n_nan)
+        # eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
+        #             &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
+        #             &DV.values[qi_shift], &DV.values[alpha_shift])
+
+        # __
+        # print('number of nans in T:' + str(n_nan))
+        # self.debug_tend('111',PV,DV,Gr)#,Pa)        # nans in T
+        # __
 
         buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
 
