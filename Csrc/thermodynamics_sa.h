@@ -83,6 +83,8 @@ void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*
 //        printf("ql = %f\n", *ql);
         // __
         return;
+        }
+
 }
 
 
