@@ -278,14 +278,32 @@ void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double*
     const ssize_t imax = dims->nlg[0];
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2]-1;
-
+    // __
+    int ijk_;
+    // __
     for (i=imin; i<imax; i++){
        const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
             const ssize_t jshift = j * jstride;
             for (k=kmin;k<kmax;k++){
                 const ssize_t ijk = ishift + jshift + k;
+                if(isnan(alpha[ijk])){
+                    ijk_ = ijk;
+                    printf("!?! alpha is nan at: %d!!!\n",ijk_);}
+                if(isnan(alpha0[k])){
+                    ijk_ = k;
+                    printf("!?! alpha0 is nan at: k = %d!!!\n",ijk_);}
+//                else{printf("!?! no nan in eos\n");}
                 buoyancy[ijk] = buoyancy_c(alpha0[k],alpha[ijk]);
+                if(isnan(buoyancy[ijk])){
+                    ijk_ = ijk;
+                    printf("!!! buoyancy is nan at: %d!!!\n",ijk_);}
+                if(isnan(alpha[ijk])){
+                    ijk_ = ijk;
+                    printf("!!! alpha is nan at: %d!!!\n",ijk_);}
+                if(isnan(alpha0[k])){
+                    ijk_ = k;
+                    printf("!!! alpha is nan at: k = %d!!!\n",ijk_);}
             } // End k loop
         } // End j loop
     } // End i loop
