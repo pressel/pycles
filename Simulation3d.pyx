@@ -404,7 +404,7 @@ class Simulation3d:
         # output stats here
         self.Pa.root_print('Sim.force_io')
 
-        self.Pa.root_print('Doing 3D FiledIO')
+        self.Pa.root_print('Doing 3D FieldIO')
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
         self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
         self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)
