@@ -40,7 +40,6 @@ cdef class MomentumAdvection:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Rs, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
-
         cdef:
             Py_ssize_t i_advecting  # Direction of advecting velocity
             Py_ssize_t i_advected  # Direction of momentum component
