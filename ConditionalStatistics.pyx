@@ -67,7 +67,7 @@ cdef class NullCondStats:
 cdef class SpectraStatistics:
     def __init__(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_CondStats NC, ParallelMPI.ParallelMPI Pa):
-
+        Pa.root_print('SpectraStatistics initialized')
         cdef:
             Py_ssize_t ii, i,  jj, j
             double xi, yj
@@ -141,7 +141,7 @@ cdef class SpectraStatistics:
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,  NetCDFIO_CondStats NC, ParallelMPI.ParallelMPI Pa):
 
-
+        Pa.root_print('calling ConditionalStatistics.SpectraStatistics stats_io')
         cdef:
             Py_ssize_t i, j, k,  ijk, var_shift
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
