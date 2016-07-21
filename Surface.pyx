@@ -969,6 +969,7 @@ cdef class SurfaceZGILS(SurfaceBase):
 
         return
 
+
 # _____________________
 # SOARES
 # like in Sullivan case: z0 is given (ustar_fixed = 'False')
@@ -1189,4 +1190,3 @@ cdef class SurfaceSoares_moist(SurfaceBase):
 cdef inline double compute_z0(double z1, double windspeed) nogil:
     cdef double z0 =z1*exp(-kappa/sqrt((0.4 + 0.079*windspeed)*1e-3))
     return z0
-
