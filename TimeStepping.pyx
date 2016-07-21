@@ -9,6 +9,7 @@ cimport PrognosticVariables as PrognosticVariables
 cimport DiagnosticVariables as DiagnosticVariables
 cimport Grid as Grid
 cimport Restart
+#cimport mpi4py.mpi_c as mpi
 cimport mpi4py.libmpi as mpi
 
 import numpy as np
@@ -220,7 +221,7 @@ cdef class TimeStepping:
         return
 
     cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
-
+        Pa.root_print('Computing CFL Max')
         cdef:
             double cfl_max_local = -9999.0
             double [3] dxi = Gr.dims.dxi
