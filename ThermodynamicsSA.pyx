@@ -48,7 +48,6 @@ cdef class ThermodynamicsSA:
     def __init__(self, dict namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         '''
         Init method saturation adjsutment thermodynamics.
-
         :param namelist: dictionary
         :param LH: LatentHeat class instance
         :param Par: ParallelMPI class instance
@@ -73,7 +72,6 @@ cdef class ThermodynamicsSA:
         '''
         Initialize ThermodynamicsSA class. Adds variables to PrognocitVariables and DiagnosticVariables classes. Add
         output fields to NetCDFIO_Stats.
-
         :param Gr: Grid class instance
         :param PV: PrognosticVariables class instance
         :param DV: DiagnsoticVariables class instance
@@ -158,7 +156,6 @@ cdef class ThermodynamicsSA:
         '''
         Provide a python wrapper for the C function that computes the specific volume
         consistent with Pressel et al. 2015 equation (44).
-
         :param p0: reference state pressure [Pa]
         :param T:  thermodynamic temperature [K]
         :param qt: total water specific humidity [kg/kg]
@@ -171,11 +168,12 @@ cdef class ThermodynamicsSA:
         cdef:
             double T, qv, qc, ql, qi, lam
         eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
+        # eos_c_refstate(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
         return T, ql, qi
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
-
+        # print('Th_SA.update')
         # Get relevant variables shifts
         cdef:
             Py_ssize_t buoyancy_shift = DV.get_varshift(Gr, 'buoyancy')
@@ -191,6 +189,8 @@ cdef class ThermodynamicsSA:
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t thl_shift = DV.get_varshift(Gr, 'thetali')
 
+            # int n_nan = 0
+
 
         '''Apply qt clipping if requested. Defaults to on. Call this before other thermodynamic routines. Note that this
         changes the values in the qt array directly. Perhaps we should eventually move this to the timestepping function
@@ -198,15 +198,34 @@ cdef class ThermodynamicsSA:
         '''
         if self.do_qt_clipping:
             clip_qt(&Gr.dims, &PV.values[qt_shift], 1e-11)
+        # __
+        # self.debug_tend('000',PV,DV,Gr)#,Pa)
+        #  __
 
-
+        # eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
+        #             &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
+        #             &DV.values[qi_shift], &DV.values[alpha_shift], &n_nan)
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                     &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
                     &DV.values[qi_shift], &DV.values[alpha_shift])
 
+        # __
+        # print('number of nans in T:' + str(n_nan))
+        # self.debug_tend('111',PV,DV,Gr)#,Pa)        # nans in T
+        # __
+
         buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
 
+        # __
+        # self.debug_tend('222',PV,DV,Gr)#,Pa)        # nans in
+        # __
+
         bvf_sa( &Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[thr_shift], &DV.values[bvf_shift])
+
+        # # __
+        # message = '333'
+        # self.debug_tend(message,PV,DV,Gr)#,Pa)
+        # # __
 
         thetali_update(&Gr.dims,self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift],&DV.values[qi_shift],&DV.values[thl_shift])
 
