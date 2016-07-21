@@ -46,9 +46,7 @@ cdef class ReferenceState:
         :param Pa:  ParallelMPI class
         :return:
         '''
-
-
-
+        print(Pa.root_print('Reference state initialization'))
 
         self.sg = Thermodynamics.entropy(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
 
