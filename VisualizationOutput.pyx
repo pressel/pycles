@@ -46,6 +46,9 @@ cdef class VisualizationOutput:
 
     cpdef initialize(self):
         self.last_vis_time = 0.0
+        #__
+        self.count = 0
+        #__
 
         return
 
@@ -111,7 +114,7 @@ cdef class VisualizationOutput:
         cdef:
             double [:,:] local_var
             double [:,:] reduced_var
-            list pv_vars = ['qt', 's', 'w']
+            list pv_vars = ['qt', 's', 'w', 'u']
             list dv_vars = ['ql', 'diffusivity']
 
 
@@ -176,6 +179,11 @@ cdef class VisualizationOutput:
 
 
         if Pa.rank == 0:
+            #__
+            # with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time)) + '_' + str(self.count) + '.pkl', 'wb') as f:
+            #     pickle.dump(out_dict, f, protocol=2)
+            # self.count += 1
+            #__
             with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time)) +  '.pkl', 'wb') as f:
                 pickle.dump(out_dict, f, protocol=2)
 
