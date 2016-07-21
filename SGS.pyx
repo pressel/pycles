@@ -39,8 +39,6 @@ cdef extern from "sgs.h":
 
 cdef class SGS:
     def __init__(self,namelist):
-        print('SGS.__init__')
-        print(namelist['sgs']['scheme'])
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
             print(namelist['sgs']['scheme'])
             self.scheme = UniformViscosity(namelist)
