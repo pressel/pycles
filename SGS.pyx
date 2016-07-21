@@ -42,16 +42,16 @@ cdef class SGS:
         print('SGS.__init__')
         print(namelist['sgs']['scheme'])
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
-            print(self.scheme)
+            print(namelist['sgs']['scheme'])
             self.scheme = UniformViscosity(namelist)
         elif(namelist['sgs']['scheme'] == 'UniformViscosity_cond'):
-            print(self.scheme)
+            print(namelist['sgs']['scheme'])
             self.scheme = UniformViscosity_cond(namelist)
         elif(namelist['sgs']['scheme'] == 'Smagorinsky'):
-            print(self.scheme)
+            print(namelist['sgs']['scheme'])
             self.scheme = Smagorinsky(namelist)
         elif(namelist['sgs']['scheme'] == 'TKE'):
-            print(self.scheme)
+            print(namelist['sgs']['scheme'])
             self.scheme = TKE(namelist)
 
         return
