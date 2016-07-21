@@ -79,7 +79,7 @@ def InitStableBubble(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 dist = fmin(dist,1.0)
                 t = (300.0 )*exner_c(RS.p0_half[k]) - 15.0*( cos(np.pi * dist) + 1.0) /2.0
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
-                PV.values[u_varshift + ijk] = 10.0
+                PV.values[w_varshift + ijk] = 0.0
 
 
     return

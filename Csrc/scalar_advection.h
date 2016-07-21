@@ -353,38 +353,38 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double scalarp = interp_weno5(scalar[ijk + sm2],
+                    const double scalarm = interp_weno5(scalar[ijk + sm2],
                                                         scalar[ijk + sm1],
                                                         scalar[ijk],
                                                         scalar[ijk + sp1],
                                                         scalar[ijk + sp2]);
 
-                    const double vp = interp_weno5(velocity[ijk + sm2],
+                    const double vm = interp_weno5(velocity[ijk + sm2],
                                                    velocity[ijk + sm1],
                                                    velocity[ijk],
                                                    velocity[ijk + sp1],
                                                    velocity[ijk + sp2]);
 
-                    const double rho0p = interp_weno5(rho0_half[k - 2],
+                    const double rho0m = interp_weno5(rho0_half[k - 2],
                                                       rho0_half[k - 1],
                                                       rho0_half[k],
                                                       rho0_half[k + 1],
                                                       rho0_half[k + 2]);
 
                     // Upwind for negative velocity
-                    const double scalarm = interp_weno5(scalar[ijk + sp3],
+                    const double scalarp = interp_weno5(scalar[ijk + sp3],
                                                         scalar[ijk + sp2],
                                                         scalar[ijk + sp1],
                                                         scalar[ijk],
                                                         scalar[ijk + sp1]);
 
-                    const double vm = interp_weno5(velocity[ijk + sp3],
+                    const double vp = interp_weno5(velocity[ijk + sp3],
                                                    velocity[ijk + sp2],
                                                    velocity[ijk + sp1],
                                                    velocity[ijk],
                                                    velocity[ijk + sm1]);
 
-                    const double rho0m = interp_weno5(rho0_half[k + 3],
+                    const double rho0p = interp_weno5(rho0_half[k + 3],
                                                       rho0_half[k + 2],
                                                       rho0_half[k + 1],
                                                       rho0_half[k],

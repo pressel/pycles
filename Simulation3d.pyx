@@ -149,7 +149,7 @@ class Simulation3d:
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 #self.Ke.update(self.Gr,PV_)
-                #self.Th.update(self.Gr,self.Ref,PV_,DV_)
+                self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 #self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
@@ -170,7 +170,7 @@ class Simulation3d:
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
-            s = self.PV.get_variable_array('s',self.Gr)
+            s = self.PV.get_variable_array('w',self.Gr)
             import pylab as plt
 
 
