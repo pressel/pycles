@@ -7,6 +7,10 @@
 #include "momentum_advection_central_ws.h"
 #include "momentum_advection_central_pt.h"
 #include "flux_divergence.h"
+
+#include "momentum_advection_central_ql.h"
+#include "momentum_advection_central_ws_ql.h"
+#include "momentum_advection_weno_ql.h"
 #include<stdio.h>
 
 
@@ -14,6 +18,7 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
                                 double* restrict alpha0, double* restrict alpha0_half,
                                 double* restrict vel_advected, double* restrict vel_advecting,
                                 double* restrict tendency, ssize_t d_advected, ssize_t d_advecting, int scheme){
+
 
     switch(scheme){
         case 2:
@@ -53,10 +58,14 @@ void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho
                 tendency, d_advected, d_advecting);
             break;
         case 14:
+            // This is an application of fourth order Wicker-Skamarock to momentum but using a lower order interpolation
+            // for advecting velocity.
             fourth_order_ws_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
         case 16:
+            // This is an application of sixth order Wicker-Skamarock to momentum but using a lower order interpolation
+            // for advecting velocity.
             sixth_order_ws_m(dims, rho0, rho0_half, alpha0, alpha0_half, vel_advected, vel_advecting,
                 tendency, d_advected, d_advecting);
             break;
