@@ -178,7 +178,7 @@ class Simulation3d:
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
-            self.force_io()
+            self.force_io(self.Pa)
 
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
@@ -248,6 +248,7 @@ class Simulation3d:
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
+                # self.Pa.root_print('rk_step: '+str(self.TS.rk_step)+' (total steps: '+str(self.TS.n_rk_steps)+')')
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
@@ -366,7 +367,8 @@ class Simulation3d:
 
         return
 
-    def force_io(self):
+    def force_io(self, ParallelMPI.ParallelMPI Pa):
+        # Pa.barrier()
         # output stats here
         self.Pa.root_print('Sim.force_io')
 
@@ -397,7 +399,7 @@ class Simulation3d:
         self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
-
+        # Pa.barrier()
         self.Pa.root_print('Sim.force_io finished')
 
         return
