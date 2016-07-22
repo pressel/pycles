@@ -3,6 +3,10 @@ import numpy as np
 cimport numpy as np
 # __
 import os
+try:
+    import cPickle as pickle
+except:
+    import pickle as pickle # for Python 3 users
 # __
 from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
@@ -73,8 +77,8 @@ class Simulation3d:
         self.Tr = TracersFactory(namelist)
         # __
         # self.SN = StochasticNoise.StochasticNoise(namelist)
-        # uuid = str(namelist['meta']['uuid'])
-        # self.outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + uuid[-5:]))
+        uuid = str(namelist['meta']['uuid'])
+        self.outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + uuid[-5:]))
         # self.count = 0
         # __
 
