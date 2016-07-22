@@ -151,7 +151,9 @@ class Simulation3d:
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
-
+        #__
+        self.check_nans('Finished Initialization: ')
+        #__
         return
 
 
@@ -176,26 +178,64 @@ class Simulation3d:
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
+                # __
+                self.debug_tend('Ke')
+                # self.Nan.nan_checking('hoi', self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
+                # __
+
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
+                #_
+                self.debug_tend('Th')   # only w-tendencies != 0 ?!!!
+                #_
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
+                #_
+                self.debug_tend('SA')
+                #_
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
+                #_
+                self.debug_tend('MA')
+                #_
                 # __
                 # self.SN.update(self.Gr,self.Ref,PV_,self.Th,self.Pa)
                 # __
                 self.Sur.update(self.Gr, self.Ref,self.PV, self.DV,self.Pa,self.TS)
+                #_
+                self.debug_tend('Sur')
+                #_
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
+                #_
+                self.debug_tend('SGS')
+                #_
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
+                #_
+                self.debug_tend('Damping')
+                #_
 
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
+                #_
+                self.debug_tend('SD')
+                # _
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
+                #_
+                self.debug_tend('MD')
+                #_
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+                #_
+                self.debug_tend('Fo')
+                #_
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
+                #_
+                self.debug_tend('Budg')
+                #_
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
+                #_
+                self.debug_tend('TS update') # tendencies set to zero
+                #_
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
