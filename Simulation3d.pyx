@@ -209,7 +209,7 @@ class Simulation3d:
                 # __
                 self.Sur.update(self.Gr, self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 #_
-                self.debug_tend('Sur')
+                # self.debug_tend('Sur')
                 #_
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
                 #_
@@ -217,7 +217,7 @@ class Simulation3d:
                 #_
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
                 #_
-                self.debug_tend('Damping')
+                # self.debug_tend('Damping')
                 #_
 
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
@@ -236,7 +236,7 @@ class Simulation3d:
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 #_
-                self.debug_tend('Budg')
+                # self.debug_tend('Budg')
                 #_
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
@@ -722,3 +722,46 @@ class Simulation3d:
         return
 
 
+    def output_nan_array(self,arr,name,message,ParallelMPI.ParallelMPI Pa):
+
+        # return
+        ## self.Pa.root_print('!!! output nan array, rank: ' + str(self.Pa.rank))
+        print(('!!! output nan array, rank: ' + str(Pa.rank)))
+        print(self.outpath)
+        # if 's' in self.PV.name_index:
+        #     self.NC.write_condstat('sk_arr', 'nan_array', self.sk_arr[:,:], self.Pa)
+        # if 'qt' in self.PV.name_index:
+        #     self.NC.write_condstat('qtk_arr', 'nan_array', self.qt_arr[:,:], self.Pa)
+
+        out_path = os.path.join(self.outpath, 'Nan')
+        print('outpath', out_path)
+        # print('time', self.TS.t, str(self.TS.t))
+        if Pa.rank == 0:
+            try:
+                os.mkdir(out_path)
+                print('doing out_path', self.outpath)
+            except:
+                print('NOT doing out_path')
+                pass
+            try:
+                path = out_path + '/' + name + 'k_arr' + str(self.TS.t) + '_' + message[0:2]
+                # path = out_path + '/' + name + 'k_arr' + str(np.int(self.TS.t)) + '_' + str(np.int(self.count))
+                # path = out_path + '/sk_arr_' + str(np.int(self.TS.t))
+                os.mkdir(path)
+                print('doing path', path)
+            except:
+                print('NOT doing path')
+                pass
+        Pa.barrier()
+
+        # path = self.outpath + 'Nan/sk_arr_' + str(np.int(self.TS.t))
+        # path = out_path + '/sk_arr_' + str(np.int(self.TS.t))
+        with open(path+ '/' + str(Pa.rank) + '.pkl', 'wb') as f:       # 'wb' = write binary file
+            # pass
+            print('dumping nan pickle: ', Pa.rank, path+ '/' + str(Pa.rank) + '.pkl')
+            pickle.dump(arr, f,protocol=2)
+
+        # self.count += 1
+        print('finished dumping nan pickle')
+
+        return
