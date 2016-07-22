@@ -35,7 +35,7 @@ cimport Radiation
 cimport Restart
 cimport Surface
 # __
-cimport StochasticNoise
+# cimport StochasticNoise
 # __
 
 class Simulation3d:
