@@ -84,7 +84,6 @@ void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*
         // __
         return;
         }
-
 }
 
 
@@ -159,12 +158,12 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
 
 
 
-void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
-    double* restrict p0, double* restrict s, double* restrict qt, double* restrict T,
-    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){
 //void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
 //    double* restrict p0, double* restrict s, double* restrict qt, double* restrict T,
-//    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha, int* n_nan ){
+//    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){
+void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+    double* restrict p0, double* restrict s, double* restrict qt, double* restrict T,
+    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha, int* n_nan ){
 //    printf("eos_update\n");
     ssize_t i,j,k;
     // __
@@ -188,9 +187,9 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
                     const ssize_t ijk = ishift + jshift + k;
                     eos_c(LT, lam_fp, L_fp, p0[k], s[ijk],qt[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk],qt[ijk],qv[ijk]);
-                  /*if(isnan(T[ijk])){
-                     ijk_ = ijk;
-                     n_nan++;}*/
+                  if(isnan(T[ijk])){
+//                     ijk_ = ijk;
+                     n_nan++;}
                 } // End k loop
             } // End j loop
         } // End i loop

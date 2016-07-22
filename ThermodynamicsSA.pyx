@@ -22,9 +22,9 @@ cdef extern from "thermodynamics_sa.h":
     inline double alpha_c(double p0, double T, double qt, double qv) nogil
     void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
     # __
-    void eos_c_refstate(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
-    # void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
-    #                 double * qv, double * ql, double * qi, double * alpha, int * n_nan)
+    # void eos_c_refstate(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
+    void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
+                    double * qv, double * ql, double * qi, double * alpha, int * n_nan)
     # __
     void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
                     double * qv, double * ql, double * qi, double * alpha)
@@ -207,12 +207,12 @@ cdef class ThermodynamicsSA:
         # self.debug_tend('000',PV,DV,Gr)#,Pa)
         #  __
 
-        # eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
-        #             &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
-        #             &DV.values[qi_shift], &DV.values[alpha_shift], &n_nan)
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                     &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
-                    &DV.values[qi_shift], &DV.values[alpha_shift])
+                    &DV.values[qi_shift], &DV.values[alpha_shift], &n_nan)
+        # eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
+        #             &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
+        #             &DV.values[qi_shift], &DV.values[alpha_shift])
 
         # __
         # print('number of nans in T:' + str(n_nan))
