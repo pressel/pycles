@@ -90,6 +90,7 @@ void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*
 
 void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                     const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
+//    printf("doing saturation adjustment (eos_c)\n");
     *qv = qt;
     *ql = 0.0;
     *qi = 0.0;
@@ -99,12 +100,15 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     double pv_star_1 = lookup(LT, T_1);
     double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
 
-    /// If not saturated
+//    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
+    // If not saturated
     if(qt <= qv_star_1){
+//        printf("eos_c: not saturated\n");
         *T = T_1;
         return;
     }
     else{
+//        printf("eos_c: saturated\n");
         double sigma_1 = qt - qv_star_1;
         double lam_1 = lam_fp(T_1);
         double L_1 = L_fp(T_1,lam_1);       // L_fp = ThermdynamicsSA.L_fp = Thermodynamics/LatentHeat.L_fp --> LatentHeat.L_fp = LatentHeat.L
@@ -115,7 +119,14 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         double qv_star_2;
         double sigma_2;
         double lam_2;
+        // __
         int count = 0;
+        // the following definitions are necessary if while-loop below commented out
+        /*double pv_star_2 = lookup(LT, T_2);
+        qv_star_2 = qv_star_c(p0,qt,pv_star_2);
+        sigma_2 = qt - qv_star_2;
+        lam_2 = lam_fp(T_2);*/
+        // __
         do{
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
@@ -133,10 +144,15 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             delta_T  = fabs(T_2 - T_1);
             count ++;
         } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
+//        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 2);*/
         *T  = T_2;
         *qv = qv_star_2;
         *ql = lam_2 * sigma_2;
         *qi = (1.0 - lam_2) * sigma_2;
+        // __
+//        printf("eos_c iterations: count = %d\n",count);
+//        printf("ql = %f\n", *ql);
+        // __
         return;
     }
 }
@@ -153,6 +169,7 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
     ssize_t i,j,k;
     // __
     int i_,j_,k_;
+    //    int ijk_;
     // __
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -171,10 +188,24 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
                     const ssize_t ijk = ishift + jshift + k;
                     eos_c(LT, lam_fp, L_fp, p0[k], s[ijk],qt[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk],qt[ijk],qv[ijk]);
+                  /*if(isnan(T[ijk])){
+                     ijk_ = ijk;
+                     n_nan++;}*/
                 } // End k loop
             } // End j loop
         } // End i loop
     return;
+
+     /*
+     Bus errors occur when your processor cannot even attempt the memory access requested. A bus error is trying to
+     access memory that can't possibly be there. You've used an address that's meaningless to the system, or the wrong
+     kind of address for that operation.
+     Segmentation faults occur when accessing memory which does not belong to your process
+     (accessing memory that you're not allowed to access), they are very common and are typically the result of:
+        - using a pointer to something that was deallocated.
+        - using an uninitialized hence bogus pointer.
+        - using a null pointer.
+        - overflowing a buffer. */
     }
 
 void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double* restrict alpha, double* restrict buoyancy, double* restrict wt){
@@ -188,14 +219,32 @@ void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double*
     const ssize_t imax = dims->nlg[0];
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2]-1;
-
+    // __
+    int ijk_;
+    // __
     for (i=imin; i<imax; i++){
        const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
             const ssize_t jshift = j * jstride;
             for (k=kmin;k<kmax;k++){
                 const ssize_t ijk = ishift + jshift + k;
+                if(isnan(alpha[ijk])){
+                    ijk_ = ijk;
+                    printf("!?! alpha is nan at: %d!!!\n",ijk_);}
+                if(isnan(alpha0[k])){
+                    ijk_ = k;
+                    printf("!?! alpha0 is nan at: k = %d!!!\n",ijk_);}
+//                else{printf("!?! no nan in eos\n");}
                 buoyancy[ijk] = buoyancy_c(alpha0[k],alpha[ijk]);
+                if(isnan(buoyancy[ijk])){
+                    ijk_ = ijk;
+                    printf("!!! buoyancy is nan at: %d!!!\n",ijk_);}
+                if(isnan(alpha[ijk])){
+                    ijk_ = ijk;
+                    printf("!!! alpha is nan at: %d!!!\n",ijk_);}
+                if(isnan(alpha0[k])){
+                    ijk_ = k;
+                    printf("!!! alpha is nan at: k = %d!!!\n",ijk_);}
             } // End k loop
         } // End j loop
     } // End i loop
