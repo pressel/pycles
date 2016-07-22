@@ -1,6 +1,9 @@
 import time
 import numpy as np
 cimport numpy as np
+# __
+import os
+# __
 from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
 from Microphysics import MicrophysicsFactory
