@@ -72,10 +72,10 @@ class Simulation3d:
         self.TS = TimeStepping.TimeStepping()
         self.Tr = TracersFactory(namelist)
         # __
-        self.SN = StochasticNoise.StochasticNoise(namelist)
-        uuid = str(namelist['meta']['uuid'])
-        self.outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + uuid[-5:]))
-        self.count = 0
+        # self.SN = StochasticNoise.StochasticNoise(namelist)
+        # uuid = str(namelist['meta']['uuid'])
+        # self.outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + uuid[-5:]))
+        # self.count = 0
         # __
 
         # Add new prognostic variables
@@ -111,7 +111,7 @@ class Simulation3d:
 
         self.TS.initialize(namelist,self.PV,self.Pa)
         # __
-        self.SN.initialize(self.Pa)
+        # self.SN.initialize(self.Pa)
         # __
 
         if self.Restart.is_restart_run:
@@ -180,7 +180,7 @@ class Simulation3d:
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
                 # __
-                self.SN.update(self.Gr,self.Ref,PV_,self.Th,self.Pa)
+                # self.SN.update(self.Gr,self.Ref,PV_,self.Th,self.Pa)
                 # __
                 self.Sur.update(self.Gr, self.Ref,self.PV, self.DV,self.Pa,self.TS)
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
