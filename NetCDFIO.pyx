@@ -32,7 +32,7 @@ cdef class NetCDFIO_Stats:
 
         # Setup the statistics output path
         outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
-        # Pa.root_print(outpath)
+        Pa.root_print(outpath)
 
         if Pa.rank == 0:
             try:
