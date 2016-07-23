@@ -311,7 +311,7 @@ class Simulation3d:
                 self.Pa.root_print('Finished Doing 3D FieldIO')
 
             # If time to ouput stats do output
-            self.Pa.root_print('StatsIO freq: ' + str(self.StatsIO.frequency) + ', ' + str(self.StatsIO.last_output_time) + ', ' + str(self.TS.t))
+            # self.Pa.root_print('StatsIO freq: ' + str(self.StatsIO.frequency) + ', ' + str(self.StatsIO.last_output_time) + ', ' + str(self.TS.t))
             if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t:
             #if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t or self.StatsIO.last_output_time + self.StatsIO.frequency + 10.0 == self.TS.t:
             #if (1==1):
