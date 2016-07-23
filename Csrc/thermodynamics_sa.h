@@ -107,7 +107,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         return;
     }
     else{
-//        printf("eos_c: saturated\n");
+        printf("eos_c: saturated\n");
         double sigma_1 = qt - qv_star_1;
         double lam_1 = lam_fp(T_1);
         double L_1 = L_fp(T_1,lam_1);       // L_fp = ThermdynamicsSA.L_fp = Thermodynamics/LatentHeat.L_fp --> LatentHeat.L_fp = LatentHeat.L
@@ -121,12 +121,12 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         // __
         int count = 0;
         // the following definitions are necessary if while-loop below commented out
-        /*double pv_star_2 = lookup(LT, T_2);
+        double pv_star_2 = lookup(LT, T_2);
         qv_star_2 = qv_star_c(p0,qt,pv_star_2);
         sigma_2 = qt - qv_star_2;
-        lam_2 = lam_fp(T_2);*/
+        lam_2 = lam_fp(T_2);
         // __
-        do{
+        /*do{
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
             double pv_2 = pv_c(p0,qt,qv_star_2);
@@ -142,7 +142,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             f_1 = f_2;
             delta_T  = fabs(T_2 - T_1);
             count ++;
-        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
+        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );*/
 //        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 2);*/
         *T  = T_2;
         *qv = qv_star_2;
