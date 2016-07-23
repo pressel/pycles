@@ -538,6 +538,11 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
             }
 
         int ok_nan = 0;
+        int nan_mean_flux = 0;
+        int nan_eddy_flux = 0;
+        int nan_mean_eddy_flux = 0;
+        int nan_mean_eddy = 0;
+        int nan_eddy_mean = 0;
         for(i=imin; i<imax; i++){
             const ssize_t ishift = i * istride;
             for(j=jmin; j<jmax; j++){
@@ -546,11 +551,21 @@ void fourth_order_ws_m_decomp_ql(struct DimStruct *dims, double* restrict rho0, 
                     const ssize_t ijk = ishift + jshift + k;
 
                     if(isnan(flux[ijk])){ok_nan = ok_nan + 1;}
+                    if(isnan(mean_flux[k])){nan_mean_flux ++;}
+                    if(isnan(eddy_flux[ijk])){nan_eddy_flux ++;}
+                    if(isnan(mean_eddy_flux[k])){nan_mean_eddy_flux++;}
+                    if(isnan(flux_mean_eddy[ijk])){nan_mean_eddy++;}
+                    if(isnan(flux_eddy_mean[ijk])){nan_eddy_mean++;}
                 }
             }
         }
-        if(ok_nan > 1){printf("problem nan flux: count = %d\n",ok_nan);}
+        if(ok_nan > 1){printf("problem nan flux in MA: count = %d\n",ok_nan);}
 //        else{printf("no nans in MA fluxes\n");}
+        if(nan_mean_flux > 1){printf("SA: problem nan in mean flux: count = %d\n",nan_mean_flux);}
+        if(nan_eddy_flux > 1){printf("SA: problem nan in mean flux: count = %d\n",nan_eddy_flux);}
+        if(nan_mean_eddy_flux > 1){printf("SA: problem nan in mean flux: count = %d\n",nan_mean_eddy_flux);}
+        if(nan_mean_eddy > 1){printf("SA: problem nan in mean flux: count = %d\n",nan_mean_eddy);}
+        if(nan_eddy_mean > 1){printf("SA: problem nan in mean flux: count = %d\n",nan_eddy_mean);}
 
         momentum_flux_divergence(dims, alpha0, alpha0_half, flux,
                                 tendency, d_advected, d_advecting);

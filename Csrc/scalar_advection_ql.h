@@ -281,7 +281,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
     double* restrict velocity, double* restrict scalar, double* restrict flux, int d){
 
-    //if(d==2){printf("4th order Scalar Transport decomp QL\n");}
+    if(d==2){printf("4th order Scalar Transport decomp QL\n");}
 
     double *vel_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
     double *phi_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -409,18 +409,33 @@ void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, dou
     }
 
     int ok_nan = 0;
-        for(i=imin; i<imax; i++){
-            const ssize_t ishift = i * istride;
-            for(j=jmin; j<jmax; j++){
-                const ssize_t jshift = j * jstride;
-                for(k=kmin; k<kmax; k++){
-                    const ssize_t ijk = ishift + jshift + k;
+    int nan_mean_flux = 0;
+    int nan_eddy_flux = 0;
+    int nan_mean_eddy_flux = 0;
+    int nan_phiprime = 0;
+    int nan_phimean = 0;
+    for(i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
 
-                    if(isnan(flux[ijk])){ok_nan = ok_nan + 1;}
-                }
+                if(isnan(flux[ijk])){ok_nan = ok_nan + 1;}
+                if(isnan(mean_flux[k])){nan_mean_flux ++;}
+                if(isnan(eddy_flux[ijk])){nan_eddy_flux ++;}
+                if(isnan(mean_eddy_flux[k])){nan_mean_eddy_flux++;}
+                if(isnan(mix_flux_phiprime[ijk])){nan_phiprime++;}
+                if(isnan(mix_flux_phimean[ijk])){nan_phimean++;}
             }
         }
-        if(ok_nan > 1){printf("problem nan flux: count = %d\n",ok_nan);}
+    }
+    if(ok_nan > 1){printf("SA: problem nan flux in SA: count = %d\n",ok_nan);}
+    if(nan_mean_flux > 1){printf("SA: problem nan in mean flux: count = %d\n",nan_mean_flux);}
+    if(nan_eddy_flux > 1){printf("SA: problem nan in mean flux: count = %d\n",nan_eddy_flux);}
+    if(nan_mean_eddy_flux > 1){printf("SA: problem nan in mean flux: count = %d\n",nan_mean_eddy_flux);}
+    if(nan_phiprime > 1){printf("SA: problem nan in mean flux: count = %d\n",nan_phiprime);}
+    if(nan_phimean > 1){printf("SA: problem nan in mean flux: count = %d\n",nan_phimean);}
 
     free(eddy_flux);
     free(mean_eddy_flux);
