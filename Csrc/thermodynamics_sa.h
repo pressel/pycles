@@ -39,7 +39,7 @@ void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*
     else{
 //        printf("eos_c: saturated\n");
         double sigma_1 = qt - qv_star_1;
-        double lam_1 = lam_fp(T_1);
+        double lam_1 = lam_fp(T_1);         // lam_fp gives the liquid fraction for mixed-phase clouds (fraction of supercooled liquid)
         double L_1 = L_fp(T_1,lam_1);       // L_fp = ThermdynamicsSA.L_fp = Thermodynamics/LatentHeat.L_fp --> LatentHeat.L_fp = LatentHeat.L
         double s_1 = sd_c(pd_1,T_1) * (1.0 - qt) + sv_c(pv_1,T_1) * qt + sc_c(L_1,T_1)*sigma_1;
         double f_1 = s - s_1;
@@ -89,6 +89,37 @@ void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*
 
 void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                     const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
+    /*
+    Use saturation adjustment scheme to compute temperature T and ql given s and qt.
+    :param p0: pressure [Pa]
+    :param s: entropy  [K]
+    :param qt:  total water specific humidity
+    :return: T, ql, qv, qi
+
+    mixed phase cloud: supercooled liquid water co-exists with ice below the freezing temperature (T_i < T < T_f)
+    T_i = 233 K (homogeneous nucleation temperature)
+    T_f = 273.15K (freezing point)
+    lam_fp(T): gives the liquid fraction for mixed-phase clouds (fraction of supercooled liquid)
+    l_fp(T,lam_fp(T)) = lam_fp*L_v + (1-lam_fp)*L_s: effective specific latent heat in mixed-phase
+
+    Functions from Microphyiscs.pxd:
+        liquid fraction:
+            lam_fp(T) = 1.0 (lambda_constant)
+        Latent Heat:
+            L_fp(T, lambda(T)) = (2500.8 - 2.36 * TC + 0.0016 * TC**2 - 0.00006 * TC**3) * 1000.0
+                with: TC = T - 273.15
+
+    Functions from thermodynamic_functions.h:
+        pv_c = p0 * eps_vi * qv /(1.0 - qt + eps_vi * qv)
+
+    Definitions (c.f. Pressel et al., 2016):
+        saturation vapor pressure: pv_star(T)
+            --> from Clausius Clapeyron (Lookup table for integration)
+        saturation specific humidity: qv_star(p,qt,pv_star)
+            --> ideal gas law; defined in Csrc/thermodynamics.h
+        saturation excess: sigma = qt - qv_star
+    */
+
 //    printf("doing saturation adjustment (eos_c)\n");
     *qv = qt;
     *ql = 0.0;
