@@ -195,7 +195,7 @@ class Simulation3d:
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
                 # __
-                self.debug_tend('Ke')
+                # self.debug_tend('Ke')
                 # self.Nan.nan_checking('hoi', self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
                 # __
 
@@ -228,7 +228,7 @@ class Simulation3d:
                 #_
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
                 #_
-                self.debug_tend('SGS')
+                # self.debug_tend('SGS')
                 #_
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
                 #_
@@ -246,7 +246,7 @@ class Simulation3d:
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 #_
-                self.debug_tend('Fo')
+                # self.debug_tend('Fo')
                 #_
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
@@ -274,7 +274,6 @@ class Simulation3d:
         return
 
     def io(self):
-        self.Pa.root_print('calling io')
         cdef:
             double fields_dt = 0.0
             double stats_dt = 0.0
@@ -284,7 +283,8 @@ class Simulation3d:
             double min_dt = 0.0
 
         if self.TS.t > 0 and self.TS.rk_step == self.TS.n_rk_steps - 1:
-            self.Pa.root_print('doing io: ' + str(self.TS.t) + ', ' + str(self.TS.rk_step))
+            self.Pa.root_print('calling io')
+            # self.Pa.root_print('doing io: ' + str(self.TS.t) + ', ' + str(self.TS.rk_step))
             # Adjust time step for output if necessary
             fields_dt = self.FieldsIO.last_output_time + self.FieldsIO.frequency - self.TS.t
             stats_dt = self.StatsIO.last_output_time + self.StatsIO.frequency - self.TS.t
@@ -387,11 +387,11 @@ class Simulation3d:
         # output stats here
         self.Pa.root_print('Sim.force_io')
 
-        self.Pa.root_print('Doing 3D FieldIO')
+        # self.Pa.root_print('Doing 3D FieldIO')
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
         self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
         self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)
-        self.Pa.root_print('Finished Doing 3D FieldIO')
+        # self.Pa.root_print('Finished Doing 3D FieldIO')
 
         self.StatsIO.open_files(self.Pa)
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
@@ -533,9 +533,9 @@ class Simulation3d:
         #if self.Pa.rank == 0:
         if 1 == 1:
             print(message, 'debugging (max, min, nan): ')
-            print('shifts', u_varshift, v_varshift, w_varshift, s_varshift)
-            print('u tend: ', u_max, uk_max, u_min, uk_min, u_nan, uk_nan)
-            print('v tend: ', v_max, vk_max, v_min, vk_min, v_nan, vk_nan)
+            # print('shifts', u_varshift, v_varshift, w_varshift, s_varshift)
+            # print('u tend: ', u_max, uk_max, u_min, uk_min, u_nan, uk_nan)
+            # print('v tend: ', v_max, vk_max, v_min, vk_min, v_nan, vk_nan)
             print('w tend: ', w_max, wk_max, w_min, wk_min, w_nan, wk_nan)
             print('w val: ', w_max_val, wk_max_val, w_min_val, wk_min_val, w_nan_val, wk_nan_val)
 
