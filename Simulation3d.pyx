@@ -530,8 +530,8 @@ class Simulation3d:
         w_nan_val = np.isnan(PV_.values[w_varshift:s_varshift]).any()
         wk_nan_val = np.argmax(PV_.values[w_varshift:s_varshift])
 
-        #if self.Pa.rank == 0:
-        if 1 == 1:
+        if self.Pa.rank == 0:
+        # if 1 == 1:
             print(message, 'debugging (max, min, nan): ')
             # print('shifts', u_varshift, v_varshift, w_varshift, s_varshift)
             # print('u tend: ', u_max, uk_max, u_min, uk_min, u_nan, uk_nan)
@@ -579,8 +579,8 @@ class Simulation3d:
             ql_nan_val = np.isnan(DV_.values[ql_varshift:(ql_varshift+ijk_max)]).any()
             qlk_nan_val = np.argmax(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
 
-            #if self.Pa.rank == 0:
-            if 1 == 1:
+            if self.Pa.rank == 0:
+            # if 1 == 1:
                 print('s tend: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
                 print('s val: ', s_max_val, sk_max_val, s_min_val, sk_min_val, s_nan_val, sk_nan_val)
                 print('qt tend: ', qt_max, qtk_max, qt_min, qtk_min, qt_nan, qtk_nan)
@@ -633,8 +633,8 @@ class Simulation3d:
             s_nan_val = np.isnan(PV_.values[s_varshift:(s_varshift + ijk_max)]).any()
             sk_nan_val = np.argmax(PV_.values[s_varshift:(s_varshift + ijk_max)])
 
-            #if self.Pa.rank == 0:
-            if 1 == 0:
+            if self.Pa.rank == 0:
+            # if 1 == 0:
                 print('s tend: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
                 print('s val: ', s_max_val, sk_max_val, s_min_val, sk_min_val, s_nan_val, sk_nan_val)
 

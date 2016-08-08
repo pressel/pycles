@@ -518,9 +518,8 @@ cdef class ThermodynamicsSA:
 
 # _______________
     cpdef debug_tend(self, message, PrognosticVariables.PrognosticVariables PV_, DiagnosticVariables.DiagnosticVariables DV,
-                     Grid.Grid Gr_):#, ParallelMPI.ParallelMPI Pa):
-        # print('debug_tend, rank: ', Pa.rank)
-        # message = 'hoi'
+                     Grid.Grid Gr_):
+
         cdef:
             Py_ssize_t u_varshift = PV_.get_varshift(Gr_,'u')
             Py_ssize_t v_varshift = PV_.get_varshift(Gr_,'v')
@@ -560,8 +559,8 @@ cdef class ThermodynamicsSA:
         w_min = np.nanmin(PV_.tendencies[w_varshift:s_varshift])
         wk_min = np.nanargmin(PV_.tendencies[w_varshift:s_varshift])
 
-        # if np.isnan(PV_.tendencies).any():
-        if 1==1:
+        if np.isnan(PV_.tendencies).any():
+        # if 1==1:
             u_nan = np.isnan(PV_.tendencies[u_varshift:v_varshift]).any()
             uk_nan = np.argmax(PV_.tendencies[u_varshift:v_varshift])
             v_nan = np.isnan(PV_.tendencies[v_varshift:w_varshift]).any()
@@ -587,8 +586,8 @@ cdef class ThermodynamicsSA:
             print('w val: ', w_max_val, wk_max_val, w_min_val, wk_min_val, w_nan_val, wk_nan_val)
 
 
-        # if np.isnan(DV.values).any():
-        if 1==1:
+        if np.isnan(DV.values).any():
+        # if 1==1:
             b_nan_val = np.isnan(DV.values[b_shift:b_shift+ ijk_max]).any()
             bk_nan_val = np.argmax(DV.values[b_shift:b_shift+ ijk_max])
             alpha_nan_val = np.isnan(DV.values[alpha_shift:alpha_shift+ ijk_max]).any()
@@ -668,33 +667,31 @@ cdef class ThermodynamicsSA:
                 print('ql val: ', ql_max_val, qlk_max_val, ql_min_val, qlk_min_val, ql_nan_val, qlk_nan_val)
             #self.Pa.root_print('ql: ' + str(ql_max) + ', ' + str(ql_min))
 
-        #for name in PV.name_index.keys():
-            # with nogil:
-            if 1 == 1:
-                for i in range(imin, imax):
-                    ishift = i * istride
-                    for j in range(jmin, jmax):
-                        jshift = j * jstride
-                        for k in range(kmin, kmax):
-                            ijk = ishift + jshift + k
-                            if np.isnan(PV_.values[s_varshift+ijk]):
-                                sk_arr = np.append(sk_arr,ijk)
-                            if np.isnan(PV_.values[qt_varshift+ijk]):
-                                qtk_arr = np.append(qtk_arr,ijk)
-
-            if np.size(sk_arr) > 1:
-                # self.output_nan_array(sk_arr,'s',message, Pa)
-                # if Pa.rank == 0:
-                if 1==1:
-                    print('sk_arr size: ', sk_arr.shape)
-                    print('sk_arr:', sk_arr)
-                    # self.output_nan_array()
-            if np.size(qtk_arr) > 1:
-                # self.output_nan_array(qtk_arr,'qt',message, Pa)
-                # if Pa.rank == 0:
-                if 1==1:
-                    print('qtk_arr size: ', qtk_arr.shape)
-                    print('qtk_arr: ', qtk_arr)
+        # #for name in PV.name_index.keys():
+        #     # with nogil:
+        #     if 1 == 1:
+        #         for i in range(imin, imax):
+        #             ishift = i * istride
+        #             for j in range(jmin, jmax):
+        #                 jshift = j * jstride
+        #                 for k in range(kmin, kmax):
+        #                     ijk = ishift + jshift + k
+        #                     if np.isnan(PV_.values[s_varshift+ijk]):
+        #                         sk_arr = np.append(sk_arr,ijk)
+        #                     if np.isnan(PV_.values[qt_varshift+ijk]):
+        #                         qtk_arr = np.append(qtk_arr,ijk)
+        #
+        #     if np.size(sk_arr) > 1:
+        #         # if Pa.rank == 0:
+        #         if 1==1:
+        #             print('sk_arr size: ', sk_arr.shape)
+        #             print('sk_arr:', sk_arr)
+        #             # self.output_nan_array()
+        #     if np.size(qtk_arr) > 1:
+        #         # if Pa.rank == 0:
+        #         if 1==1:
+        #             print('qtk_arr size: ', qtk_arr.shape)
+        #             print('qtk_arr: ', qtk_arr)
 
         else:
             s_max = np.nanmax(PV_.tendencies[s_varshift:(s_varshift + ijk_max)])
@@ -717,23 +714,22 @@ cdef class ThermodynamicsSA:
                 print('s val: ', s_max_val, sk_max_val, s_min_val, sk_min_val, s_nan_val, sk_nan_val)
 
 
-            if 1 == 1:
-                for i in range(imin, imax):
-                    ishift = i * istride
-                    for j in range(jmin, jmax):
-                        jshift = j * jstride
-                        for k in range(kmin, kmax):
-                            ijk = ishift + jshift + k
-                            if np.isnan(PV_.values[s_varshift+ijk]):
-                                sk_arr = np.append(sk_arr,ijk)
-
-
-            if np.size(sk_arr) > 1:
-                # self.output_nan_array(sk_arr,'s',message, Pa)
-                # if Pa.rank == 0:
-                if 1==1:
-                    print('sk_arr size: ', sk_arr.shape)
-                    print('sk_arr:', sk_arr)
+            # if 1 == 1:
+            #     for i in range(imin, imax):
+            #         ishift = i * istride
+            #         for j in range(jmin, jmax):
+            #             jshift = j * jstride
+            #             for k in range(kmin, kmax):
+            #                 ijk = ishift + jshift + k
+            #                 if np.isnan(PV_.values[s_varshift+ijk]):
+            #                     sk_arr = np.append(sk_arr,ijk)
+            #
+            #
+            # if np.size(sk_arr) > 1:
+            #     # if Pa.rank == 0:
+            #     if 1==1:
+            #         print('sk_arr size: ', sk_arr.shape)
+            #         print('sk_arr:', sk_arr)
 
 
         return
