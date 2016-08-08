@@ -37,6 +37,7 @@ cdef class ScalarAdvection:
 
         try:
             self.order = namelist['scalar_transport']['order']
+            Pa.root_print('scalar transport: order ' + np.str(self.order))
         except:
             Pa.root_print('scalar_transport order not given in namelist')
             Pa.root_print('Killing simulation now!')

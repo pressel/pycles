@@ -133,7 +133,7 @@ void second_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
 void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
     double* restrict velocity, double* restrict scalar, double* restrict flux, int d){
 
-    if(d==2){printf("4th order Scalar Transport decomp \n");}
+//    if(d==2){printf("4th order Scalar Transport decomp \n");}
 
     double *vel_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
     double *phi_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -281,7 +281,7 @@ void fourth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double
 void fourth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
     double* restrict velocity, double* restrict scalar, double* restrict flux, int d){
 
-    if(d==2){printf("4th order Scalar Transport decomp QL\n");}
+//    if(d==2){printf("4th order Scalar Transport decomp QL\n");}
 
     double *vel_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
     double *phi_fluc = (double *)malloc(sizeof(double) * dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -570,7 +570,7 @@ void fourth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* re
 
 
 void fourth_order_a_ql_debug(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half, double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
-    if (d==1){printf("4th order QL Scalar Transport \n");}
+//    if (d==1){printf("4th order QL Scalar Transport \n");}
 
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mean_eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
@@ -716,7 +716,7 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
 //void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
 //                const double* restrict velocity, const double* restrict scalar,
 //                double* restrict flux, double* restrict flux_old, int d){
-    if (d==1){printf("Scalar Advection: WENO 5 decomposition \n");}
+//    if (d==1){printf("Scalar Advection: WENO 5 decomposition \n");}
 //    printf("Scalar Advection: WENO 5 decomposition \n");
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -927,7 +927,7 @@ void weno_fifth_order_a_decomp(struct DimStruct *dims, double* restrict rho0, do
 void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
                 const double* restrict velocity, const double* restrict scalar,
                 double* restrict flux, int d){
-    if (d==1){printf("SA: WENO 5 decomposition QL\n");}
+//    if (d==1){printf("SA: WENO 5 decomposition QL\n");}
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
 
@@ -1119,7 +1119,7 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
 
 
 void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
-    if (d==1){printf("SA: WENO5 QL\n");}
+//    if (d==1){printf("SA: WENO5 QL\n");}
 
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mean_eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
