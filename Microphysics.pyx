@@ -564,11 +564,11 @@ cdef cython_wetbulb(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double *p0, d
 
 def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
     if(namelist['microphysics']['scheme'] == 'None_Dry'):
-        print('No Microphysics dry')
+        Par.root_print('No Microphysics dry')
         return No_Microphysics_Dry(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'None_SA'):
-        print('No Microphysics SA')
+        Par.root_print('No Microphysics SA')
         return No_Microphysics_SA(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'SB_Liquid'):
-        print('Microphysics SG liquid')
+        Par.root_print('Microphysics SG liquid')
         return Microphysics_SB_Liquid(Par, LH, namelist)

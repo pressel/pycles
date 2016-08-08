@@ -1436,7 +1436,7 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
                     ijk = ishift + jshift + k
                     PV.values[e_varshift + ijk] = 0.0
 
-    print('finished Initialization Soares_moist')
+    Pa.root_print('finished Initialization Soares_moist')
 
     return
 
