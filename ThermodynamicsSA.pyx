@@ -87,6 +87,10 @@ cdef class ThermodynamicsSA:
 
         PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
         PV.add_variable('qt', 'kg/kg', "sym", "scalar", Pa)
+        # __
+        Pa.root_print('adding passive scalar phi as prognostic variable')
+        PV.add_variable('phi', '-', "sym", "scalar", Pa)
+        # __
 
         # Initialize class member arrays
         DV.add_variables('buoyancy', '--', 'sym', Pa)

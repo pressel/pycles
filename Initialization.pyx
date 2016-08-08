@@ -1413,10 +1413,6 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
 
 
 
-    # __
-    # add a passive scalar
-    PV.add_variable('scal', '-', "sym", "scalar", Pa)
-    # __
 
    # __
     if np.isnan(PV.values[s_varshift:qt_varshift]).any():   # nans
