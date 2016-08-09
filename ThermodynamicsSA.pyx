@@ -535,9 +535,9 @@ cdef class ThermodynamicsSA:
 
             Py_ssize_t istride = Gr_.dims.nlg[1] * Gr_.dims.nlg[2]
             Py_ssize_t jstride = Gr_.dims.nlg[2]
-            Py_ssize_t imax = Gr_.dims.nlg[0]
-            Py_ssize_t jmax = Gr_.dims.nlg[1]
-            Py_ssize_t kmax = Gr_.dims.nlg[2]
+            Py_ssize_t imax = Gr_.dims.nlg[0]-1
+            Py_ssize_t jmax = Gr_.dims.nlg[1]-1
+            Py_ssize_t kmax = Gr_.dims.nlg[2]-1
             Py_ssize_t gw = Gr_.dims.gw
             Py_ssize_t ijk_max = imax*istride + jmax*jstride + kmax
 
