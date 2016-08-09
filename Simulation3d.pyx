@@ -543,7 +543,8 @@ class Simulation3d:
         tk_max_val = np.nanargmax(DV_.values[t_varshift:t_varshift+ijk_max])
         t_min_val = np.nanmin(DV_.values[t_varshift:t_varshift+ijk_max])
         tk_min_val = np.nanargmin(DV_.values[t_varshift:t_varshift+ijk_max])
-        print('t val: ', t_max_val, tk_max_val, t_min_val, tk_min_val)
+        if t_max_val > 350 or t_min_val < 120:
+            print('t val: ', t_max_val, tk_max_val, t_min_val, tk_min_val)
 
 
 
