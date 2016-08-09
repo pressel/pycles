@@ -385,7 +385,7 @@ class Simulation3d:
     def force_io(self, ParallelMPI.ParallelMPI Pa):
         # Pa.barrier()
         # output stats here
-        self.Pa.root_print('Sim.force_io')
+        # self.Pa.root_print('Sim.force_io')
 
         # self.Pa.root_print('Doing 3D FieldIO')
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
@@ -563,7 +563,7 @@ class Simulation3d:
             qtk_max_val = np.nanargmax(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
             qt_min_val = np.nanmin(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
             if qt_min_val < 0:
-                self.Pa.root_print('qt val negative')
+                print(message, ': qt val negative')
             qtk_min_val = np.nanargmin(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
             ql_max_val = np.nanmax(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
             ql_min_val = np.nanmin(DV_.values[ql_varshift:(ql_varshift+ijk_max)])

@@ -1412,17 +1412,53 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
                 count += 1
 
 
+    # __ Initialize phi __
+    try:
+        use_tracers = namelist['tracers']['use_tracers']
+    except:
+        use_tracers = False
+
+    cdef:
+        Py_ssize_t kmin = 0
+        Py_ssize_t kmax = 10
+        Py_ssize_t var_shift
+
+    if use_tracers == 'passive':
+        Pa.root_print('initializing passive tracer phi')
+        var_shift = PV.get_varshift(Gr, 'phi')
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+                for j in xrange(Gr.dims.nlg[1]):
+                    jshift = j * Gr.dims.nlg[2]
+                    for k in xrange(Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        if k > kmin and k < kmax:
+                    # for k in xrange(kmin, kmax):
+                            PV.values[var_shift + ijk] = 1.0
+                        else:
+                            PV.values[var_shift + ijk] = 0.0
+    # __
 
 
    # __
+
+    imax = Gr.dims.nlg[0]
+    jmax = Gr.dims.nlg[1]
+    kmax = Gr.dims.nlg[2]
+    istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+    jstride = Gr.dims.nlg[2]
+    ijk_max = imax*istride + jmax*jstride + kmax
     if np.isnan(PV.values[s_varshift:qt_varshift]).any():   # nans
         print('nan in s')
     else:
         print('No nan in s')
-    if np.isnan(PV.values[qt_varshift:-1]).any():
+    if np.isnan(PV.values[qt_varshift:qt_varshift+ijk_max]).any():
         print('nan in qt')
     else:
         print('No nan in qt')
+    if np.nanmin(PV.values[qt_varshift:qt_varshift+ijk_max]) < 0:
+        print('Init: qt < 0')
     # __
 
     if 'e' in PV.name_index:

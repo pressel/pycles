@@ -28,10 +28,15 @@ def TracersFactory(namelist):
         use_tracers = namelist['tracers']['use_tracers']
     except:
         use_tracers = False
-    if use_tracers:
+    # if use_tracers:
+    if use_tracers == 'updraft':
         return UpdraftTracers(namelist)
+    elif use_tracers == 'passive':
+        return PassiveTracers(namelist)
     else:
         return TracersNone()
+
+
 
 
 cdef class TracersNone:
@@ -209,4 +214,116 @@ cdef class UpdraftTracers:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         if self.lcl_tracers:
             NS.write_ts('grid_lcl',Gr.zl_half[self.index_lcl], Pa)
+        return
+
+
+
+
+
+
+
+
+
+
+
+
+
+# __
+cdef class PassiveTracers:
+    def __init__(self, namelist):
+
+        try:
+            self.kmin = namelist['tracers']['kmin']
+            self.kmax = namelist['tracers']['kmax']
+        except:
+            self.kmin = 0
+            self.kmax = 100
+
+        return
+
+
+    cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        # Assemble a dictionary with the tracer information
+        # Can be expanded for different init heights or timescales
+        Pa.root_print('Passive Tracers')
+        self.tracer_dict = {}
+        self.tracer_dict['phi'] = {}
+        self.tracer_dict['phi']['kmin'] = self.kmin
+        self.tracer_dict['phi']['kmax'] = self.kmax
+
+        PV.add_variable('phi', '-', "sym", "scalar", Pa)
+
+        # Initialize
+        cdef:
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i,j,k,ishift,jshift,ijk
+            Py_ssize_t var_shift
+            Py_ssize_t kmin = self.kmin #+ Gr.dims.gw
+            Py_ssize_t kmax = self.kmax + Gr.dims.gw
+
+
+        # # # Initialize phi
+        # var = 'phi'
+        # var_shift = PV.get_varshift(Gr, var)
+        # print('phi', var_shift)
+        # print(PV.values.shape)
+        # # with nogil:
+        # if 1 == 1:
+        #     for i in xrange(Gr.dims.nlg[0]):
+        #         ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        #         for j in xrange(Gr.dims.nlg[1]):
+        #             jshift = j * Gr.dims.nlg[2]
+        #             for k in xrange(kmin, kmax):
+        #                 ijk = ishift + jshift + k
+        #                 print(var_shift + ijk)
+        #                 PV.values[var_shift + ijk] = 1.0
+
+        return
+
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+        # cdef:
+        #     Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        #     Py_ssize_t jstride = Gr.dims.nlg[2]
+        #     Py_ssize_t i,j,k,ishift,jshift,ijk
+        #     Py_ssize_t var_shift
+        #
+        # # Set the source term
+        # var = 'phi'
+        # var_shift = PV.get_varshift(Gr, var)
+        # with nogil:
+        #     for i in xrange(Gr.dims.npg):
+        #         PV.tendencies[var_shift + i] += -fmax(0.0,0.0)
+
+        return
+
+
+    cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+        cdef:
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i,j,k,ishift,jshift,ijk
+            Py_ssize_t var_shift
+
+
+        # Set the value of the surface based tracers
+        var = 'phi'
+        var_shift = PV.get_varshift(Gr, var)
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                for j in xrange(Gr.dims.nlg[1]):
+                    ijk = i * istride + j * jstride + Gr.dims.gw
+                    PV.tendencies[var_shift + ijk] = 0.0
+                    for k in xrange( Gr.dims.nlg[2]):
+                        ijk = i * istride + j * jstride + k
+                        PV.values[var_shift + ijk] = fmax(PV.values[var_shift + ijk],0.0)
+
+        return
+
+
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
         return

@@ -88,8 +88,8 @@ cdef class ThermodynamicsSA:
         PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
         PV.add_variable('qt', 'kg/kg', "sym", "scalar", Pa)
         # __
-        Pa.root_print('adding passive scalar phi as prognostic variable')
-        PV.add_variable('phi', '-', "sym", "scalar", Pa)
+        # Pa.root_print('adding passive scalar phi as prognostic variable')
+        # PV.add_variable('phi', '-', "sym", "scalar", Pa)
         # __
 
         # Initialize class member arrays
@@ -208,7 +208,7 @@ cdef class ThermodynamicsSA:
         if self.do_qt_clipping:
             clip_qt(&Gr.dims, &PV.values[qt_shift], 1e-11)
         # __
-        # self.debug_tend('000',PV,DV,Gr)#,Pa)
+        self.debug_tend('ThermodynamicsSA: ',PV,DV,Gr)#,Pa)
         #  __
 
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
@@ -563,25 +563,21 @@ cdef class ThermodynamicsSA:
         w_min = np.nanmin(PV_.tendencies[w_varshift:s_varshift])
         wk_min = np.nanargmin(PV_.tendencies[w_varshift:s_varshift])
 
-        if np.isnan(PV_.tendencies).any():
-        # if 1==1:
+        w_max_val= np.nanmax(PV_.values[w_varshift:s_varshift])
+        wk_max_val = np.nanargmax(PV_.values[w_varshift:s_varshift])
+        w_min_val = np.nanmin(PV_.values[w_varshift:s_varshift])
+        wk_min_val = np.nanargmin(PV_.tendencies[w_varshift:s_varshift])
+
+        if np.isnan(PV_.tendencies[0:s_varshift]).any() or np.isnan(PV_.values[0:s_varshift]).any():
             u_nan = np.isnan(PV_.tendencies[u_varshift:v_varshift]).any()
             uk_nan = np.argmax(PV_.tendencies[u_varshift:v_varshift])
             v_nan = np.isnan(PV_.tendencies[v_varshift:w_varshift]).any()
             vk_nan = np.argmax(PV_.tendencies[v_varshift:w_varshift])
             w_nan = np.isnan(PV_.tendencies[w_varshift:s_varshift]).any()
             wk_nan = np.argmax(PV_.tendencies[w_varshift:s_varshift])
+            w_nan_val = np.isnan(PV_.values[w_varshift:s_varshift]).any()
+            wk_nan_val = np.argmax(PV_.values[w_varshift:s_varshift])
 
-        w_max_val= np.nanmax(PV_.values[w_varshift:s_varshift])
-        wk_max_val = np.nanargmax(PV_.values[w_varshift:s_varshift])
-        w_min_val = np.nanmin(PV_.values[w_varshift:s_varshift])
-        wk_min_val = np.nanargmin(PV_.tendencies[w_varshift:s_varshift])
-        w_nan_val = np.isnan(PV_.values[w_varshift:s_varshift]).any()
-        # if (PV_.values[w_varshifts + 13840] != PV_.values[w_varshifts + 13840])
-        wk_nan_val = np.argmax(PV_.values[w_varshift:s_varshift])
-
-        # if Pa.rank == 0:
-        if 1==1:
             print(message, 'debugging (max, min, nan): ')
             print('shifts', u_varshift, v_varshift, w_varshift, s_varshift, 'Gr.npg', (imax+2*gw)*(jmax+2*gw)*(kmax+2*gw))
             print('u tend: ', u_max, uk_max, u_min, uk_min, u_nan, uk_nan)
@@ -591,30 +587,29 @@ cdef class ThermodynamicsSA:
 
 
         if np.isnan(DV.values).any():
-        # if 1==1:
             b_nan_val = np.isnan(DV.values[b_shift:b_shift+ ijk_max]).any()
-            bk_nan_val = np.argmax(DV.values[b_shift:b_shift+ ijk_max])
             alpha_nan_val = np.isnan(DV.values[alpha_shift:alpha_shift+ ijk_max]).any()
-            alphak_nan_val = np.argmax(DV.values[alpha_shift:alpha_shift+ ijk_max])
             t_nan_val = np.isnan(DV.values[t_shift:t_shift+ ijk_max]).any()
+
+            bk_nan_val = np.argmax(DV.values[b_shift:b_shift+ ijk_max])
+            alphak_nan_val = np.argmax(DV.values[alpha_shift:alpha_shift+ ijk_max])
             tk_nan_val = np.argmax(DV.values[t_shift:t_shift+ ijk_max])
 
-        b_max_val= np.nanmax(DV.values[b_shift:b_shift+ ijk_max])
-        bk_max_val = np.nanargmax(DV.values[b_shift:b_shift+ ijk_max])
-        b_min_val = np.nanmin(DV.values[b_shift:b_shift+ ijk_max])
-        bk_min_val = np.nanargmin(DV.values[b_shift:b_shift+ ijk_max])
+            b_max_val= np.nanmax(DV.values[b_shift:b_shift+ ijk_max])
+            bk_max_val = np.nanargmax(DV.values[b_shift:b_shift+ ijk_max])
+            b_min_val = np.nanmin(DV.values[b_shift:b_shift+ ijk_max])
+            bk_min_val = np.nanargmin(DV.values[b_shift:b_shift+ ijk_max])
 
-        alpha_max_val= np.nanmax(DV.values[alpha_shift:alpha_shift+ ijk_max])
-        alphak_max_val = np.nanargmax(DV.values[alpha_shift:alpha_shift+ ijk_max])
-        alpha_min_val = np.nanmin(DV.values[alpha_shift:alpha_shift+ ijk_max])
-        alphak_min_val = np.nanargmin(DV.values[alpha_shift:alpha_shift+ ijk_max])
+            alpha_max_val= np.nanmax(DV.values[alpha_shift:alpha_shift+ ijk_max])
+            alphak_max_val = np.nanargmax(DV.values[alpha_shift:alpha_shift+ ijk_max])
+            alpha_min_val = np.nanmin(DV.values[alpha_shift:alpha_shift+ ijk_max])
+            alphak_min_val = np.nanargmin(DV.values[alpha_shift:alpha_shift+ ijk_max])
 
-        t_max_val= np.nanmax(DV.values[t_shift:t_shift+ ijk_max])
-        tk_max_val = np.nanargmax(DV.values[t_shift:t_shift+ ijk_max])
-        t_min_val = np.nanmin(DV.values[t_shift:t_shift+ ijk_max])
-        tk_min_val = np.nanargmin(DV.values[t_shift:t_shift+ ijk_max])
-        # if Pa.rank == 0:
-        if 1==1:
+            t_max_val= np.nanmax(DV.values[t_shift:t_shift+ ijk_max])
+            tk_max_val = np.nanargmax(DV.values[t_shift:t_shift+ ijk_max])
+            t_min_val = np.nanmin(DV.values[t_shift:t_shift+ ijk_max])
+            tk_min_val = np.nanargmin(DV.values[t_shift:t_shift+ ijk_max])
+
             print('b val: ', b_max_val, bk_max_val, b_min_val, bk_min_val, b_nan_val, bk_nan_val)
             print('alpha val: ', v_max, vk_max, v_min, vk_min, v_nan, vk_nan)
             print('t val: ', t_max_val, tk_max_val, t_min_val, tk_min_val, t_nan_val, tk_nan_val)
@@ -634,42 +629,40 @@ cdef class ThermodynamicsSA:
             qt_min = np.nanmin(PV_.tendencies[qt_varshift:(qt_varshift + ijk_max)])
             qtk_min = np.nanargmin(PV_.tendencies[qt_varshift:(qt_varshift + ijk_max)])
 
-            s_nan = np.isnan(PV_.tendencies[s_varshift:qt_varshift]).any()
-            sk_nan = np.argmax(PV_.tendencies[s_varshift:qt_varshift])
-            qt_nan = np.isnan(PV_.tendencies[qt_varshift:(qt_varshift + ijk_max)]).any()
-            qtk_nan = np.argmax(PV_.tendencies[qt_varshift:(qt_varshift + ijk_max)])
-
             s_max_val= np.nanmax(PV_.values[s_varshift:qt_varshift])
             sk_max_val = np.nanargmax(PV_.values[s_varshift:qt_varshift])
             s_min_val = np.nanmin(PV_.values[s_varshift:qt_varshift])
             sk_min_val = np.nanargmin(PV_.tendencies[s_varshift:qt_varshift])
-            s_nan_val = np.isnan(PV_.values[s_varshift:qt_varshift]).any()
-            sk_nan_val = np.argmax(PV_.values[s_varshift:qt_varshift])
             qt_max_val = np.nanmax(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
             qtk_max_val = np.nanargmax(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
             qt_min_val = np.nanmin(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
-            if qt_min_val < 0:
-                # Pa.root_print('qt val negative')
-                print('qt val negative')
             qtk_min_val = np.nanargmin(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
-            qt_nan_val = np.isnan(PV_.values[qt_varshift:(qt_varshift + ijk_max)]).any()
-            qtk_nan_val = np.argmax(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
-
+            if qt_min_val < 0:
+                print('ThSA: qt val negative')
             ql_max_val = np.nanmax(DV.values[ql_varshift:(ql_varshift + ijk_max)])
             ql_min_val = np.nanmin(DV.values[ql_varshift:(ql_varshift + ijk_max)])
             qlk_max_val = np.nanargmax(DV.values[ql_varshift:(ql_varshift + ijk_max)])
             qlk_min_val = np.nanargmin(DV.values[ql_varshift:(ql_varshift + ijk_max)])
-            ql_nan_val = np.isnan(DV.values[ql_varshift:(ql_varshift + ijk_max)]).any()
-            qlk_nan_val = np.argmax(DV.values[ql_varshift:(ql_varshift + ijk_max)])
 
-            # if Pa.rank == 0:
-            if 1==1:
+
+            if np.isnan(PV_.tendencies[s_varshift:qt_varshift+ijk_max]).any() or np.isnan(PV_.values[s_varshift:qt_varshift+ijk_max]).any():
+                s_nan = np.isnan(PV_.tendencies[s_varshift:qt_varshift]).any()
+                sk_nan = np.argmax(PV_.tendencies[s_varshift:qt_varshift])
+                qt_nan = np.isnan(PV_.tendencies[qt_varshift:(qt_varshift + ijk_max)]).any()
+                qtk_nan = np.argmax(PV_.tendencies[qt_varshift:(qt_varshift + ijk_max)])
+                s_nan_val = np.isnan(PV_.values[s_varshift:qt_varshift]).any()
+                sk_nan_val = np.argmax(PV_.values[s_varshift:qt_varshift])
+                qt_nan_val = np.isnan(PV_.values[qt_varshift:(qt_varshift + ijk_max)]).any()
+                qtk_nan_val = np.argmax(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
                 print('s tend: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
                 print('s val: ', s_max_val, sk_max_val, s_min_val, sk_min_val, s_nan_val, sk_nan_val)
                 print('qt tend: ', qt_max, qtk_max, qt_min, qtk_min, qt_nan, qtk_nan)
                 print('qt val: ', qt_max_val, qtk_max_val, qt_min_val, qtk_min_val, qt_nan_val, qtk_nan_val)
+
+            if np.isnan(DV.values[ql_varshift:ql_varshift+ijk_max]).any():
+                ql_nan_val = np.isnan(DV.values[ql_varshift:(ql_varshift + ijk_max)]).any()
+                qlk_nan_val = np.argmax(DV.values[ql_varshift:(ql_varshift + ijk_max)])
                 print('ql val: ', ql_max_val, qlk_max_val, ql_min_val, qlk_min_val, ql_nan_val, qlk_nan_val)
-            #self.Pa.root_print('ql: ' + str(ql_max) + ', ' + str(ql_min))
 
         # #for name in PV.name_index.keys():
         #     # with nogil:
