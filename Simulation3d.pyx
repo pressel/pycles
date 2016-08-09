@@ -521,6 +521,12 @@ class Simulation3d:
         w_min_val = np.nanmin(PV_.values[w_varshift:s_varshift])
         wk_min_val = np.nanargmin(PV_.tendencies[w_varshift:s_varshift])
 
+        t_varshift = DV_.get_varshift(self.Gr,'temperature')
+        t_max_val = np.nanmax(DV_.values[t_varshift:t_varshift+ijk_max])
+        tk_max_val = np.nanargmax(DV_.values[t_varshift:t_varshift+ijk_max])
+        t_min_val = np.nanmin(DV_.values[t_varshift:t_varshift+ijk_max])
+        tk_min_val = np.nanargmin(DV_.values[t_varshift:t_varshift+ijk_max])
+
         if np.isnan(PV_.tendencies[0:s_varshift]).any() or np.isnan(PV_.values[0:s_varshift]).any():
             print(message, 'debugging (max, min, nan): ')
             u_nan = np.isnan(PV_.tendencies[u_varshift:v_varshift]).any()
@@ -537,14 +543,10 @@ class Simulation3d:
             # print('v tend: ', v_max, vk_max, v_min, vk_min, v_nan, vk_nan)
             print('w tend: ', w_max, wk_max, w_min, wk_min, w_nan, wk_nan)
             print('w val: ', w_max_val, wk_max_val, w_min_val, wk_min_val, w_nan_val, wk_nan_val)
-
-        t_varshift = DV_.get_varshift(self.Gr,'temperature')
-        t_max_val = np.nanmax(DV_.values[t_varshift:t_varshift+ijk_max])
-        tk_max_val = np.nanargmax(DV_.values[t_varshift:t_varshift+ijk_max])
-        t_min_val = np.nanmin(DV_.values[t_varshift:t_varshift+ijk_max])
-        tk_min_val = np.nanargmin(DV_.values[t_varshift:t_varshift+ijk_max])
-        if t_max_val > 340 or t_min_val < 120:
             print('t val: ', t_max_val, tk_max_val, t_min_val, tk_min_val)
+
+    if t_max_val > 340 or t_min_val < 120:
+        print('t val out of CC lookup table: ', t_max_val, tk_max_val, t_min_val, tk_min_val)
 
 
 
