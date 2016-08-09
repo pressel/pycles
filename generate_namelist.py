@@ -1553,6 +1553,10 @@ def DCBLSoares_moist():
     namelist['tracers']['kmin'] = 0
     namelist['tracers']['kmax'] = 10
 
+    namelist['ClausiusClapeyron'] = {}
+    namelist['ClausiusClapeyron']['temperature_min'] = 100.15
+    namelist['ClausiusClapeyron']['temperature_max'] = 500.0
+
     return namelist
 
 
