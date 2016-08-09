@@ -573,6 +573,8 @@ class Simulation3d:
             qtk_min_val = np.nanargmin(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
             if qt_min_val < 0:
                 print(message, ': qt val negative', qt_min_val, qtk_min_val)
+                if qt_min_val < -1e-3:
+                    print(message, ': !!! qt val really negative')
             ql_max_val = np.nanmax(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
             ql_min_val = np.nanmin(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
             qlk_max_val = np.nanargmax(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
