@@ -263,7 +263,7 @@ cdef class PassiveTracers:
             Py_ssize_t kmax = self.kmax + Gr.dims.gw
 
 
-        # # # Initialize phi
+        # # # Initialize phi --> cannot be done here, since PV.values not yet initialised. Therefore tracer is initialized in Initialization.pyx
         # var = 'phi'
         # var_shift = PV.get_varshift(Gr, var)
         # print('phi', var_shift)

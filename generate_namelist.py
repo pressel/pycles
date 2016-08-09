@@ -1497,10 +1497,10 @@ def DCBLSoares_moist():
     # 2 = second_order_m
     # 32 = second_order_ml_m
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 2
+    namelist['momentum_transport']['order'] = 4
     # 2 = second_order_a
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 2
+    namelist['scalar_transport']['order'] = 4
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'  # no more 'DampingToDomainMean' ???
@@ -1521,7 +1521,7 @@ def DCBLSoares_moist():
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = ['Fluxes']    # AuxiliaryStatistics
-    namelist['stats_io']['frequency'] = 900.0
+    namelist['stats_io']['frequency'] = 600.0
 
     # field outputs
     namelist['fields_io'] = {}
@@ -1547,6 +1547,11 @@ def DCBLSoares_moist():
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 1800.0
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = 'passive'
+    namelist['tracers']['kmin'] = 0
+    namelist['tracers']['kmax'] = 10
 
     return namelist
 
