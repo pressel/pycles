@@ -114,7 +114,8 @@ cdef class VisualizationOutput:
         cdef:
             double [:,:] local_var
             double [:,:] reduced_var
-            list pv_vars = ['qt', 's', 'w', 'u']
+            list pv_vars = ['phi','qt', 's', 'w', 'u']
+            # list pv_vars = ['qt', 's', 'w', 'u']
             list dv_vars = ['ql', 'diffusivity']
 
 

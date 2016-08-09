@@ -637,8 +637,8 @@ cdef class ThermodynamicsSA:
             qtk_max_val = np.nanargmax(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
             qt_min_val = np.nanmin(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
             qtk_min_val = np.nanargmin(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
-            if qt_min_val < 0:
-                print('ThSA: qt val negative')
+            # if qt_min_val < 0:
+            #     print('ThSA: qt val negative')
             ql_max_val = np.nanmax(DV.values[ql_varshift:(ql_varshift + ijk_max)])
             ql_min_val = np.nanmin(DV.values[ql_varshift:(ql_varshift + ijk_max)])
             qlk_max_val = np.nanargmax(DV.values[ql_varshift:(ql_varshift + ijk_max)])

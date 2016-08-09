@@ -415,7 +415,7 @@ class Simulation3d:
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
         # Pa.barrier()
-        self.Pa.root_print('Sim.force_io finished')
+        # self.Pa.root_print('Sim.force_io finished')
 
         return
 
@@ -569,9 +569,9 @@ class Simulation3d:
             qt_max_val = np.nanmax(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
             qtk_max_val = np.nanargmax(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
             qt_min_val = np.nanmin(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
-            if qt_min_val < 0:
-                print(message, ': qt val negative')
             qtk_min_val = np.nanargmin(PV_.values[qt_varshift:(qt_varshift + ijk_max)])
+            if qt_min_val < 0:
+                print(message, ': qt val negative', qt_min_val, qtk_min_val)
             ql_max_val = np.nanmax(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
             ql_min_val = np.nanmin(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
             qlk_max_val = np.nanargmax(DV_.values[ql_varshift:(ql_varshift+ijk_max)])
@@ -631,18 +631,17 @@ class Simulation3d:
             sk_max = np.nanargmax(PV_.tendencies[s_varshift:(s_varshift + ijk_max)])
             s_min = np.nanmin(PV_.tendencies[s_varshift:(s_varshift + ijk_max)])
             sk_min = np.nanargmin(PV_.tendencies[s_varshift:(s_varshift + ijk_max)])
-            s_nan = np.isnan(PV_.tendencies[s_varshift:(s_varshift + ijk_max)]).any()
-            sk_nan = np.argmax(PV_.tendencies[s_varshift:(s_varshift + ijk_max)])
 
             s_max_val= np.nanmax(PV_.values[s_varshift:(s_varshift + ijk_max)])
             sk_max_val = np.nanargmax(PV_.values[s_varshift:(s_varshift + ijk_max)])
             s_min_val = np.nanmin(PV_.values[s_varshift:(s_varshift + ijk_max)])
             sk_min_val = np.nanargmin(PV_.tendencies[s_varshift:(s_varshift + ijk_max)])
-            s_nan_val = np.isnan(PV_.values[s_varshift:(s_varshift + ijk_max)]).any()
-            sk_nan_val = np.argmax(PV_.values[s_varshift:(s_varshift + ijk_max)])
 
-            if self.Pa.rank == 0:
-            # if 1 == 0:
+            if np.isnan(PV_.tendencies[s_varshift:s_varshift+ijk_max]).any():
+                s_nan = np.isnan(PV_.tendencies[s_varshift:(s_varshift + ijk_max)]).any()
+                sk_nan = np.argmax(PV_.tendencies[s_varshift:(s_varshift + ijk_max)])
+                s_nan_val = np.isnan(PV_.values[s_varshift:(s_varshift + ijk_max)]).any()
+                sk_nan_val = np.argmax(PV_.values[s_varshift:(s_varshift + ijk_max)])
                 print('s tend: ', s_max, sk_max, s_min, sk_min, s_nan, sk_nan)
                 print('s val: ', s_max_val, sk_max_val, s_min_val, sk_min_val, s_nan_val, sk_nan_val)
 
