@@ -84,7 +84,9 @@ cdef class UniformViscosity:
         except:
             self.const_viscosity = 0.0
 
-        self.is_init = False 
+        self.is_init = False
+        print('SGS const, DV:', self.const_diffusivity)
+        print('SGS const, EV:', self.const_viscosity)
 
         return
 
