@@ -396,6 +396,10 @@ def Bomex():
     namelist['meta']['simname'] = 'Bomex'
     namelist['meta']['casename'] = 'Bomex'
 
+    namelist['ClausiusClapeyron'] = {}
+    namelist['ClausiusClapeyron']['temperature_min'] = 100.15
+    namelist['ClausiusClapeyron']['temperature_max'] = 500.0
+
     return namelist
 
 
@@ -1437,6 +1441,11 @@ def DCBLSoares():
     namelist['stochastic_noise'] = {}
     namelist['stochastic_noise']['flag'] = True
     namelist['stochastic_noise']['amplitude'] = 0.05
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = 'passive'
+    namelist['tracers']['kmin'] = 0
+    namelist['tracers']['kmax'] = 10
 
     return namelist
 
