@@ -1097,8 +1097,8 @@ cdef class SurfaceSoares_moist(SurfaceBase):
 
         ### Soares_moist
         # self.qt_flux = 5.2e-5 # m/s (Soares: 2.5e-5) (Bomex: 5.2e-5)
-        # self.qt_flux = np.add(self.qt_flux,2.5e-5)
-        self.qt_flux = np.add(self.qt_flux,0.0)
+        self.qt_flux = np.add(self.qt_flux,2.5e-5)
+        # self.qt_flux = np.add(self.qt_flux,0.0)
         self.theta_flux = 8.0e-3 # K m/s (Bomex)
         self.theta_surface = 300.0 # K
         self.qt_surface = 5.0e-3 # kg/kg
