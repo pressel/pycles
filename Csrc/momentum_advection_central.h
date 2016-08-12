@@ -9,8 +9,8 @@ void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
     double* restrict vel_advected, double* restrict vel_advecting,
     double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
-        if (d_advected==1 && d_advecting==1){
-            printf("2nd order full Momentum Transport \n");}
+//        if (d_advected==1 && d_advecting==1){
+//            printf("2nd order full Momentum Transport \n");}
 
         // Dynamically allocate flux array
         double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);

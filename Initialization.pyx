@@ -1318,6 +1318,34 @@ def InitSoares(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV
                 temp = (theta[k] + theta_pert_)*exner_c(RS.p0_half[k])
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,0.0,0.0,0.0)
 
+    # __ Initialize phi __
+    try:
+        use_tracers = namelist['tracers']['use_tracers']
+    except:
+        use_tracers = False
+
+    cdef:
+        Py_ssize_t kmin = 0
+        Py_ssize_t kmax = 10
+        Py_ssize_t var_shift
+
+    if use_tracers == 'passive':
+        Pa.root_print('initializing passive tracer phi')
+        var_shift = PV.get_varshift(Gr, 'phi')
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+                for j in xrange(Gr.dims.nlg[1]):
+                    jshift = j * Gr.dims.nlg[2]
+                    for k in xrange(Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        if k > kmin and k < kmax:
+                    # for k in xrange(kmin, kmax):
+                            PV.values[var_shift + ijk] = 1.0
+                        else:
+                            PV.values[var_shift + ijk] = 0.0
+    # __
+
     if 'e' in PV.name_index:
         e_varshift = PV.get_varshift(Gr, 'e')
         for i in xrange(Gr.dims.nlg[0]):

@@ -281,7 +281,11 @@ class Simulation3d:
             double restart_dt = 0.0
             double vis_dt = 0.0
             double min_dt = 0.0
-
+        #__
+        if self.TS.t == 0:
+            # self.Pa.root_print('Dumping Visualisation File!' + str( self.VO.last_vis_time) + str(self.TS.t))
+            self.VO.write(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+        # __
         if self.TS.t > 0 and self.TS.rk_step == self.TS.n_rk_steps - 1:
             self.Pa.root_print('calling io')
             # self.Pa.root_print('doing io: ' + str(self.TS.t) + ', ' + str(self.TS.rk_step))

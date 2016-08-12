@@ -56,6 +56,7 @@ cdef class TracersNone:
 
 cdef class UpdraftTracers:
     def __init__(self, namelist):
+        print('UpdraftTracers')
 
         if namelist['microphysics']['scheme'] == 'None_SA' or namelist['microphysics']['scheme'] == 'SB_Liquid':
             self.lcl_tracers = True
@@ -239,10 +240,13 @@ cdef class PassiveTracers:
             self.kmin = 0
             self.kmax = 100
 
+        self.sum = 0
+
         return
 
 
-    cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS,
+                     ParallelMPI.ParallelMPI Pa):
         # Assemble a dictionary with the tracer information
         # Can be expanded for different init heights or timescales
         Pa.root_print('Passive Tracers')
@@ -252,15 +256,16 @@ cdef class PassiveTracers:
         self.tracer_dict['phi']['kmax'] = self.kmax
 
         PV.add_variable('phi', '-', "sym", "scalar", Pa)
+        NS.add_ts('phi_sum', Gr, Pa)
 
         # Initialize
-        cdef:
-            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            Py_ssize_t jstride = Gr.dims.nlg[2]
-            Py_ssize_t i,j,k,ishift,jshift,ijk
-            Py_ssize_t var_shift
-            Py_ssize_t kmin = self.kmin #+ Gr.dims.gw
-            Py_ssize_t kmax = self.kmax + Gr.dims.gw
+        # cdef:
+        #     Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        #     Py_ssize_t jstride = Gr.dims.nlg[2]
+        #     Py_ssize_t i,j,k,ishift,jshift,ijk
+        #     Py_ssize_t var_shift
+        #     Py_ssize_t kmin = self.kmin #+ Gr.dims.gw
+        #     Py_ssize_t kmax = self.kmax + Gr.dims.gw
 
 
         # # # Initialize phi --> cannot be done here, since PV.values not yet initialised. Therefore tracer is initialized in Initialization.pyx
@@ -284,46 +289,39 @@ cdef class PassiveTracers:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
-        # cdef:
-        #     Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        #     Py_ssize_t jstride = Gr.dims.nlg[2]
-        #     Py_ssize_t i,j,k,ishift,jshift,ijk
-        #     Py_ssize_t var_shift
-        #
-        # # Set the source term
-        # var = 'phi'
-        # var_shift = PV.get_varshift(Gr, var)
-        # with nogil:
-        #     for i in xrange(Gr.dims.npg):
-        #         PV.tendencies[var_shift + i] += -fmax(0.0,0.0)
 
         return
 
 
     cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
+        # check volume integral
         cdef:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t i,j,k,ishift,jshift,ijk
             Py_ssize_t var_shift
+            double sum = 0
 
-
-        # Set the value of the surface based tracers
+        # print('!!! Ref.rho0', Ref.rho0.shape)
         var = 'phi'
         var_shift = PV.get_varshift(Gr, var)
         with nogil:
-            for i in xrange(Gr.dims.nlg[0]):
-                for j in xrange(Gr.dims.nlg[1]):
-                    ijk = i * istride + j * jstride + Gr.dims.gw
-                    PV.tendencies[var_shift + ijk] = 0.0
-                    for k in xrange( Gr.dims.nlg[2]):
+            for i in xrange(Gr.dims.gw,Gr.dims.nlg[0]-Gr.dims.gw):
+                for j in xrange(Gr.dims.gw,Gr.dims.nlg[1]-Gr.dims.gw):
+                    for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
                         ijk = i * istride + j * jstride + k
-                        PV.values[var_shift + ijk] = fmax(PV.values[var_shift + ijk],0.0)
+                        sum += Ref.rho0[k]*PV.values[var_shift + ijk]
+                        # sum += PV.values[var_shift + ijk]
+        # Pa.root_print('phi sum: ' + str(sum))
+        self.sum = sum
+
 
         return
 
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        NS.write_ts('phi_sum', self.sum, Pa)
 
         return
