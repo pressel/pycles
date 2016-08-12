@@ -133,7 +133,8 @@ cdef class UniformViscosity_cond:
             self.const_viscosity = 0.0
 
         self.prt = 1.0/3.0
-
+        print('SGS cond, DV:', self.const_diffusivity)
+        print('SGS cond, EV:', self.const_viscosity)
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
