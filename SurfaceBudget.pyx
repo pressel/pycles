@@ -99,7 +99,7 @@ cdef class SurfaceBudget:
                 self.water_depth = self.water_depth_initial
 
 
-            net_flux =  self.ocean_heat_flux - Ra.srf_lw_up - Ra.srf_sw_up - mean_shf - mean_lhf + Ra.srf_lw_down + Ra.srf_sw_down
+            net_flux =  -self.ocean_heat_flux - Ra.srf_lw_up - Ra.srf_sw_up - mean_shf - mean_lhf + Ra.srf_lw_down + Ra.srf_sw_down
             tendency = net_flux/cl/rho_liquid/self.water_depth
             Sur.T_surface += tendency *TS.dt
 
