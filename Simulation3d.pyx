@@ -526,6 +526,10 @@ class Simulation3d:
         wk_min_val = np.nanargmin(PV_.tendencies[w_varshift:s_varshift])
 
         t_varshift = DV_.get_varshift(self.Gr,'temperature')
+        # b_varshift = DV_.get_varshift(self.Gr,'buoyancy_frequency')
+        # p_varshift = DV_.get_varshift(self.Gr,'dynamic_pressure')
+        # print('DV keys: ', DV_.name_index.keys())
+        # print('t_varshift', t_varshift, 'buoy_freq_varshift', b_varshift, 'p_varshift', p_varshift)
         t_max_val = np.nanmax(DV_.values[t_varshift:t_varshift+ijk_max])
         tk_max_val = np.nanargmax(DV_.values[t_varshift:t_varshift+ijk_max])
         t_min_val = np.nanmin(DV_.values[t_varshift:t_varshift+ijk_max])

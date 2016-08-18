@@ -874,26 +874,37 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
         double *vel_ed_mean_p = (double *)malloc(sizeof(double) * dims->nlg[2]);
         double *vel_ed_mean_m = (double *)malloc(sizeof(double) * dims->nlg[2]);
 
+
+        // interpolated velocities and their mean fields are not defined for (i<imin,j<jmin,k<kmin), but these values are never used
+        // (in cc_statistics: running from [gw;nxl-gw], [gw;nyl-gw], [0;nzl] --> mean_fields[k<gw or k>nzl-gw] could be ill-defined since never initialised
+
+        for(ssize_t k=0;k<dims->nlg[2];k++){
+                vel_ing_mean[k] = 0;
+                vel_ed_mean_p[k] = 0;
+                vel_ed_mean_m[k] = 0;
+                mean_eddy_flux[k] = 0;
+            }
+
         for(ssize_t i=imin;i<imax;i++){
-        const ssize_t ishift = i*istride;
-        for(ssize_t j=jmin;j<jmax;j++){
-            const ssize_t jshift = j*jstride;
-            for(ssize_t k=kmin;k<kmax;k++){
-                const ssize_t ijk = ishift + jshift + k;
-                vel_ing_int[ijk] = interp_4(vel_advecting[ijk + sm1_ing],
-                                            vel_advecting[ijk],
-                                            vel_advecting[ijk + sp1_ing],
-                                            vel_advecting[ijk + sp2_ing]);
-                vel_ed_int_p[ijk] = interp_weno5(vel_advected[ijk + sm2_ed],
-                                                 vel_advected[ijk + sm1_ed],
-                                                 vel_advected[ijk],
-                                                 vel_advected[ijk + sp1_ed],
-                                                 vel_advected[ijk + sp2_ed]);
-                vel_ed_int_m[ijk] = interp_weno5(vel_advected[ijk + sp3_ed],
-                                                 vel_advected[ijk + sp2_ed],
-                                                 vel_advected[ijk + sp1_ed],
-                                                 vel_advected[ijk],
-                                                 vel_advected[ijk + sm1_ed]);
+            const ssize_t ishift = i*istride;
+            for(ssize_t j=jmin;j<jmax;j++){
+                const ssize_t jshift = j*jstride;
+                for(ssize_t k=kmin;k<kmax;k++){
+                    const ssize_t ijk = ishift + jshift + k;
+                    vel_ing_int[ijk] = interp_4(vel_advecting[ijk + sm1_ing],
+                                                vel_advecting[ijk],
+                                                vel_advecting[ijk + sp1_ing],
+                                                vel_advecting[ijk + sp2_ing]);
+                    vel_ed_int_p[ijk] = interp_weno5(vel_advected[ijk + sm2_ed],
+                                                    vel_advected[ijk + sm1_ed],
+                                                    vel_advected[ijk],
+                                                    vel_advected[ijk + sp1_ed],
+                                                    vel_advected[ijk + sp2_ed]);
+                    vel_ed_int_m[ijk] = interp_weno5(vel_advected[ijk + sp3_ed],
+                                                    vel_advected[ijk + sp2_ed],
+                                                    vel_advected[ijk + sp1_ed],
+                                                    vel_advected[ijk],
+                                                    vel_advected[ijk + sm1_ed]);
                 }
             }
         }
@@ -903,7 +914,6 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
         horizontal_mean(dims, &vel_ed_int_m[0], &vel_ed_mean_m[0]);
         horizontal_mean(dims, &vel_ing_int[0], &vel_ing_mean[0]);
 
-        // from here on to do !!!!!!!!
         if (d_advected != 2 && d_advecting !=2){
             for(ssize_t i=imin;i<imax;i++){
                 const ssize_t ishift = i*istride;

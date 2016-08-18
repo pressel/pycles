@@ -1260,9 +1260,11 @@ void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double
     free(eddy_flux);
     free(mean_eddy_flux);
     free(vel_mean);
+    free(phi_int);
     free(phi_int_p);
     free(phi_int_m);
     free(phi_int_mean_p);
     free(phi_int_mean_m);
+
     return;
 }
