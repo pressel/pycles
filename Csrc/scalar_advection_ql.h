@@ -1213,9 +1213,19 @@ void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double
                     const double phim_fluc = phi_int_m[ijk] - phi_int_mean_m[k];
                     const double phip_fluc = phi_int_p[ijk] - phi_int_mean_p[k];
                     const double vel_fluc = velocity[ijk] - vel_mean[k];
-                    eddy_flux[ijk] = 0.5 * ((vel_fluc+fabs(vel_fluc))*phip_fluc + (vel_fluc-fabs(vel_fluc))*phim_fluc)*rho0[k];
-//                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
-                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phi_int_p[ijk] + (velocity[ijk]-fabs(velocity[ijk]))*phi_int_m[ijk])*rho0[k];
+
+                    // upwinding:
+                    if(velocity[ijk] > 0.0){
+                        eddy_flux[ijk] = vel_fluc*phip_fluc*rho0[k];
+                        flux[ijk] = velocity[ijk]*phi_int_p[ijk]*rho0[k];
+                    }
+                    else{
+                        eddy_flux[ijk] = vel_fluc*phim_fluc*rho0[k];
+                        flux[ijk] = velocity[ijk]*phi_int_m[ijk]*rho0[k];
+                    }
+//                    eddy_flux[ijk] = 0.5 * ((vel_fluc+fabs(vel_fluc))*phip_fluc + (vel_fluc-fabs(vel_fluc))*phim_fluc)*rho0[k];
+//                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phi_int_p[ijk] + (velocity[ijk]-fabs(velocity[ijk]))*phi_int_m[ijk])*rho0[k];
+                    // flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -1244,9 +1254,18 @@ void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double
                     const double phim_fluc = phi_int_m[ijk] - phi_int_mean_m[k];
                     const double phip_fluc = phi_int_p[ijk] - phi_int_mean_p[k];
                     const double vel_fluc = velocity[ijk] - vel_mean[k];
-                    eddy_flux[ijk] = 0.5 * ((vel_fluc+fabs(vel_fluc))*phip_fluc + (vel_fluc-fabs(vel_fluc))*phim_fluc)*rho0_half[k];
-//                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
-                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phi_int_p[ijk] + (velocity[ijk]-fabs(velocity[ijk]))*phi_int_m[ijk])*rho0_half[k];
+                    // upwinding:
+                    if(velocity[ijk] > 0.0){
+                        eddy_flux[ijk] = vel_fluc*phip_fluc*rho0_half[k];
+                        flux[ijk] = velocity[ijk]*phi_int_p[ijk]*rho0_half[k];
+                    }
+                    else{
+                        eddy_flux[ijk] = vel_fluc*phim_fluc*rho0_half[k];
+                        flux[ijk] = velocity[ijk]*phi_int_m[ijk]*rho0_half[k];
+                    }
+//                    eddy_flux[ijk] = 0.5 * ((vel_fluc+fabs(vel_fluc))*phip_fluc + (vel_fluc-fabs(vel_fluc))*phim_fluc)*rho0_half[k];
+//                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phi_int_p[ijk] + (velocity[ijk]-fabs(velocity[ijk]))*phi_int_m[ijk])*rho0_half[k];
+                    // flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
