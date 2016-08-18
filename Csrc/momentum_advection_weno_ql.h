@@ -879,10 +879,10 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
         // (in cc_statistics: running from [gw;nxl-gw], [gw;nyl-gw], [0;nzl] --> mean_fields[k<gw or k>nzl-gw] could be ill-defined since never initialised
 
         for(ssize_t k=0;k<dims->nlg[2];k++){
-                vel_ing_mean[k] = 0;
-                vel_ed_mean_p[k] = 0;
-                vel_ed_mean_m[k] = 0;
-                mean_eddy_flux[k] = 0;
+                vel_ing_mean[k] = 0.0;
+                vel_ed_mean_p[k] = 0.0;
+                vel_ed_mean_m[k] = 0.0;
+                mean_eddy_flux[k] = 0.0;
             }
 
         for(ssize_t i=imin;i<imax;i++){

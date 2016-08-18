@@ -1124,7 +1124,7 @@ void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mean_eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
     double *vel_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
-    double *phi_int = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+//    double *phi_int = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *phi_int_p = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *phi_int_m = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 //    double *phi_int_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -1159,20 +1159,29 @@ void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double
             for(ssize_t k=kmin;k<kmax;k++){
                 const ssize_t ijk = ishift + jshift + k;
                 phi_int_p[ijk] = interp_weno5(scalar[ijk + sm2],
-                                                     scalar[ijk + sm1],
-                                                     scalar[ijk],
-                                                     scalar[ijk + sp1],
-                                                     scalar[ijk + sp2]);
+                                              scalar[ijk + sm1],
+                                              scalar[ijk],
+                                              scalar[ijk + sp1],
+                                              scalar[ijk + sp2]);
                 phi_int_m[ijk] = interp_weno5(scalar[ijk + sp3],
-                                                     scalar[ijk + sp2],
-                                                     scalar[ijk + sp1],
-                                                     scalar[ijk],
-                                                     scalar[ijk + sm1]);
+                                              scalar[ijk + sp2],
+                                              scalar[ijk + sp1],
+                                              scalar[ijk],
+                                              scalar[ijk + sm1]);
             }
         }
     }
 
     // (2) average velocity field and interpolated scalar field
+    // interpolated scalar field and their mean fields are not defined for (i<imin,j<jmin,k<kmin), but these values are never used
+    // (in cc_statistics: running from [gw;nxl-gw], [gw;nyl-gw], [0;nzl] --> mean_fields[k<gw or k>nzl-gw] could be ill-defined since never initialised
+    // ??? set also phi_in_m, phi_int_p for k<gw, k>nzl-gw to zero, since not initialized
+        for(ssize_t k=0;k<dims->nlg[2];k++){
+                phi_int_mean_p[k] = 0.0;
+                phi_int_mean_m[k] = 0.0;
+                vel_mean[k] = 0.0;
+                mean_eddy_flux[k] = 0.0;
+            }
     horizontal_mean(dims, &phi_int_p[0], &phi_int_mean_p[0]);
     horizontal_mean(dims, &phi_int_m[0], &phi_int_mean_m[0]);
     horizontal_mean(dims, &velocity[0], &vel_mean[0]);
@@ -1188,24 +1197,25 @@ void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno5(scalar[ijk + sm2],
-                                                     scalar[ijk + sm1],
-                                                     scalar[ijk],
-                                                     scalar[ijk + sp1],
-                                                     scalar[ijk + sp2]);
+//                    const double phip = interp_weno5(scalar[ijk + sm2],
+//                                                     scalar[ijk + sm1],
+//                                                     scalar[ijk],
+//                                                     scalar[ijk + sp1],
+//                                                     scalar[ijk + sp2]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno5(scalar[ijk + sp3],
-                                                     scalar[ijk + sp2],
-                                                     scalar[ijk + sp1],
-                                                     scalar[ijk],
-                                                     scalar[ijk + sm1]);
+//                    const double phim = interp_weno5(scalar[ijk + sp3],
+//                                                     scalar[ijk + sp2],
+//                                                     scalar[ijk + sp1],
+//                                                     scalar[ijk],
+//                                                     scalar[ijk + sm1]);
 
                     const double phim_fluc = phi_int_m[ijk] - phi_int_mean_m[k];
                     const double phip_fluc = phi_int_p[ijk] - phi_int_mean_p[k];
                     const double vel_fluc = velocity[ijk] - vel_mean[k];
                     eddy_flux[ijk] = 0.5 * ((vel_fluc+fabs(vel_fluc))*phip_fluc + (vel_fluc-fabs(vel_fluc))*phim_fluc)*rho0[k];
-                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
+//                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phi_int_p[ijk] + (velocity[ijk]-fabs(velocity[ijk]))*phi_int_m[ijk])*rho0[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -1219,23 +1229,24 @@ void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno5(scalar[ijk + sm2],
-                                                     scalar[ijk + sm1],
-                                                     scalar[ijk],
-                                                     scalar[ijk + sp1],
-                                                     scalar[ijk + sp2]);
+//                    const double phip = interp_weno5(scalar[ijk + sm2],
+//                                                     scalar[ijk + sm1],
+//                                                     scalar[ijk],
+//                                                     scalar[ijk + sp1],
+//                                                     scalar[ijk + sp2]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno5(scalar[ijk + sp3],
-                                                     scalar[ijk + sp2],
-                                                     scalar[ijk + sp1],
-                                                     scalar[ijk],
-                                                     scalar[ijk + sm1]);
+//                    const double phim = interp_weno5(scalar[ijk + sp3],
+//                                                     scalar[ijk + sp2],
+//                                                     scalar[ijk + sp1],
+//                                                     scalar[ijk],
+//                                                     scalar[ijk + sm1]);
                     const double phim_fluc = phi_int_m[ijk] - phi_int_mean_m[k];
                     const double phip_fluc = phi_int_p[ijk] - phi_int_mean_p[k];
                     const double vel_fluc = velocity[ijk] - vel_mean[k];
                     eddy_flux[ijk] = 0.5 * ((vel_fluc+fabs(vel_fluc))*phip_fluc + (vel_fluc-fabs(vel_fluc))*phim_fluc)*rho0_half[k];
-                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
+//                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
+                    flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phi_int_p[ijk] + (velocity[ijk]-fabs(velocity[ijk]))*phi_int_m[ijk])*rho0_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -1260,7 +1271,7 @@ void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double
     free(eddy_flux);
     free(mean_eddy_flux);
     free(vel_mean);
-    free(phi_int);
+//    free(phi_int);
     free(phi_int_p);
     free(phi_int_m);
     free(phi_int_mean_p);
