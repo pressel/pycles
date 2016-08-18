@@ -549,7 +549,7 @@ class Simulation3d:
             print('w val: ', w_max_val, wk_max_val, w_min_val, wk_min_val, w_nan_val, wk_nan_val)
             print('t val: ', t_max_val, tk_max_val, t_min_val, tk_min_val)
 
-        if t_max_val > 380 or t_min_val < 101:
+        if t_max_val > 380 or t_min_val < 100.15:
             print('t val out of default CC lookup table (100,380K): ', t_max_val, tk_max_val, t_min_val, tk_min_val)
 
 
