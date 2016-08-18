@@ -945,8 +945,16 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
                         const double vel_ed_fluc_m = vel_ed_int_m[ijk] - vel_ed_mean_m[k];
                         const double vel_ed_fluc_p = vel_ed_int_p[ijk] - vel_ed_mean_p[k];
                         const double vel_ing_fluc = vel_ing_int[ijk] - vel_ing_mean[k];
-                        eddy_flux[ijk] = 0.5 * ((vel_ing_fluc+fabs(vel_ing_fluc))*vel_ed_fluc_p + (vel_ing_fluc-fabs(vel_ing_fluc))*vel_ed_fluc_m)*rho0_half[k] ;
-                        flux[ijk] = 0.5 * ((vel_ing_int[ijk]+fabs(vel_ing_int[ijk]))*vel_ed_int_p[ijk] + (vel_ing_int[ijk]-fabs(vel_ing_int[ijk]))*vel_ed_int_m[ijk])*rho0_half[k] ;
+                        if(vel_ing_int[ijk]>0.0){
+                            eddy_flux[ijk] = vel_ing_fluc*vel_ed_fluc_p*rho0_half[k];
+                            flux[ijk] = vel_ing_int[ijk]*vel_ed_int_p[ijk]*rho0_half[k];
+                        }
+                        else{
+                            eddy_flux[ijk] = vel_ing_fluc*vel_ed_fluc_m*rho0_half[k];
+                            flux[ijk] = vel_ing_int[ijk]*vel_ed_int_m[ijk]*rho0_half[k];
+                        }
+//                        eddy_flux[ijk] = 0.5 * ((vel_ing_fluc+fabs(vel_ing_fluc))*vel_ed_fluc_p + (vel_ing_fluc-fabs(vel_ing_fluc))*vel_ed_fluc_m)*rho0_half[k] ;
+//                        flux[ijk] = 0.5 * ((vel_ing_int[ijk]+fabs(vel_ing_int[ijk]))*vel_ed_int_p[ijk] + (vel_ing_int[ijk]-fabs(vel_ing_int[ijk]))*vel_ed_int_m[ijk])*rho0_half[k] ;
                     }
                 }
             }
@@ -982,8 +990,16 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
                         const double vel_ed_fluc_m = vel_ed_int_m[ijk] - vel_ed_mean_m[k];
                         const double vel_ed_fluc_p = vel_ed_int_p[ijk] - vel_ed_mean_p[k];
                         const double vel_ing_fluc = vel_ing_int[ijk] - vel_ing_mean[k];
-                        eddy_flux[ijk] = 0.5 * ((vel_ing_fluc+fabs(vel_ing_fluc))*vel_ed_fluc_p + (vel_ing_fluc-fabs(vel_ing_fluc))*vel_ed_fluc_m)*rho0_half[k+1] ;
-                        flux[ijk] = 0.5 * ((vel_ing_int[ijk]+fabs(vel_ing_int[ijk]))*vel_ed_int_p[ijk] + (vel_ing_int[ijk]-fabs(vel_ing_int[ijk]))*vel_ed_int_m[ijk])*rho0_half[k+1] ;
+                        if(vel_ing_int[ijk]>0.0){
+                            eddy_flux[ijk] = vel_ing_fluc*vel_ed_fluc_p*rho0_half[k+1];
+                            flux[ijk] = vel_ing_int[ijk]*vel_ed_int_p[ijk]*rho0_half[k+1];
+                        }
+                        else{
+                            eddy_flux[ijk] = vel_ing_fluc*vel_ed_fluc_m*rho0_half[k+1];
+                            flux[ijk] = vel_ing_int[ijk]*vel_ed_int_m[ijk]*rho0_half[k+1];
+                        }
+//                        eddy_flux[ijk] = 0.5 * ((vel_ing_fluc+fabs(vel_ing_fluc))*vel_ed_fluc_p + (vel_ing_fluc-fabs(vel_ing_fluc))*vel_ed_fluc_m)*rho0_half[k+1] ;
+//                        flux[ijk] = 0.5 * ((vel_ing_int[ijk]+fabs(vel_ing_int[ijk]))*vel_ed_int_p[ijk] + (vel_ing_int[ijk]-fabs(vel_ing_int[ijk]))*vel_ed_int_m[ijk])*rho0_half[k+1] ;
                     }
                 }
             }
@@ -1020,8 +1036,16 @@ void weno_fifth_order_m_ql(struct DimStruct *dims, double* restrict rho0, double
                         const double vel_ed_fluc_m = vel_ed_int_m[ijk] - vel_ed_mean_m[k];
                         const double vel_ed_fluc_p = vel_ed_int_p[ijk] - vel_ed_mean_p[k];
                         const double vel_ing_fluc = vel_ing_int[ijk] - vel_ing_mean[k];
-                        eddy_flux[ijk] = 0.5 * ((vel_ing_fluc+fabs(vel_ing_fluc))*vel_ed_fluc_p + (vel_ing_fluc-fabs(vel_ing_fluc))*vel_ed_fluc_m)*rho0[k] ;
-                        flux[ijk] = 0.5 * ((vel_ing_int[ijk]+fabs(vel_ing_int[ijk]))*vel_ed_int_p[ijk] + (vel_ing_int[ijk]-fabs(vel_ing_int[ijk]))*vel_ed_int_m[ijk])*rho0[k] ;
+                        if(vel_ing_int[ijk]>0.0){
+                            eddy_flux[ijk] = vel_ing_fluc*vel_ed_fluc_p*rho0[k];
+                            flux[ijk] = vel_ing_int[ijk]*vel_ed_int_p[ijk]*rho0[k];
+                        }
+                        else{
+                            eddy_flux[ijk] = vel_ing_fluc*vel_ed_fluc_m*rho0[k];
+                            flux[ijk] = vel_ing_int[ijk]*vel_ed_int_m[ijk]*rho0[k];
+                        }
+//                        eddy_flux[ijk] = 0.5 * ((vel_ing_fluc+fabs(vel_ing_fluc))*vel_ed_fluc_p + (vel_ing_fluc-fabs(vel_ing_fluc))*vel_ed_fluc_m)*rho0[k] ;
+//                        flux[ijk] = 0.5 * ((vel_ing_int[ijk]+fabs(vel_ing_int[ijk]))*vel_ed_int_p[ijk] + (vel_ing_int[ijk]-fabs(vel_ing_int[ijk]))*vel_ed_int_m[ijk])*rho0[k] ;
                     }
                 }
             }

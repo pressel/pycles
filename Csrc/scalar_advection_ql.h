@@ -1124,7 +1124,6 @@ void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mean_eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);
     double *vel_mean = (double *)malloc(sizeof(double) * dims->nlg[2]);
-//    double *phi_int = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *phi_int_p = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *phi_int_m = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 //    double *phi_int_fluc = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
@@ -1290,7 +1289,6 @@ void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double
     free(eddy_flux);
     free(mean_eddy_flux);
     free(vel_mean);
-//    free(phi_int);
     free(phi_int_p);
     free(phi_int_m);
     free(phi_int_mean_p);
