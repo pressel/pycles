@@ -28,3 +28,8 @@ cdef class ThermodynamicsDry:
                        NetCDFIO_Fields NF, ParallelMPI.ParallelMPI Pa)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                    DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+    # __
+    cpdef debug_tend(self,message, PrognosticVariables.PrognosticVariables PV_,
+                     DiagnosticVariables.DiagnosticVariables DV_,
+                     Grid.Grid Gr_)
