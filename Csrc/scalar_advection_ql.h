@@ -1119,7 +1119,7 @@ void weno_fifth_order_a_decomp_ql(struct DimStruct *dims, double* restrict rho0,
 
 
 void weno_fifth_order_a_ql(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
-    if (d==1){printf("SA: WENO5 QL\n");}
+//    if (d==1){printf("SA: WENO5 QL\n");}
 
     double *eddy_flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
     double *mean_eddy_flux = (double *)malloc(sizeof(double) * dims->nlg[2]);

@@ -115,6 +115,7 @@ cdef class ClausiusClapeyron:
 def ThermodynamicsFactory(namelist, Micro, LatentHeat LH,ParallelMPI.ParallelMPI Par):
 
     if(Micro.thermodynamics_type=='dry'):
+        Par.root_print('ThermodynamicsDry')
         return ThermodynamicsDry(namelist,LH,Par)
     if(Micro.thermodynamics_type=='SA'):
         Par.root_print('Thermodynamics SA')

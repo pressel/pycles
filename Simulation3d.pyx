@@ -228,7 +228,7 @@ class Simulation3d:
                 #_
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
                 #_
-                # self.debug_tend('SGS')
+                self.debug_tend('SGS')
                 #_
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
                 #_
