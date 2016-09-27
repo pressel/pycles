@@ -3,7 +3,8 @@
 #include "advection_interpolation.h"
 #include "thermodynamic_functions.h"
 #include "entropies.h"
-void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *rho0_half, double *diffusivity, double *scalar, double *flux, double dx, ssize_t d, double factor){
+void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *rho0_half, double *diffusivity,
+        double *scalar, double *flux, double dx, ssize_t d, double factor){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -61,7 +62,8 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
     return;
 }
 
-void compute_diffusive_flux(const struct DimStruct *dims, double *rho0, double *rho0_half, double *diffusivity, double *scalar, double *flux, double dx, ssize_t d, ssize_t scheme, double factor){
+void compute_diffusive_flux(const struct DimStruct *dims, double *rho0, double *rho0_half, double *diffusivity,
+        double *scalar, double *flux, double dx, ssize_t d, ssize_t scheme, double factor){
 
         switch(scheme){
             case 2:

@@ -117,6 +117,9 @@ cdef class ScalarDiffusion:
                     compute_diffusive_flux(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],
                                            &DV.values[diff_shift],&PV.values[scalar_shift],
                                            &self.flux[flux_shift],Gr.dims.dx[d],d,2, flux_factor)
+                    # d: dimension
+                    # 2: scheme (2nd order diffusion)
+                    # flux_factor == 1, except for TKE == 2
 
                     scalar_flux_divergence(&Gr.dims,&RS.alpha0[0],&RS.alpha0_half[0],
                                            &self.flux[flux_shift],&PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
