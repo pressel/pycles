@@ -116,17 +116,20 @@ cdef class VisualizationOutput:
             double [:,:] reduced_var
             list pv_vars = ['phi','qt', 's', 'w', 'u']
             # list pv_vars = ['qt', 's', 'w', 'u']
-            list dv_vars = ['ql', 'diffusivity']
+            list dv_vars = ['potential_temperature','ql', 'diffusivity']
 
 
         for var in pv_vars:
             local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
             reduced_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
+            # local_var = np.zeros((Gr.dims.n[0], Gr.dims.n[2]), dtype=np.double, order='c')
+            # reduced_var = np.zeros((Gr.dims.n[0], Gr.dims.n[2]), dtype=np.double, order='c')
             try:
                 var_shift = PV.get_varshift(Gr, var)
 
                 with nogil:
                     if global_shift_i == 0:
+                    # if global_shift_j == 0:
                         i = 0
                         ishift = i * istride
                         for j in xrange(jmin, jmax):
@@ -134,8 +137,10 @@ cdef class VisualizationOutput:
                             for k in xrange(kmin, kmax):
                                 ijk = ishift + jshift + k
                                 j2d = global_shift_j + j - Gr.dims.gw
+                                # i2d = global_shift_i + i - Gr.dims.gw
                                 k2d = global_shift_k + k - Gr.dims.gw
                                 local_var[j2d, k2d] = PV.values[var_shift + ijk]
+                                # local_var[i2d, k2d] = PV.values[var_shift + ijk]
 
                 comm.Reduce(local_var, reduced_var, op=MPI.SUM)
                 del local_var

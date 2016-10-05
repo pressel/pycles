@@ -299,6 +299,9 @@ def StableBubble():
     namelist['fields_io']['frequency'] = 100.0
     namelist['fields_io']['diagnostic_fields'] = ['temperature','buoyancy_frequency']
 
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 60.0
+
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'StableBubble'
     namelist['meta']['casename'] = 'StableBubble'
