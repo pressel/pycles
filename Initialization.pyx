@@ -1326,13 +1326,18 @@ def InitSoares(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV
     except:
         use_tracers = False
 
+    try:
+        kmax_tracer = namelist['tracers']['kmax']
+    except:
+        kmax_tracer = 10
+
     cdef:
         Py_ssize_t kmin = 0
-        Py_ssize_t kmax = 10
+        Py_ssize_t kmax = kmax_tracer
         Py_ssize_t var_shift
 
     if use_tracers == 'passive':
-        Pa.root_print('initializing passive tracer phi')
+        Pa.root_print('initializing passive tracer phi, kmax: ' + str(kmax_tracer))
         var_shift = PV.get_varshift(Gr, 'phi')
         with nogil:
             for i in xrange(Gr.dims.nlg[0]):
