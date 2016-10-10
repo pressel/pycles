@@ -262,6 +262,7 @@ class Simulation3d:
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
+                print('before io')
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
                 # self.Pa.root_print('rk_step: '+str(self.TS.rk_step)+' (total steps: '+str(self.TS.n_rk_steps)+')')
@@ -513,6 +514,7 @@ class Simulation3d:
             Py_ssize_t v_varshift = PV_.get_varshift(self.Gr,'v')
             Py_ssize_t w_varshift = PV_.get_varshift(self.Gr,'w')
             Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
+            Py_ssize_t qt_varshift, ql_varshift
 
             Py_ssize_t istride = Gr_.dims.nlg[1] * Gr_.dims.nlg[2]
             Py_ssize_t jstride = Gr_.dims.nlg[2]
