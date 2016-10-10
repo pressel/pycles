@@ -334,8 +334,8 @@ class Simulation3d:
 
             self.TS.dt = np.amin(dts[dts > 0.0])
             # If time to ouptut fields do output
-            # if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
-            if (1==1):
+            if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
+            # if (1==1):
                 self.Pa.root_print('Doing 3D FieldIO')
                 self.FieldsIO.last_output_time = self.TS.t
                 self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
