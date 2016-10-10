@@ -2,7 +2,7 @@ import time
 import numpy as np
 cimport numpy as np
 # __
-# import pylab as plt
+import pylab as plt
 # from mpi4py import MPI
 import os       # for self.outpath
 try:
@@ -188,7 +188,8 @@ class Simulation3d:
         # self.debug_tend('before loop')
         # self.Pa.barrier()
         #_
-
+        # self.plot_figure('s')
+        # self.plot_figure('phi')
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             self.Pa.root_print('time: '+str(self.TS.t))
@@ -268,10 +269,37 @@ class Simulation3d:
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
 
+            # self.plot_figure('s')
         self.Restart.cleanup()
 
 
         return
+
+
+
+    def plot_figure(self,var_name):
+        print('outpath', self.outpath)
+        cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
+        cdef Grid.Grid Gr_ = self.Gr
+        print('plot figure')
+        var_shift = PV_.get_varshift(self.Gr, var_name)
+        var = PV_.get_variable_array(var_name, self.Gr)
+        print('var plot', var.shape, Gr_.dims.ng[0], Gr_.dims.ng[1], Gr_.dims.ng[2])
+        plt.figure(1)
+        # plt.contourf(var[:,4,:].T)
+        plt.contourf(var[4,:,:].T)
+        plt.title(var_name + str(self.TS.t))
+        plt.colorbar()
+        # plt.title(var + ', ' + message)
+        # plt.show()
+        plt.savefig(self.outpath + '/hor_' + var_name + '_' + np.str(self.TS.t) + '.png')
+        plt.close()
+        return
+
+
+
+
+
 
     def io(self):
         cdef:
@@ -305,8 +333,8 @@ class Simulation3d:
 
             self.TS.dt = np.amin(dts[dts > 0.0])
             # If time to ouptut fields do output
-            if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
-            #if (1==1):
+            # if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
+            if (1==1):
                 self.Pa.root_print('Doing 3D FieldIO')
                 self.FieldsIO.last_output_time = self.TS.t
                 self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
@@ -378,11 +406,6 @@ class Simulation3d:
 
                 self.Restart.write(self.Pa)
                 self.Pa.root_print('Finished Dumping Restart Files!')
-
-
-
-
-
 
         return
 
