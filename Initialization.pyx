@@ -1334,21 +1334,38 @@ def InitSoares(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV
     cdef:
         Py_ssize_t kmin = 0
         Py_ssize_t kmax = kmax_tracer
+        Py_ssize_t dk = 5
         Py_ssize_t var_shift
+        # double delta1, delta2
+        # double ddk = 5.0
 
     if use_tracers == 'passive':
         Pa.root_print('initializing passive tracer phi, kmax: ' + str(kmax_tracer))
         var_shift = PV.get_varshift(Gr, 'phi')
-        with nogil:
+        # with nogil:
+        if 1==1:
             for i in xrange(Gr.dims.nlg[0]):
                 ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
                 for j in xrange(Gr.dims.nlg[1]):
                     jshift = j * Gr.dims.nlg[2]
                     for k in xrange(Gr.dims.nlg[2]):
                         ijk = ishift + jshift + k
-                        if k > kmin and k < kmax:
+                        if k > kmin and k <= kmax:
                     # for k in xrange(kmin, kmax):
                             PV.values[var_shift + ijk] = 1.0
+                            # PV.values[var_shift + ijk] = 0.0
+                        elif k > kmax and k < (kmax + dk):
+                            # delta1 = (k-kmax)/dk    # no
+                            # delta2 = k-kmax         # yes
+                            # delta3 = (k-kmax)/ddk   # yes
+                            # delta4 = (k-kmax)/np.double(dk) # yes
+                            # delta5 = (k-kmax)/dk    # no
+                            PV.values[var_shift + ijk] = np.cos((k-kmax)/np.double(dk)*np.pi/2)
+                            #
+                            # if i == 0:
+                            #     print('.....', k-kmax, np.pi, np.cos(0), np.cos(np.pi/2), np.cos((k-kmax)/dk*np.pi/2))
+                            #     print(k, kmax, dk, (k-kmax)/dk, (k-kmax)/dk*np.pi/2)
+                            #     print(delta1, delta2, delta3, delta4, delta5)
                         else:
                             PV.values[var_shift + ijk] = 0.0
     # __
