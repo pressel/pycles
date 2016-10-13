@@ -2,7 +2,7 @@ import time
 import numpy as np
 cimport numpy as np
 # __
-import pylab as plt
+# import pylab as plt
 # from mpi4py import MPI
 import os       # for self.outpath
 try:
@@ -188,8 +188,7 @@ class Simulation3d:
         # self.debug_tend('before loop')
         # self.Pa.barrier()
         #_
-        # self.plot_figure('s')
-        # self.plot_figure('phi')
+
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             self.Pa.root_print('time: '+str(self.TS.t))
@@ -262,7 +261,6 @@ class Simulation3d:
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
-                print('before io')
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
                 # self.Pa.root_print('rk_step: '+str(self.TS.rk_step)+' (total steps: '+str(self.TS.n_rk_steps)+')')
@@ -270,37 +268,10 @@ class Simulation3d:
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
 
-            # self.plot_figure('s')
         self.Restart.cleanup()
 
 
         return
-
-
-
-    def plot_figure(self,var_name):
-        print('outpath', self.outpath)
-        cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
-        cdef Grid.Grid Gr_ = self.Gr
-        print('plot figure')
-        var_shift = PV_.get_varshift(self.Gr, var_name)
-        var = PV_.get_variable_array(var_name, self.Gr)
-        print('var plot', var.shape, Gr_.dims.ng[0], Gr_.dims.ng[1], Gr_.dims.ng[2])
-        plt.figure(1)
-        # plt.contourf(var[:,4,:].T)
-        plt.contourf(var[4,:,:].T)
-        plt.title(var_name + str(self.TS.t))
-        plt.colorbar()
-        # plt.title(var + ', ' + message)
-        # plt.show()
-        plt.savefig(self.outpath + '/hor_' + var_name + '_' + np.str(self.TS.t) + '.png')
-        plt.close()
-        return
-
-
-
-
-
 
     def io(self):
         cdef:
@@ -335,7 +306,7 @@ class Simulation3d:
             self.TS.dt = np.amin(dts[dts > 0.0])
             # If time to ouptut fields do output
             if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
-            # if (1==1):
+            #if (1==1):
                 self.Pa.root_print('Doing 3D FieldIO')
                 self.FieldsIO.last_output_time = self.TS.t
                 self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
@@ -344,9 +315,8 @@ class Simulation3d:
                 self.Pa.root_print('Finished Doing 3D FieldIO')
 
             # If time to ouput stats do output
-
+            # self.Pa.root_print('StatsIO freq: ' + str(self.StatsIO.frequency) + ', ' + str(self.StatsIO.last_output_time) + ', ' + str(self.TS.t))
             if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t:
-                self.Pa.root_print('StatsIO freq: ' + str(self.StatsIO.frequency) + ', ' + str(self.StatsIO.last_output_time) + ', ' + str(self.TS.t))
             #if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t or self.StatsIO.last_output_time + self.StatsIO.frequency + 10.0 == self.TS.t:
             #if (1==1):
                 self.Pa.root_print('Doing StatsIO')
@@ -355,8 +325,8 @@ class Simulation3d:
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
                 self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa) # do Micro.stats_io prior to DV.stats_io to get sedimentation velocity only in output
                 self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
+
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
-                self.Pa.root_print('finished PV, DV stats io')
                 self.Fo.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
 
@@ -409,12 +379,17 @@ class Simulation3d:
                 self.Restart.write(self.Pa)
                 self.Pa.root_print('Finished Dumping Restart Files!')
 
+
+
+
+
+
         return
 
     def force_io(self, ParallelMPI.ParallelMPI Pa):
         # Pa.barrier()
         # output stats here
-        self.Pa.root_print('Sim.force_io')
+        # self.Pa.root_print('Sim.force_io')
 
         # self.Pa.root_print('Doing 3D FieldIO')
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
@@ -425,18 +400,16 @@ class Simulation3d:
         self.StatsIO.open_files(self.Pa)
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
         self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
+
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
-        self.Pa.root_print('force_io, after PV, DV.stats_io')
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.Pa.root_print('force_io, after Fo.stats_io')
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke ,self.StatsIO, self.Pa)
         self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
         self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-        self.Pa.root_print('force_io, after SA, MA.stats_io')
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
         self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
@@ -518,7 +491,6 @@ class Simulation3d:
             Py_ssize_t v_varshift = PV_.get_varshift(self.Gr,'v')
             Py_ssize_t w_varshift = PV_.get_varshift(self.Gr,'w')
             Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
-            Py_ssize_t qt_varshift, ql_varshift
 
             Py_ssize_t istride = Gr_.dims.nlg[1] * Gr_.dims.nlg[2]
             Py_ssize_t jstride = Gr_.dims.nlg[2]
