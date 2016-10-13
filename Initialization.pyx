@@ -1333,7 +1333,7 @@ def InitSoares(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV
 
     cdef:
         Py_ssize_t kmin = 0
-        Py_ssize_t kmax = kmax_tracer + gw
+        Py_ssize_t kmax = kmax_tracer + Gr.dims.gw
         Py_ssize_t dk = 5
         Py_ssize_t var_shift
         # double delta1, delta2
