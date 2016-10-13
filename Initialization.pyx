@@ -4,6 +4,7 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
+import pylab as plt
 
 import netCDF4 as nc
 import numpy as np
@@ -282,16 +283,30 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
         qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
 
+        double dz = 50.
     for k in xrange(Gr.dims.nlg[2]):
 
+        # #Set Thetal profile
+        # if Gr.zl_half[k] <= 520.:
+        #     thetal[k] = 298.7
+        # if Gr.zl_half[k] > 520.0 and Gr.zl_half[k] <= 1480.0:       # 3.85 K / km
+        #     thetal[k] = 298.7 + (Gr.zl_half[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
+        # if Gr.zl_half[k] > 1480.0 and Gr.zl_half[k] <= 2000:        # 11.15 K / km
+        #     thetal[k] = 302.4 + (Gr.zl_half[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
+        # if Gr.zl_half[k] > 2000.0:                                  # 3.65 K / km
+        #     thetal[k] = 308.2 + (Gr.zl_half[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
+
         #Set Thetal profile
-        if Gr.zl_half[k] <= 520.:
+
+        if Gr.zl_half[k] <= 520. - dz:
             thetal[k] = 298.7
-        if Gr.zl_half[k] > 520.0 and Gr.zl_half[k] <= 1480.0:
-            thetal[k] = 298.7 + (Gr.zl_half[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
-        if Gr.zl_half[k] > 1480.0 and Gr.zl_half[k] <= 2000:
+        elif Gr.zl_half[k] <= 520. + dz:
+            thetal[k] = 298.7 + (Gr.zl_half[k] - (520-dz)) * 1.4e-3
+        elif Gr.zl_half[k] <= 1480.0:                               # 3.85 K / km
+            thetal[k] = (298.7+2*dz*1.4e-3) + (Gr.zl_half[k] - (520+dz))  * (302.4 - 298.7)/(1480.0 - 520.0)
+        elif Gr.zl_half[k] > 1480.0 and Gr.zl_half[k] <= 2000:        # 11.15 K / km
             thetal[k] = 302.4 + (Gr.zl_half[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
-        if Gr.zl_half[k] > 2000.0:
+        elif Gr.zl_half[k] > 2000.0:                                  # 3.65 K / km
             thetal[k] = 308.2 + (Gr.zl_half[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
 
         #Set qt profile
@@ -312,6 +327,13 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             u[k] = -8.75
         if Gr.zl_half[k] > 700.0:
             u[k] = -8.75 + (Gr.zl_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
+
+    plt.figure(figsize=(12,6))
+    plt.subplot(1,2,1)
+    plt.plot(thetal,Gr.zl_half)
+    plt.subplot(1,2,2)
+    plt.plot(thetal[Gr.dims.gw:30],Gr.zl_half[Gr.dims.gw:30])
+    plt.show()
 
     #Set velocities for Galilean transformation
     RS.v0 = 0.0
