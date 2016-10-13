@@ -183,7 +183,7 @@ class Simulation3d:
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
             self.force_io(self.Pa)
-
+        self.Pa.root_print('after force_io')
         #_
         # self.debug_tend('before loop')
         # self.Pa.barrier()
