@@ -344,8 +344,9 @@ class Simulation3d:
                 self.Pa.root_print('Finished Doing 3D FieldIO')
 
             # If time to ouput stats do output
-            # self.Pa.root_print('StatsIO freq: ' + str(self.StatsIO.frequency) + ', ' + str(self.StatsIO.last_output_time) + ', ' + str(self.TS.t))
+
             if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t:
+                self.Pa.root_print('StatsIO freq: ' + str(self.StatsIO.frequency) + ', ' + str(self.StatsIO.last_output_time) + ', ' + str(self.TS.t))
             #if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t or self.StatsIO.last_output_time + self.StatsIO.frequency + 10.0 == self.TS.t:
             #if (1==1):
                 self.Pa.root_print('Doing StatsIO')
@@ -354,8 +355,8 @@ class Simulation3d:
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
                 self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa) # do Micro.stats_io prior to DV.stats_io to get sedimentation velocity only in output
                 self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
-
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
+                self.Pa.root_print('finished PV, DV stats io')
                 self.Fo.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
                 self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
 
@@ -413,7 +414,7 @@ class Simulation3d:
     def force_io(self, ParallelMPI.ParallelMPI Pa):
         # Pa.barrier()
         # output stats here
-        # self.Pa.root_print('Sim.force_io')
+        self.Pa.root_print('Sim.force_io')
 
         # self.Pa.root_print('Doing 3D FieldIO')
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
@@ -424,8 +425,8 @@ class Simulation3d:
         self.StatsIO.open_files(self.Pa)
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
         self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
-
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
+        self.Pa.root_print('force_io, after PV, DV.stats_io')
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
