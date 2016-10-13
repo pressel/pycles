@@ -2,7 +2,7 @@ import time
 import numpy as np
 cimport numpy as np
 # __
-# import pylab as plt
+import pylab as plt
 # from mpi4py import MPI
 import os       # for self.outpath
 try:
@@ -273,6 +273,32 @@ class Simulation3d:
 
         return
 
+
+
+    def plot_figure(self,var_name):
+        print('outpath', self.outpath)
+        cdef PrognosticVariables.PrognosticVariables PV_ = self.PV
+        cdef Grid.Grid Gr_ = self.Gr
+        print('plot figure')
+        var_shift = PV_.get_varshift(self.Gr, var_name)
+        var = PV_.get_variable_array(var_name, self.Gr)
+        print('var plot', var.shape, Gr_.dims.ng[0], Gr_.dims.ng[1], Gr_.dims.ng[2])
+        plt.figure(1)
+        # plt.contourf(var[:,4,:].T)
+        plt.contourf(var[4,:,:].T)
+        plt.title(var_name + str(self.TS.t))
+        plt.colorbar()
+        # plt.title(var + ', ' + message)
+        # plt.show()
+        plt.savefig(self.outpath + '/hor_' + var_name + '_' + np.str(self.TS.t) + '.png')
+        plt.close()
+        return
+
+
+
+
+
+
     def io(self):
         cdef:
             double fields_dt = 0.0
@@ -379,12 +405,9 @@ class Simulation3d:
                 self.Restart.write(self.Pa)
                 self.Pa.root_print('Finished Dumping Restart Files!')
 
-
-
-
-
-
         return
+
+
 
     def force_io(self, ParallelMPI.ParallelMPI Pa):
         # Pa.barrier()
