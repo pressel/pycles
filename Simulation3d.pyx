@@ -491,6 +491,7 @@ class Simulation3d:
             Py_ssize_t v_varshift = PV_.get_varshift(self.Gr,'v')
             Py_ssize_t w_varshift = PV_.get_varshift(self.Gr,'w')
             Py_ssize_t s_varshift = PV_.get_varshift(self.Gr,'s')
+            Py_ssize_t qt_varshift, ql_varshift
 
             Py_ssize_t istride = Gr_.dims.nlg[1] * Gr_.dims.nlg[2]
             Py_ssize_t jstride = Gr_.dims.nlg[2]
