@@ -388,7 +388,7 @@ cdef class RadiationRRTM(RadiationBase):
         self.srf_lw_down = 0.0
         self.srf_sw_down = 0.0
         self.srf_lw_up = 0.0
-        self.srf_sw_down = 0.0
+        self.srf_sw_up = 0.0
 
 
         casename = namelist['meta']['casename']
