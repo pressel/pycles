@@ -283,7 +283,7 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
         qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
 
-        double dz = 250.
+        double dz = 50.0
     for k in xrange(Gr.dims.nlg[2]):
 
         # #Set Thetal profile
@@ -1356,7 +1356,7 @@ def InitSoares(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV
     cdef:
         Py_ssize_t kmin = 0
         Py_ssize_t kmax = kmax_tracer + Gr.dims.gw
-        Py_ssize_t dk = 5
+        Py_ssize_t dk = 50
         Py_ssize_t var_shift
         # double delta1, delta2
         # double ddk = 5.0
