@@ -283,7 +283,7 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
         qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
 
-        double dz = 50.
+        double dz = 250.
     for k in xrange(Gr.dims.nlg[2]):
 
         # #Set Thetal profile
