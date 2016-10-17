@@ -443,7 +443,7 @@ class Simulation3d:
         self.Pa.root_print('force_io, after Aux.stats_io')
         self.StatsIO.close_files(self.Pa)
         # Pa.barrier()
-        # self.Pa.root_print('Sim.force_io finished')
+        self.Pa.root_print('Sim.force_io finished')
 
         return
 

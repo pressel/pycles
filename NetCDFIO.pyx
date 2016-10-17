@@ -78,6 +78,7 @@ cdef class NetCDFIO_Stats:
         return
 
     cpdef close_files(self, ParallelMPI.ParallelMPI Pa):
+        Pa.root_print('StatsIO.close_files')
         if Pa.rank == 0:
             self.root_grp.close()
         return
