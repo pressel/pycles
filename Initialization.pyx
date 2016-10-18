@@ -1382,7 +1382,7 @@ def InitSoares(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV
                             # delta3 = (k-kmax)/ddk   # yes
                             # delta4 = (k-kmax)/np.double(dk) # yes
                             # delta5 = (k-kmax)/dk    # no
-                            PV.values[var_shift + ijk] = np.cos((k-kmax)/np.double(dk)*np.pi/2)
+                            PV.values[var_shift + ijk] = 0.5*( 1+np.cos((k-kmax)/np.double(dk)*np.pi) )
                             #
                             # if i == 0:
                             #     print('.....', k-kmax, np.pi, np.cos(0), np.cos(np.pi/2), np.cos((k-kmax)/dk*np.pi/2))
