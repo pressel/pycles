@@ -12,6 +12,9 @@ import os
 import numpy as np
 import json as  simplejson
 
+# 1. Eddy Fields should be computed from 3D output fields with: EddyField_output.py
+# 2. this field computes the correlations
+
 def main():
     global case
     case = 'DCBLSoares'
@@ -25,8 +28,9 @@ def main():
     time = np.int(args.time)
     
     # (0) import Namelist --> to chose right mean profile, fitting with time
+    nml_name = case + '.in'
+    path_nml = os.path.join(args.dir,nml_name)
     nml = simplejson.loads(open(args.dir + case + '.in').read())
-#    nml = simplejson.loads(open(case + '.in').read())
     dt = nml['stats_io']['frequency']
     dz = nml['grid']['dz']
     print('dt:', dt, 'dz:', dz)
@@ -38,9 +42,8 @@ def main():
     # u_profile, v_profile, w_profile, phi_profile: mean profiles of resp. variable at time t
     file_name = 'Stats.' + case + '.nc'
     path_profiles = os.path.join(args.dir,file_name)
-#    path_profiles = file_name
-    field_name = args.time + '.nc'
-    path_fields = os.path.join(args.dir, 'fields', field_name)
+    field_name = 'eddy_field_' + args.time + '.nc'
+    path_fields = os.path.join(args.dir, field_name)
     
     var_name = 't'
     global nt
@@ -58,25 +61,22 @@ def main():
         print('profiles do not start at zero')
         sys.exit()
 
+    print('reading in eddy fields: ', path_fields)
     var_name = 'u'
-    u_profile = read_in_netcdf_profile(var_name+'_mean',"profiles",path_profiles)
-    u_field = read_in_netcdf_fields(var_name,path_fields)
+#    u_profile = read_in_netcdf_profile(var_name+'_mean',"profiles",path_profiles)
+    u_field = read_in_netcdf_fields(var_name+'_eddy',path_fields)
     var_name = 'v'
-    v_profile = read_in_netcdf_profile(var_name+'_mean',"profiles",path_profiles)
-    v_field = read_in_netcdf_fields(var_name,path_fields)
+#    v_profile = read_in_netcdf_profile(var_name+'_mean',"profiles",path_profiles)
+    v_field = read_in_netcdf_fields(var_name+'_eddy',path_fields)
     var_name = 'w'
-    w_profile = read_in_netcdf_profile(var_name+'_mean',"profiles",path_profiles)
-    w_field = read_in_netcdf_fields(var_name,path_fields)
+#    w_profile = read_in_netcdf_profile(var_name+'_mean',"profiles",path_profiles)
+    w_field = read_in_netcdf_fields(var_name+'_eddy',path_fields)
     var_name = 'phi'
-    phi_profile = read_in_netcdf_profile(var_name+'_mean',"profiles",path_profiles)
-    phi_field = read_in_netcdf_fields(var_name,path_fields)
+#    phi_profile = read_in_netcdf_profile(var_name+'_mean',"profiles",path_profiles)
+    phi_field = read_in_netcdf_fields(var_name+'_eddy',path_fields)
     
-    print('profile: ', u_profile.shape)
-    print('field: ', u_field.shape, np.amax(np.abs(u_field)))
-    print('max u', np.amax(np.abs(u_field)), np.amax(u_profile))
-    print('max v', np.amax(np.abs(v_field)), np.amax(v_profile))
-    print('max w', np.amax(np.abs(w_field)), np.amax(w_profile))
-    print('max phi', np.amax(np.abs(phi_field)), np.amax(phi_profile))
+#    print('profile: ', u_profile.shape)
+    print('field: ', u_field.shape)
 
     # (3) read in grid dimensions
     ni_ = np.zeros((3,))
@@ -91,48 +91,44 @@ def main():
         if n[i] != ni_[i]:
             print('Dimensions do not fit!')
             sys.exit()
-    if n[2] != u_profile.size:
-        print('Dimensions profile vs. field do not fit!')
-        print('nz:',n[2],'field:',u_field.shape[2],'profile:',u_profile.size)
-        sys.exit()
+#    if n[2] != u_profile.size:
+#        print('Dimensions profile vs. field do not fit!')
+#        print('nz:',n[2],'field:',u_field.shape[2],'profile:',u_profile.size)
+#        sys.exit()
     ntot = n[0]*n[1]*n[2]
 
 
-    # (4) compute eddy fields
+    # (4) compute Correlations
     sh = u_field.shape
-    u_eddy = np.zeros(shape=sh)
-    v_eddy = np.zeros(shape=sh)
-    w_eddy = np.zeros(shape=sh)
-    phi_eddy = np.zeros(shape=sh)
+    uphi = np.zeros(shape=sh)
+    vphi = np.zeros(shape=sh)
+    wphi = np.zeros(shape=sh)
 
     for i in range(n[0]):
         if np.mod(i,50) == 0:
             print(i)
         for j in range(n[1]):
             for k in range(n[2]):
-                u_eddy[i,j,k] = u_field[i,j,k] - u_profile[k]
-                v_eddy[i,j,k] = v_field[i,j,k] - v_profile[k]
-                w_eddy[i,j,k] = w_field[i,j,k] - w_profile[k]
-                phi_eddy[i,j,k] = phi_field[i,j,k] - phi_profile[k]
-    print('max u', np.amax(np.abs(u_field)), np.amax(u_profile), np.amax(np.abs(u_eddy)))
-    print('max v', np.amax(np.abs(v_field)), np.amax(v_profile), np.amax(np.abs(v_eddy)))
-    print('max w', np.amax(np.abs(w_field)), np.amax(w_profile), np.amax(np.abs(w_eddy)))
-    print('max phi', np.amax(np.abs(phi_field)), np.amax(phi_profile), np.amax(np.abs(phi_eddy)))
-
+                uphi[i,j,k] = u_field[i,j,k]*phi_field[i,j,k]
+                vphi[i,j,k] = v_field[i,j,k]*phi_field[i,j,k]
+                wphi[i,j,k] = w_field[i,j,k]*phi_field[i,j,k]
+    print('uphi:', np.amax(np.abs(u_field)), np.amax(np.abs(phi_field)), np.amax(np.abs(uphi)))
+    print('vphi:', np.amax(np.abs(v_field)), np.amax(np.abs(phi_field)), np.amax(np.abs(vphi)))
+    print('wphi:', np.amax(np.abs(w_field)), np.amax(np.abs(phi_field)), np.amax(np.abs(wphi)))
 
     # (5) IO
     # (a) create file for eddy fields
     out_path = args.dir
-    nc_file_name = 'eddy_field_' + args.time
+    nc_file_name = 'correlations_' + args.time
     print(out_path)
     create_fields_file(out_path,nc_file_name)
 
-    # (b) dump eddy fields
+    # (b) dump correlation fields
     #    add_field(os.path.join(out_path,nc_file_name+'.nc'), var_name)
-    dump_variables(os.path.join(out_path,nc_file_name+'.nc'), 'u_eddy', u_eddy)
-    dump_variables(os.path.join(out_path,nc_file_name+'.nc'), 'v_eddy', v_eddy)
-    dump_variables(os.path.join(out_path,nc_file_name+'.nc'), 'w_eddy', w_eddy)
-    dump_variables(os.path.join(out_path,nc_file_name+'.nc'), 'phi_eddy', phi_eddy)
+    dump_variables(os.path.join(out_path,nc_file_name+'.nc'), 'uphi', uphi)
+    dump_variables(os.path.join(out_path,nc_file_name+'.nc'), 'vphi', vphi)
+    dump_variables(os.path.join(out_path,nc_file_name+'.nc'), 'wphi', wphi)
+
 
     return
 
@@ -168,8 +164,7 @@ def dump_variables(path, var_name, var):
 
 def add_field(path, var_name):
     print('add field: ', var_name)
-#    rootgrp = nc.Dataset(path, 'r+', format='NETCDF4')
-    rootgrp = nc.Dataset(path, 'r+')
+    rootgrp = nc.Dataset(path, 'r+', format='NETCDF4')
     fieldgrp = rootgrp.groups['fields']
     #    fieldgrp.createVariable(var_name, 'f8', ('n'))
     var = fieldgrp.createVariable(var_name, 'f8', ('nx', 'ny', 'nz'))
@@ -189,6 +184,7 @@ def write_field(path, var_name, data):
 
 # ----------------------------------
 def read_in_netcdf_fields(variable_name, fullpath_in):
+#    print(fullpath_in)
     rootgrp = nc.Dataset(fullpath_in, 'r')
     var = rootgrp.groups['fields'].variables[variable_name]
     shape = var.shape
@@ -236,6 +232,39 @@ def read_in_netcdf_profile(variable_name, group_name, fullpath_in):
     return data
 
 # ----------------------------------
+
+
+def setup_stats_file(path):
+    #    path = 'test_field/'
+    root_grp = nc.Dataset(path, 'w', format='NETCDF4')
+    
+    # Set profile dimensions
+    profile_grp = root_grp.createGroup('profiles')
+    profile_grp.createDimension('z', Gr.dims.n[2])
+    profile_grp.createDimension('t', None)
+    z = profile_grp.createVariable('z', 'f8', ('z'))
+    z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
+    z_half = profile_grp.createVariable('z_half', 'f8', ('z'))
+    z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
+    profile_grp.createVariable('t', 'f8', ('t'))
+    del z
+    del z_half
+    
+    reference_grp = root_grp.createGroup('reference')
+    reference_grp.createDimension('z', Gr.dims.n[2])
+    z = reference_grp.createVariable('z', 'f8', ('z'))
+    z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
+    z_half = reference_grp.createVariable('z_half', 'f8', ('z'))
+    z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
+    del z
+    del z_half
+    
+    ts_grp = root_grp.createGroup('timeseries')
+    ts_grp.createDimension('t', None)
+    ts_grp.createVariable('t', 'f8', ('t'))
+    
+    root_grp.close()
+    return
 
 
 
