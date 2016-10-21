@@ -29,7 +29,7 @@ def main():
 
     path_to_fields = os.path.join(path,'fields/')
     var_list_corr = ['wphi','uphi', 'vphi', 'uphi_div', 'vphi_div', 'wphi_div']
-    var_list = ['']
+    var_list = ['w']
     # -----------
 
 
@@ -76,7 +76,7 @@ def main():
             field_data = read_in_netcdf_fields(field_name,path_to_correlations)
             cont_name = 'phi'
             cont_data = read_in_netcdf_fields(cont_name,path_to_fields)
-            for ny0 in np.linspace(0,n[2],10):
+            for ny0 in np.linspace(1,n[2],10):
                 file_name = field_name + '_phi-cont_' + np.str(time) + '_y' + np.str(np.int(ny0))
                 plot_corrfield_phicont(field_name, field_data[:,np.int(ny0),0:60],cont_name,
                                                 cont_data[:,np.int(ny0),0:60], file_name)
@@ -86,9 +86,23 @@ def main():
                 plot_corrfield_phicont(field_name, field_data[:,:,np.int(nz0)],cont_name,
                                                   cont_data[:,:,np.int(nz0)], file_name)
 
+        # (5)  Visualize only fields + Passive Scalar Contours
+        for field_name in var_list:
+            field_data = read_in_netcdf_fields(field_name,path_to_fields)
+            cont_name = 'phi'
+            cont_data = read_in_netcdf_fields(cont_name,path_to_fields)
+            for ny0 in np.linspace(1,n[2],10):
+                file_name = field_name + '_phi-cont_' + np.str(time) + '_y' + np.str(np.int(ny0))
+                plot_corrfield_phicont(field_name, field_data[:,np.int(ny0),0:60],cont_name,
+                                                cont_data[:,np.int(ny0),0:60], file_name)
+
+            for nz0 in [10,15]:
+                file_name = field_name + '_phi-cont_' + np.str(time) + '_z' + np.str(np.int(nz0))
+                plot_corrfield_phicont(field_name, field_data[:,:,np.int(nz0)],cont_name,
+                                                cont_data[:,:,np.int(nz0)], file_name)
 
 
-    # (5)  Visualize only fields
+
 #    for time in T:
 #        path_to_correlations = os.path.join(path,'correlations_'+np.str(time)+'.nc')
 #        print(path_to_correlations)
@@ -130,7 +144,7 @@ def plot_corrfield_phicont(field_name, field_data,cont_name,cont_data, file_name
     plt.colorbar(ax1)
     max_field = np.amax(field_data)
     max_data = np.amax(cont_data)
-    plt.title(field_name + ', max:' + "{0:.2f}".format(max_field) + ', (contours: ' + cont_name + ')', fontsize=12)
+    plt.title(field_name+', max:'+"{0:.2f}".format(max_field)+', (contours: '+cont_name+', max: '+"{0:.2f}".format(max_data)+')', fontsize=12)
     plt.xlabel('x')
     plt.ylabel('z')
     plt.savefig(fullpath_out + file_name + '.png')
