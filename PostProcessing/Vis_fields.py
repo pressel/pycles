@@ -27,7 +27,7 @@ def main():
     T = [1800]
 
     path_to_fields = os.path.join(path,'fields/')
-    var_list_corr = ['wphi','uphi', 'vphi']
+    var_list_corr = ['wphi','uphi', 'vphi', 'uphi_div', 'vphi_div', 'wphi_div']
     var_list = ['phi']
     # -----------
 
@@ -39,7 +39,7 @@ def main():
     #print('dt:', dt, 'dz:', dz)
     
     # (1) Read in Test field
-    field = read_in_netcdf_fields('wphi','test_field/correlations_1800.nc')
+    field = read_in_netcdf_fields('wphi',os.path.join(path,'correlations_1800.nc'))
     #print('field: ', field.shape)
 #    for var_name in var_list:
 #        field = read_in_netcdf_fields(var_name,'test_field/eddy_fields_1800.nc')
@@ -101,6 +101,8 @@ def plot_data_vertical(data, var_name, file_name):
     plt.xlabel('x')
     plt.ylabel('z')
     plt.savefig(fullpath_out + file_name + '.png')
+    plt.close()
+
 
 def plot_data_vertical_levels(data, var_name, level):
     print(data.shape)
@@ -111,6 +113,8 @@ def plot_data_vertical_levels(data, var_name, level):
     plt.xlabel('x')
     plt.ylabel('z')
     plt.savefig(fullpath_out + file_name + '.png')
+    plt.close()
+
 
 def plot_data_horizontal(data, var_name):
     print(data.shape)
@@ -123,6 +127,8 @@ def plot_data_horizontal(data, var_name):
     plt.xlabel('x')
     plt.ylabel('y')
     plt.savefig(fullpath_out + file_name + '.png')
+    plt.close()
+
 
 def plot_data_horizontal_levels(data, var_name, level):
     print(data.shape)
@@ -135,6 +141,7 @@ def plot_data_horizontal_levels(data, var_name, level):
     plt.xlabel('x')
     plt.ylabel('y')
     plt.savefig(fullpath_out + file_name + '.png')
+    plt.close()
 
 
 # ----------------------------------
