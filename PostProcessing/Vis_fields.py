@@ -23,16 +23,16 @@ def main():
     # -----------
     case = 'DCBLSoares'
     path = 'test_field/'
+    fullpath_out = path
     T = [1800]
 
     path_to_fields = os.path.join(path,'fields/')
     var_list_corr = ['wphi','uphi', 'vphi']
-    var_list = ['u_eddy']
+    var_list = ['phi']
     # -----------
 
 
     # (0) import Namelist --> to chose right mean profile, fitting with time
-    fullpath_out = path
     nml = simplejson.loads(open(os.path.join(path,case + '.in')).read())
     dt = nml['stats_io']['frequency']
     dz = nml['grid']['dz']
@@ -66,20 +66,34 @@ def main():
 
     # (4)  Visualize
     for time in T:
+        path_to_correlations = os.path.join(path,'correlations_'+np.str(time)+'.nc')
+        print(path_to_correlations)
+        path_to_fields = os.path.join(path,'fields',np.str(time)+'.nc')
+        print(path_to_fields)
         for corr_name in var_list_corr:
-            field = read_in_netcdf_fields(corr_name,'test_field/correlations_1800.nc')
+            #field = read_in_netcdf_fields(corr_name,'test_field/correlations_1800.nc')
+            field = read_in_netcdf_fields(corr_name,path_to_correlations)
             print(corr_name, ': max = ', np.amax(np.abs(field)))
             file_name = corr_name + '_' + np.str(time)
             plot_data_vertical(field[:,ny0,:], corr_name, file_name)
+        for var_name in var_list:
+            field = read_in_netcdf_fields(var_name,path_to_fields)
+            #field = read_in_netcdf_fields(var_name,'test_field/fields/1800.nc')
+            print(var_name, ': max = ', np.amax(np.abs(field)))
+            file_name = var_name + '_' + np.str(time)
+            plot_data_vertical(field[:,ny0,:], var_name, file_name)
 
     return
 
 
 # ----------------------------------
 def plot_data_vertical(data, var_name, file_name):
-    print(data.shape)
+    print('plot vertical: ', var_name, data.shape)
     plt.figure()
     plt.contourf(data.T)
+    if var_name == 'phi':
+        cont = np.linspace(1.0,1.1,11)
+        plt.contour(data.T, levels = cont)
     # plt.show()
     plt.colorbar()
     max = np.amax(data)
