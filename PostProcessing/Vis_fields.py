@@ -23,12 +23,13 @@ def main():
     # -----------
     case = 'DCBLSoares'
     path = 'test_field/'
-    fullpath_out = path
+    fullpath_out = os.path.join(path,'corr/')
+    print(fullpath_out)
     T = [1800]
 
     path_to_fields = os.path.join(path,'fields/')
     var_list_corr = ['wphi','uphi', 'vphi', 'uphi_div', 'vphi_div', 'wphi_div']
-    var_list = ['phi']
+    var_list = ['']
     # -----------
 
 
@@ -58,46 +59,99 @@ def main():
         if n[i] != ni_[i]:
             print('Dimensions do not fit!')
             sys.exit()
-    nx0 = np.floor(n[0]/2)
-    ny0 = np.floor(n[1]/2)
-    nz0 = np.floor(n[2]/2)
+    nx0 = np.int(n[0]/2)
+    ny0 = np.int(n[1]/2)
+    nz0 = np.int(n[2]/2)
     ntot = n[0]*n[1]*n[2]
+    print('x0,y0,z0', nx0, ny0, nz0)
 
 
-    # (4)  Visualize
+    # (4) Visualize Field + Passive Scalar Contours
     for time in T:
         path_to_correlations = os.path.join(path,'correlations_'+np.str(time)+'.nc')
         print(path_to_correlations)
         path_to_fields = os.path.join(path,'fields',np.str(time)+'.nc')
         print(path_to_fields)
-        for corr_name in var_list_corr:
-            #field = read_in_netcdf_fields(corr_name,'test_field/correlations_1800.nc')
-            field = read_in_netcdf_fields(corr_name,path_to_correlations)
-            print(corr_name, ': max = ', np.amax(np.abs(field)))
-            file_name = corr_name + '_' + np.str(time)
-            plot_data_vertical(field[:,ny0,:], corr_name, file_name)
-        for var_name in var_list:
-            field = read_in_netcdf_fields(var_name,path_to_fields)
-            #field = read_in_netcdf_fields(var_name,'test_field/fields/1800.nc')
-            print(var_name, ': max = ', np.amax(np.abs(field)))
-            file_name = var_name + '_' + np.str(time)
-            plot_data_vertical(field[:,ny0,:], var_name, file_name)
+        for field_name in var_list_corr:
+            field_data = read_in_netcdf_fields(field_name,path_to_correlations)
+            cont_name = 'phi'
+            cont_data = read_in_netcdf_fields(cont_name,path_to_fields)
+            for ny0 in np.linspace(0,n[2],10):
+                file_name = field_name + '_phi-cont_' + np.str(time) + '_y' + np.str(np.int(ny0))
+                plot_corrfield_phicont(field_name, field_data[:,np.int(ny0),0:60],cont_name,
+                                                cont_data[:,np.int(ny0),0:60], file_name)
+
+            for nz0 in [10,15]:
+                file_name = field_name + '_phi-cont_' + np.str(time) + '_z' + np.str(np.int(nz0))
+                plot_corrfield_phicont(field_name, field_data[:,:,np.int(nz0)],cont_name,
+                                                  cont_data[:,:,np.int(nz0)], file_name)
+
+
+
+    # (5)  Visualize only fields
+#    for time in T:
+#        path_to_correlations = os.path.join(path,'correlations_'+np.str(time)+'.nc')
+#        print(path_to_correlations)
+#        path_to_fields = os.path.join(path,'fields',np.str(time)+'.nc')
+#        print(path_to_fields)
+#        for corr_name in var_list_corr:
+#            field = read_in_netcdf_fields(corr_name,path_to_correlations)
+#            print(corr_name, ': max = ', np.amax(np.abs(field)))
+#            file_name = corr_name + '_' + np.str(time)
+#            plot_data_vertical(field[:,ny0,:], corr_name, file_name)
+#
+##        for var_name in var_list:
+##            field = read_in_netcdf_fields(var_name,path_to_fields)
+##            #field = read_in_netcdf_fields(var_name,'test_field/fields/1800.nc')
+##            print(var_name, ': max = ', np.amax(np.abs(field)))
+##            file_name = var_name + '_' + np.str(time)
+##            if var_name == 'phi':
+##                levels = np.linspace(0,1.1,11)
+##                plot_data_vertical_levels(field[:,ny0,:], var_name, file_name, levels)
+##            else:
+##                plot_data_vertical(field[:,ny0,:], var_name, file_name)
+
+
+
 
     return
+
+
+
+
+# ----------------------------------
+def plot_corrfield_phicont(field_name, field_data,cont_name,cont_data, file_name):
+    print('plot corr/cont: ', field_name, field_data.shape)
+    plt.figure(figsize=(15,10))
+    ax1 = plt.contourf(field_data.T)
+    cont = np.linspace(1.0,1.1,11)
+    ax2 = plt.contour(cont_data.T, levels = cont)
+    plt.colorbar(ax2)
+    plt.colorbar(ax1)
+    max_field = np.amax(field_data)
+    max_data = np.amax(cont_data)
+    plt.title(field_name + ', max:' + "{0:.2f}".format(max_field) + ', (contours: ' + cont_name + ')', fontsize=12)
+    plt.xlabel('x')
+    plt.ylabel('z')
+    plt.savefig(fullpath_out + file_name + '.png')
+    plt.close()
+
+
 
 
 # ----------------------------------
 def plot_data_vertical(data, var_name, file_name):
     print('plot vertical: ', var_name, data.shape)
     plt.figure()
-    plt.contourf(data.T)
+    ax1 = plt.contourf(data.T)
     if var_name == 'phi':
         cont = np.linspace(1.0,1.1,11)
-        plt.contour(data.T, levels = cont)
+        ax2 = plt.contour(data.T, levels = cont)
+        plt.colorbar(ax2)
     # plt.show()
-    plt.colorbar()
+    plt.colorbar(ax1)
     max = np.amax(data)
-    plt.title(var_name + ', max:' + np.str(np.amax(data)), fontsize=12)
+    plt.title(var_name + ', max:' + "{0:.2f}".format(np.amax(data)), fontsize=12)
     plt.xlabel('x')
     plt.ylabel('z')
     plt.savefig(fullpath_out + file_name + '.png')
@@ -108,8 +162,12 @@ def plot_data_vertical_levels(data, var_name, level):
     print(data.shape)
     plt.figure()
     plt.contourf(data.T, levels = level)
-    plt.colorbar()
-    plt.title(var_name + ', max:' + np.str(np.amax(data)), fontsize=12)
+    if var_name == 'phi':
+        cont = np.linspace(1.0,1.1,11)
+        ax2 = plt.contour(data.T, levels = cont)
+        plt.colorbar(ax2)
+    plt.colorbar(ax1)
+    plt.title(var_name + ', max:' + "{0:.2f}".format(np.amax(data)), fontsize=12)
     plt.xlabel('x')
     plt.ylabel('z')
     plt.savefig(fullpath_out + file_name + '.png')
@@ -123,7 +181,7 @@ def plot_data_horizontal(data, var_name):
     # plt.show()
     plt.colorbar()
     max = np.amax(data)
-    plt.title(var_name + ', max:' + np.str(np.amax(data)))
+    plt.title(var_name + ', max:' + "{0:.2f}".format(np.amax(data)))
     plt.xlabel('x')
     plt.ylabel('y')
     plt.savefig(fullpath_out + file_name + '.png')
@@ -137,7 +195,7 @@ def plot_data_horizontal_levels(data, var_name, level):
     # plt.show()
     plt.colorbar()
     max = np.amax(data)
-    plt.title(var_name + ', max:' + np.str(np.amax(data)))
+    plt.title(var_name + ', max:' + "{0:.2f}".format(np.amax(data)))
     plt.xlabel('x')
     plt.ylabel('y')
     plt.savefig(fullpath_out + file_name + '.png')
