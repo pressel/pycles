@@ -25,7 +25,7 @@ def main():
     path = 'test_field/'
     fullpath_out = os.path.join(path,'corr/')
     print(fullpath_out)
-    T = [1800]
+    T = [1800,3600,5400]
 
     path_to_fields = os.path.join(path,'fields/')
     var_list_corr = ['wphi','uphi', 'vphi', 'uphi_div', 'vphi_div', 'wphi_div']
@@ -66,7 +66,7 @@ def main():
     print('x0,y0,z0', nx0, ny0, nz0)
 
 
-    # (4) Visualize Field + Passive Scalar Contours
+    # (4) Visualize Correlations + Passive Scalar Contours
     for time in T:
         path_to_correlations = os.path.join(path,'correlations_'+np.str(time)+'.nc')
         print(path_to_correlations)
@@ -81,12 +81,12 @@ def main():
                 plot_corrfield_phicont(field_name, field_data[:,np.int(ny0),0:60],cont_name,
                                                 cont_data[:,np.int(ny0),0:60], file_name)
 
-            for nz0 in [10,15]:
+            for nz0 in [10,15,20]:
                 file_name = field_name + '_phi-cont_' + np.str(time) + '_z' + np.str(np.int(nz0))
                 plot_corrfield_phicont(field_name, field_data[:,:,np.int(nz0)],cont_name,
                                                   cont_data[:,:,np.int(nz0)], file_name)
 
-        # (5)  Visualize only fields + Passive Scalar Contours
+        # (5)  Visualize Fields + Passive Scalar Contours
         for field_name in var_list:
             field_data = read_in_netcdf_fields(field_name,path_to_fields)
             cont_name = 'phi'
@@ -101,13 +101,26 @@ def main():
                 plot_corrfield_phicont(field_name, field_data[:,:,np.int(nz0)],cont_name,
                                                 cont_data[:,:,np.int(nz0)], file_name)
 
+        # (6)  Visualize Fields + Passive Scalar Contours + w Contours
+        for field_name in var_list:
+            field_data = read_in_netcdf_fields(field_name,path_to_fields)
+            cont_name1 = 'phi'
+            cont_data1 = read_in_netcdf_fields(cont_name1,path_to_fields)
+            cont_name2 = 'w'
+            cont_data2 = read_in_netcdf_fields(cont_name2,path_to_fields)
+            for ny0 in np.linspace(1,n[1]-1,10):
+                file_name = field_name + '_w-cont_phi-cont_' + np.str(time) + '_y' + np.str(np.int(ny0))
+                plot_corrfield_wcont_phicont_vertical(field_name,field_data[:,np.int(ny0),0:60],cont_name1,cont_data1[:,np.int(ny0),0:60],cont_name2,cont_data2[:,np.int(ny0),0:60], file_name)
+
+            for nz0 in [10,15,20]:
+                file_name = field_name + '_w-cont_phi-cont_' + np.str(time) + '_z' + np.str(np.int(nz0))
+                plot_corrfield_wcont_phicont_vertical(field_name,field_data[:,:,np.int(nz0)],cont_name1,
+                            cont_data1[:,:,np.int(nz0)],cont_name2,cont_data2[:,:,np.int(nz0)], file_name)
 
 
-#    for time in T:
-#        path_to_correlations = os.path.join(path,'correlations_'+np.str(time)+'.nc')
-#        print(path_to_correlations)
-#        path_to_fields = os.path.join(path,'fields',np.str(time)+'.nc')
-#        print(path_to_fields)
+
+
+
 #        for corr_name in var_list_corr:
 #            field = read_in_netcdf_fields(corr_name,path_to_correlations)
 #            print(corr_name, ': max = ', np.amax(np.abs(field)))
@@ -145,6 +158,33 @@ def plot_corrfield_phicont(field_name, field_data,cont_name,cont_data, file_name
     max_field = np.amax(field_data)
     max_data = np.amax(cont_data)
     plt.title(field_name+', max:'+"{0:.2f}".format(max_field)+', (contours: '+cont_name+', max: '+"{0:.2f}".format(max_data)+')', fontsize=12)
+    plt.xlabel('x')
+    plt.ylabel('z')
+    plt.savefig(fullpath_out + file_name + '.png')
+    plt.close()
+
+
+
+def plot_corrfield_wcont_phicont_vertical(field_name, field_data,cont_name1,cont_data1,cont_name2,cont_data2,file_name):
+    print('plot corr/cont: ', field_name, field_data.shape)
+    plt.figure(figsize=(17,10))
+    if field_name == 'w':
+        print('field name is w', file_name)
+        levels=np.linspace(-6,6,250)
+        ax1 = plt.contourf(field_data.T, cmap=cm.bwr, levels=levels)
+    else:
+        ax1 = plt.contourf(field_data.T)
+    cont1 = np.linspace(0.93,1.01,9)
+    ax2a = plt.contour(cont_data1.T, levels = cont1)
+    cont2 = [-3.0,-2.0,-1.0,1.0,2.0,3.0]
+    ax2b = plt.contour(cont_data1.T, levels = cont2, color='k', linewidth=0.6)
+    plt.colorbar(ax2a)
+    plt.colorbar(ax2b)
+    plt.colorbar(ax1)
+    max_field = np.amax(field_data)
+    max_data1 = np.amax(cont_data1)
+    max_data2 = np.amax(cont_data2)
+    plt.title(field_name+', max:'+"{0:.2f}".format(max_field)+', (contours: '+cont_name1+', max: '+"{0:.2f}".format(max_data1)+', '+cont_name2+', max: '+"{0:.2f}".format(max_data2)+')', fontsize=12)
     plt.xlabel('x')
     plt.ylabel('z')
     plt.savefig(fullpath_out + file_name + '.png')
