@@ -817,7 +817,6 @@ cdef class RadiationRRTM(RadiationBase):
             use_ice = True
 
 
-
         # Define input arrays for RRTM
         cdef:
             double [:,:] play_in = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
