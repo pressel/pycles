@@ -8,7 +8,6 @@
 #define DENSITY_LIQUID  1000.0 // density of liquid water, kg/m^3
 #define MICRO_EPS  1.0e-13
 #define C_STOKES_VEL 1.19e8 //(m s)^-1, Rogers 1979, Ackerman 2009
-#define SIGMA_G 1.5 //1.2 // geometric standard deviation of droplet psdf.  Ackerman 2009
 
 // Here, only functions that can be used commonly by any microphysical scheme
 // convention: begin function name with "microphysics"
@@ -118,8 +117,8 @@ void microphysics_wetbulb_temperature(struct DimStruct *dims, struct LookupStruc
  }
 
 //See Ackerman et al 2009 (DYCOMS-RF02 IC paper) Eq. 7
- void microphysics_stokes_sedimentation_velocity(const struct DimStruct *dims, double* restrict density, double ccn,
-                                      double* restrict ql, double* restrict qt_velocity){
+ void microphysics_stokes_sedimentation_velocity(const struct DimStruct *dims, double* restrict density, double ccn, double sigma,
+                                                 double* restrict ql, double* restrict qt_velocity){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -129,7 +128,7 @@ void microphysics_wetbulb_temperature(struct DimStruct *dims, struct LookupStruc
     const ssize_t imax = dims->nlg[0];
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2];
-    const double distribution_factor = exp(5.0 * log(SIGMA_G) * log(SIGMA_G));
+    const double distribution_factor = exp(5.0 * log(sigma) * log(sigma));
     const double number_factor = C_STOKES_VEL * cbrt((0.75/pi/DENSITY_LIQUID/ccn) * (0.75/pi/DENSITY_LIQUID/ccn));
 
 

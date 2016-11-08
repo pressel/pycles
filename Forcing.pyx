@@ -13,7 +13,7 @@ from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c
 import numpy as np
 import cython
-from libc.math cimport fabs, sin, cos
+from libc.math cimport fabs, sin, cos, fmax, fmin
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport Lookup
@@ -849,16 +849,16 @@ cdef class ForcingCGILS:
                         t  = DV.values[t_shift + ijk]
                         total_qt_source = self.dqtdt[k] + self.source_qt_floor[k] + self.source_qt_nudge[k]
                         total_t_source  = self.dtdt[k]  + self.source_t_nudge[k]
-                        PV.tendencies[s_shift  + ijk] += (cpm_c(qt) * total_t_source  * rho0)/t
+                        PV.tendencies[s_shift  + ijk] += (cpm_c(qt) * total_t_source)/t
                         PV.tendencies[s_shift  + ijk] += (sv_c(pv,t) - sd_c(pd,t))*total_qt_source
                         PV.tendencies[qt_shift + ijk] += total_qt_source
                         PV.tendencies[u_shift  + ijk] += self.source_u_nudge[k]
                         PV.tendencies[v_shift  + ijk] += self.source_v_nudge[k]
 
                         self.source_s_nudge[ijk] = ((sv_c(pv,t) - sd_c(pd,t)) * (self.source_qt_nudge[k] + self.source_qt_floor[k])
-                                                    +(cpm_c(qt) * self.source_t_nudge[k] * exner_c(p0) * rho0)/t)
+                                                    +(cpm_c(qt) * self.source_t_nudge[k] )/t)
                         self.s_ls_adv[ijk]= ((sv_c(pv,t) - sd_c(pd,t)) * (self.dqtdt[k])
-                                                    +(cpm_c(qt) * self.dtdt[k] * exner_c(p0) * rho0)/t)
+                                                    +(cpm_c(qt) * self.dtdt[k] )/t)
 
 
         return
@@ -932,7 +932,9 @@ cdef class ForcingZGILS:
 
         self.t_adv_max = -1.2/86400.0 # K/s BL tendency of temperature due to horizontal advection
         self.qt_adv_max = -0.6e-3/86400.0 # kg/kg/s BL tendency of qt due to horizontal advection
-        self.tau_relax_inverse = 1.0/86400.0 # relaxation time scale = 24 h
+        self.tau_relax_inverse = 1.0/(6.0*3600)
+        # relaxation time scale. Note this differs from Tan et al 2016 but is consistent with Zhihong's code. Due to the
+        # way he formulates the relaxation coefficient formula, effective timescale in FT is about 24 hr
         self.alpha_h = 1.2 # threshold ratio for determining BL height
         # Initialize the reference profiles classe
         self.forcing_ref = AdjustedMoistAdiabat(namelist, LH, Pa)
@@ -952,6 +954,8 @@ cdef class ForcingZGILS:
         self.source_qt_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.source_t_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.source_s_nudge = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+        self.source_u_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.source_v_nudge = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
 
         self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
 
@@ -992,6 +996,8 @@ cdef class ForcingZGILS:
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
         NS.add_profile('u_coriolis_tendency', Gr, Pa)
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
+        NS.add_profile('u_ref_nudging', Gr, Pa)
+        NS.add_profile('v_ref_nudging',Gr, Pa)
         NS.add_profile('qt_rh_nudging', Gr, Pa)
         NS.add_profile('qt_ref_nudging', Gr, Pa)
         NS.add_profile('temperature_ref_nudging', Gr, Pa)
@@ -1043,10 +1049,12 @@ cdef class ForcingZGILS:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double pd, pv, qt, qv, p0, rho0, t
+            double pd, pv, qt, qv, p0, t
 
             double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
             double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
+            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Apply Coriolis Forcing
 
@@ -1067,17 +1075,13 @@ cdef class ForcingZGILS:
         # Now set the relaxation coefficient (depends on time-varying BL height diagnosed above)
         # Find the source term profiles for temperature, moisture nudging (2 components: free tropo and BL)
         cdef double [:] xi_relax = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        cdef double z_h, pv_star, qv_star
+        cdef double z_h, pv_star, qv_star, factor
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
                 self.source_rh_nudge[k] = 0.0
                 z_h = Gr.zl_half[k]/self.h_BL
-                if z_h < 1.2:
-                    xi_relax[k] = 0.0
-                elif z_h > 1.5:
-                    xi_relax[k] = self.tau_relax_inverse
-                else:
-                    xi_relax[k] = 0.5*self.tau_relax_inverse*(1.0 -   cos(pi*(z_h-1.2)/(1.5-1.2)))
+                factor = fmax(fmin((z_h-1.2)/0.3, 1.0), 0.0)
+                xi_relax[k] = 0.5*self.tau_relax_inverse*(1.0 -   cos(factor))
                 # here we also set the nudging to 20% rh in the BL
                 if Gr.zl_half[k] < 2000.0:
                     pv_star = self.CC.LT.fast_lookup(tmean[k])
@@ -1087,6 +1091,8 @@ cdef class ForcingZGILS:
                 # Here we find the nudging rates
                 self.source_qt_nudge[k] = xi_relax[k] * (self.forcing_ref.qt[k]-qtmean[k])
                 self.source_t_nudge[k]  = xi_relax[k] * (self.forcing_ref.temperature[k]-tmean[k])
+                self.source_u_nudge[k] = xi_relax[k] * (self.ug[k] - (umean[k] + Ref.u0))
+                self.source_v_nudge[k] = xi_relax[k] * (self.vg[k] - (vmean[k] + Ref.v0))
 
 
         cdef double total_t_source, total_qt_source
@@ -1100,7 +1106,6 @@ cdef class ForcingZGILS:
                     for k in xrange(gw,kmax):
                         ijk = ishift + jshift + k
                         p0 = Ref.p0_half[k]
-                        rho0 = Ref.rho0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
                         pd = pd_c(p0,qt,qv)
@@ -1109,15 +1114,17 @@ cdef class ForcingZGILS:
                         total_t_source = self.dtdt[k] + self.source_t_nudge[k]
                         total_qt_source = self.dqtdt[k] + self.source_qt_nudge[k] + self.source_rh_nudge[k]
 
-                        PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-                                                         * total_t_source * exner_c(p0) * rho0)/t
+                        PV.tendencies[s_shift + ijk] += (cpm_c(qt) * total_t_source)/t
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * total_qt_source
                         PV.tendencies[qt_shift + ijk] += total_qt_source
 
+                        PV.tendencies[u_shift + ijk] += self.source_u_nudge[k]
+                        PV.tendencies[v_shift + ijk] += self.source_v_nudge[k]
+
+                        # For Output
                         self.source_s_nudge[ijk] = ((sv_c(pv,t) - sd_c(pd,t)) * (self.source_qt_nudge[k] + self.source_rh_nudge[k])
-                                                    +(cpm_c(qt) * self.source_t_nudge[k] * exner_c(p0) * rho0)/t)
-                        self.s_ls_adv[ijk]= ((sv_c(pv,t) - sd_c(pd,t)) * (self.dqtdt[k])
-                                                    +(cpm_c(qt) * self.dtdt[k] * exner_c(p0) * rho0)/t)
+                                                    +(cpm_c(qt) * self.source_t_nudge[k])/t)
+                        self.s_ls_adv[ijk]= ((sv_c(pv,t) - sd_c(pd,t)) * (self.dqtdt[k])  +(cpm_c(qt) * self.dtdt[k])/t)
 
 
         return
@@ -1162,6 +1169,9 @@ cdef class ForcingZGILS:
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('v_coriolis_tendency',mean_tendency_2[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_profile('u_ref_nudging', self.source_u_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_profile('v_ref_nudging', self.source_v_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
+
 
 
         NS.write_profile('qt_rh_nudging',self.source_rh_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)

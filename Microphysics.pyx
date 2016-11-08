@@ -19,7 +19,7 @@ from libc.math cimport fmax, fmin, fabs
 include 'parameters.pxi'
 
 cdef extern from "microphysics.h":
-    void microphysics_stokes_sedimentation_velocity(Grid.DimStruct *dims, double* density, double ccn, double*  ql, double*  qt_velocity)
+    void microphysics_stokes_sedimentation_velocity(Grid.DimStruct *dims, double* density, double ccn, double sigma, double*  ql, double*  qt_velocity)
 cdef extern from "scalar_advection.h":
     void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme) nogil
 
@@ -68,6 +68,10 @@ cdef class No_Microphysics_SA:
 
         if namelist['meta']['casename'] == 'DYCOMS_RF02':
             self.stokes_sedimentation = True
+            self.stokes_sigma = 1.5
+        elif namelist['meta']['casename'] == 'ZGILS':
+            self.stokes_sedimentation = True
+            self.stokes_sigma = 1.34
         else:
             self.stokes_sedimentation = False
         return
@@ -88,7 +92,7 @@ cdef class No_Microphysics_SA:
             wqt_shift = DV.get_varshift(Gr, 'w_qt')
 
             if self.stokes_sedimentation:
-                microphysics_stokes_sedimentation_velocity(&Gr.dims,  &Ref.rho0_half[0], self.ccn, &DV.values[ql_shift], &DV.values[wqt_shift])
+                microphysics_stokes_sedimentation_velocity(&Gr.dims,  &Ref.rho0_half[0], self.ccn, self.stokes_sigma, &DV.values[ql_shift], &DV.values[wqt_shift])
             else:
                 sb_sedimentation_velocity_liquid(&Gr.dims,  &Ref.rho0_half[0], self.ccn, &DV.values[ql_shift], &DV.values[wqt_shift])
 
@@ -247,6 +251,10 @@ cdef class Microphysics_SB_Liquid:
             self.cloud_sedimentation = False
         if namelist['meta']['casename'] == 'DYCOMS_RF02':
             self.stokes_sedimentation = True
+            self.stokes_sigma = 1.5
+        elif namelist['meta']['casename'] == 'ZGILS':
+            self.stokes_sedimentation = True
+            self.stokes_sigma = 1.34
         else:
             self.stokes_sedimentation = False
 
@@ -316,7 +324,7 @@ cdef class Microphysics_SB_Liquid:
             wqt_shift = DV.get_varshift(Gr, 'w_qt')
 
             if self.stokes_sedimentation:
-                microphysics_stokes_sedimentation_velocity(&Gr.dims,  &Ref.rho0_half[0], self.ccn, &DV.values[ql_shift], &DV.values[wqt_shift])
+                microphysics_stokes_sedimentation_velocity(&Gr.dims,  &Ref.rho0_half[0], self.ccn, self.stokes_sigma, &DV.values[ql_shift], &DV.values[wqt_shift])
             else:
                 sb_sedimentation_velocity_liquid(&Gr.dims,  &Ref.rho0_half[0], self.ccn, &DV.values[ql_shift], &DV.values[wqt_shift])
 
