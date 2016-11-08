@@ -786,10 +786,8 @@ cdef class RadiationRRTM(RadiationBase):
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
-                        PV.tendencies[
-                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
                         self.dTdt_rad[ijk] = self.heating_rate[ijk] * Ref.alpha0_half[k]/cpm_c(DV.values[ijk + qv_shift])
-
+                        PV.tendencies[s_shift + ijk] +=  self.heating_rate[ijk] * Ref.alpha0_half[k] / DV.values[ijk + t_shift]
 
         return
 
