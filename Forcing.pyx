@@ -955,7 +955,7 @@ cdef class ForcingZGILS:
         self.source_t_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.source_s_nudge = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
         self.source_u_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.source_v_nudge = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+        self.source_v_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
         self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
 
@@ -1169,7 +1169,9 @@ cdef class ForcingZGILS:
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('v_coriolis_tendency',mean_tendency_2[Gr.dims.gw:-Gr.dims.gw],Pa)
+
         NS.write_profile('u_ref_nudging', self.source_u_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
+
         NS.write_profile('v_ref_nudging', self.source_v_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
 
 
