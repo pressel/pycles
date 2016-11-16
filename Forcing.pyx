@@ -759,12 +759,9 @@ cdef class ForcingCGILS:
             double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
-
         # Apply subsidence
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
-
-
 
        # Calculate nudging
         with nogil:
