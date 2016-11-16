@@ -916,6 +916,8 @@ cdef class ForcingZGILS:
         except:
             Pa.root_print('FORCING: Must provide a ZGILS location (6/11/12) in namelist')
             Pa.kill()
+        #Here divergence is set to the control divergence. It is adjusted below for VarSub
+        # climate change cases
         if self.loc == 12:
             self.divergence = 6.0e-6
             self.coriolis_param = 2.0 * omega * sin(34.5/180.0*pi)
@@ -929,15 +931,31 @@ cdef class ForcingZGILS:
             Pa.root_print('FORCING: Unrecognized ZGILS location ' + str(self.loc))
             Pa.kill()
 
+        # Get the multiplying factor for current levels of CO2
+        # Then convert to a number of CO2 doublings, which is how forcings are rescaled
+        try:
+            co2_factor =  namelist['radiation']['RRTM']['co2_factor']
+        except:
+            co2_factor = 1.0
+        self.n_double_co2 = int(np.log2(co2_factor))
+        try:
+            self.varsub = namelist['meta']['ZGILS']['VarSub']
+        except:
+            self.varsub = False
 
-        self.t_adv_max = -1.2/86400.0 # K/s BL tendency of temperature due to horizontal advection
+
+        # Current climate/control advection forcing values (modified below for climate change)
+        self.t_adv_max = -1.2/86400.0  # K/s BL tendency of temperature due to horizontal advection
         self.qt_adv_max = -0.6e-3/86400.0 # kg/kg/s BL tendency of qt due to horizontal advection
         self.tau_relax_inverse = 1.0/(6.0*3600)
         # relaxation time scale. Note this differs from Tan et al 2016 but is consistent with Zhihong's code. Due to the
         # way he formulates the relaxation coefficient formula, effective timescale in FT is about 24 hr
-        self.alpha_h = 1.2 # threshold ratio for determining BL height
-        # Initialize the reference profiles classe
-        self.forcing_ref = AdjustedMoistAdiabat(namelist, LH, Pa)
+        self.alpha_h = 1.2 # ad hoc qt/qt_ref threshold ratio for determining BL height
+        # Initialize the reference profiles class
+        if self.n_double_co2 == 0:
+            self.forcing_ref = AdjustedMoistAdiabat(namelist, LH, Pa)
+        else:
+            self.forcing_ref = ForcingReferenceBase()
 
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
@@ -959,7 +977,7 @@ cdef class ForcingZGILS:
 
         self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
 
-        # compute the reference profiles for forcing/nudging
+        # compute the reference profiles for forcing/nudging (current/control climate case)
         cdef double Pg_parcel = 1000.0e2
         cdef double Tg_parcel = 295.0
         cdef double RH_ref = 0.3
@@ -970,6 +988,14 @@ cdef class ForcingZGILS:
         cdef:
             Py_ssize_t k
             double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g
+
+
+        # Adjust the
+        self.qt_adv_max = self.qt_adv_max * (1.18) ** self.n_double_co2
+        # Adjust the subsidence if a VarSub climate change case is being run
+        if self.varsub:
+            sub_factor = sub_factor * (0.86) ** self.n_double_co2
+
 
         # initialize the profiles of geostrophic velocity, subsidence, and large scale advection
         with nogil:
@@ -1202,12 +1228,23 @@ cdef extern from "entropies.h":
     inline double sc_c(double L, double T) nogil
 
 
-# This class computes the reference profiles needed for ZGILS cases
+# These classes compute or read in the reference profiles needed for ZGILS cases
+# The base class
+cdef class ForcingReferenceBase:
+    def __init__(self):
+        return
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
+                     double Pg, double Tg, double RH):
+        return
+
+
+
+# Control simulations use AdjustedMoistAdiabat
 # Reference temperature profile correspondends to a moist adiabat
 # Reference moisture profile corresponds to a fixed relative humidity given the reference temperature profile
-cdef class AdjustedMoistAdiabat:
+cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
     def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
-
+        ForcingReferenceBase.__init__(self)
 
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
@@ -1264,7 +1301,16 @@ cdef class AdjustedMoistAdiabat:
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
         return
 
-
+# Climate change simulations use profiles based on radiative--convective equilibrium solutions obtained as described in
+# Zhihong Tan's dissertation (Section 2.6). Zhihong has provided his reference profiles to be archived with the code, so
+# this class just reads in the data
+cdef class ReferenceRCE(ForcingReferenceBase):
+    def __init__(self):
+        ForcingReferenceBase.__init__(self)
+        return
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
+                     double Pg, double Tg, double RH):
+        return
 
 
 cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):

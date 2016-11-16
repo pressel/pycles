@@ -406,12 +406,20 @@ cdef class RadiationRRTM(RadiationBase):
                 self.profile_name = 'cgils_ctl_s'+str(loc)
         elif casename == 'ZGILS':
             loc = namelist['meta']['ZGILS']['location']
-            self.profile_name = 'cgils_ctl_s'+str(loc)
-            self.modified_adiabat = True
-            self.reference_profile = AdjustedMoistAdiabat(namelist, LH, Pa)
-            self.Tg_adiabat = 295.0
-            self.Pg_adiabat = 1000.0e2
-            self.RH_adiabat = 0.3
+            try:
+                co2_factor = namelist['radiation']['RRTM']['co2_factor']
+            except:
+                co2_factor = 1.0
+            if int(np.log2(co2_factor)) == 0:
+                self.profile_name = 'cgils_ctl_s'+str(loc)
+                self.modified_adiabat = True
+                self.reference_profile = AdjustedMoistAdiabat(namelist, LH, Pa)
+                self.Tg_adiabat = 295.0
+                self.Pg_adiabat = 1000.0e2
+                self.RH_adiabat = 0.3
+            else:
+                self.modified_adiabat = False
+                self.profile_name = 'zgils_'+str(int(np.log2(co2_factor)))+'CO2_S'+str(loc)
 
         else:
             Pa.root_print('RadiationRRTM: Case ' + casename + ' has no known extension profile')

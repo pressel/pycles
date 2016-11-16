@@ -6,7 +6,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 cimport Surface
-from Forcing cimport AdjustedMoistAdiabat
+from Forcing cimport ForcingReferenceBase
 
 cdef class RadiationBase:
     cdef:
@@ -78,7 +78,7 @@ cdef class RadiationRRTM(RadiationBase):
     cdef:
         str profile_name
         bint modified_adiabat
-        AdjustedMoistAdiabat reference_profile
+        ForcingReferenceBase reference_profile
         double Tg_adiabat
         double Pg_adiabat
         double RH_adiabat

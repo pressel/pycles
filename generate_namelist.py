@@ -16,16 +16,19 @@ def main():
                         help='Specify if control subsidence is to be used in perturbed runs (CGILS) as True/False')
     parser.add_argument('--zgils_location', default='False',
                         help='specify location (6/11/12)')
-
+    parser.add_argument('--co2_factor', default='1.0',
+                        help='specify multiplier of current CO2 levels (2,4,8,16)')
     args = parser.parse_args()
 
     case_name = args.case_name
 
-    #Optional Arguments for CGILS
+    #Optional Arguments for CGILS/ZGILS
     is_p2 = ast.literal_eval(args.perturbed_temperature)
     is_ctl_omega = ast.literal_eval(args.control_subsidence)
     zgils_loc = ast.literal_eval(args.zgils_location)
+    co2_factor = ast.literal_eval(args.co2_factor)
     print(zgils_loc)
+    print(co2_factor)
 
     if case_name == 'StableBubble':
         namelist = StableBubble()
@@ -52,7 +55,7 @@ def main():
     elif case_name == 'CGILS_S12':
         namelist = CGILS_S12(is_p2, is_ctl_omega)
     elif case_name == 'ZGILS':
-        namelist = ZGILS(zgils_loc)
+        namelist = ZGILS(zgils_loc, co2_factor)
     else:
         print('Not a vaild case name')
         exit()
@@ -1188,7 +1191,7 @@ def CGILS_S12(is_p2,is_ctl_omega):
 
 
 
-def ZGILS(zgils_loc):
+def ZGILS(zgils_loc, co2_factor):
 
     namelist = {}
 
@@ -1265,6 +1268,7 @@ def ZGILS(zgils_loc):
     namelist['radiation'] = {}
     namelist['radiation']['RRTM'] = {}
     namelist['radiation']['RRTM']['frequency'] = 90.0
+    namelist['radiation']['RRTM']['co2_factor'] = co2_factor
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -1283,6 +1287,7 @@ def ZGILS(zgils_loc):
     namelist['meta']['ZGILS'] = {}
     namelist['meta']['casename'] = 'ZGILS'
     namelist['meta']['ZGILS']['location'] = zgils_loc
+
 
 
     simname = 'ZGILS_S' + str(namelist['meta']['ZGILS']['location'] )

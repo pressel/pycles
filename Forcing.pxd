@@ -138,6 +138,8 @@ cdef class ForcingCGILS:
 cdef class ForcingZGILS:
     cdef:
         Py_ssize_t loc
+        bint varsub
+        Py_ssize_t n_double_co2
         double [:] dtdt
         double [:] dqtdt
         double [:] subsidence
@@ -158,7 +160,7 @@ cdef class ForcingZGILS:
         double alpha_h
         double h_BL
         ClausiusClapeyron CC
-        AdjustedMoistAdiabat forcing_ref
+        ForcingReferenceBase forcing_ref
 
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -169,12 +171,19 @@ cdef class ForcingZGILS:
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
-cdef class AdjustedMoistAdiabat:
+cdef class ForcingReferenceBase:
     cdef:
         double [:] s
         double [:] qt
         double [:] temperature
         double [:] rv
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
+                     double Pg, double Tg, double RH)
+
+
+
+cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
+    cdef:
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
         Thermodynamics.ClausiusClapeyron CC
@@ -183,3 +192,9 @@ cdef class AdjustedMoistAdiabat:
     cpdef eos(self, double p0, double s, double qt)
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
                      double Pg, double Tg, double RH)
+
+
+cdef class ReferenceRCE(ForcingReferenceBase):
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
+                     double Pg, double Tg, double RH)
+
