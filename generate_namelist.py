@@ -379,6 +379,9 @@ def Bomex():
     namelist['meta']['simname'] = 'Bomex'
     namelist['meta']['casename'] = 'Bomex'
 
+    namelist['initialization'] = {}
+    namelist['initialization']['random_seed_factor'] = 1
+
     return namelist
 
 
