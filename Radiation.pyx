@@ -82,19 +82,32 @@ cdef class RadiationBase:
                  Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            Py_ssize_t i
+            Py_ssize_t i,j,k
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t ishift, jshift, ijk
+
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double [:] tmp
 
         # Now update entropy tendencies
         with nogil:
-            for i in xrange(Gr.dims.npg):
-                entropy_tendency[i] =  self.heating_rate[i] / DV.values[i + t_shift]
+            for i in xrange(gw,imax):
+                ishift = i * istride
+                for j in xrange(gw,jmax):
+                    jshift = j * jstride
+                    for k in xrange(gw,kmax):
+                        ijk = ishift + jshift + k
+                        entropy_tendency[ijk] =  self.heating_rate[ijk] * Ref.alpha0_half[k] / DV.values[ijk + t_shift]
 
         tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
         NS.write_profile('radiative_heating_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -125,7 +138,7 @@ cdef class RadiationNone(RadiationBase):
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         return
-    cpdef stats_io(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
@@ -240,13 +253,14 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
                         PV.tendencies[
-                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
+                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] * Ref.alpha0_half[k]
+                        self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift]) * Ref.alpha0_half[k]
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        RadiationBase.stats_io(self, Gr, DV, NS,  Pa)
+        RadiationBase.stats_io(self, Gr, Ref, DV, NS,  Pa)
 
 
         return
@@ -340,13 +354,14 @@ cdef class RadiationSmoke(RadiationBase):
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
                         PV.tendencies[
-                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
+                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] * Ref.alpha0_half[k]
+                        self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpd * Ref.alpha0_half[k]
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        RadiationBase.stats_io(self, Gr, DV, NS,  Pa)
+        RadiationBase.stats_io(self, Gr, Ref, DV, NS,  Pa)
 
         return
 
@@ -787,7 +802,7 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-            Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
 
 
 
@@ -799,8 +814,11 @@ cdef class RadiationRRTM(RadiationBase):
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
-                        self.dTdt_rad[ijk] = self.heating_rate[ijk] * Ref.alpha0_half[k]/cpm_c(DV.values[ijk + qv_shift])
-                        PV.tendencies[s_shift + ijk] +=  self.heating_rate[ijk] * Ref.alpha0_half[k] / DV.values[ijk + t_shift]
+
+                        PV.tendencies[s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] * Ref.alpha0_half[k]
+                        self.dTdt_rad[ijk] = self.heating_rate[ijk] * Ref.alpha0_half[k]/cpm_c(PV.values[ijk + qt_shift])
+
+
 
         return
 
@@ -997,10 +1015,10 @@ cdef class RadiationRRTM(RadiationBase):
 
 
         return
-    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        RadiationBase.stats_io(self, Gr, DV, NS,  Pa)
+        RadiationBase.stats_io(self, Gr, Ref, DV, NS,  Pa)
 
 
 

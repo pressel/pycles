@@ -258,8 +258,15 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     RS.initialize(Gr, Th, NS, Pa)
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
+    np.random.seed(Pa.rank * random_seed_factor)
+
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
+
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
