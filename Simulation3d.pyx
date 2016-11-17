@@ -66,6 +66,8 @@ class Simulation3d:
         self.TS = TimeStepping.TimeStepping()
         self.Tr = TracersFactory(namelist)
 
+
+
         # Add new prognostic variables
         self.PV.add_variable('u', 'm/s', "sym", "velocity", self.Pa)
         self.PV.set_velocity_direction('u', 0, self.Pa)
@@ -82,7 +84,6 @@ class Simulation3d:
         self.CondStatsIO.initialize(namelist, self.Gr, self.Pa)
         self.Aux = AuxiliaryStatistics(namelist)
         self.CondStats = ConditionalStatistics(namelist)
-        self.Restart.initialize()
 
         self.VO.initialize()
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
@@ -293,7 +294,7 @@ class Simulation3d:
     def force_io(self):
         # output stats here
 
-        self.Pa.root_print('Doing 3D FiledIO')
+        self.Pa.root_print('Doing 3D FieldIO')
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
         self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
         self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)

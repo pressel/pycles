@@ -938,10 +938,17 @@ cdef class ForcingZGILS:
         except:
             co2_factor = 1.0
         self.n_double_co2 = int(np.log2(co2_factor))
+
         try:
-            self.varsub = namelist['meta']['ZGILS']['VarSub']
+            reference_type = namelist['forcing']['reference_profile']
+        except:
+            reference_type = 'AdjustedAdiabat'
+
+        try:
+            self.varsub = namelist['forcing']['ZGILS']['VarSub']
         except:
             self.varsub = False
+
 
 
         # Current climate/control advection forcing values (modified below for climate change)
@@ -952,10 +959,11 @@ cdef class ForcingZGILS:
         # way he formulates the relaxation coefficient formula, effective timescale in FT is about 24 hr
         self.alpha_h = 1.2 # ad hoc qt/qt_ref threshold ratio for determining BL height
         # Initialize the reference profiles class
-        if self.n_double_co2 == 0:
+        if self.n_double_co2 == 0 and reference_type == 'AdjustedAdiabat':
             self.forcing_ref = AdjustedMoistAdiabat(namelist, LH, Pa)
         else:
-            self.forcing_ref = ForcingReferenceBase()
+            filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
+            self.forcing_ref = ReferenceRCE(filename)
 
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
@@ -1000,7 +1008,8 @@ cdef class ForcingZGILS:
         # initialize the profiles of geostrophic velocity, subsidence, and large scale advection
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
-                self.ug[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(Ref.p0_half[k]-1000.0e2),-4.0)
+                self.ug[k] =  self.forcing_ref.u[k]
+                self.vg[k] = self.forcing_ref.v[k]
 
                 self.subsidence[k]= sub_factor * (Ref.p0_half[k] - Ref.Pg) * Ref.p0_half[k] * Ref.p0_half[k] * Ref.alpha0_half[k]
 
@@ -1235,8 +1244,55 @@ cdef class ForcingReferenceBase:
         return
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
                      double Pg, double Tg, double RH):
+        self.s = np.zeros(n_levels, dtype=np.double, order='c')
+        self.qt = np.zeros(n_levels, dtype=np.double, order='c')
+        self.temperature = np.zeros(n_levels, dtype=np.double, order='c')
+        self.rv = np.zeros(n_levels, dtype=np.double, order='c')
+        self.u = np.zeros(n_levels, dtype=np.double, order='c')
+        self.v = np.zeros(n_levels, dtype=np.double, order='c')
         return
 
+# Climate change simulations use profiles based on radiative--convective equilibrium solutions obtained as described in
+# Zhihong Tan's dissertation (Section 2.6). Zhihong has provided his reference profiles to be archived with the code, so
+# this class just reads in the data and interpolates to the simulation pressure grid
+
+cdef class ReferenceRCE(ForcingReferenceBase):
+    def __init__(self, filename):
+        self.filename = filename
+        return
+    @cython.wraparound(True)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
+                     double Pg, double Tg, double RH):
+
+        ForcingReferenceBase.initialize(self,Pa, pressure_array, n_levels, Pg, Tg, RH)
+        data = nc.Dataset(self.filename, 'r')
+        # Arrays must be flipped (low to high pressure) to use numpy interp function
+        pressure_ref = data.variables['p_full'][::-1]
+        temperature_ref = data.variables['temp_rc'][::-1]
+        qt_ref = data.variables['yv_rc'][::-1]
+        u_ref = data.variables['u'][::-1]
+        v_ref = data.variables['v'][::-1]
+
+        self.temperature = np.array(np.interp(pressure_array, pressure_ref, temperature_ref),
+                                    dtype=np.double, order='c')
+        self.qt = np.array(np.interp(pressure_array, pressure_ref, qt_ref), dtype=np.double, order='c')
+        self.u = np.array(np.interp(pressure_array, pressure_ref, u_ref), dtype=np.double, order='c')
+        self.v = np.array(np.interp(pressure_array, pressure_ref, v_ref), dtype=np.double, order='c')
+
+
+        cdef:
+            double pd, pv
+            Py_ssize_t k
+        # computing entropy assuming sub-saturated
+        for k in xrange(n_levels):
+            pv = pv_c(pressure_array[k], self.qt[k], self.qt[k])
+            pd = pd_c(pressure_array[k], self.qt[k], self.qt[k])
+
+            self.rv[k] =  self.qt[k]/(1.0-self.qt[k])
+            self.s[k] = (sd_c(pd, self.temperature[k]) * (1.0 - self.qt[k])
+                         + sv_c(pv, self.temperature[k]) * self.qt[k])
+
+        return
 
 
 # Control simulations use AdjustedMoistAdiabat
@@ -1244,7 +1300,6 @@ cdef class ForcingReferenceBase:
 # Reference moisture profile corresponds to a fixed relative humidity given the reference temperature profile
 cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
     def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
-        ForcingReferenceBase.__init__(self)
 
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
@@ -1280,10 +1335,8 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
         Initialize the forcing reference profiles. These profiles use the temperature corresponding to a moist adiabat,
         but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
         '''
-        self.s = np.zeros(n_levels, dtype=np.double, order='c')
-        self.qt = np.zeros(n_levels, dtype=np.double, order='c')
-        self.temperature = np.zeros(n_levels, dtype=np.double, order='c')
-        self.rv = np.zeros(n_levels, dtype=np.double, order='c')
+        ForcingReferenceBase.initialize(self,Pa, pressure_array, n_levels, Pg, Tg, RH)
+
         cdef double pvg = self.get_pv_star(Tg)
         cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
         cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
@@ -1299,18 +1352,10 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
             self.s[k] = self.entropy(pressure_array[k],temperature, self.qt[k] , 0.0, 0.0)
             self.temperature[k] = temperature
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
+            self.u[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
+
         return
 
-# Climate change simulations use profiles based on radiative--convective equilibrium solutions obtained as described in
-# Zhihong Tan's dissertation (Section 2.6). Zhihong has provided his reference profiles to be archived with the code, so
-# this class just reads in the data
-cdef class ReferenceRCE(ForcingReferenceBase):
-    def __init__(self):
-        ForcingReferenceBase.__init__(self)
-        return
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
-                     double Pg, double Tg, double RH):
-        return
 
 
 cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):

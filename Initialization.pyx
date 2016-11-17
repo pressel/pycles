@@ -4,7 +4,6 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
-
 import netCDF4 as nc
 import numpy as np
 cimport numpy as np
@@ -16,7 +15,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
 cimport ReferenceState
-from Forcing cimport AdjustedMoistAdiabat
+from Forcing cimport ForcingReferenceBase, ReferenceRCE, AdjustedMoistAdiabat
 from Thermodynamics cimport LatentHeat
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
@@ -732,7 +731,6 @@ def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         elif Gr.zl_half[k] >= 687.5 and Gr.zl_half[k] <= 712.5:
             theta[k] = 288.0 + (Gr.zl_half[k] - 687.5) * 0.28
             smoke[k] = 1.0 - 0.04 * (Gr.zl_half[k] - 687.5)
-            print k, Gr.zl_half[k], smoke[k]
         else:
             theta[k] = 295.0 + (Gr.zl_half[k] - 712.5) * 1e-4
             smoke[k] = 0.0
@@ -1145,21 +1143,40 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
 
-    reference_profiles = AdjustedMoistAdiabat(namelist, LH, Pa)
+
+    cdef:
+        ForcingReferenceBase reference_profiles
+
+    try:
+        co2_factor =  namelist['radiation']['RRTM']['co2_factor']
+    except:
+        co2_factor = 1.0
+    n_double_co2 = int(np.log2(co2_factor))
+
+    try:
+        reference_type = namelist['forcing']['reference_profile']
+    except:
+        reference_type = 'AdjustedAdiabat'
+
+    if n_double_co2 == 0 and reference_type == 'AdjustedAdiabat':
+        reference_profiles = AdjustedMoistAdiabat(namelist, LH, Pa)
+    else:
+        filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
+        reference_profiles = ReferenceRCE(filename)
+
+
 
     RS.Tg= 289.472
     RS.Pg= 1018.0e2
     RS.qtg = 0.008449
 
-    RS.initialize(Gr ,Th, NS, Pa)
 
+    RS.initialize(Gr ,Th, NS, Pa)
 
     cdef double Pg_parcel = 1000.0e2
     cdef double Tg_parcel = 295.0
     cdef double RH_ref = 0.3
     reference_profiles.initialize(Pa, RS.p0_half[:], Gr.dims.nlg[2],Pg_parcel, Tg_parcel, RH_ref)
-
-
 
     cdef:
         Py_ssize_t i, j, k, ijk, ishift, jshift
@@ -1172,20 +1189,17 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
         double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+
 
     for k in xrange(Gr.dims.nlg[2]):
         if RS.p0_half[k]  > 920.0e2:
             thetal[k] = RS.Tg /exner_c(RS.Pg)
             qt[k] = RS.qtg
-        u[k] = min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(RS.p0_half[k]-1000.0e2),-4.0)
 
 
       #Set velocities for Galilean transformation
-    RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
-    RS.v0 = 0.5 * (np.amax(v)+np.amin(v))
-
+    RS.u0 = 0.5 * (np.amax(reference_profiles.u[:])+np.amin(reference_profiles.u[:]))
+    RS.v0 = 0.5 * (np.amax(reference_profiles.v[:])+np.amin(reference_profiles.v[:]))
 
     # We will need these functions to perform saturation adjustment
     def compute_thetal(p_,T_,ql_):
@@ -1238,8 +1252,8 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             jshift = jstride * j
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
-                PV.values[ijk + u_varshift] = u[k] - RS.u0
-                PV.values[ijk + v_varshift] = v[k] - RS.v0
+                PV.values[ijk + u_varshift] = reference_profiles.u[k] - RS.u0
+                PV.values[ijk + v_varshift] = reference_profiles.v[k] - RS.v0
                 PV.values[ijk + w_varshift] = 0.0
                 if RS.p0_half[k] > 920.0e2:
                     PV.values[ijk + qt_varshift]  = qt[k]

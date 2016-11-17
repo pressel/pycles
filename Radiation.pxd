@@ -77,7 +77,7 @@ cdef class RadiationSmoke(RadiationBase):
 cdef class RadiationRRTM(RadiationBase):
     cdef:
         str profile_name
-        bint modified_adiabat
+        bint use_reference_class
         ForcingReferenceBase reference_profile
         double Tg_adiabat
         double Pg_adiabat

@@ -1236,6 +1236,10 @@ def ZGILS(zgils_loc, co2_factor):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
+    namelist['forcing'] ={}
+    namelist['forcing']['VarSub'] = False
+    namelist['forcing']['reference_profile'] = 'AdjustedAdiabat' # or 'RCE'
+
 
 
     namelist['sgs'] = {}
@@ -1281,7 +1285,7 @@ def ZGILS(zgils_loc, co2_factor):
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 86400.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy', 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['ZGILS'] = {}
@@ -1290,7 +1294,7 @@ def ZGILS(zgils_loc, co2_factor):
 
 
 
-    simname = 'ZGILS_S' + str(namelist['meta']['ZGILS']['location'] )
+    simname = 'ZGILS_S' + str(namelist['meta']['ZGILS']['location'] ) + '_' + str(int(co2_factor)) + 'xCO2'
     namelist['meta']['simname'] = simname
 
 

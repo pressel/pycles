@@ -177,6 +177,8 @@ cdef class ForcingReferenceBase:
         double [:] qt
         double [:] temperature
         double [:] rv
+        double [:] u
+        double [:] v
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
                      double Pg, double Tg, double RH)
 
@@ -195,6 +197,8 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
 
 
 cdef class ReferenceRCE(ForcingReferenceBase):
+    cdef:
+        str filename
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
                      double Pg, double Tg, double RH)
 

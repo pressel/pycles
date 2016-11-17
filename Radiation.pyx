@@ -12,7 +12,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 cimport Surface
-from Forcing cimport AdjustedMoistAdiabat
+from Forcing cimport ForcingReferenceBase, ReferenceRCE, AdjustedMoistAdiabat
 from Thermodynamics cimport LatentHeat
 # import pylab as plt
 
@@ -392,7 +392,7 @@ cdef class RadiationRRTM(RadiationBase):
 
 
         casename = namelist['meta']['casename']
-        self.modified_adiabat = False
+        self.use_reference_class = False
         if casename == 'SHEBA':
             self.profile_name = 'sheba'
         elif casename == 'DYCOMS_RF01':
@@ -405,21 +405,26 @@ cdef class RadiationRRTM(RadiationBase):
             else:
                 self.profile_name = 'cgils_ctl_s'+str(loc)
         elif casename == 'ZGILS':
+            self.use_reference_class = True
             loc = namelist['meta']['ZGILS']['location']
             try:
                 co2_factor = namelist['radiation']['RRTM']['co2_factor']
             except:
                 co2_factor = 1.0
-            if int(np.log2(co2_factor)) == 0:
+            try:
+                reference_type = namelist['forcing']['reference_profile']
+            except:
+                reference_type = 'AdjustedAdiabat'
+            if int(np.log2(co2_factor)) == 0 and reference_type == 'AdjustedAdiabat':
                 self.profile_name = 'cgils_ctl_s'+str(loc)
-                self.modified_adiabat = True
                 self.reference_profile = AdjustedMoistAdiabat(namelist, LH, Pa)
                 self.Tg_adiabat = 295.0
                 self.Pg_adiabat = 1000.0e2
                 self.RH_adiabat = 0.3
             else:
-                self.modified_adiabat = False
-                self.profile_name = 'zgils_'+str(int(np.log2(co2_factor)))+'CO2_S'+str(loc)
+                self.profile_name = 'cgils_ctl_s'+str(loc)
+                filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
+                self.reference_profile = ReferenceRCE(filename)
 
         else:
             Pa.root_print('RadiationRRTM: Case ' + casename + ' has no known extension profile')
@@ -534,7 +539,7 @@ cdef class RadiationRRTM(RadiationBase):
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
-        if self.modified_adiabat:
+        if self.use_reference_class:
             # pressures = profile_data[self.profile_name]['pressure'][:]
             pressures = np.arange(25*100, 1015*100, 10*100)
             pressures = np.array(pressures[::-1], dtype=np.double)
