@@ -1236,6 +1236,7 @@ cdef class ReferenceRCE(ForcingReferenceBase):
             self.rv[k] =  self.qt[k]/(1.0-self.qt[k])
             self.s[k] = (sd_c(pd, self.temperature[k]) * (1.0 - self.qt[k])
                          + sv_c(pv, self.temperature[k]) * self.qt[k])
+            self.u[k] = self.u[k]*0.5 - 5.0
 
         return
 

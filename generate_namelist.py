@@ -1262,6 +1262,7 @@ def ZGILS(zgils_loc, co2_factor):
     namelist['scalar_transport']['order_sedimentation'] = 1
 
     namelist['surface_budget'] = {}
+    namelist['surface_budget']['constant_sst'] = False # if true, options below just aren't used
     if zgils_loc == 12:
         namelist['surface_budget']['ocean_heat_flux'] = 70.0
     elif zgils_loc == 11:
@@ -1269,8 +1270,9 @@ def ZGILS(zgils_loc, co2_factor):
     elif zgils_loc == 6:
         namelist['surface_budget']['ocean_heat_flux'] = 60.0
 
-    # To run a fixed_sst case set fixed_sst_time > t_max of simulation
-    namelist['surface_budget']['fixed_sst_time'] = 24.0 * 3600.0 * 30.0 # 3 days spinup
+
+    namelist['surface_budget']['fixed_sst_time'] = 24.0 * 3600.0 * 3.0 # 3 days spinup
+
 
     namelist['radiation'] = {}
     namelist['radiation']['RRTM'] = {}
@@ -1298,6 +1300,15 @@ def ZGILS(zgils_loc, co2_factor):
 
 
     simname = 'ZGILS_S' + str(namelist['meta']['ZGILS']['location'] ) + '_' + str(int(co2_factor)) + 'xCO2'
+    if namelist['surface_budget']['constant_sst']:
+        simname += '_SST'
+    else:
+        simname += 'OHU'
+
+    if namelist['forcing']['VarSub']:
+        simname += '_VarSub'
+    else:
+        simname += '_FixSub'
     namelist['meta']['simname'] = simname
 
 
