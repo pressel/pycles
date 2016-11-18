@@ -14,10 +14,17 @@ def main():
                         help='Specify if perturbed temperature case is to be run (CGILS) as True/False')
     parser.add_argument('--control_subsidence', default='False',
                         help='Specify if control subsidence is to be used in perturbed runs (CGILS) as True/False')
+
+    # Optional arguments for ZGILS
     parser.add_argument('--zgils_location', default='False',
                         help='specify location (6/11/12)')
     parser.add_argument('--co2_factor', default='1.0',
                         help='specify multiplier of current CO2 levels (2,4,8,16)')
+    parser.add_argument('--fixed_sst', default='False',
+                        help='Specify if fixed sst case is to be run(ZGILS) as True/False')
+    parser.add_argument('--variable_subsidence', default='False',
+                        help='Specify if VarSub options is to be used in climate change runs (ZGILS) as True/False')
+
     args = parser.parse_args()
 
     case_name = args.case_name
@@ -27,8 +34,9 @@ def main():
     is_ctl_omega = ast.literal_eval(args.control_subsidence)
     zgils_loc = ast.literal_eval(args.zgils_location)
     co2_factor = ast.literal_eval(args.co2_factor)
-    print(zgils_loc)
-    print(co2_factor)
+    fixed_sst = ast.literal_eval(args.fixed_sst)
+    variable_subsidence = ast.literal_eval(args.variable_subsidence)
+
 
     if case_name == 'StableBubble':
         namelist = StableBubble()
@@ -55,7 +63,7 @@ def main():
     elif case_name == 'CGILS_S12':
         namelist = CGILS_S12(is_p2, is_ctl_omega)
     elif case_name == 'ZGILS':
-        namelist = ZGILS(zgils_loc, co2_factor)
+        namelist = ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence)
     else:
         print('Not a vaild case name')
         exit()
@@ -1194,19 +1202,23 @@ def CGILS_S12(is_p2,is_ctl_omega):
 
 
 
-def ZGILS(zgils_loc, co2_factor):
+def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
 
     namelist = {}
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 3
+    namelist['grid']['gw'] = 4
     namelist['grid']['nx'] = 86
     namelist['grid']['ny'] = 86
-    namelist['grid']['nz'] = 216
-    namelist['grid']['gw'] = 4
     namelist['grid']['dx'] = 75.0
     namelist['grid']['dy'] = 75.0
-    namelist['grid']['dz'] = 20.0
+    if zgils_loc == 6:
+        namelist['grid']['dz'] = 40.0
+        namelist['grid']['nz'] = 144
+    else:
+        namelist['grid']['dz'] = 20.0
+        namelist['grid']['nz'] = 144
 
     namelist['mpi'] = {}
     namelist['mpi']['nprocx'] = 1
@@ -1240,8 +1252,8 @@ def ZGILS(zgils_loc, co2_factor):
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
     namelist['forcing'] ={}
-    namelist['forcing']['VarSub'] = False
-    namelist['forcing']['reference_profile'] = 'AdjustedAdiabat' # or 'RCE'
+    namelist['forcing']['VarSub'] = variable_subsidence
+    namelist['forcing']['reference_profile'] = 'RCE' # or 'AdjustedAdiabat' but ONLY if co2_factor = 1
 
 
 
@@ -1262,7 +1274,7 @@ def ZGILS(zgils_loc, co2_factor):
     namelist['scalar_transport']['order_sedimentation'] = 1
 
     namelist['surface_budget'] = {}
-    namelist['surface_budget']['constant_sst'] = False # if true, options below just aren't used
+    namelist['surface_budget']['constant_sst'] = fixed_sst # if true, options below just aren't used
     if zgils_loc == 12:
         namelist['surface_budget']['ocean_heat_flux'] = 70.0
     elif zgils_loc == 11:
@@ -1303,7 +1315,7 @@ def ZGILS(zgils_loc, co2_factor):
     if namelist['surface_budget']['constant_sst']:
         simname += '_SST'
     else:
-        simname += 'OHU'
+        simname += '_OHU'
 
     if namelist['forcing']['VarSub']:
         simname += '_VarSub'
