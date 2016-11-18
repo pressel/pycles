@@ -82,6 +82,7 @@ class Simulation3d:
         self.CondStatsIO.initialize(namelist, self.Gr, self.Pa)
         self.Aux = AuxiliaryStatistics(namelist)
         self.CondStats = ConditionalStatistics(namelist)
+        self.Restart.initialize()
 
         self.VO.initialize()
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)

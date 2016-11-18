@@ -1206,6 +1206,12 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
 
     namelist = {}
 
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+
+
     namelist['grid'] = {}
     namelist['grid']['dims'] = 3
     namelist['grid']['gw'] = 4
@@ -1215,10 +1221,12 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
     namelist['grid']['dy'] = 75.0
     if zgils_loc == 6:
         namelist['grid']['dz'] = 40.0
-        namelist['grid']['nz'] = 144
+        namelist['grid']['nz'] = 160
+        namelist['damping']['Rayleigh']['z_d'] = 1100.0
     else:
         namelist['grid']['dz'] = 20.0
         namelist['grid']['nz'] = 144
+        namelist['damping']['Rayleigh']['z_d'] = 500.0
 
     namelist['mpi'] = {}
     namelist['mpi']['nprocx'] = 1
@@ -1236,11 +1244,7 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
     namelist['thermodynamics']['latentheat'] = 'variable'
 
 
-    namelist['damping'] = {}
-    namelist['damping']['scheme'] = 'Rayleigh'
-    namelist['damping']['Rayleigh'] = {}
-    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
-    namelist['damping']['Rayleigh']['z_d'] = 500.0
+
 
     namelist['microphysics'] = {}
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
@@ -1255,6 +1259,8 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
     namelist['forcing']['VarSub'] = variable_subsidence
     namelist['forcing']['reference_profile'] = 'RCE' # or 'AdjustedAdiabat' but ONLY if co2_factor = 1
 
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = False
 
 
     namelist['sgs'] = {}
