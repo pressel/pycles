@@ -1215,13 +1215,13 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
     namelist['grid'] = {}
     namelist['grid']['dims'] = 3
     namelist['grid']['gw'] = 4
-    namelist['grid']['nx'] = 86
-    namelist['grid']['ny'] = 86
-    namelist['grid']['dx'] = 75.0
-    namelist['grid']['dy'] = 75.0
+    namelist['grid']['nx'] = 128
+    namelist['grid']['ny'] = 128
+    namelist['grid']['dx'] = 50.0
+    namelist['grid']['dy'] = 50.0
     if zgils_loc == 6:
         namelist['grid']['dz'] = 40.0
-        namelist['grid']['nz'] = 160
+        namelist['grid']['nz'] = 128
         namelist['damping']['Rayleigh']['z_d'] = 1100.0
     else:
         namelist['grid']['dz'] = 20.0
