@@ -1260,7 +1260,7 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
 
     namelist['diffusion'] = {}
