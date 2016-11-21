@@ -72,7 +72,7 @@ cdef class SurfaceBase:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, dict namelist, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         self.u_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
         self.v_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
@@ -198,7 +198,7 @@ cdef class SurfaceNone(SurfaceBase):
     def __init__(self):
         pass
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, dict namelist,Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
@@ -219,12 +219,10 @@ cdef class SurfaceSullivanPatton(SurfaceBase):
         self.dry_case = True
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-
-
+    cpdef initialize(self, dict namelist,Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.initialize(self, namelist, Gr, Ref, NS, Pa)
         T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
         self.buoyancy_flux = self.theta_flux * exner(Ref.p0_half[Gr.dims.gw]) * g /T0
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
 
         return
 
@@ -297,8 +295,8 @@ cdef class SurfaceBomex(SurfaceBase):
         self.dry_case = False
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+    cpdef initialize(self, dict namelist,Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.initialize(self, namelist, Gr,Ref,NS,Pa)
         self.qt_flux = np.add(self.qt_flux,5.2e-5) # m/s
 
         self.theta_flux = 8.0e-3 # K m/s
@@ -392,9 +390,9 @@ cdef class SurfaceGabls(SurfaceBase):
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, dict namelist, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+        SurfaceBase.initialize(self, namelist, Gr,Ref,NS,Pa)
 
 
         return
@@ -487,8 +485,8 @@ cdef class SurfaceDYCOMS_RF01(SurfaceBase):
 
         self.dry_case = False
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+    cpdef initialize(self, dict namelist,Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.initialize(self, namelist, Gr,Ref,NS,Pa)
         self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
         self.T_surface = 292.5
 
@@ -580,8 +578,8 @@ cdef class SurfaceDYCOMS_RF02(SurfaceBase):
 
 
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+    cpdef initialize(self, dict namelist,Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.initialize(self, namelist, Gr,Ref,NS,Pa)
         self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
         self.T_surface = 292.5 # assuming same sst as DYCOMS RF01
 
@@ -672,8 +670,8 @@ cdef class SurfaceRico(SurfaceBase):
         return
 
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+    cpdef initialize(self, dict namelist,Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.initialize(self,namelist,Gr,Ref,NS,Pa)
 
         self.cm = self.cm*(log(20.0/self.z0)/log(Gr.zl_half[Gr.dims.gw]/self.z0))**2
         self.ch = self.ch*(log(20.0/self.z0)/log(Gr.zl_half[Gr.dims.gw]/self.z0))**2
@@ -773,8 +771,8 @@ cdef class SurfaceCGILS(SurfaceBase):
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+    cpdef initialize(self,dict namelist, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.initialize(self, namelist,Gr,Ref,NS,Pa)
 
         # Find the scalar transfer coefficient consistent with the vertical grid spacing
         cdef double z1 = Gr.dims.dx[2] * 0.5
@@ -889,6 +887,10 @@ cdef class SurfaceZGILS(SurfaceBase):
             Pa.root_print('SURFACE: Must provide a ZGILS location (6/11/12) in namelist')
             Pa.kill()
 
+        return
+
+    cpdef initialize(self, dict namelist, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.initialize(self, namelist, Gr,Ref,NS,Pa)
         # Get the multiplying factor for current levels of CO2
         # Then convert to a number of CO2 doublings, which is how forcings are rescaled
         try:
@@ -913,12 +915,6 @@ cdef class SurfaceZGILS(SurfaceBase):
         # adjust surface temperature for fixed-SST climate change experiments
         if constant_sst:
             self.T_surface = self.T_surface + 3.0 * n_double_co2
-
-        return
-
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
-
 
         return
 

@@ -124,7 +124,7 @@ class Simulation3d:
             SetInitialConditions(namelist,self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa, self.LH)
             del SetInitialConditions
 
-        self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
+        self.Sur.initialize(namelist, self.Gr, self.Ref,  self.StatsIO, self.Pa)
 
 
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
