@@ -10,7 +10,7 @@ cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
 from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
-from entropies cimport sv_c, sd_c
+from entropies cimport sv_c, sd_c, s_tendency_c
 import numpy as np
 import cython
 from libc.math cimport fabs, sin, cos
@@ -104,15 +104,18 @@ cdef class ForcingBomex:
         cdef:
             Py_ssize_t k
 
+
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
                 self.ug[k] = -10.0 + (1.8e-3)*Gr.zl_half[k]
 
                 #Set large scale cooling
+                # Convert given form of tendencies (theta) to temperature tendency
                 if Gr.zl_half[k] <= 1500.0:
-                    self.dtdt[k] = -2.0/(3600 * 24.0)      #K/s
+                    self.dtdt[k] = (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_half[k])     #K/s
                 if Gr.zl_half[k] > 1500.0:
-                    self.dtdt[k] = -2.0/(3600 * 24.0) + (Gr.zl_half[k] - 1500.0) * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)
+                    self.dtdt[k] = (-2.0/(3600 * 24.0) + (Gr.zl_half[k] - 1500.0)
+                                    * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0_half[k])
 
                 #Set large scale drying
                 if Gr.zl_half[k] <= 300.0:
@@ -157,13 +160,7 @@ cdef class ForcingBomex:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double pd
-            double pv
-            double qt
-            double qv
-            double p0
-            double rho0
-            double t
+            double qt, qv, p0, t
             double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
@@ -183,15 +180,10 @@ cdef class ForcingBomex:
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
                         p0 = Ref.p0_half[k]
-                        rho0 = Ref.rho0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
-                        pd = pd_c(p0,qt,qv)
-                        pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
-                        PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-                                                         * self.dtdt[k] * exner_c(p0) * rho0)/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
+                        PV.tendencies[s_shift + ijk] += s_tendency_c(p0,qt,qv,t, self.dqtdt[k], self.dtdt[k])
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
@@ -394,30 +386,6 @@ cdef class ForcingDyCOMS_RF01:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
-            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
-            Py_ssize_t thetali_shift = DV.get_varshift(Gr,'thetali')
-            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-
-            double [:] thetal_subs = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-            double [:] qt_subs = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-
-            Py_ssize_t imin = Gr.dims.gw
-            Py_ssize_t jmin = Gr.dims.gw
-            Py_ssize_t kmin = Gr.dims.gw
-            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
-            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
-            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            Py_ssize_t jstride = Gr.dims.nlg[2]
-            Py_ssize_t i,j,k,ishift,jshift,ijk
-
-            double pd
-            double pv
-            double qt
-            double qv
-            double p0
-            double rho0
-            double t
 
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
@@ -495,11 +463,13 @@ cdef class ForcingRico:
         self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
         self.ug = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.vg = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.dtdt = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * -2.5/86400.0
+        self.dtdt = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * -2.5/86400.0 #Here this is theta forcing
         self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
+        # Convert given theta forcing to temperature forcing
         with nogil:
             for k in range(Gr.dims.nlg[2]):
+                self.dtdt[k] = self.dtdt[k] * exner_c(Ref.p0_half[k])
                 if Gr.zl_half[k] <= 2260.0:
                     self.subsidence[k] = -(0.005/2260.0) * Gr.zl_half[k]
                 else:
@@ -542,13 +512,7 @@ cdef class ForcingRico:
             Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double pd
-            double pv
-            double qt
-            double qv
-            double p0
-            double rho0
-            double t
+            double qt, qv, p0, t
 
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
@@ -566,18 +530,11 @@ cdef class ForcingRico:
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
                         p0 = Ref.p0_half[k]
-                        rho0 = Ref.rho0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
-                        pd = pd_c(p0,qt,qv)
-                        pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
-                        PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-                                                         * self.dtdt[k] * exner_c(p0) * rho0)/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
+                        PV.tendencies[s_shift + ijk] += s_tendency_c(p0, qt, qv, t, self.dqtdt[k], self.dtdt[k])
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
-
-
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
@@ -799,20 +756,16 @@ cdef class ForcingCGILS:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
-            double pd, pv, qt, qv, p0, rho0,t, qt_floor_nudge
+            double qt, qv, p0, t, qt_floor_nudge
 
             double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
             double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
             double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
-
         # Apply subsidence
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
-
-
 
        # Calculate nudging
         with nogil:
@@ -845,24 +798,21 @@ cdef class ForcingCGILS:
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
                         p0 = Ref.p0_half[k]
-                        rho0 = Ref.rho0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
-                        pd = pd_c(p0,qt,qv)
-                        pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
                         total_qt_source = self.dqtdt[k] + self.source_qt_floor[k] + self.source_qt_nudge[k]
                         total_t_source  = self.dtdt[k]  + self.source_t_nudge[k]
-                        PV.tendencies[s_shift  + ijk] += (cpm_c(qt) * total_t_source  * rho0)/t
-                        PV.tendencies[s_shift  + ijk] += (sv_c(pv,t) - sd_c(pd,t))*total_qt_source
+                        PV.tendencies[s_shift  + ijk] += s_tendency_c(p0, qt, qv, t, total_qt_source, total_t_source)
+
                         PV.tendencies[qt_shift + ijk] += total_qt_source
                         PV.tendencies[u_shift  + ijk] += self.source_u_nudge[k]
                         PV.tendencies[v_shift  + ijk] += self.source_v_nudge[k]
 
-                        self.source_s_nudge[ijk] = ((sv_c(pv,t) - sd_c(pd,t)) * (self.source_qt_nudge[k] + self.source_qt_floor[k])
-                                                    +(cpm_c(qt) * self.source_t_nudge[k] * exner_c(p0) * rho0)/t)
-                        self.s_ls_adv[ijk]= ((sv_c(pv,t) - sd_c(pd,t)) * (self.dqtdt[k])
-                                                    +(cpm_c(qt) * self.dtdt[k] * exner_c(p0) * rho0)/t)
+                        self.source_s_nudge[ijk] = s_tendency_c(p0, qt, qv, t, self.source_qt_nudge[k] + self.source_qt_floor[k],
+                                                                self.source_t_nudge[k] )
+
+                        self.s_ls_adv[ijk]= s_tendency_c(p0, qt, qv, t, self.dqtdt[k], self.dtdt[k])
 
 
         return
@@ -1047,7 +997,7 @@ cdef class ForcingZGILS:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double pd, pv, qt, qv, p0, rho0, t
+            double qt, qv, p0, t
 
             double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
             double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
@@ -1104,24 +1054,19 @@ cdef class ForcingZGILS:
                     for k in xrange(gw,kmax):
                         ijk = ishift + jshift + k
                         p0 = Ref.p0_half[k]
-                        rho0 = Ref.rho0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
-                        pd = pd_c(p0,qt,qv)
-                        pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
                         total_t_source = self.dtdt[k] + self.source_t_nudge[k]
                         total_qt_source = self.dqtdt[k] + self.source_qt_nudge[k] + self.source_rh_nudge[k]
 
-                        PV.tendencies[s_shift + ijk] += (cpm_c(qt)
-                                                         * total_t_source * exner_c(p0) * rho0)/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * total_qt_source
+                        PV.tendencies[s_shift + ijk] += s_tendency_c(p0, qt, qv, t, total_qt_source, total_t_source)
+
                         PV.tendencies[qt_shift + ijk] += total_qt_source
 
-                        self.source_s_nudge[ijk] = ((sv_c(pv,t) - sd_c(pd,t)) * (self.source_qt_nudge[k] + self.source_rh_nudge[k])
-                                                    +(cpm_c(qt) * self.source_t_nudge[k] * exner_c(p0) * rho0)/t)
-                        self.s_ls_adv[ijk]= ((sv_c(pv,t) - sd_c(pd,t)) * (self.dqtdt[k])
-                                                    +(cpm_c(qt) * self.dtdt[k] * exner_c(p0) * rho0)/t)
+                        self.source_s_nudge[ijk] = s_tendency_c(p0, qt, qv, t, self.source_qt_nudge[k] + self.source_rh_nudge[k], self.source_t_nudge[k] )
+
+                        self.s_ls_adv[ijk]= s_tendency_c(p0,qt, qv, t, self.dqtdt[k], self.dtdt[k])
 
 
         return

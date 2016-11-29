@@ -41,6 +41,11 @@ cdef class SurfaceBudget:
     def __init__(self, namelist):
 
         try:
+            self.constant_sst = namelist['surface_budget']['constant_sst']
+        except:
+            self.constant_sst = False
+
+        try:
             self.ocean_heat_flux = namelist['surface_budget']['ocean_heat_flux']
         except:
             self.ocean_heat_flux = 0.0
@@ -84,8 +89,8 @@ cdef class SurfaceBudget:
             double mean_lhf = Pa.HorizontalMeanSurface(Gr, &Sur.lhf[0])
             double net_flux, tendency
 
-
-
+        if self.constant_sst:
+            return
         if TS.rk_step != 0:
             return
         if TS.t < self.fixed_sst_time:

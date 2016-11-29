@@ -877,18 +877,37 @@ cdef class SurfaceZGILS(SurfaceBase):
             Pa.root_print('SURFACE: Must provide a ZGILS location (6/11/12) in namelist')
             Pa.kill()
 
+        # Get the multiplying factor for current levels of CO2
+        # Then convert to a number of CO2 doublings, which is how forcings are rescaled
+        try:
+            co2_factor =  namelist['radiation']['RRTM']['co2_factor']
+        except:
+            co2_factor = 1.0
+        n_double_co2 = int(np.log2(co2_factor))
+
+        try:
+            constant_sst = namelist['surface_budget']['constant_sst']
+        except:
+            constant_sst = False
+
+        # Set the initial sst value to the Fixed-SST case value (Tan et al 2016a, Table 1)
+        if self.loc == 12:
+            self.T_surface  = 289.8
+        elif self.loc == 11:
+            self.T_surface = 292.2
+        elif self.loc == 6:
+            self.T_surface = 298.9
+
+        # adjust surface temperature for fixed-SST climate change experiments
+        if constant_sst:
+            self.T_surface = self.T_surface + 3.0 * n_double_co2
 
         return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
-        # Set the initial sst value to the Fixed-SST case value (Tan et al 2016a, Table 1)
-        if self.loc == 12:
-            self.T_surface  = 289.75
-        elif self.loc == 11:
-            self.T_surface = 292.22
-        elif self.loc == 6:
-            self.T_surface = 298.86
+
+
         return
 
 

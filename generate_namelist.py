@@ -403,6 +403,9 @@ def Bomex():
     namelist['ClausiusClapeyron']['temperature_min'] = 100.15
     namelist['ClausiusClapeyron']['temperature_max'] = 500.0
 
+    namelist['initialization'] = {}
+    namelist['initialization']['random_seed_factor'] = 1
+
     return namelist
 
 
