@@ -210,7 +210,7 @@ cdef class ThermodynamicsSA:
         # __
         self.debug_tend('ThermodynamicsSA: ',PV,DV,Gr)#,Pa)
         #  __
-
+        # print('calling eos_update')
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                     &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
                     &DV.values[qi_shift], &DV.values[alpha_shift], &n_nan)
