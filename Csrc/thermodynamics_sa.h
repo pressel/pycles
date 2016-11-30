@@ -150,11 +150,15 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         double sigma_2;
         double lam_2;
         // __
-        double pv_star_2 = lookup(LT, T_2);
-        if (pv_star_2>p0){
-            T_2 = 371.0;
-            pv_star_2 = lookup(LT, T_2);
+//        double pv_star_2 = lookup(LT, T_2);
+//        if (pv_star_2>p0){
+//            T_2 = 350.0;
+//            pv_star_2 = lookup(LT, T_2);
+//        }
+        if (T_2 > 350.0){
+            T_2 = 350.0;
         }
+        double pv_star_2 = lookup(LT, T_2);
         int count = 0;
         // the following definitions are necessary if while-loop below commented out
         /*double pv_star_2 = lookup(LT, T_2);
@@ -185,7 +189,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         *ql = lam_2 * sigma_2;
         *qi = (1.0 - lam_2) * sigma_2;
         // __
-        printf("eos_c iterations: count = %d\n",count);
+//        printf("eos_c iterations: count = %d\n",count);
 //        printf("ql = %f\n", *ql);
         // __
         return;
