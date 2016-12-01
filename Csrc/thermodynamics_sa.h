@@ -133,6 +133,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     int nan_T2 = 0;
     int nan_Tn = 0;
     double val_T1 = 0.0;
+    double val_T2 = 0.0;
     double val_pd1 = 0.0;
     double val_pv1 = 0.0;
     // __
@@ -165,6 +166,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
 //            pv_star_2 = lookup(LT, T_2);
 //        }
         if (T_2 > 350.0){
+            val_T2 = T_2;
             T_2 = 350.0;
         }
         if(isnan(T_2)){nan_T2 = 1;}
@@ -210,6 +212,9 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         }
         if(nan_Tn==1){
             printf("nan_Tn: %d\n", nan_Tn);
+        }
+        if(val_T2>0.0){
+            printf("T2>350: %f\n",val_T2);
         }
 
 
