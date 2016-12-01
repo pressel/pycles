@@ -129,10 +129,18 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     double T_1 = temperature_no_ql(pd_1,pv_1,s,qt);
     double pv_star_1 = lookup(LT, T_1);
     double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
+    // __
+    int nan_T2 = 0;
+    int nan_Tn = 0;
+    double val_T1 = 0.0;
+    double val_pd1 = 0.0;
+    double val_pv1 = 0.0;
+    // __
 
 //    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
     // If not saturated
-    if(qt <= qv_star_1){
+//    if(qt <= qv_star_1){
+    if(qt <= qv_star_1 || qv_star_1 < 0.0){
 //        printf("eos_c: not saturated\n");
         *T = T_1;
         return;
@@ -150,6 +158,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         double sigma_2;
         double lam_2;
         // __
+//        // the following definitions are necessary if while-loop below commented out
 //        double pv_star_2 = lookup(LT, T_2);
 //        if (pv_star_2>p0){
 //            T_2 = 350.0;
@@ -158,6 +167,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         if (T_2 > 350.0){
             T_2 = 350.0;
         }
+        if(isnan(T_2)){nan_T2 = 1;}
         double pv_star_2 = lookup(LT, T_2);
         int count = 0;
         // the following definitions are necessary if while-loop below commented out
@@ -182,6 +192,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             f_1 = f_2;
             delta_T  = fabs(T_2 - T_1);
             count ++;
+            if(isnan(T_n)){nan_Tn = 1;val_T1=T_1;val_pv1=pv_1;val_pd1=pd_1;}
         } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
 //        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 2);*/
         *T  = T_2;
@@ -191,6 +202,17 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         // __
 //        printf("eos_c iterations: count = %d\n",count);
 //        printf("ql = %f\n", *ql);
+        if(nan_T2==1){
+            printf("nan_T2: %d\n", nan_T2);
+            printf("T_1: %f\n", val_T1);
+            printf("pv_1: %f\n", val_pv1);
+            printf("pd_1: %f\n", val_pd1);
+        }
+        if(nan_Tn==1){
+            printf("nan_Tn: %d\n", nan_Tn);
+        }
+
+
         // __
         return;
     }
@@ -208,7 +230,8 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
     ssize_t i,j,k;
     // __
     int i_,j_,k_;
-    //    int ijk_;
+    int ijk_ = 1.0;
+    double T_ = 0.0;
     // __
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -225,11 +248,26 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
             const ssize_t jshift = j * jstride;
                 for (k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k;
+//                    const int ijk = ishift + jshift + k;
                     eos_c(LT, lam_fp, L_fp, p0[k], s[ijk],qt[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk],qt[ijk],qv[ijk]);
-                  if(isnan(T[ijk])){
-//                     ijk_ = ijk;
-                     n_nan++;}
+//                    printf("ASCII value = %d\n", ijk_);     // test print statement
+//                    if(isnan(alpha[ijk])){
+//                        ijk_ = 1;
+//                        ijk_ = ijk;
+//                        printf("!?! alpha nan in eos_update, T= %i \n",1);
+////                        printf("!?! alpha nan in eos_update, T= %f!!!\n",T[ijk]);
+////                        printf("problem decomposition advecting: count = %d\n",ok_ing);
+//                    }
+//                        ijk_ = ijk;
+//                        printf("!?! alpha nan in eos_update, at: %d, T= %f!!!\n",ijk_,T[ijk]);}
+//                    else{printf("!?! no nan, T= %f!!!\n",T[ijk]);}
+//                  if(isnan(T[ijk])){
+////                     ijk_ = ijk;
+////                     T_ = T[ijk];
+//                     printf("T is nan");
+////                     printf("ijk=%d",ijk_);
+//                     n_nan++;}
                 } // End k loop
             } // End j loop
         } // End i loop

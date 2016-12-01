@@ -115,11 +115,11 @@ cdef class VisualizationOutput:
             double [:,:] local_var
             double [:,:] reduced_var
             list pv_vars = ['phi','s', 'w', 'v', 'u']
-            list dv_vars = ['potential_temperature','diffusivity']
+            list dv_vars = ['potential_temperature','temperature','diffusivity']
 
         if 'qt' in PV.name_index:
             pv_vars = ['phi','qt', 's', 'w', 'v', 'u']
-            dv_vars = ['potential_temperature','ql', 'diffusivity']
+            dv_vars = ['potential_temperature','temperature','ql', 'diffusivity']
 
         for var in pv_vars:
             local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
