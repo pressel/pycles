@@ -136,6 +136,8 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     double val_T2 = 0.0;
     double val_pd1 = 0.0;
     double val_pv1 = 0.0;
+    double val_pd2 = 0.0;
+    double val_pv2 = 0.0;
     // __
 
 //    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
@@ -194,7 +196,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             f_1 = f_2;
             delta_T  = fabs(T_2 - T_1);
             count ++;
-            if(isnan(T_n)){nan_Tn = 1;val_T1=T_1;val_pv1=pv_1;val_pd1=pd_1;}
+            if(isnan(T_n)){nan_Tn = 1;val_T1=T_1;val_pv1=pv_1;val_pd1=pd_1;val_pv2=pv_2;val_pd2=pv_2;}
         } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
 //        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 2);*/
         *T  = T_2;
@@ -212,6 +214,8 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         }
         if(nan_Tn==1){
             printf("nan_Tn: %d\n", nan_Tn);
+            printf("T1: %f, T2: %f, s: %f, qt: %f\n", val_T1, val_T2, s, qt);
+            printf("pv_star_2: %f, qv_star_2: %f, pv_2: %f, pd_2: %f", pv_star_2, qv_star_2, val_pv2, val_pd2);
         }
         if(val_T2>0.0){
             printf("T2>350: %f\n",val_T2);
