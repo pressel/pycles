@@ -750,7 +750,7 @@ void entropy_source_heating_snow(const struct DimStruct *dims, double* restrict 
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                entropy_tendency[ijk]+= qsnow[ijk]*(fabs(w_qsnow[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk])* dzi/temperature[ijk];
+                entropy_tendency[ijk]+= qsnow[ijk]*(fabs(w_qsnow[ijk]) - w[ijk]) * ci * (Twet[ijk+1] - Twet[ijk])* dzi/temperature[ijk];
             }
         }
     }
