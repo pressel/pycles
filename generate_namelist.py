@@ -65,7 +65,7 @@ def main():
     elif case_name == 'ZGILS':
         namelist = ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence)
     else:
-        print('Not a vaild case name')
+        print('Not a valid case name')
         exit()
 
     write_file(namelist)

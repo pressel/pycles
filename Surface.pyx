@@ -912,9 +912,9 @@ cdef class SurfaceZGILS(SurfaceBase):
         elif self.loc == 6:
             self.T_surface = 298.9
 
-        # adjust surface temperature for fixed-SST climate change experiments
-        if constant_sst:
-            self.T_surface = self.T_surface + 3.0 * n_double_co2
+        # adjust surface temperature for climate change experiments
+        self.T_surface = self.T_surface + 3.0 * n_double_co2
+
 
         return
 
