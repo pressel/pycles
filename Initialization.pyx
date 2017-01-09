@@ -1117,6 +1117,80 @@ def InitIsdacCC(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
+def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, namelist):
+
+    #First generate the reference profiles
+    RS.Pg = 1.01e5 #Surface pressure
+    RS.Tg = 274.01 #Sea surface temperature
+    pvg = Th.get_pv_star(RS.Tg) #Saturation vapor pressure
+    wtg = eps_v * pvg/(RS.Pg - pvg) #Saturation mixing ratio
+    RS.qtg = wtg/(1+wtg) #Saturation specific humidity
+
+    RS.initialize(Gr, Th, NS, Pa)
+
+
+    #Get the variable number for each of the velocity components
+    cdef:
+        Py_ssize_t i
+        Py_ssize_t j
+        Py_ssize_t k
+        Py_ssize_t ijk, ishift, jshift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] wt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double T, ql
+
+    for k in xrange(Gr.dims.nlg[2]):
+
+        #Set thetal and qt profile
+        if RS.p0_half[k] > 85000.0:
+            thetal[k] = 269.2
+            wt[k] = 1.95 #Mixing ratio in g/kg
+        else:
+            thetal[k] = 275.33 + 0.0791 * (815.0 - RS.p0_half[k]/100.0)
+            wt[k] = 0.291 + 0.00204 * (RS.p0_half[k]/100.0 - 590.0)
+
+        #Convert mixing ratio to specific humidity
+        qt[k] = wt[k]/(1.0 + wt[k])
+
+    #Horizontal wind
+    RS.u0 = -13.0
+    RS.v0 = -3.0
+
+    #Generate initial perturbations (here we are generating more than we need)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef double theta_pert_
+
+    #Now loop and set the initial condition
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift = istride * i
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = jstride * j
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[ijk + u_varshift] = 0.0 - RS.u0
+                PV.values[ijk + v_varshift] = 0.0 - RS.v0
+                PV.values[ijk + w_varshift] = 0.0
+                PV.values[ijk + qt_varshift]  = qt[k]
+
+                #Now set the entropy prognostic variable including a potential temperature perturbation
+                if RS.p0_half[k] > 85000.0:
+                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                else:
+                    theta_pert_ = 0.0
+                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k], Th)
+                PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+
+    return
+
 
 def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
                        DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
