@@ -41,6 +41,8 @@ def InitializationFactory(namelist):
             return InitIsdac
         elif casename == 'IsdacCC':
             return InitIsdacCC
+        elif casename == 'Mpace':
+            return InitMpace
         else:
             pass
 
