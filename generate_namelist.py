@@ -488,7 +488,6 @@ def DYCOMS_RF01():
     namelist['radiation']['use_RRTM'] = True
     namelist['radiation']['RRTM'] = {}
     namelist['radiation']['RRTM']['frequency'] = 60.0
-    namelist['radiation']['RRTM']['dyofyr'] = 283.0
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -857,7 +856,7 @@ def Isdac():
     namelist['radiation']['RRTM']['frequency'] = 60.0
     namelist['radiation']['RRTM']['buffer_points'] = 15
     namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
-    namelist['radiation']['RRTM']['adjes'] = 0.0
+    namelist['radiation']['RRTM']['dyofyr'] = 283.0
     # namelist['radiation']['RRTM']['coszen'] = 0.0
 
     namelist["diffusion"] = {}
