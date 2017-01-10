@@ -488,6 +488,7 @@ def DYCOMS_RF01():
     namelist['radiation']['use_RRTM'] = True
     namelist['radiation']['RRTM'] = {}
     namelist['radiation']['RRTM']['frequency'] = 60.0
+    namelist['radiation']['RRTM']['dyofyr'] = 283.0
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
