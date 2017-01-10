@@ -20,6 +20,7 @@ from libc.math cimport pow, cbrt, exp, fmin, fmax
 from thermodynamic_functions cimport cpm_c
 include 'parameters.pxi'
 from profiles import profile_data
+import matplotlib.pyplot as plt
 
 def RadiationFactory(namelist, ParallelMPI.ParallelMPI Pa):
     # if namelist specifies RRTM is to be used, this will override any case-specific radiation schemes
@@ -495,6 +496,8 @@ cdef class RadiationRRTM:
         elif casename == 'Isdac':
             self.profile_name = 'arctic'
         elif casename == 'IsdacCC':
+            self.profile_name = 'arctic'
+        elif casename == 'Mpace':
             self.profile_name = 'arctic'
         else:
             self.profile_name = 'default'
