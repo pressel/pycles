@@ -15,6 +15,7 @@ from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c,
 cimport ReferenceState
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
+import matplotlib.pyplot as plt
 
 def InitializationFactory(namelist):
 
@@ -1148,7 +1149,6 @@ def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] wt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double T, ql
 
     for k in xrange(Gr.dims.nlg[2]):
 
@@ -1161,7 +1161,7 @@ def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             wt[k] = 0.291 + 0.00204 * (RS.p0_half[k]/100.0 - 590.0)
 
         #Convert mixing ratio to specific humidity
-        qt[k] = wt[k]/(1.0 + wt[k])
+        qt[k] = wt[k]/(1.0 + wt[k])/1000.0
 
     #Horizontal wind
     RS.u0 = -13.0
