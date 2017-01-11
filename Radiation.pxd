@@ -103,6 +103,7 @@ cdef class RadiationRRTM(RadiationBase):
 
         double co2_factor
         double h2o_factor
+        int dyofyr_init
         int dyofyr
         double scon
         double adjes
@@ -113,6 +114,7 @@ cdef class RadiationRRTM(RadiationBase):
         double radiation_frequency
         double next_radiation_calculate
         double daily_mean_sw
+        double hourz_init
         double hourz
         double latitude
         double longitude

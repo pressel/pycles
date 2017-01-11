@@ -532,9 +532,10 @@ cdef class RadiationRRTM:
         # Namelist options related to insolation
 
         try:
-            self.dyofyr = namelist['radiation']['RRTM']['dyofyr']
+            self.dyofyr_init = namelist['radiation']['RRTM']['dyofyr']
         except:
-            self.dyofyr = 0
+            self.dyofyr_init = 0
+        self.dyofyr = self.dyofyr_init
 
         #Adjes is not used if dyofyr > 0
         try:
@@ -557,10 +558,10 @@ cdef class RadiationRRTM:
                 sys.exit()
         else:
             try:
-                self.hourz = namelist['radiation']['RRTM']['hourz']
                 self.latitude = namelist['radiation']['RRTM']['latitude']
                 self.longitude = namelist['radiation']['RRTM']['longitude']
-                self.coszen = cos_sza(self.dyofyr, self.hourz, self.latitude, self.longitude)
+                self.hourz_init = namelist['radiation']['RRTM']['hourz']
+                self.coszen = cos_sza(self.dyofyr_init, self.hourz_init, self.latitude, self.longitude)
             except:
                 print('Hourz, latitude, or longitude not set. Cannot calculate RRTM SW. Exit now!')
                 sys.exit()
@@ -849,6 +850,14 @@ cdef class RadiationRRTM:
             if self.radiation_frequency <= 0.0:
                 self.update_RRTM(Gr, Ref, PV, DV, Pa)
             elif TS.t >= self.next_radiation_calculate:
+                if not self.daily_mean_sw:
+                    #Calculate coszen
+                    self.dyofyr = np.floor_divide(TS.t, 86400.0) + self.dyofyr_init
+                    self.hourz = self.hourz_init + TS.t/3600.0
+                    if self.hourz > 24.0:
+                        self.hourz = np.remainder(self.hourz, 24.0)
+                    self.coszen = cos_sza(self.dyofyr, self.hourz, self.latitude, self.longitude)
+
                 self.update_RRTM(Gr, Ref, PV, DV, Pa)
                 self.next_radiation_calculate = (TS.t//self.radiation_frequency + 1.0) * self.radiation_frequency
 

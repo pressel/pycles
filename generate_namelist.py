@@ -1048,7 +1048,7 @@ def Mpace():
     namelist['radiation']['RRTM']['frequency'] = 60.0
     namelist['radiation']['RRTM']['buffer_points'] = 15
     namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
-    namelist['radiation']['RRTM']['dyofyr'] = 283.0
+    namelist['radiation']['RRTM']['dyofyr'] = 283
     # namelist['radiation']['RRTM']['coszen'] = 0.0
     namelist['radiation']['RRTM']['daily_mean_sw'] = False
     namelist['radiation']['RRTM']['hourz'] = 17.0
