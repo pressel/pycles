@@ -1050,6 +1050,10 @@ def Mpace():
     namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
     namelist['radiation']['RRTM']['dyofyr'] = 283.0
     # namelist['radiation']['RRTM']['coszen'] = 0.0
+    namelist['radiation']['RRTM']['daily_mean_sw'] = False
+    namelist['radiation']['RRTM']['hourz'] = 17.0
+    namelist['radiation']['RRTM']['latitude'] = 71.75
+    namelist['radiation']['RRTM']['longitude'] = 151.0
 
     namelist["diffusion"] = {}
     namelist['diffusion']['qt_entropy_source'] = False

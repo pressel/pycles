@@ -112,6 +112,10 @@ cdef class RadiationRRTM(RadiationBase):
         double adir
         double radiation_frequency
         double next_radiation_calculate
+        double daily_mean_sw
+        double hourz
+        double latitude
+        double longitude
 
         double [:] o3vmr
         double [:] co2vmr

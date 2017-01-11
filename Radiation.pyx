@@ -16,11 +16,12 @@ import numpy as np
 cimport numpy as np
 import netCDF4 as nc
 from scipy.interpolate import pchip_interpolate
-from libc.math cimport pow, cbrt, exp, fmin, fmax
+from libc.math cimport pow, cbrt, exp, fmin, fmax, cos, sqrt, sin
 from thermodynamic_functions cimport cpm_c
 include 'parameters.pxi'
 from profiles import profile_data
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
+import sys
 
 def RadiationFactory(namelist, ParallelMPI.ParallelMPI Pa):
     # if namelist specifies RRTM is to be used, this will override any case-specific radiation schemes
@@ -529,15 +530,41 @@ cdef class RadiationRRTM:
             self.h2o_factor = 1.0
 
         # Namelist options related to insolation
+
         try:
             self.dyofyr = namelist['radiation']['RRTM']['dyofyr']
         except:
             self.dyofyr = 0
+
+        #Adjes is not used if dyofyr > 0
         try:
             self.adjes = namelist['radiation']['RRTM']['adjes']
         except:
-            print('Insolation adjustive factor not set so RadiationRRTM takes default value: adjes = 0.5 (12 hour of daylight).')
-            self.adjes = 0.5
+            print('Insolation adjustive factor not set so RadiationRRTM takes default value: adjes = 1.0.')
+            self.adjes = 1.0
+
+        try:
+            self.daily_mean_sw = namelist['radiation']['RRTM']['daily_mean_sw']
+        except:
+            print('Use daily mean sw in RRTM!')
+            self.daily_mean_sw = True
+
+        if self.daily_mean_sw:
+            try:
+                self.coszen = namelist['radiation']['RRTM']['coszen']
+            except:
+                print('Coszen not provided for daily mean SW radiation in RRTM! Exit now!')
+                sys.exit()
+        else:
+            try:
+                self.hourz = namelist['radiation']['RRTM']['hourz']
+                self.latitude = namelist['radiation']['RRTM']['latitude']
+                self.longitude = namelist['radiation']['RRTM']['longitude']
+                self.coszen = cos_sza(self.dyofyr, self.hourz, self.latitude, self.longitude)
+            except:
+                print('Hourz, latitude, or longitude not set. Cannot calculate RRTM SW. Exit now!')
+                sys.exit()
+
 
         try:
             self.scon = namelist['radiation']['RRTM']['solar_constant']
@@ -545,11 +572,12 @@ cdef class RadiationRRTM:
             print('Solar Constant not set so RadiationRRTM takes default value: scon = 1360.0 .')
             self.scon = 1360.0
 
-        try:
-            self.coszen =namelist['radiation']['RRTM']['coszen']
-        except:
-            print('Mean Daytime cos(SZA) not set so RadiationRRTM takes default value: coszen = 2.0/pi .')
-            self.coszen = 2.0/pi
+        # try:
+        #     self.coszen =namelist['radiation']['RRTM']['coszen']
+        # except:
+        #     print('Mean Daytime cos(SZA) not set so RadiationRRTM takes default value: coszen = 2.0/pi .')
+        #     self.coszen = 2.0/pi
+
 
         try:
             self.adif = namelist['radiation']['RRTM']['adif']
@@ -1097,3 +1125,23 @@ cdef class RadiationRRTM:
         NS.write_profile('sw_flux_down', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
+
+#Calculate cos(solar zenith angle) from radiation.f90 in JPLLES provided by Colleen
+cdef double cos_sza(double jday, double hourz, double dlat, double dlon) nogil:
+
+    cdef double epsiln = 0.016733
+    cdef double sinob = 0.3978
+    cdef double dpy = 365.242 #degrees per year
+    cdef double dph = 15.0 #degrees per hour
+    cdef double day_angle = 2.0*pi*(jday-1.)/dpy
+    #Hours of Meridian Passage (true solar noon)
+    cdef double homp = (12.0 + 0.12357*sin(day_angle) - 0.004289*cos(day_angle) + 0.153809*sin(2*day_angle) + 0.060783*cos(2*day_angle))
+    cdef double hour_angle = dph*(hourz - homp) - dlon
+    cdef double ang = 279.9348*pi/180. + day_angle
+    cdef double sigma = (ang*180./pi + 0.4087*sin(ang) + 1.8724*cos(ang) - 0.0182*sin(2.*ang) + 0.0083*cos(2.*ang))*pi/180.
+    cdef double sindlt = sinob*sin(sigma)
+    cdef double cosdlt = sqrt(1. - sindlt*sindlt)
+    cdef double cos_sza = fmax(sindlt*sin(pi/180.*dlat) +cosdlt*cos(pi/180.*dlat)*cos(pi/180.*hour_angle), 0.0)
+
+    return cos_sza
+
