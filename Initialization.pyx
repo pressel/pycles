@@ -1128,7 +1128,7 @@ def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.Tg = 274.01 #Sea surface temperature
     pvg = Th.get_pv_star(RS.Tg) #Saturation vapor pressure
     wtg = eps_v * pvg/(RS.Pg - pvg) #Saturation mixing ratio
-    RS.qtg = wtg/(1+wtg) #Saturation specific humidity
+    RS.qtg = wtg/(1.0+wtg) #Saturation specific humidity
 
     RS.initialize(Gr, Th, NS, Pa)
 
@@ -1161,7 +1161,7 @@ def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             wt[k] = 0.291 + 0.00204 * (RS.p0_half[k]/100.0 - 590.0)
 
         #Convert mixing ratio to specific humidity
-        qt[k] = wt[k]/(1.0 + wt[k])/1000.0
+        qt[k] = wt[k]/(1.0 + wt[k]/1000.0)/1000.0
 
     #Horizontal wind
     RS.u0 = -13.0
