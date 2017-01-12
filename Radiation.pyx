@@ -554,8 +554,8 @@ cdef class RadiationRRTM:
             try:
                 self.coszen = namelist['radiation']['RRTM']['coszen']
             except:
-                print('Coszen not provided for daily mean SW radiation in RRTM! Exit now!')
-                sys.exit()
+                self.coszen = 0.0
+                print('Coszen not provided for daily mean SW radiation in RRTM! Set the default value: coszen = 0.0, no SW!')
         else:
             try:
                 self.latitude = namelist['radiation']['RRTM']['latitude']
