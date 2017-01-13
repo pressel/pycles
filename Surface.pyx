@@ -862,7 +862,6 @@ cdef class SurfaceMpace(SurfaceBase):
         self.ft = 136.5
         self.fq = 107.7
         self.gustiness = 0.0
-        self.cm = 0.0011
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
         sst = 274.01 # K
@@ -879,7 +878,6 @@ cdef class SurfaceMpace(SurfaceBase):
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
-        self.windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
 
         return
 
@@ -896,10 +894,14 @@ cdef class SurfaceMpace(SurfaceBase):
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
+            double z1 = Gr.dims.dx[2] * 0.5
+            double z0
+            double [:] cm = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+            double [:] windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
 
 
-
-        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &self.windspeed[0],Ref.u0, Ref.v0,self.gustiness)
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0],Ref.u0, Ref.v0, self.gustiness)
+        # self.z0 = compute_z0(z1, self.windspeed)
 
         cdef:
             Py_ssize_t i,j, ijk, ij
@@ -912,7 +914,7 @@ cdef class SurfaceMpace(SurfaceBase):
 
             double lam, lv, pv, pd, sv, sd
 
-            double [:] windspeed = self.windspeed
+            # double [:] windspeed = self.windspeed
 
 
         with nogil:
@@ -920,7 +922,10 @@ cdef class SurfaceMpace(SurfaceBase):
                 for j in xrange(gw-1, jmax-gw+1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.friction_velocity[ij] = sqrt(self.cm) * self.windspeed[ij]
+                    # self.friction_velocity[ij] = sqrt(self.cm) * self.windspeed[ij]
+                    z0 = compute_z0(z1, windspeed[ij])
+                    self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.buoyancy_flux, z0, z1)
+                    cm[ij] = (self.friction_velocity[ij]/windspeed[ij]) * (self.friction_velocity[ij]/windspeed[ij])
                     lam = self.Lambda_fp(DV.values[t_shift+ijk])
                     lv = self.L_fp(DV.values[t_shift+ijk],lam)
                     pv = pv_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
@@ -929,12 +934,13 @@ cdef class SurfaceMpace(SurfaceBase):
                     sd = sd_c(pd,DV.values[t_shift+ijk])
                     self.qt_flux[ij] = self.fq / lv / 1.22
                     self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ijk] + self.fq*(sv - sd)/lv)
+
             for i in xrange(gw, imax-gw):
                 for j in xrange(gw, jmax-gw):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    self.u_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
-                    self.v_flux[ij] = -self.cm * interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    self.u_flux[ij] = -cm[ij] * interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -cm[ij] * interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
 
         SurfaceBase.update(self, Gr, Ref, PV, DV, Pa,TS)
         return
