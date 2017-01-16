@@ -861,7 +861,7 @@ cdef class SurfaceMpace(SurfaceBase):
     def __init__(self,namelist, LatentHeat LH):
         self.ft = 136.5
         self.fq = 107.7
-        self.gustiness = 0.0
+        self.gustiness = 0.01
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
         sst = 274.01 # K
