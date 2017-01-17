@@ -901,7 +901,6 @@ cdef class SurfaceMpace(SurfaceBase):
 
 
         compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0],Ref.u0, Ref.v0, self.gustiness)
-        # self.z0 = compute_z0(z1, self.windspeed)
 
         cdef:
             Py_ssize_t i,j, ijk, ij
@@ -914,7 +913,6 @@ cdef class SurfaceMpace(SurfaceBase):
 
             double lam, lv, pv, pd, sv, sd
 
-            # double [:] windspeed = self.windspeed
 
 
         with nogil:
@@ -922,7 +920,6 @@ cdef class SurfaceMpace(SurfaceBase):
                 for j in xrange(gw-1, jmax-gw+1):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
-                    # self.friction_velocity[ij] = sqrt(self.cm) * self.windspeed[ij]
                     z0 = compute_z0(z1, windspeed[ij])
                     self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.buoyancy_flux, z0, z1)
                     cm[ij] = (self.friction_velocity[ij]/windspeed[ij]) * (self.friction_velocity[ij]/windspeed[ij])
