@@ -100,6 +100,8 @@ cdef class SpectraStatistics:
 
         # set up the names of the variables
         NC.add_condstat('energy_spectrum', 'spectra', 'wavenumber', Gr, Pa)
+        NC.add_condstat('w_spectrum', 'spectra', 'wavenumber', Gr, Pa)
+        NC.add_condstat('horvel_spectrum', 'spectra', 'wavenumber', Gr, Pa)
         if 's' in PV.name_index:
             NC.add_condstat('s_spectrum', 'spectra', 'wavenumber', Gr, Pa)
         if 'qt' in PV.name_index:
@@ -183,8 +185,12 @@ cdef class SpectraStatistics:
         self.fluctuation_forward_transform(Gr, Pa, wc[:], data_fft[:])
         spec_w = self.compute_spectrum(Gr, Pa,  data_fft[:])
 
-        spec = np.add(np.add(spec_u,spec_v), spec_w)
+        spec = np.add(spec_u,spec_v)
+        NC.write_condstat('horvel_spectrum', 'spectra', spec[:,:], Pa)
+
+        spec = np.add(spec, spec_w)
         NC.write_condstat('energy_spectrum', 'spectra', spec[:,:], Pa)
+        NC.write_condstat('w_spectrum', 'spectra', spec_w[:,:], Pa)
 
         if 's' in PV.name_index:
             var_shift = PV.get_varshift(Gr, 's')
