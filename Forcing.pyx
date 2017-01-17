@@ -946,8 +946,8 @@ cdef class ForcingMpace:
         self.subsidence = np.empty((Gr.dims.nlg[2]), dtype=np.double, order='c')
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.u0 = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * 13.0
-        self.v0 = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * 3.0
+        self.u0 = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * -13.0
+        self.v0 = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * -3.0
         self.nudge_coeff_velocities = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') / 3600.0
 
         with nogil:
