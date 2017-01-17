@@ -950,7 +950,7 @@ def InitIsdac(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             jshift = jstride * j
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
-                PV.values[ijk + u_varshift] = 0.0 - RS.u0
+                PV.values[ijk + u_varshift] = -7.0 - RS.u0
                 PV.values[ijk + v_varshift] = v[k] - RS.v0
                 PV.values[ijk + w_varshift] = 0.0
                 PV.values[ijk + qt_varshift]  = qt[k]
@@ -1104,7 +1104,7 @@ def InitIsdacCC(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             jshift = jstride * j
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
-                PV.values[ijk + u_varshift] = 0.0 - RS.u0
+                PV.values[ijk + u_varshift] = -7.0 - RS.u0
                 PV.values[ijk + v_varshift] = v[k] - RS.v0
                 PV.values[ijk + w_varshift] = 0.0
                 PV.values[ijk + qt_varshift]  = RS.ic_qt[k]
@@ -1178,8 +1178,8 @@ def InitMpace(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             jshift = jstride * j
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
-                PV.values[ijk + u_varshift] = 0.0 - RS.u0
-                PV.values[ijk + v_varshift] = 0.0 - RS.v0
+                PV.values[ijk + u_varshift] = -13.0 - RS.u0
+                PV.values[ijk + v_varshift] = -3.0 - RS.v0
                 PV.values[ijk + w_varshift] = 0.0
                 PV.values[ijk + qt_varshift]  = qt[k]
 
