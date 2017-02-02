@@ -96,10 +96,7 @@ class Simulation3d:
         self.MA.initialize(self.Gr,self.PV, self.StatsIO, self.Pa)
         self.SD.initialize(self.Gr,self.PV,self.DV,self.StatsIO,self.Pa)
         self.MD.initialize(self.Gr,self.PV,self.DV,self.StatsIO, self.Pa)
-        self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
-
         self.TS.initialize(namelist,self.PV,self.Pa)
-
         self.Sur.initialize(namelist, self.Gr, self.Ref,  self.StatsIO, self.Pa)
 
 

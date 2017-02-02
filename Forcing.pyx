@@ -949,16 +949,11 @@ cdef class ForcingZGILS:
             Py_ssize_t k
             double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g
 
-        print('Sub_Factor', sub_factor)
-
-
         # Adjust the
         self.qt_adv_max = self.qt_adv_max * (1.18) ** self.n_double_co2
         # Adjust the subsidence if a VarSub climate change case is being run
         if self.varsub:
             sub_factor = sub_factor * (0.86) ** self.n_double_co2
-
-        print('Sub_Factor adjsted', sub_factor)
 
 
         # initialize the profiles of geostrophic velocity, subsidence, and large scale advection

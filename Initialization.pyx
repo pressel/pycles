@@ -1171,6 +1171,19 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
         reference_profiles = ReferenceRCE(filename)
 
+    try:
+        init_from_mean = namelist['meta']['ZGILS']['init_from_mean']
+    except:
+        init_from_mean = False
+
+    if init_from_mean:
+        filename = namelist['meta']['ZGILS']['init_file']
+        init_time = namelist['meta']['ZGILS']['init_time']
+        data = nc.Dataset(filename, 'r')
+        t = data.groups['profiles'].variables['t'][:]
+        dt_profiles = t[1] - t[0]
+        init_time_index = int((init_time - t[0])/dt_profiles)
+        print('init_from_means', init_time, t[init_time_index])
 
 
     RS.Tg= 289.472
@@ -1194,17 +1207,46 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        Py_ssize_t kmin = Gr.dims.gw
+        Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
         double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] s  = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] u  = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] v  = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
 
-    for k in xrange(Gr.dims.nlg[2]):
-        if RS.p0_half[k]  > 920.0e2:
+    if init_from_mean:
+        for k in xrange(Gr.dims.nl[2]):
+            thetal[k + kmin] = data.groups['profiles'].variables['thetali_mean'][init_time_index,k]
+            qt[k + kmin] = data.groups['profiles'].variables['qt_mean'][init_time_index,k]
+            s[k + kmin] = data.groups['profiles'].variables['s_mean'][init_time_index,k]
+            u[k + kmin] = data.groups['profiles'].variables['u_mean'][init_time_index,k]
+            v[k + kmin] = data.groups['profiles'].variables['v_mean'][init_time_index,k]
+
+        thetal[:kmin] = thetal[kmin]
+        thetal[kmax:] = thetal[kmax-1]
+        qt[:kmin] = qt[kmin]
+        qt[kmax:] = qt[kmax-1]
+        s[:kmin] = s[kmin]
+        s[kmax:] = s[kmax-1]
+        u[:kmin] = u[kmin]
+        u[kmax:] = u[kmax-1]
+        v[:kmin] = v[kmin]
+        v[kmax:] = v[kmax-1]
+    else:
+        for k in xrange(Gr.dims.nlg[2]):
+            u[k] = reference_profiles.u[k]
+            v[k] = reference_profiles.v[k]
+            s[k] = reference_profiles.s[k]
             thetal[k] = RS.Tg /exner_c(RS.Pg)
-            qt[k] = RS.qtg
+            if RS.p0_half[k]  > 920.0e2:
+                qt[k] = RS.qtg
+            else:
+                qt[k] = reference_profiles.qt[k]
 
 
-      #Set velocities for Galilean transformation
+    #Set velocities for Galilean transformation
     RS.u0 = 0.5 * (np.amax(reference_profiles.u[:])+np.amin(reference_profiles.u[:]))
     RS.v0 = 0.5 * (np.amax(reference_profiles.v[:])+np.amin(reference_profiles.v[:]))
 
@@ -1214,7 +1256,6 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         return theta_ * exp(-2.501e6 * ql_ / (cpd* T_))
 
     def sat_adjst(p_,thetal_,qt_):
-
 
         #Compute temperature
         t_1 = thetal_ * (p_/p_tilde)**kappa
@@ -1259,17 +1300,16 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             jshift = jstride * j
             for k in xrange(Gr.dims.nlg[2]):
                 ijk = ishift + jshift + k
-                PV.values[ijk + u_varshift] = reference_profiles.u[k] - RS.u0
-                PV.values[ijk + v_varshift] = reference_profiles.v[k] - RS.v0
+                PV.values[ijk + u_varshift] = u[k] - RS.u0
+                PV.values[ijk + v_varshift] = v[k] - RS.v0
                 PV.values[ijk + w_varshift] = 0.0
+                PV.values[ijk + qt_varshift]  = qt[k]
                 if RS.p0_half[k] > 920.0e2:
-                    PV.values[ijk + qt_varshift]  = qt[k]
                     theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
                     T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
                     PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
                 else:
-                    PV.values[ijk + qt_varshift]  = reference_profiles.qt[k]
-                    PV.values[ijk + s_varshift] = reference_profiles.s[k]
+                    PV.values[ijk + s_varshift] = s[k]
 
 
     return
