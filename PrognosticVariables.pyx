@@ -279,7 +279,7 @@ cdef class PrognosticVariables:
         Re.restart_data['PV']['velocity_names_directional'] = self.velocity_names_directional
 
         cdef:
-            double [:] values = np.empty((self.nv * Gr.dims.npl),dtype=np.double,order='c')
+            double [:] values = np.empty((Gr.dims.npl),dtype=np.double,order='c')
             Py_ssize_t imin = Gr.dims.gw
             Py_ssize_t jmin = Gr.dims.gw
             Py_ssize_t kmin = Gr.dims.gw
@@ -291,10 +291,12 @@ cdef class PrognosticVariables:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
 
-        with nogil:
+
+
+        for n in xrange(self.nv):
+            v_shift = Gr.dims.nlg[0] * Gr.dims.nlg[1] * Gr.dims.nlg[2] * n
             count = 0
-            for n in xrange(self.nv):
-                v_shift = Gr.dims.nlg[0] * Gr.dims.nlg[1] * Gr.dims.nlg[2] * n
+            with nogil:
                 for i in xrange(imin, imax):
                     ishift = istride * i
                     for j in xrange(jmin, jmax):
@@ -304,50 +306,53 @@ cdef class PrognosticVariables:
                             values[count] = self.values[ijk]
                             count += 1
 
-        Re.restart_data['PV']['values'] = np.array(values)
+            Re.restart_data['PV'][self.index_name[n]] = np.array(values)
 
         return
 
 
     cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re):
 
-        self.name_index = Re.restart_data['PV']['name_index']
-        self.units  = Re.restart_data['PV']['units']
-        self.index_name =  Re.restart_data['PV']['index_name']
-        self.nv = Re.restart_data['PV']['nv']
-        self.nv_scalars = Re.restart_data['PV']['nv_scalars']
-        self.nv_velocities = Re.restart_data['PV']['nv_velocities']
-        self.bc_type = Re.restart_data['PV']['bc_type']
-        self.var_type = Re.restart_data['PV']['var_type']
-        self.velocity_directions = Re.restart_data['PV']['velocity_directions']
-        self.velocity_names_directional = Re.restart_data['PV']['velocity_names_directional']
+        re_name_index = Re.restart_data['PV']['name_index']
+        re_units  = Re.restart_data['PV']['units']
+        re_index_name =  Re.restart_data['PV']['index_name']
+        re_nv = Re.restart_data['PV']['nv']
+        re_nv_scalars = Re.restart_data['PV']['nv_scalars']
+        re_nv_velocities = Re.restart_data['PV']['nv_velocities']
+        re_bc_type = Re.restart_data['PV']['bc_type']
+        re_var_type = Re.restart_data['PV']['var_type']
+        re_velocity_directions = Re.restart_data['PV']['velocity_directions']
+        re_velocity_names_directional = Re.restart_data['PV']['velocity_names_directional']
 
 
         cdef:
-            double [:] values = Re.restart_data['PV']['values']
+            double [:] values #= Re.restart_data['PV']['values']
             Py_ssize_t imin = Gr.dims.gw
             Py_ssize_t jmin = Gr.dims.gw
             Py_ssize_t kmin = Gr.dims.gw
             Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            Py_ssize_t i, j, k, count, ijk, n
+            Py_ssize_t i, j, k, count, ijk, n,
             Py_ssize_t ishift, jshift, v_shift
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
 
 
-        with nogil:
-            count = 0
-            for n in xrange(self.nv):
-                v_shift = Gr.dims.nlg[0] * Gr.dims.nlg[1] * Gr.dims.nlg[2] * n
-                for i in xrange(imin, imax):
-                    ishift = istride * i
-                    for j in xrange(jmin, jmax):
-                        jshift = jstride * j
-                        for k in xrange(kmin, kmax):
-                            ijk = v_shift + ishift + jshift + k
-                            self.values[ijk] =  values[count]
-                            count += 1
+
+        for n in xrange(self.nv):
+            v_shift = Gr.dims.nlg[0] * Gr.dims.nlg[1] * Gr.dims.nlg[2] * n
+            if self.index_name[n] in re_index_name:
+                values = Re.restart_data['PV'][self.index_name[n]]
+                count = 0
+                with nogil:
+                    for i in xrange(imin, imax):
+                        ishift = istride * i
+                        for j in xrange(jmin, jmax):
+                            jshift = jstride * j
+                            for k in xrange(kmin, kmax):
+                                ijk = v_shift + ishift + jshift + k
+                                self.values[ijk] =  values[count]
+                                count += 1
 
         return

@@ -96,6 +96,7 @@ class Simulation3d:
         self.MA.initialize(self.Gr,self.PV, self.StatsIO, self.Pa)
         self.SD.initialize(self.Gr,self.PV,self.DV,self.StatsIO,self.Pa)
         self.MD.initialize(self.Gr,self.PV,self.DV,self.StatsIO, self.Pa)
+        self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
 
         self.TS.initialize(namelist,self.PV,self.Pa)
 
@@ -112,7 +113,7 @@ class Simulation3d:
 
             self.TS.t = self.Restart.restart_data['TS']['t']
             self.TS.dt = self.Restart.restart_data['TS']['dt']
-            self.Ref.init_from_restart(self.Gr, self.Restart)
+            self.Ref.init_from_restart(self.Gr, self.Restart, self.StatsIO, self.Pa)
             self.PV.init_from_restart(self.Gr, self.Restart)
             self.Sur.init_from_restart(self.Restart)
             self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']

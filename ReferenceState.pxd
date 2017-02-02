@@ -1,5 +1,7 @@
 cimport Grid
 cimport Restart
+from NetCDFIO cimport NetCDFIO_Stats
+cimport ParallelMPI
 cdef class ReferenceState:
     cdef:
         public double [:] p0
@@ -27,5 +29,5 @@ cdef class ReferenceState:
         double v0 #v velocity removed in Galilean transformation
 
     cpdef restart(self, Grid.Grid Gr, Restart.Restart Re)
-    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re)
+    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 

@@ -178,7 +178,7 @@ cdef class ReferenceState:
         return
 
 
-    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re):
+    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         self.Tg = Re.restart_data['Ref']['Tg']
         self.Pg = Re.restart_data['Ref']['Pg']
@@ -201,6 +201,13 @@ cdef class ReferenceState:
         self.rho0_global = 1.0 / Re.restart_data['Ref']['alpha0_global']
         self.rho0_half_global = 1.0 / Re.restart_data['Ref']['alpha0_half_global']
 
+        # Write reference profiles to StatsIO
+        NS.add_reference_profile('alpha0', Gr, Pa)
+        NS.write_reference_profile('alpha0', self.alpha0_half_global[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.add_reference_profile('p0', Gr, Pa)
+        NS.write_reference_profile('p0', self.p0_half_global[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.add_reference_profile('rho0', Gr, Pa)
+        NS.write_reference_profile('rho0',self.rho0_half_global[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
         return
