@@ -871,7 +871,10 @@ cdef class SurfaceZGILS(SurfaceBase):
 
 
         self.gustiness = 0.001
-        self.z0 = 1.0e-3
+        try:
+            self.z0 = namelist['surface_budget']['zrough']
+        except:
+            self.z0 = 1.0e-3
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
