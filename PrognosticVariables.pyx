@@ -326,7 +326,7 @@ cdef class PrognosticVariables:
 
 
         cdef:
-            double [:] values #= Re.restart_data['PV']['values']
+            double [:] values
             Py_ssize_t imin = Gr.dims.gw
             Py_ssize_t jmin = Gr.dims.gw
             Py_ssize_t kmin = Gr.dims.gw
