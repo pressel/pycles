@@ -142,19 +142,19 @@ cdef class Grid:
         cdef int i, count = 0
         for i in xrange(-self.dims.gw,self.dims.n[2]+self.dims.gw,1):
             self.z[count] = (i + 1) * self.dims.dx[2]
-            self.z_half[count] = (i+0.5)*self.dims.dx[2]
+            self.z_half[count] = (i+1.5)*self.dims.dx[2]
             count += 1
 
         count = 0
         for i in xrange(-self.dims.gw,self.dims.n[0]+self.dims.gw,1):
             self.x[count] = (i + 1) * self.dims.dx[0]
-            self.x_half[count] = (i+0.5)*self.dims.dx[0]
+            self.x_half[count] = (i+1.5)*self.dims.dx[0]
             count += 1
 
         count = 0
         for i in xrange(-self.dims.gw,self.dims.n[1]+self.dims.gw,1):
             self.y[count] = (i + 1) * self.dims.dx[1]
-            self.y_half[count] = (i+0.5)*self.dims.dx[1]
+            self.y_half[count] = (i+1.5)*self.dims.dx[1]
             count += 1
 
 
