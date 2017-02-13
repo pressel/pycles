@@ -45,6 +45,8 @@ cdef class Grid:
         self.compute_local_dims(Parallel)
         self.compute_coordinates()
 
+        import sys; sys.exit()
+
         return
 
     cdef inline void compute_global_dims(self):
@@ -138,6 +140,11 @@ cdef class Grid:
 
         self.z_half = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
         self.z = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
+
+
+        cdef double zp_max = self.dims.n[2] * self.dims.dx[2]
+        self.dims.dx[2] = np.sqrt(zp_max) / self.dims.n[2]
+
 
         cdef int i, count = 0
         for i in xrange(-self.dims.gw,self.dims.n[2]+self.dims.gw,1):
