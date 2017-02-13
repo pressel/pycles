@@ -1,10 +1,10 @@
-cpdef inline double sd(double pd, double T) nogil:
+cpdef inline float sd(float pd, float T) nogil:
     return sd_c(pd, T)
-cpdef inline double sv(double pv, double T) nogil:
+cpdef inline float sv(float pv, float T) nogil:
     return sv_c(pv, T)
-cpdef inline double sc(double L, double T) nogil:
+cpdef inline float sc(float L, float T) nogil:
     return sc_c(L, T)
-cpdef inline double s_tendency(double p0, double qt, double qv, double T,
-                                     double qt_tendency, double T_tendency) nogil:
+cpdef inline float s_tendency(float p0, float qt, float qv, float T,
+                                     float qt_tendency, float T_tendency) nogil:
     return s_tendency_c(p0, qt, qv, T, qt_tendency, T_tendency)
 

@@ -84,10 +84,10 @@ cdef class SurfaceBudget:
         cdef:
             int root = 0
             int count = 1
-            double rho_liquid = 1000.0
-            double mean_shf = Pa.HorizontalMeanSurface(Gr, &Sur.shf[0])
-            double mean_lhf = Pa.HorizontalMeanSurface(Gr, &Sur.lhf[0])
-            double net_flux, tendency
+            float rho_liquid = 1000.0
+            float mean_shf = Pa.HorizontalMeanSurface(Gr, &Sur.shf[0])
+            float mean_lhf = Pa.HorizontalMeanSurface(Gr, &Sur.lhf[0])
+            float net_flux, tendency
 
         if self.constant_sst:
             return
@@ -108,7 +108,7 @@ cdef class SurfaceBudget:
             tendency = net_flux/cl/rho_liquid/self.water_depth
             Sur.T_surface += tendency *TS.dt
 
-        mpi.MPI_Bcast(&Sur.T_surface,count,mpi.MPI_DOUBLE,root, Pa.cart_comm_sub_z)
+        mpi.MPI_Bcast(&Sur.T_surface,count,mpi.MPI_FLOAT,root, Pa.cart_comm_sub_z)
 
 
 

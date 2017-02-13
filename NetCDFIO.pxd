@@ -15,8 +15,8 @@ cdef class NetCDFIO_Stats:
         str path_plus_file
         str uuid
 
-        public double last_output_time
-        public double frequency
+        public float last_output_time
+        public float frequency
         public bint do_output
 
     cpdef initialize(self, dict namelist, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
@@ -26,10 +26,10 @@ cdef class NetCDFIO_Stats:
     cpdef add_ts(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef open_files(self, ParallelMPI.ParallelMPI Pa)
     cpdef close_files(self, ParallelMPI.ParallelMPI Pa)
-    cpdef write_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa)
-    cpdef write_reference_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa)
-    cpdef write_ts(self, var_name, double data, ParallelMPI.ParallelMPI Pa)
-    cpdef write_simulation_time(self, double t, ParallelMPI.ParallelMPI Pa)
+    cpdef write_profile(self, var_name, float[:] data, ParallelMPI.ParallelMPI Pa)
+    cpdef write_reference_profile(self, var_name, float[:] data, ParallelMPI.ParallelMPI Pa)
+    cpdef write_ts(self, var_name, float data, ParallelMPI.ParallelMPI Pa)
+    cpdef write_simulation_time(self, float t, ParallelMPI.ParallelMPI Pa)
 
 cdef class NetCDFIO_Fields:
     cdef:
@@ -40,8 +40,8 @@ cdef class NetCDFIO_Fields:
         str uuid
         list diagnostic_fields
 
-        public double last_output_time
-        public double frequency
+        public float last_output_time
+        public float frequency
         public bint do_output
 
     cpdef initialize(self, dict namelist, ParallelMPI.ParallelMPI Pa)
@@ -54,7 +54,7 @@ cdef class NetCDFIO_Fields:
     cpdef dump_diagnostic_variables(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 
     cpdef add_field(self, name)
-    cpdef write_field(self, name, double[:] data)
+    cpdef write_field(self, name, float[:] data)
 
 cdef class NetCDFIO_CondStats:
     cdef:
@@ -64,12 +64,12 @@ cdef class NetCDFIO_CondStats:
         str path_plus_file
         str uuid
 
-        public double last_output_time
-        public double frequency
+        public float last_output_time
+        public float frequency
         public bint do_output
 
     cpdef initialize(self, dict namelist, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
-    cpdef create_condstats_group(self, str groupname, str dimname, double[:] dimval, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
+    cpdef create_condstats_group(self, str groupname, str dimname, float[:] dimval, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
     cpdef add_condstat(self, str varname, str groupname, str dimname, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
-    cpdef write_condstat(self, varname, groupname, double[:,:] data, ParallelMPI.ParallelMPI Pa)
-    cpdef write_condstat_time(self, double t, ParallelMPI.ParallelMPI Pa)
+    cpdef write_condstat(self, varname, groupname, float[:,:] data, ParallelMPI.ParallelMPI Pa)
+    cpdef write_condstat_time(self, float t, ParallelMPI.ParallelMPI Pa)

@@ -3,7 +3,7 @@
 #include "advection_interpolation.h"
 #include "thermodynamic_functions.h"
 #include "entropies.h"
-void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *rho0_half, double *diffusivity, double *scalar, double *flux, double dx, ssize_t d, double factor){
+void second_order_diffusion(const struct DimStruct *dims, float  *rho0, float  *rho0_half, float  *diffusivity, float  *scalar, float  *flux, float  dx, ssize_t d, float  factor){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -17,7 +17,7 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
     const ssize_t kmax = dims->nlg[2]-dims->gw;
 
     const ssize_t stencil[3] = {istride,jstride,1};
-    const double dxi = 1.0/dx;
+    const float  dxi = 1.0/dx;
 
     if (d == 2){
         for(ssize_t i=imin; i<imax; i++){
@@ -61,7 +61,7 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
     return;
 }
 
-void compute_diffusive_flux(const struct DimStruct *dims, double *rho0, double *rho0_half, double *diffusivity, double *scalar, double *flux, double dx, ssize_t d, ssize_t scheme, double factor){
+void compute_diffusive_flux(const struct DimStruct *dims, float  *rho0, float  *rho0_half, float  *diffusivity, float  *scalar, float  *flux, float  dx, ssize_t d, ssize_t scheme, float  factor){
 
         switch(scheme){
             case 2:
@@ -70,9 +70,9 @@ void compute_diffusive_flux(const struct DimStruct *dims, double *rho0, double *
                 };
 }
 
-void compute_qt_diffusion_s_source(const struct DimStruct *dims, double *p0_half, double *alpha0, double* alpha0_half, double *flux,
-                                    double* qt, double* qv, double* T, double* tendency, double (*lam_fp)(double),
-                                    double (*L_fp)(double, double), double dx, ssize_t d){
+void compute_qt_diffusion_s_source(const struct DimStruct *dims, float  *p0_half, float  *alpha0, float * alpha0_half, float  *flux,
+                                    float * qt, float * qv, float * T, float * tendency, float  (*lam_fp)(float ),
+                                    float  (*L_fp)(float , float ), float  dx, ssize_t d){
 
     const ssize_t imin = dims->gw;
     const ssize_t jmin = dims->gw;
@@ -85,7 +85,7 @@ void compute_qt_diffusion_s_source(const struct DimStruct *dims, double *p0_half
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
 
-    const double dxi = 1.0/dx;
+    const float  dxi = 1.0/dx;
     const ssize_t stencil[3] = {istride,jstride,1};
 
     for(ssize_t i=imin; i<imax; i++){
@@ -96,17 +96,17 @@ void compute_qt_diffusion_s_source(const struct DimStruct *dims, double *p0_half
                 const ssize_t ijk = ishift + jshift + k;
 
                 // Compute Dry air entropy specific entropy
-                double pd = pd_c(p0_half[k],qt[ijk],qv[ijk]);
-                double sd = sd_c(pd,T[ijk]);
+                float  pd = pd_c(p0_half[k],qt[ijk],qv[ijk]);
+                float  sd = sd_c(pd,T[ijk]);
 
                 //Compute water vapor entropy specific entrop
-                double pv = pv_c(p0_half[k],qt[ijk],qv[ijk]);
-                double sv = sv_c(pv,T[ijk]);
+                float  pv = pv_c(p0_half[k],qt[ijk],qv[ijk]);
+                float  sv = sv_c(pv,T[ijk]);
 
                 //Compute water entropy
-                double lam = lam_fp(T[ijk]);
-                double L = L_fp(T[ijk],lam);
-                double sw = sv - (((qt[ijk] - qv[ijk])/qt[ijk])*L/T[ijk]);
+                float  lam = lam_fp(T[ijk]);
+                float  L = L_fp(T[ijk],lam);
+                float  sw = sv - (((qt[ijk] - qv[ijk])/qt[ijk])*L/T[ijk]);
 
                 tendency[ijk] -= (sw - sd) * alpha0_half[k] * (flux[ijk + stencil[d]] - flux[ijk])*dxi;
             }  // End k loop

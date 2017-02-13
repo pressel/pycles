@@ -11,10 +11,10 @@ cdef extern from "prognostic_variables.h":
         Py_ssize_t w
 
 cdef extern from "prognostic_variables.h":
-        void build_buffer(Py_ssize_t nv, Py_ssize_t dim, Py_ssize_t s ,Grid.DimStruct *dims, double* values, double* buffer)
-        void buffer_to_values(Py_ssize_t dim, Py_ssize_t s, Grid.DimStruct *dims, double* values, double* buffer)
-        void set_bcs(Py_ssize_t dim, Py_ssize_t s, double bc_factor,  Grid.DimStruct *dims, double* values)
-        void set_to_zero(Py_ssize_t nv, Grid.DimStruct *dims, double* values )
+        void build_buffer(Py_ssize_t nv, Py_ssize_t dim, Py_ssize_t s ,Grid.DimStruct *dims, float* values, float* buffer)
+        void buffer_to_values(Py_ssize_t dim, Py_ssize_t s, Grid.DimStruct *dims, float* values, float* buffer)
+        void set_bcs(Py_ssize_t dim, Py_ssize_t s, float bc_factor,  Grid.DimStruct *dims, float* values)
+        void set_to_zero(Py_ssize_t nv, Grid.DimStruct *dims, float* values )
 
 cdef class PrognosticVariables:
     cdef:
@@ -24,10 +24,10 @@ cdef class PrognosticVariables:
         Py_ssize_t nv
         Py_ssize_t nv_scalars
         Py_ssize_t nv_velocities
-        cdef double [:] bc_type
+        cdef float [:] bc_type
         cdef long [:] var_type
-        cdef double [:] values
-        cdef double [:] tendencies
+        cdef float [:] values
+        cdef float [:] tendencies
         cdef long [:] velocity_directions
         list velocity_names_directional
 

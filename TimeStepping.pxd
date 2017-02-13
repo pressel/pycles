@@ -6,15 +6,15 @@ cimport Restart
 
 cdef class TimeStepping:
     cdef:
-        public double dt
-        public double t
-        public double cfl_max
-        public double cfl_limit
-        public double dt_max
-        public double dt_initial
-        public double t_max
-        double [:,:] value_copies
-        double [:,:] tendency_copies
+        public float dt
+        public float t
+        public float cfl_max
+        public float cfl_limit
+        public float dt_max
+        public float dt_initial
+        public float t_max
+        float [:,:] value_copies
+        float [:,:] tendency_copies
         public Py_ssize_t rk_step
         public Py_ssize_t n_rk_steps
         public Py_ssize_t ts_type
@@ -33,4 +33,4 @@ cdef class TimeStepping:
     cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa)
     cpdef restart(self, Restart.Restart Re)
 
-    cdef inline double cfl_time_step(self)
+    cdef inline float cfl_time_step(self)

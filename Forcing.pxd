@@ -27,12 +27,12 @@ cdef class ForcingNone:
 
 cdef class ForcingBomex:
     cdef:
-        double [:] ug
-        double [:] vg
-        double [:] dtdt
-        double [:] dqtdt
-        double [:] subsidence
-        double coriolis_param
+        float [:] ug
+        float [:] vg
+        float [:] dtdt
+        float [:] dqtdt
+        float [:] subsidence
+        float coriolis_param
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
@@ -42,9 +42,9 @@ cdef class ForcingBomex:
 
 cdef class ForcingSullivanPatton:
     cdef:
-        double [:] ug
-        double [:] vg
-        double coriolis_param
+        float [:] ug
+        float [:] vg
+        float coriolis_param
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
@@ -54,9 +54,9 @@ cdef class ForcingSullivanPatton:
 
 cdef class ForcingGabls:
     cdef:
-        double [:] ug
-        double [:] vg
-        double coriolis_param
+        float [:] ug
+        float [:] vg
+        float coriolis_param
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
@@ -66,11 +66,11 @@ cdef class ForcingGabls:
 
 cdef class ForcingDyCOMS_RF01:
     cdef:
-        double [:] ug
-        double [:] vg
-        double divergence
-        double [:] subsidence
-        double coriolis_param
+        float [:] ug
+        float [:] vg
+        float divergence
+        float [:] subsidence
+        float coriolis_param
         bint rf02_flag
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -82,12 +82,12 @@ cdef class ForcingDyCOMS_RF01:
 
 cdef class ForcingRico:
     cdef:
-        double [:] ug
-        double [:] vg
-        double [:] dtdt
-        double [:] dqtdt
-        double [:] subsidence
-        double coriolis_param
+        float [:] ug
+        float [:] vg
+        float [:] dtdt
+        float [:] dqtdt
+        float [:] subsidence
+        float coriolis_param
         Py_ssize_t momentum_subsidence
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -102,28 +102,28 @@ cdef class ForcingCGILS:
         Py_ssize_t loc
         bint is_p2
         bint is_ctl_omega
-        double [:] dtdt
-        double [:] dqtdt
-        double [:] subsidence
-        double z_relax
-        double z_relax_plus
-        double tau_inverse
-        double tau_vel_inverse
-        double qt_floor
+        float [:] dtdt
+        float [:] dqtdt
+        float [:] subsidence
+        float z_relax
+        float z_relax_plus
+        float tau_inverse
+        float tau_vel_inverse
+        float qt_floor
         Py_ssize_t floor_index
-        double[:] gamma_zhalf
-        double[:] gamma_z
-        double [:] nudge_qt
-        double [:] nudge_temperature
-        double [:] nudge_u
-        double [:] nudge_v
-        double [:] source_qt_floor
-        double [:] source_qt_nudge
-        double [:] source_t_nudge
-        double [:] source_u_nudge
-        double [:] source_v_nudge
-        double [:] source_s_nudge
-        double [:] s_ls_adv
+        float[:] gamma_zhalf
+        float[:] gamma_z
+        float [:] nudge_qt
+        float [:] nudge_temperature
+        float [:] nudge_u
+        float [:] nudge_v
+        float [:] source_qt_floor
+        float [:] source_qt_nudge
+        float [:] source_t_nudge
+        float [:] source_u_nudge
+        float [:] source_v_nudge
+        float [:] source_s_nudge
+        float [:] s_ls_adv
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -138,23 +138,23 @@ cdef class ForcingCGILS:
 cdef class ForcingZGILS:
     cdef:
         Py_ssize_t loc
-        double [:] dtdt
-        double [:] dqtdt
-        double [:] subsidence
-        double [:] ug
-        double [:] vg
-        double [:] source_rh_nudge
-        double [:] source_qt_nudge
-        double [:] source_t_nudge
-        double [:] source_s_nudge
-        double [:] s_ls_adv
-        double coriolis_param
-        double divergence
-        double t_adv_max
-        double qt_adv_max
-        double tau_relax_inverse
-        double alpha_h
-        double h_BL
+        float [:] dtdt
+        float [:] dqtdt
+        float [:] subsidence
+        float [:] ug
+        float [:] vg
+        float [:] source_rh_nudge
+        float [:] source_qt_nudge
+        float [:] source_t_nudge
+        float [:] source_s_nudge
+        float [:] s_ls_adv
+        float coriolis_param
+        float divergence
+        float t_adv_max
+        float qt_adv_max
+        float tau_relax_inverse
+        float alpha_h
+        float h_BL
         ClausiusClapeyron CC
         AdjustedMoistAdiabat forcing_ref
 
@@ -169,15 +169,15 @@ cdef class ForcingZGILS:
 
 cdef class AdjustedMoistAdiabat:
     cdef:
-        double [:] s
-        double [:] qt
-        double [:] temperature
-        double [:] rv
-        double (*L_fp)(double T, double Lambda) nogil
-        double (*Lambda_fp)(double T) nogil
+        float [:] s
+        float [:] qt
+        float [:] temperature
+        float [:] rv
+        float (*L_fp)(float T, float Lambda) nogil
+        float (*Lambda_fp)(float T) nogil
         Thermodynamics.ClausiusClapeyron CC
     cpdef get_pv_star(self, t)
-    cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
-    cpdef eos(self, double p0, double s, double qt)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
-                     double Pg, double Tg, double RH)
+    cpdef entropy(self,float p0, float T,float qt, float ql, float qi)
+    cpdef eos(self, float p0, float s, float qt)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, float [:] pressure_array, Py_ssize_t n_levels,
+                     float Pg, float Tg, float RH)

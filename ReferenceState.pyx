@@ -14,25 +14,25 @@ from scipy.integrate import odeint
 include 'parameters.pxi'
 
 cdef extern from "thermodynamic_functions.h":
-    inline double qt_from_pv(double p0, double pv)
+    inline float qt_from_pv(float p0, float pv)
 
 cdef class ReferenceState:
     def __init__(self, Grid.Grid Gr ):
 
-        self.p0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
-        self.p0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
-        self.alpha0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
-        self.alpha0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
-        self.rho0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
-        self.rho0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+        self.p0 = np.zeros(Gr.dims.nlg[2], dtype=np.float32, order='c')
+        self.p0_half = np.zeros(Gr.dims.nlg[2], dtype=np.float32, order='c')
+        self.alpha0 = np.zeros(Gr.dims.nlg[2], dtype=np.float32, order='c')
+        self.alpha0_half = np.zeros(Gr.dims.nlg[2], dtype=np.float32, order='c')
+        self.rho0 = np.zeros(Gr.dims.nlg[2], dtype=np.float32, order='c')
+        self.rho0_half = np.zeros(Gr.dims.nlg[2], dtype=np.float32, order='c')
 
 
-        self.p0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        self.p0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        self.alpha0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        self.alpha0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        self.rho0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        self.rho0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.p0_global = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        self.p0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        self.alpha0_global = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        self.alpha0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        self.rho0_global = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        self.rho0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
 
         return
 
@@ -66,8 +66,8 @@ cdef class ReferenceState:
         # surface pressure
         p0 = np.log(self.Pg)
 
-        p = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        p_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        p = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        p_half = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
 
         # Perform the integration
         p[Gr.dims.gw - 1:-Gr.dims.gw +1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
@@ -87,20 +87,20 @@ cdef class ReferenceState:
         self.p0_half_global = p_half
 
 
-        cdef double[:] p_ = p
-        cdef double[:] p_half_ = p_half
-        cdef double[:] temperature = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        cdef double[:] temperature_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        cdef double[:] alpha = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        cdef double[:] alpha_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        cdef float[:] p_ = p
+        cdef float[:] p_half_ = p_half
+        cdef float[:] temperature = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        cdef float[:] temperature_half = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        cdef float[:] alpha = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        cdef float[:] alpha_half = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
 
-        cdef double[:] ql = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        cdef double[:] qi = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        cdef double[:] qv = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        cdef float[:] ql = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        cdef float[:] qi = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        cdef float[:] qv = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
 
-        cdef double[:] ql_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        cdef double[:] qi_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
-        cdef double[:] qv_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        cdef float[:] ql_half = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        cdef float[:] qi_half = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
+        cdef float[:] qv_half = np.zeros(Gr.dims.ng[2], dtype=np.float32, order='c')
 
         # Compute reference state thermodynamic profiles
         for k in xrange(Gr.dims.ng[2]):
@@ -114,7 +114,7 @@ cdef class ReferenceState:
 
         # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
         # saturation adjustment
-        cdef double s
+        cdef float s
         for k in xrange(Gr.dims.ng[2]):
             s = Thermodynamics.entropy(p_half[k],temperature_half[k],self.qtg,ql_half[k],qi_half[k])
             if np.abs(s - self.sg)/self.sg > 0.01:

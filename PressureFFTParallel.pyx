@@ -36,7 +36,7 @@ cdef class PressureFFTParallel:
         '''
 
         #Initialize storage for RHS
-        self.b = np.zeros(Gr.dims.nl[2],dtype=np.double,order='c')
+        self.b = np.zeros(Gr.dims.nl[2],dtype=np.float32,order='c')
 
         #Compute the modified wave number representation of the horizontal derivatives in the divergence operators
         self.compute_modified_wave_numbers(Gr)
@@ -68,25 +68,25 @@ cdef class PressureFFTParallel:
         :return:
         '''
 
-        self.kx2 = np.zeros(Gr.dims.nl[0],dtype=np.double,order='c')
-        self.ky2 = np.zeros(Gr.dims.nl[1],dtype=np.double,order='c')
+        self.kx2 = np.zeros(Gr.dims.nl[0],dtype=np.float32,order='c')
+        self.ky2 = np.zeros(Gr.dims.nl[1],dtype=np.float32,order='c')
         cdef:
-            double xi, yi
+            float xi, yi
             long i,j,ii,jj
         for ii in xrange(Gr.dims.nl[0]):
             i = Gr.dims.indx_lo[0] + ii
             if i <= (Gr.dims.n[0])/2:
-                xi = np.double(i)
+                xi = np.float32(i)
             else:
-                xi = np.double(i - Gr.dims.n[0])
+                xi = np.float32(i - Gr.dims.n[0])
             self.kx2[ii] = (2.0 * cos((2.0 * pi/Gr.dims.n[0]) * xi)-2.0)/Gr.dims.dx[0]/Gr.dims.dx[0]
 
         for jj in xrange(Gr.dims.nl[1]):
             j = Gr.dims.indx_lo[1] + jj
             if j <= Gr.dims.n[1]/2:
-                yi = np.double(j)
+                yi = np.float32(j)
             else:
-                yi = np.double(j-Gr.dims.n[1])
+                yi = np.float32(j-Gr.dims.n[1])
             self.ky2[jj] = (2.0 * cos((2.0 * pi/Gr.dims.n[1]) * yi)-2.0)/Gr.dims.dx[1]/Gr.dims.dx[1]
 
         #Remove the odd-ball
@@ -108,9 +108,9 @@ cdef class PressureFFTParallel:
             Py_ssize_t  k
 
         #self.a is the lower diagonal
-        self.a = np.zeros(Gr.dims.n[2],dtype=np.double,order='c')
+        self.a = np.zeros(Gr.dims.n[2],dtype=np.float32,order='c')
         #self.c is the upper diagonal
-        self.c = np.zeros(Gr.dims.n[2],dtype=np.double,order='c')
+        self.c = np.zeros(Gr.dims.n[2],dtype=np.float32,order='c')
 
         #Set boundary conditions at the surface
         self.a[0] =  0.0
@@ -130,8 +130,8 @@ cdef class PressureFFTParallel:
 
         cdef:
             Py_ssize_t k
-            double kx2 = self.kx2[i]
-            double ky2 = self.ky2[j]
+            float kx2 = self.kx2[i]
+            float ky2 = self.ky2[j]
 
         #Set the matrix rows for the interior point
         self.b[0] = (RS.rho0_half[ Gr.dims.gw] * (kx2 + ky2)
@@ -155,18 +155,18 @@ cdef class PressureFFTParallel:
             Py_ssize_t istride = Gr.dims.nl[1] * Gr.dims.nl[2]
             Py_ssize_t jstride = Gr.dims.nl[1]
             Py_ssize_t ishift, jshift
-            double [:] dkr = np.empty((Gr.dims.nl[2]),dtype=np.double,order='c')
-            double [:] dki = np.empty((Gr.dims.nl[2]),dtype=np.double,order='c')
+            float [:] dkr = np.empty((Gr.dims.nl[2]),dtype=np.float32,order='c')
+            float [:] dki = np.empty((Gr.dims.nl[2]),dtype=np.float32,order='c')
             Py_ssize_t div_shift = DV.get_varshift(Gr,'divergence')
             Py_ssize_t pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
             Py_ssize_t p, pencil_i, pencil_j
             Py_ssize_t count = 0
             Py_ssize_t pencil_shift = 0 #self.Z_Pencil.n_pencil_map[self.Z_Pencil.rank - 1]
-            double [:,:] x_pencil
-            complex [:,:] x_pencil_fft, x_pencil_ifft, x_pencil_complex
-            complex [:,:] y_pencil, y_pencil_fft, z_pencil
-            complex [:] div_fft= np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
-            complex [:] pres = np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
+            float [:,:] x_pencil
+            float complex  [:,:] x_pencil_fft, x_pencil_ifft, x_pencil_complex
+            float complex  [:,:] y_pencil, y_pencil_fft, z_pencil
+            float complex  [:] div_fft= np.zeros(Gr.dims.npg,dtype=np.complex64,order='c')
+            float complex  [:] pres = np.zeros(Gr.dims.npg,dtype=np.complex64,order='c')
 
         #Do fft in x direction
         x_pencil = self.X_Pencil.forward_double(&Gr.dims, Pa, &DV.values[div_shift])

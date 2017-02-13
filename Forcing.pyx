@@ -90,11 +90,11 @@ cdef class ForcingBomex:
         return
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
         self.coriolis_param = 0.376e-4 #s^{-1}
 
         cdef:
@@ -156,9 +156,9 @@ cdef class ForcingBomex:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double qt, qv, p0, t
-            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            float qt, qv, p0, t
+            float [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            float [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
 
 
@@ -197,12 +197,12 @@ cdef class ForcingBomex:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
-            double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
-            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            float [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+            float [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+            float [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            float [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
@@ -244,8 +244,8 @@ cdef class ForcingSullivanPatton:
 
         return
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
-        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
+        self.ug = np.ones(Gr.dims.nlg[2],dtype=np.float32, order='c') #m/s
+        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.float32, order='c')  #m/s
         self.coriolis_param = 1.0e-4 #s^{-1}
 
         NS.add_profile('u_coriolis_tendency', Gr, Pa)
@@ -269,10 +269,10 @@ cdef class ForcingSullivanPatton:
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
-            double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
+            float [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+            float [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.float32,order='c')
 
         #Only need to output coriolis_forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
@@ -290,8 +290,8 @@ cdef class ForcingGabls:
         return
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * 8.0
-        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.ug = np.ones(Gr.dims.nlg[2],dtype=np.float32,order='c') * 8.0
+        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
         self.coriolis_param = 1.39e-4 #s^{-1}
         NS.add_profile('u_coriolis_tendency', Gr, Pa)
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
@@ -313,10 +313,10 @@ cdef class ForcingGabls:
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
-            double [:] mean_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            float [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.float32,order='c')
+            float [:] mean_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
 
         #Only need to output coriolis_forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
@@ -346,9 +346,9 @@ cdef class ForcingDyCOMS_RF01:
         cdef:
             Py_ssize_t k
 
-        self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
-        self.ug = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
-        self.vg = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
+        self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.float32, order='c')
+        self.ug = np.empty((Gr.dims.nlg[2]),dtype=np.float32, order='c')
+        self.vg = np.empty((Gr.dims.nlg[2]),dtype=np.float32, order='c')
 
         if self.rf02_flag:
             with nogil:
@@ -402,12 +402,12 @@ cdef class ForcingDyCOMS_RF01:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
-            double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
-            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            float [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+            float [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+            float [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            float [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
@@ -456,11 +456,11 @@ cdef class ForcingRico:
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef Py_ssize_t k
 
-        self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
-        self.ug = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.vg = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.dtdt = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * -2.5/86400.0 #Here this is theta forcing
-        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.float32, order='c')
+        self.ug = np.empty(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.vg = np.empty(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.dtdt = np.ones(Gr.dims.nlg[2],dtype=np.float32,order='c') * -2.5/86400.0 #Here this is theta forcing
+        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
 
         # Convert given theta forcing to temperature forcing
         with nogil:
@@ -508,7 +508,7 @@ cdef class ForcingRico:
             Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double qt, qv, p0, t
+            float qt, qv, p0, t
 
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
@@ -589,9 +589,9 @@ cdef class ForcingCGILS:
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
 
 
         if self.is_p2:
@@ -639,26 +639,26 @@ cdef class ForcingCGILS:
         pressure = np.append(pressure, Ps)
 
         # interpolate the subsidence profile from the data (below we convert from dp--> dz)
-        self.subsidence = np.array(np.interp(Ref.p0_half, pressure, omega_data),dtype=np.double, order='c')
+        self.subsidence = np.array(np.interp(Ref.p0_half, pressure, omega_data),dtype=np.float32, order='c')
         # interpolate large scale advection forcings
-        self.dqtdt = np.array(np.interp(Ref.p0_half, pressure, divq_data),dtype=np.double, order='c')
-        self.dtdt = np.array(np.interp(Ref.p0_half, pressure, divT_data),dtype=np.double, order='c')
+        self.dqtdt = np.array(np.interp(Ref.p0_half, pressure, divq_data),dtype=np.float32, order='c')
+        self.dtdt = np.array(np.interp(Ref.p0_half, pressure, divT_data),dtype=np.float32, order='c')
 
         # interpolate the reference profiles
-        self.nudge_qt = np.array(np.interp(Ref.p0_half, pressure, q_data),dtype=np.double, order='c')
-        self.nudge_temperature = np.array(np.interp(Ref.p0_half, pressure, temperature_data),dtype=np.double, order='c')
-        self.nudge_u = np.array(np.interp(Ref.p0_half, pressure, u_data),dtype=np.double, order='c')
-        self.nudge_v = np.array(np.interp(Ref.p0_half, pressure, v_data),dtype=np.double, order='c')
+        self.nudge_qt = np.array(np.interp(Ref.p0_half, pressure, q_data),dtype=np.float32, order='c')
+        self.nudge_temperature = np.array(np.interp(Ref.p0_half, pressure, temperature_data),dtype=np.float32, order='c')
+        self.nudge_u = np.array(np.interp(Ref.p0_half, pressure, u_data),dtype=np.float32, order='c')
+        self.nudge_v = np.array(np.interp(Ref.p0_half, pressure, v_data),dtype=np.float32, order='c')
 
         # Initialize arrays for the  nudging related source terms
-        self.source_qt_floor = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.source_qt_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.source_t_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.source_u_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.source_v_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.source_qt_floor = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.source_qt_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.source_t_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.source_u_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.source_v_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
 
-        self.source_s_nudge = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
-        self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+        self.source_s_nudge = np.zeros(Gr.dims.npg,dtype=np.float32,order='c')
+        self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.float32,order='c')
 
         # convert subsidence velocity to physical space
         cdef Py_ssize_t k
@@ -677,8 +677,8 @@ cdef class ForcingCGILS:
 
 
         # initialize the inverse timescale coefficient arrays for nudging
-        self.gamma_zhalf = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.double, order='c')
+        self.gamma_zhalf = np.zeros((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+        self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.float32, order='c')
 
         with nogil:
             for k in range(Gr.dims.nlg[2]):
@@ -752,12 +752,12 @@ cdef class ForcingCGILS:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double qt, qv, p0, t, qt_floor_nudge
+            float qt, qv, p0, t, qt_floor_nudge
 
-            double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
-            double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
-            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            float [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
+            float [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
+            float [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            float [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         # Apply subsidence
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
@@ -782,8 +782,8 @@ cdef class ForcingCGILS:
                     else:
                         self.source_qt_floor[k] = 0.0
 
-        cdef double total_qt_source
-        cdef double total_t_source
+        cdef float total_qt_source
+        cdef float total_t_source
 
         #Apply large scale source terms
         with nogil:
@@ -822,12 +822,12 @@ cdef class ForcingCGILS:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
-            double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
-            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            float [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+            float [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+            float [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            float [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
@@ -893,29 +893,29 @@ cdef class ForcingZGILS:
         return
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.source_rh_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.source_qt_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.source_t_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.source_s_nudge = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+        self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.subsidence = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.source_rh_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.source_qt_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.source_t_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        self.source_s_nudge = np.zeros(Gr.dims.npg,dtype=np.float32,order='c')
 
-        self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+        self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.float32,order='c')
 
         # compute the reference profiles for forcing/nudging
-        cdef double Pg_parcel = 1000.0e2
-        cdef double Tg_parcel = 295.0
-        cdef double RH_ref = 0.3
+        cdef float Pg_parcel = 1000.0e2
+        cdef float Tg_parcel = 295.0
+        cdef float RH_ref = 0.3
 
         self.forcing_ref.initialize(Pa, Ref.p0_half[:], Gr.dims.nlg[2],
                                     Pg_parcel, Tg_parcel, RH_ref)
 
         cdef:
             Py_ssize_t k
-            double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g
+            float sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g
 
         # initialize the profiles of geostrophic velocity, subsidence, and large scale advection
         with nogil:
@@ -993,10 +993,10 @@ cdef class ForcingZGILS:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double qt, qv, p0, t
+            float qt, qv, p0, t
 
-            double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
-            double [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
+            float [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
+            float [:] tmean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
 
         #Apply Coriolis Forcing
 
@@ -1016,8 +1016,8 @@ cdef class ForcingZGILS:
 
         # Now set the relaxation coefficient (depends on time-varying BL height diagnosed above)
         # Find the source term profiles for temperature, moisture nudging (2 components: free tropo and BL)
-        cdef double [:] xi_relax = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-        cdef double z_h, pv_star, qv_star
+        cdef float [:] xi_relax = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+        cdef float z_h, pv_star, qv_star
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
                 self.source_rh_nudge[k] = 0.0
@@ -1039,7 +1039,7 @@ cdef class ForcingZGILS:
                 self.source_t_nudge[k]  = xi_relax[k] * (self.forcing_ref.temperature[k]-tmean[k])
 
 
-        cdef double total_t_source, total_qt_source
+        cdef float total_t_source, total_qt_source
 
         #Apply large scale source terms (BL advection, Free Tropo relaxation, BL humidity nudging)
         with nogil:
@@ -1076,12 +1076,12 @@ cdef class ForcingZGILS:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
-            double [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
-            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            # double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            float [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+            float [:] mean_tendency_2 = np.zeros((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+            float [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            # float [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
@@ -1125,14 +1125,14 @@ cdef class ForcingZGILS:
 
 
 cdef extern from "thermodynamics_sa.h":
-    void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
+    void eos_c(Lookup.LookupStruct *LT, float(*lam_fp)(float), float(*L_fp)(float, float), float p0, float s, float qt, float *T, float *qv, float *ql, float *qi) nogil
 cdef extern from "thermodynamic_functions.h":
-    inline double pd_c(double p0, double qt, double qv) nogil
-    inline double pv_c(double p0, double qt, double qv) nogil
+    inline float pd_c(float p0, float qt, float qv) nogil
+    inline float pv_c(float p0, float qt, float qv) nogil
 cdef extern from "entropies.h":
-    inline double sd_c(double pd, double T) nogil
-    inline double sv_c(double pv, double T) nogil
-    inline double sc_c(double L, double T) nogil
+    inline float sd_c(float pd, float T) nogil
+    inline float sv_c(float pv, float T) nogil
+    inline float sc_c(float L, float T) nogil
 
 
 # This class computes the reference profiles needed for ZGILS cases
@@ -1151,41 +1151,41 @@ cdef class AdjustedMoistAdiabat:
     cpdef get_pv_star(self, t):
         return self.CC.LT.fast_lookup(t)
 
-    cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
+    cpdef entropy(self, float p0, float T, float qt, float ql, float qi):
         cdef:
-            double qv = qt - ql - qi
-            double qd = 1.0 - qt
-            double pd = pd_c(p0, qt, qv)
-            double pv = pv_c(p0, qt, qv)
-            double Lambda = self.Lambda_fp(T)
-            double L = self.L_fp(T, Lambda)
+            float qv = qt - ql - qi
+            float qd = 1.0 - qt
+            float pd = pd_c(p0, qt, qv)
+            float pv = pv_c(p0, qt, qv)
+            float Lambda = self.Lambda_fp(T)
+            float L = self.L_fp(T, Lambda)
 
         return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
 
-    cpdef eos(self, double p0, double s, double qt):
+    cpdef eos(self, float p0, float s, float qt):
         cdef:
-            double T, qv, qc, ql, qi, lam
+            float T, qv, qc, ql, qi, lam
         eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
         return T, ql, qi
 
 
 
     cpdef initialize(self, ParallelMPI.ParallelMPI Pa,
-                   double [:] pressure_array, Py_ssize_t n_levels, double Pg, double Tg, double RH):
+                   float [:] pressure_array, Py_ssize_t n_levels, float Pg, float Tg, float RH):
         '''
         Initialize the forcing reference profiles. These profiles use the temperature corresponding to a moist adiabat,
         but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
         '''
-        self.s = np.zeros(n_levels, dtype=np.double, order='c')
-        self.qt = np.zeros(n_levels, dtype=np.double, order='c')
-        self.temperature = np.zeros(n_levels, dtype=np.double, order='c')
-        self.rv = np.zeros(n_levels, dtype=np.double, order='c')
-        cdef double pvg = self.get_pv_star(Tg)
-        cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
-        cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
+        self.s = np.zeros(n_levels, dtype=np.float32, order='c')
+        self.qt = np.zeros(n_levels, dtype=np.float32, order='c')
+        self.temperature = np.zeros(n_levels, dtype=np.float32, order='c')
+        self.rv = np.zeros(n_levels, dtype=np.float32, order='c')
+        cdef float pvg = self.get_pv_star(Tg)
+        cdef float qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
+        cdef float sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
 
 
-        cdef double temperature, ql, qi, pv
+        cdef float temperature, ql, qi, pv
 
         # Compute reference state thermodynamic profiles
         for k in xrange(n_levels):
@@ -1200,7 +1200,7 @@ cdef class AdjustedMoistAdiabat:
 
 
 
-cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):
+cdef coriolis_force(Grid.DimStruct *dims, float *u, float *v, float *ut, float *vt, float *ug, float *vg, float coriolis_param, float u0, float v0 ):
 
     cdef:
         Py_ssize_t imin = dims.gw
@@ -1212,7 +1212,7 @@ cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, doub
         Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
         Py_ssize_t jstride = dims.nlg[2]
         Py_ssize_t ishift, jshift, ijk, i,j,k
-        double u_at_v, v_at_u
+        float u_at_v, v_at_u
 
     with nogil:
         for i in xrange(imin,imax):
@@ -1228,8 +1228,8 @@ cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, doub
     return
 
 
-cdef large_scale_p_gradient(Grid.DimStruct *dims, double *umean, double *vmean, double *ut, double *vt, double *ug, double *vg,
-                          double coriolis_param, double u0, double v0 ):
+cdef large_scale_p_gradient(Grid.DimStruct *dims, float *umean, float *vmean, float *ut, float *vt, float *ug, float *vg,
+                          float coriolis_param, float u0, float v0 ):
 
     cdef:
         Py_ssize_t imin = dims.gw
@@ -1241,7 +1241,7 @@ cdef large_scale_p_gradient(Grid.DimStruct *dims, double *umean, double *vmean, 
         Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
         Py_ssize_t jstride = dims.nlg[2]
         Py_ssize_t ishift, jshift, ijk, i,j,k
-        double u_at_v, v_at_u
+        float u_at_v, v_at_u
 
 
     with nogil:
@@ -1259,7 +1259,7 @@ cdef large_scale_p_gradient(Grid.DimStruct *dims, double *umean, double *vmean, 
 
     return
 
-cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double* values,  double *tendencies):
+cdef apply_subsidence(Grid.DimStruct *dims, float *rho0, float *rho0_half, float *subsidence, float* values,  float *tendencies):
 
     cdef:
         Py_ssize_t imin = dims.gw
@@ -1271,7 +1271,7 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
         Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
         Py_ssize_t jstride = dims.nlg[2]
         Py_ssize_t ishift, jshift, ijk, i,j,k
-        double dxi = dims.dxi[2]
+        float dxi = dims.dxi[2]
     with nogil:
         for i in xrange(imin,imax):
             ishift = i*istride

@@ -1,8 +1,8 @@
 #pragma once
 #include "grid.h"
 
-void scalar_flux_divergence(struct DimStruct *dims, double *alpha0, double *alpha0_half, double *flux, double *tendency,
-    double dx, ssize_t d){
+void scalar_flux_divergence(struct DimStruct *dims, float  *alpha0, float  *alpha0_half, float  *flux, float  *tendency,
+    float  dx, ssize_t d){
 
     const ssize_t imin = dims->gw;
     const ssize_t jmin = dims->gw;
@@ -14,7 +14,7 @@ void scalar_flux_divergence(struct DimStruct *dims, double *alpha0, double *alph
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
-    const double dxi = dims->dxi[d];
+    const float  dxi = dims->dxi[d];
 
     const ssize_t stencil[3] = {istride,jstride,1};
     const ssize_t sm1 = -stencil[d];
@@ -31,8 +31,8 @@ void scalar_flux_divergence(struct DimStruct *dims, double *alpha0, double *alph
     } // End i loop
 }
 
-void momentum_flux_divergence(struct DimStruct *dims, double *alpha0, double *alpha0_half, double *flux,
-                                double *tendency, ssize_t d_advected, ssize_t d_advecting){
+void momentum_flux_divergence(struct DimStruct *dims, float  *alpha0, float  *alpha0_half, float  *flux,
+                                float  *tendency, ssize_t d_advected, ssize_t d_advecting){
 
     const ssize_t imin = dims->gw;
     const ssize_t jmin = dims->gw;
@@ -44,7 +44,7 @@ void momentum_flux_divergence(struct DimStruct *dims, double *alpha0, double *al
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
-    const double dxi = dims->dxi[d_advecting];
+    const float  dxi = dims->dxi[d_advecting];
 
     const ssize_t stencil[3] = {istride,jstride,1};
     const ssize_t sm1 = -stencil[d_advecting];

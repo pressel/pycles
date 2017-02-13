@@ -130,14 +130,14 @@ cdef class Grid:
         '''
 
 
-        self.x_half = np.empty((self.dims.n[0]+2*self.dims.gw),dtype=np.double,order='c')
-        self.x = np.empty((self.dims.n[0]+2*self.dims.gw),dtype=np.double,order='c')
+        self.x_half = np.empty((self.dims.n[0]+2*self.dims.gw),dtype=np.float32,order='c')
+        self.x = np.empty((self.dims.n[0]+2*self.dims.gw),dtype=np.float32,order='c')
 
-        self.y_half = np.empty((self.dims.n[1]+2*self.dims.gw),dtype=np.double,order='c')
-        self.y = np.empty((self.dims.n[1]+2*self.dims.gw),dtype=np.double,order='c')
+        self.y_half = np.empty((self.dims.n[1]+2*self.dims.gw),dtype=np.float32,order='c')
+        self.y = np.empty((self.dims.n[1]+2*self.dims.gw),dtype=np.float32,order='c')
 
-        self.z_half = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
-        self.z = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
+        self.z_half = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.float32,order='c')
+        self.z = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.float32,order='c')
 
         cdef int i, count = 0
         for i in xrange(-self.dims.gw,self.dims.n[2]+self.dims.gw,1):
@@ -172,14 +172,14 @@ cdef class Grid:
 
         return
 
-    cpdef extract_local(self,double [:] global_array, int dim):
+    cpdef extract_local(self,float [:] global_array, int dim):
         pass
 
-    cpdef extract_local_ghosted(self,double [:] global_array, int dim):
+    cpdef extract_local_ghosted(self,float [:] global_array, int dim):
         cdef int start = self.dims.indx_lo_g[dim]
         cdef int end = self.dims.indx_lo_g[dim] + self.dims.nlg[dim]
         #Force a copy with the return statement
-        return np.array(global_array[start:end],dtype=np.double)
+        return np.array(global_array[start:end],dtype=np.float32)
 
     cpdef restart(self, Restart.Restart Re):
         Re.restart_data['Gr'] = {}

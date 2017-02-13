@@ -39,7 +39,7 @@ def main():
         if not os.path.exists(out_path):
             create_file(out_path, n_0, n_1, n_2)
         for f in field_keys:
-            f_data_3d = np.empty((n_0, n_1, n_2), dtype=np.double, order='c')
+            f_data_3d = np.empty((n_0, n_1, n_2), dtype=np.float32, order='c')
             for r in ranks:
                 if r[-3:] == '.nc':
                     file_path = os.path.join(args.fields_dir, d, r)

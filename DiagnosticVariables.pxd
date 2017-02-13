@@ -7,14 +7,14 @@ cdef class DiagnosticVariables:
         dict units
         list index_name
         Py_ssize_t nv
-        double [:] values
-        double [:] bc_type
+        float [:] values
+        float [:] bc_type
         long [:] sedv_index
         Py_ssize_t nsedv
         dict name_index_2d
         dict units_2d
         Py_ssize_t  nv_2d
-        double [:] values_2d
+        float [:] values_2d
         void communicate_variable(self,Grid.Grid Gr,ParallelMPI.ParallelMPI PM, long nv)
     cpdef add_variables(self, name, units, bc_type, ParallelMPI.ParallelMPI Pa)
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

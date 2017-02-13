@@ -73,13 +73,13 @@ cdef class Rayleigh:
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
         cdef:
             int k
-            double z_top
+            float z_top
 
         self.gamma_zhalf = np.zeros(
             (Gr.dims.nlg[2]),
-            dtype=np.double,
+            dtype=np.float32,
             order='c')
-        self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.double, order='c')
+        self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.float32, order='c')
         z_top = Gr.dims.dx[2] * Gr.dims.n[2]
         with nogil:
             for k in range(Gr.dims.nlg[2]):
@@ -104,7 +104,7 @@ cdef class Rayleigh:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t i, j, k, ishift, jshift, ijk
-            double[:] domain_mean
+            float[:] domain_mean
 
         for var_name in PV.name_index:
             var_shift = PV.get_varshift(Gr, var_name)

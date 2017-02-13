@@ -7,8 +7,8 @@ cdef class Restart:
         str input_path
         public bint is_restart_run
         str uuid
-        public double last_restart_time
-        public double frequency
+        public float last_restart_time
+        public float frequency
         bint delete_old
         list times_retained
 

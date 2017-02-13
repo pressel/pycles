@@ -2,7 +2,7 @@
 #include "grid.h"
 #include <stdio.h>
 
-void compute_diffusive_flux_m(const struct DimStruct *dims, double* restrict strain_rate,  double* restrict viscosity , double* restrict flux, double* restrict rho0, double* restrict rho0_half, ssize_t i1, ssize_t i2){
+void compute_diffusive_flux_m(const struct DimStruct *dims, float * restrict strain_rate,  float * restrict viscosity , float * restrict flux, float * restrict rho0, float * restrict rho0_half, ssize_t i1, ssize_t i2){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -39,7 +39,7 @@ void compute_diffusive_flux_m(const struct DimStruct *dims, double* restrict str
                     for(ssize_t k=kmin; k<kmax; k++){
                         const ssize_t ijk = ishift + jshift + k;
                         // Here the viscosity must be interpolated 
-                        const double visc_interp = 0.25 * (viscosity[ijk] + viscosity[ijk + stencil[i1]]
+                        const float  visc_interp = 0.25 * (viscosity[ijk] + viscosity[ijk + stencil[i1]]
                         + viscosity[ijk + stencil[i2]] +  viscosity[ijk + stencil[i1] + stencil[i2]] );
                         flux[ijk] = -2.0 * strain_rate[ijk] * visc_interp * rho0_half[k];
                     }
@@ -70,7 +70,7 @@ void compute_diffusive_flux_m(const struct DimStruct *dims, double* restrict str
                 for(ssize_t k=kmin; k<kmax; k++){
                     const ssize_t ijk = ishift + jshift + k;
                     // Viscosity requires interpolation 
-                    const double visc_interp = 0.25 * (viscosity[ijk] + viscosity[ijk + stencil[i1]]
+                    const float  visc_interp = 0.25 * (viscosity[ijk] + viscosity[ijk + stencil[i1]]
                         + viscosity[ijk + stencil[i2]] +  viscosity[ijk + stencil[i1] + stencil[i2]] );
                         flux[ijk] = -2.0 * strain_rate[ijk] * visc_interp * rho0[k];
                 }
@@ -92,7 +92,7 @@ void compute_diffusive_flux_m(const struct DimStruct *dims, double* restrict str
     return;
 }
 
-void compute_entropy_source(const struct DimStruct *dims, double* restrict viscosity, double* restrict strain_rate_mag, double* restrict temperature, double* restrict entropy_tendency){
+void compute_entropy_source(const struct DimStruct *dims, float * restrict viscosity, float * restrict strain_rate_mag, float * restrict temperature, float * restrict entropy_tendency){
     // Compute the entropy source corresponding to equation (55) in Pressel et al. 2015. 
     
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];

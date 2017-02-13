@@ -272,14 +272,14 @@ contains
   
   end function getRandomPositiveInt
   ! --------------------
-!! mji - modified Jan 2007, double converted to rrtmg real kind type
+!! mji - modified Jan 2007, float converted to rrtmg real kind type
   function getRandomReal(twister)
     type(randomNumberSequence), intent(inout) :: twister
-!    double precision             :: getRandomReal
+!    float precision             :: getRandomReal
     real(kind=rb)             :: getRandomReal
     ! Generate a random number on [0,1]
     !   Equivalent to genrand_real1 in the C code
-    !   The result is stored as double precision but has 32 bit resolution
+    !   The result is stored as float precision but has 32 bit resolution
     
     integer(kind=im) :: localInt
     

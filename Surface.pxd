@@ -11,19 +11,19 @@ from NetCDFIO cimport NetCDFIO_Stats
 
 cdef class SurfaceBase:
     cdef:
-        double T_surface
-        double [:] s_flux
-        double [:] qt_flux
-        double [:] u_flux
-        double [:] v_flux
-        double [:] friction_velocity
-        double [:] obukhov_length
-        double [:] shf
-        double [:] lhf
-        double [:] b_flux
+        float T_surface
+        float [:] s_flux
+        float [:] qt_flux
+        float [:] u_flux
+        float [:] v_flux
+        float [:] friction_velocity
+        float [:] obukhov_length
+        float [:] shf
+        float [:] lhf
+        float [:] b_flux
         bint dry_case
-        double (*L_fp)(double T, double Lambda) nogil
-        double (*Lambda_fp)(double T) nogil
+        float (*L_fp)(float T, float Lambda) nogil
+        float (*Lambda_fp)(float T) nogil
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef init_from_restart(self, Restart)
@@ -43,10 +43,10 @@ cdef class SurfaceNone(SurfaceBase):
 
 cdef class SurfaceSullivanPatton(SurfaceBase):
     cdef:
-        double theta_flux
-        double z0
-        double gustiness
-        double buoyancy_flux
+        float theta_flux
+        float z0
+        float gustiness
+        float buoyancy_flux
 
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -57,12 +57,12 @@ cdef class SurfaceSullivanPatton(SurfaceBase):
 
 cdef class SurfaceBomex(SurfaceBase):
     cdef:
-        double theta_flux
-        double ustar_
-        double theta_surface
-        double qt_surface
-        double buoyancy_flux
-        double gustiness
+        float theta_flux
+        float ustar_
+        float theta_surface
+        float qt_surface
+        float buoyancy_flux
+        float gustiness
 
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -73,9 +73,9 @@ cdef class SurfaceBomex(SurfaceBase):
 
 cdef class SurfaceGabls(SurfaceBase):
     cdef:
-        double gustiness
-        double z0
-        double cooling_rate
+        float gustiness
+        float z0
+        float cooling_rate
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV,
@@ -85,13 +85,13 @@ cdef class SurfaceGabls(SurfaceBase):
 
 cdef class SurfaceDYCOMS_RF01(SurfaceBase):
     cdef:
-        double lv
-        double ft
-        double fq
-        double cm
-        double buoyancy_flux
-        double gustiness
-        double [:] windspeed
+        float lv
+        float ft
+        float fq
+        float cm
+        float buoyancy_flux
+        float gustiness
+        float [:] windspeed
 
 
 
@@ -104,13 +104,13 @@ cdef class SurfaceDYCOMS_RF01(SurfaceBase):
 
 cdef class SurfaceDYCOMS_RF02(SurfaceBase):
     cdef:
-        double lv
-        double ft
-        double fq
-        double ustar
-        double buoyancy_flux
-        double gustiness
-        double [:] windspeed
+        float lv
+        float ft
+        float fq
+        float ustar
+        float buoyancy_flux
+        float gustiness
+        float [:] windspeed
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
@@ -119,12 +119,12 @@ cdef class SurfaceDYCOMS_RF02(SurfaceBase):
 
 cdef class SurfaceRico(SurfaceBase):
     cdef:
-        double cm
-        double ch
-        double cq
-        double z0
-        double gustiness
-        double s_star
+        float cm
+        float ch
+        float cq
+        float z0
+        float gustiness
+        float s_star
 
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -138,9 +138,9 @@ cdef class SurfaceCGILS(SurfaceBase):
         Py_ssize_t loc
         bint is_p2
         ClausiusClapeyron CC
-        double gustiness
-        double z0
-        double ct
+        float gustiness
+        float z0
+        float ct
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
@@ -153,9 +153,9 @@ cdef class SurfaceZGILS(SurfaceBase):
         Py_ssize_t loc
         bint is_p2
         ClausiusClapeyron CC
-        double gustiness
-        double z0
-        double ct
+        float gustiness
+        float z0
+        float ct
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
@@ -166,4 +166,4 @@ cdef class SurfaceZGILS(SurfaceBase):
 
 
 
-cdef inline double compute_z0(double z1, double windspeed) nogil
+cdef inline float compute_z0(float z1, float windspeed) nogil

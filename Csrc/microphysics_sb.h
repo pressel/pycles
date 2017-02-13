@@ -34,32 +34,32 @@
 //Unless specified otherwise, Diameter = Dm not Dp
 
 //Note: All sb_shape_parameter_X functions must have same signature
-double sb_rain_shape_parameter_0(double density, double qr, double Dm){
+float  sb_rain_shape_parameter_0(float  density, float  qr, float  Dm){
     //Seifert & Beheng 2001 and Seifert & Beheng 2006
-    double shape_parameter = 0.0;
+    float  shape_parameter = 0.0;
     return shape_parameter;
 }
 
-double sb_rain_shape_parameter_1(double density, double qr, double Dm ){
+float  sb_rain_shape_parameter_1(float  density, float  qr, float  Dm ){
     //qr: rain specific humidity kg/kg
     //Dm is mass-weighted mean diameter
     //Seifert and Stevens 2008 and DALES v 3.1.1
-    double shape_parameter = 10.0 * (1.0 + tanh( 1200.0 * (Dm - 1.4e-3) ));   // Note: UCLA-LES uses 1.5e-3
+    float  shape_parameter = 10.0 * (1.0 + tanh( 1200.0 * (Dm - 1.4e-3) ));   // Note: UCLA-LES uses 1.5e-3
     return shape_parameter;
 }
 
-double sb_rain_shape_parameter_2(double density, double qr, double Dm){
+float  sb_rain_shape_parameter_2(float  density, float  qr, float  Dm){
     //qr: rain specific humidity kg/kg
     //DALES v3.2, v4.0
-    double shape_parameter = fmin(30.0, -1.0+0.008*pow(qr*density, -0.6));
+    float  shape_parameter = fmin(30.0, -1.0+0.008*pow(qr*density, -0.6));
     return shape_parameter;
 }
 
-double sb_rain_shape_parameter_4(double density, double qr, double Dm ){
+float  sb_rain_shape_parameter_4(float  density, float  qr, float  Dm ){
     //qr: rain specific humidity kg/kg
     //Dm: mass-weighted mean diameter
     //Seifert 2008
-    double shape_parameter;
+    float  shape_parameter;
     if(Dm <= D_EQ_MU){
         shape_parameter = 6.0 * tanh((4000.0*(Dm - D_EQ_MU))*(4000.0*(Dm - D_EQ_MU))) + 1.0;
     }
@@ -69,35 +69,35 @@ double sb_rain_shape_parameter_4(double density, double qr, double Dm ){
  return shape_parameter;
 }
 
-double sb_droplet_nu_0(double density, double ql){
+float  sb_droplet_nu_0(float  density, float  ql){
     // ql: cloud liquid droplet specific humidity kg/kg
     // density: kg/m^3
     // Seifert & Beheng 2001, Seifert and Stevens 2008
-    double nu = 0.0;
+    float  nu = 0.0;
     return nu;
 }
 
-double sb_droplet_nu_1(double density, double ql){
+float  sb_droplet_nu_1(float  density, float  ql){
     // ql: cloud liquid droplet specific humidity kg/kg
     // density: kg/m^3
     // Seifert & Beheng 2006
-    double nu=1.0;
+    float  nu=1.0;
     return nu;
 }
 
-double sb_droplet_nu_2(double density, double ql){
+float  sb_droplet_nu_2(float  density, float  ql){
     // ql: cloud liquid specific humidity kg/kg
     // density: kg/m^3
     // DALES
-    double nu = 1.58 * (1000.0 * density * ql) - 0.28;
+    float  nu = 1.58 * (1000.0 * density * ql) - 0.28;
     return nu;
 
 }
 
 
-void sb_autoconversion_rain(double (*droplet_nu)(double,double), double density, double nl, double ql, double qr, double* nr_tendency, double* qr_tendency){
+void sb_autoconversion_rain(float  (*droplet_nu)(float ,float ), float  density, float  nl, float  ql, float  qr, float * nr_tendency, float * qr_tendency){
     // Computation of rain specific humidity and number source terms from autoconversion of cloud liquid to rain
-    double nu, phi, tau, tau_pow, droplet_mass;
+    float  nu, phi, tau, tau_pow, droplet_mass;
 
     if(ql < SB_EPS){
         // if liquid specific humidity is negligibly small, set source terms to zero
@@ -125,9 +125,9 @@ void sb_autoconversion_rain(double (*droplet_nu)(double,double), double density,
     return;
 }
 
-void sb_accretion_rain(double density, double ql, double qr, double* qr_tendency){
+void sb_accretion_rain(float  density, float  ql, float  qr, float * qr_tendency){
     //Computation of tendency of rain specific humidity due to accretion of cloud liquid droplets
-    double tau, phi;
+    float  tau, phi;
     if(ql < SB_EPS || qr < SB_EPS){
         *qr_tendency = 0.0;
     }
@@ -144,10 +144,10 @@ void sb_accretion_rain(double density, double ql, double qr, double* qr_tendency
     return;
 }
 
-void sb_selfcollection_breakup_rain(double density, double nr, double qr, double mu, double rain_mass, double Dm, double* nr_tendency){
+void sb_selfcollection_breakup_rain(float  density, float  nr, float  qr, float  mu, float  rain_mass, float  Dm, float * nr_tendency){
     //this function gives the net tendency breakup + selfcollection: nr_tendency = -phi*nr_tendency_sc
-    double lambda_rain, phi_sc, phi_bk = 0.0;
-    double nr_tendency_sc;
+    float  lambda_rain, phi_sc, phi_bk = 0.0;
+    float  nr_tendency_sc;
 
     if(qr < SB_EPS || nr < SB_EPS){
         *nr_tendency = 0.0;
@@ -167,13 +167,13 @@ void sb_selfcollection_breakup_rain(double density, double nr, double qr, double
     return;
 }
 
-void sb_evaporation_rain( double g_therm, double sat_ratio, double nr, double qr, double mu, double rain_mass, double Dp,
-double Dm, double* nr_tendency, double* qr_tendency){
-    double gamma, dpfv, phi_v;
-    const double bova = B_RAIN_SED/A_RAIN_SED;
-    const double cdp  = C_RAIN_SED * Dp;
-    const double mupow = mu + 2.5;
-    double qr_tendency_tmp = 0.0;
+void sb_evaporation_rain( float  g_therm, float  sat_ratio, float  nr, float  qr, float  mu, float  rain_mass, float  Dp,
+float  Dm, float * nr_tendency, float * qr_tendency){
+    float  gamma, dpfv, phi_v;
+    const float  bova = B_RAIN_SED/A_RAIN_SED;
+    const float  cdp  = C_RAIN_SED * Dp;
+    const float  mupow = mu + 2.5;
+    float  qr_tendency_tmp = 0.0;
 
     if(qr < SB_EPS || nr < SB_EPS){
         *nr_tendency = 0.0;
@@ -199,9 +199,9 @@ double Dm, double* nr_tendency, double* qr_tendency){
 }
 
 
-void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_mu)(double,double,double),
-                                        double* restrict density, double* restrict nr, double* restrict qr,
-                                        double* restrict nr_velocity, double* restrict qr_velocity){
+void sb_sedimentation_velocity_rain(const struct DimStruct *dims, float  (*rain_mu)(float ,float ,float ),
+                                        float * restrict density, float * restrict nr, float * restrict qr,
+                                        float * restrict nr_velocity, float * restrict qr_velocity){
 
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -220,12 +220,12 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin-1; k<kmax+1; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                double qr_tmp = fmax(qr[ijk],0.0);
-                double density_factor = sqrt(DENSITY_SB/density[k]);
-                double rain_mass = microphysics_mean_mass(nr[ijk], qr_tmp, RAIN_MIN_MASS, RAIN_MAX_MASS);
-                double Dm = cbrt(rain_mass * 6.0/DENSITY_LIQUID/pi);
-                double mu = rain_mu(density[k], qr_tmp, Dm);
-                double Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
+                float  qr_tmp = fmax(qr[ijk],0.0);
+                float  density_factor = sqrt(DENSITY_SB/density[k]);
+                float  rain_mass = microphysics_mean_mass(nr[ijk], qr_tmp, RAIN_MIN_MASS, RAIN_MAX_MASS);
+                float  Dm = cbrt(rain_mass * 6.0/DENSITY_LIQUID/pi);
+                float  mu = rain_mu(density[k], qr_tmp, Dm);
+                float  Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
 
                 nr_velocity[ijk] = -fmin(fmax( density_factor * (A_RAIN_SED - B_RAIN_SED * pow(1.0 + C_RAIN_SED * Dp, -mu - 1.0)) , 0.0),10.0);
                 qr_velocity[ijk] = -fmin(fmax( density_factor * (A_RAIN_SED - B_RAIN_SED * pow(1.0 + C_RAIN_SED * Dp, -mu - 4.0)) , 0.0),10.0);
@@ -257,8 +257,8 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
 
 
 
-void sb_sedimentation_velocity_liquid(const struct DimStruct *dims, double* restrict density, double ccn,
-                                      double* restrict ql, double* restrict qt_velocity){
+void sb_sedimentation_velocity_liquid(const struct DimStruct *dims, float * restrict density, float  ccn,
+                                      float * restrict ql, float * restrict qt_velocity){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -276,9 +276,9 @@ void sb_sedimentation_velocity_liquid(const struct DimStruct *dims, double* rest
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin-1; k<kmax+1; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                double nl = ccn/density[k];
-                double ql_tmp = fmax(ql[ijk],0.0);
-                double liquid_mass = microphysics_mean_mass(nl, ql_tmp, DROPLET_MIN_MASS, DROPLET_MAX_MASS);
+                float  nl = ccn/density[k];
+                float  ql_tmp = fmax(ql[ijk],0.0);
+                float  liquid_mass = microphysics_mean_mass(nl, ql_tmp, DROPLET_MIN_MASS, DROPLET_MAX_MASS);
                 qt_velocity[ijk] = -C_LIQUID_SED * cbrt(liquid_mass * liquid_mass);
 
             }
@@ -307,18 +307,18 @@ void sb_sedimentation_velocity_liquid(const struct DimStruct *dims, double* rest
 
 
 
-void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
-                             double (*rain_mu)(double,double,double), double (*droplet_nu)(double,double),
-                             double* restrict density, double* restrict p0,  double* restrict temperature,  double* restrict qt, double ccn,
-                             double* restrict ql, double* restrict nr, double* restrict qr, double dt,
-                             double* restrict nr_tendency_micro, double* restrict qr_tendency_micro, double* restrict nr_tendency, double* restrict qr_tendency){
+void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT, float  (*lam_fp)(float ), float  (*L_fp)(float , float ),
+                             float  (*rain_mu)(float ,float ,float ), float  (*droplet_nu)(float ,float ),
+                             float * restrict density, float * restrict p0,  float * restrict temperature,  float * restrict qt, float  ccn,
+                             float * restrict ql, float * restrict nr, float * restrict qr, float  dt,
+                             float * restrict nr_tendency_micro, float * restrict qr_tendency_micro, float * restrict nr_tendency, float * restrict qr_tendency){
 
     //Here we compute the source terms for nr and qr (number and mass of rain)
     //Temporal substepping is used to help ensure boundedness of moments
-    double rain_mass, Dm, mu, Dp, nr_tendency_tmp, qr_tendency_tmp, ql_tendency_tmp;
-    double nr_tendency_au, nr_tendency_scbk, nr_tendency_evp;
-    double qr_tendency_au, qr_tendency_ac,  qr_tendency_evp;
-    double sat_ratio;
+    float  rain_mass, Dm, mu, Dp, nr_tendency_tmp, qr_tendency_tmp, ql_tendency_tmp;
+    float  nr_tendency_au, nr_tendency_scbk, nr_tendency_evp;
+    float  qr_tendency_au, qr_tendency_ac,  qr_tendency_evp;
+    float  sat_ratio;
 
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -338,18 +338,18 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
                 const ssize_t ijk = ishift + jshift + k;
                 qr[ijk] = fmax(qr[ijk],0.0);
                 nr[ijk] = fmax(fmin(nr[ijk], qr[ijk]/RAIN_MIN_MASS),qr[ijk]/RAIN_MAX_MASS);
-                double qv_tmp = qt[ijk] - fmax(ql[ijk],0.0);
-                double qt_tmp = qt[ijk];
-                double nl = ccn/density[k];
-                double ql_tmp = fmax(ql[ijk],0.0);
-                double qr_tmp = fmax(qr[ijk],0.0);
-                double nr_tmp = fmax(fmin(nr[ijk], qr_tmp/RAIN_MIN_MASS),qr_tmp/RAIN_MAX_MASS);
-                double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
+                float  qv_tmp = qt[ijk] - fmax(ql[ijk],0.0);
+                float  qt_tmp = qt[ijk];
+                float  nl = ccn/density[k];
+                float  ql_tmp = fmax(ql[ijk],0.0);
+                float  qr_tmp = fmax(qr[ijk],0.0);
+                float  nr_tmp = fmax(fmin(nr[ijk], qr_tmp/RAIN_MIN_MASS),qr_tmp/RAIN_MAX_MASS);
+                float  g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
 
 
                 //holding nl fixed since it doesn't change between timesteps
 
-                double time_added = 0.0, dt_, rate;
+                float  time_added = 0.0, dt_, rate;
                 ssize_t iter_count = 0;
                 do{
                     iter_count += 1;
@@ -413,7 +413,7 @@ void sb_microphysics_sources(const struct DimStruct *dims, struct LookupStruct *
 }
 
 
-void sb_qt_source_formation(const struct DimStruct *dims,double* restrict qr_tendency, double* restrict qt_tendency ){
+void sb_qt_source_formation(const struct DimStruct *dims,float * restrict qr_tendency, float * restrict qt_tendency ){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -438,9 +438,9 @@ void sb_qt_source_formation(const struct DimStruct *dims,double* restrict qr_ten
 }
 
 
-void sb_entropy_source_formation(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
-                              double* restrict p0, double* restrict T, double* restrict Twet, double* restrict qt, double* restrict qv,
-                              double* restrict qr_tendency,  double* restrict entropy_tendency){
+void sb_entropy_source_formation(const struct DimStruct *dims, struct LookupStruct *LT, float  (*lam_fp)(float ), float  (*L_fp)(float , float ),
+                              float * restrict p0, float * restrict T, float * restrict Twet, float * restrict qt, float * restrict qv,
+                              float * restrict qr_tendency,  float * restrict entropy_tendency){
 
 
     //Here we compute the source terms of total water and entropy related to microphysics. See Pressel et al. 2015, Eq. 49-54
@@ -469,20 +469,20 @@ void sb_entropy_source_formation(const struct DimStruct *dims, struct LookupStru
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
-                const double lam_T = lam_fp(T[ijk]);
-                const double L_fp_T = L_fp(T[ijk],lam_T);
-                const double lam_Tw = lam_fp(Twet[ijk]);
-                const double L_fp_Tw = L_fp(Twet[ijk],lam_Tw);
-                const double pv_star_T = lookup(LT, T[ijk]);
-                const double pv_star_Tw = lookup(LT,Twet[ijk]);
-                const double pv = pv_c(p0[k], qt[ijk], qv[ijk]);
-                const double pd = p0[k] - pv;
-                const double sd_T = sd_c(pd, T[ijk]);
-                const double sv_star_T = sv_c(pv_star_T,T[ijk] );
-                const double sv_star_Tw = sv_c(pv_star_Tw, Twet[ijk]);
-                const double S_P = sd_T - sv_star_T + L_fp_T/T[ijk];
-                const double S_E = sv_star_Tw - L_fp_Tw/Twet[ijk] - sd_T;
-                const double S_D = -Rv * log(pv/pv_star_T) + cpv * log(T[ijk]/Twet[ijk]);
+                const float  lam_T = lam_fp(T[ijk]);
+                const float  L_fp_T = L_fp(T[ijk],lam_T);
+                const float  lam_Tw = lam_fp(Twet[ijk]);
+                const float  L_fp_Tw = L_fp(Twet[ijk],lam_Tw);
+                const float  pv_star_T = lookup(LT, T[ijk]);
+                const float  pv_star_Tw = lookup(LT,Twet[ijk]);
+                const float  pv = pv_c(p0[k], qt[ijk], qv[ijk]);
+                const float  pd = p0[k] - pv;
+                const float  sd_T = sd_c(pd, T[ijk]);
+                const float  sv_star_T = sv_c(pv_star_T,T[ijk] );
+                const float  sv_star_Tw = sv_c(pv_star_Tw, Twet[ijk]);
+                const float  S_P = sd_T - sv_star_T + L_fp_T/T[ijk];
+                const float  S_E = sv_star_Tw - L_fp_Tw/Twet[ijk] - sd_T;
+                const float  S_D = -Rv * log(pv/pv_star_T) + cpv * log(T[ijk]/Twet[ijk]);
                 entropy_tendency[ijk] += S_P * 0.5 * (qr_tendency[ijk] + fabs(qr_tendency[ijk])) - (S_E + S_D) * 0.5 *(qr_tendency[ijk] - fabs(qr_tendency[ijk])) ;
 
             }
@@ -497,8 +497,8 @@ void sb_entropy_source_formation(const struct DimStruct *dims, struct LookupStru
 
 
 
-void sb_entropy_source_heating(const struct DimStruct *dims, double* restrict T, double* restrict Twet, double* restrict qr,
-                               double* restrict w_qr, double* restrict w,  double* restrict entropy_tendency){
+void sb_entropy_source_heating(const struct DimStruct *dims, float * restrict T, float * restrict Twet, float * restrict qr,
+                               float * restrict w_qr, float * restrict w,  float * restrict entropy_tendency){
 
 
     //derivative of Twet is upwinded
@@ -511,7 +511,7 @@ void sb_entropy_source_heating(const struct DimStruct *dims, double* restrict T,
     const ssize_t imax = dims->nlg[0]-dims->gw;
     const ssize_t jmax = dims->nlg[1]-dims->gw;
     const ssize_t kmax = dims->nlg[2]-dims->gw;
-    const double dzi = 1.0/dims->dx[2];
+    const float  dzi = 1.0/dims->dx[2];
 
 
     for(ssize_t i=imin; i<imax; i++){
@@ -529,8 +529,8 @@ void sb_entropy_source_heating(const struct DimStruct *dims, double* restrict T,
 
 }
 
-void sb_entropy_source_drag(const struct DimStruct *dims, double* restrict T,  double* restrict qr,
-                            double* restrict w_qr, double* restrict entropy_tendency){
+void sb_entropy_source_drag(const struct DimStruct *dims, float * restrict T,  float * restrict qr,
+                            float * restrict w_qr, float * restrict entropy_tendency){
 
 
 
@@ -561,9 +561,9 @@ void sb_entropy_source_drag(const struct DimStruct *dims, double* restrict T,  d
 
 ///==========================To facilitate output=============================
 
-void sb_autoconversion_rain_wrapper(const struct DimStruct *dims,  double (*droplet_nu)(double,double),
-                                    double* restrict density,  double ccn, double* restrict ql,  double* restrict qr,
-                                    double* restrict nr_tendency, double* restrict qr_tendency){
+void sb_autoconversion_rain_wrapper(const struct DimStruct *dims,  float  (*droplet_nu)(float ,float ),
+                                    float * restrict density,  float  ccn, float * restrict ql,  float * restrict qr,
+                                    float * restrict nr_tendency, float * restrict qr_tendency){
 
     //Here we compute the source terms for nr and qr (number and mass of rain)
     //Temporal substepping is used to help ensure boundedness of moments
@@ -583,10 +583,10 @@ void sb_autoconversion_rain_wrapper(const struct DimStruct *dims,  double (*drop
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                const double nl = ccn/density[k];
+                const float  nl = ccn/density[k];
                 //compute the source terms
-                double ql_tmp = fmax(ql[ijk], 0.0);
-                double qr_tmp = fmax(qr[ijk], 0.0);
+                float  ql_tmp = fmax(ql[ijk], 0.0);
+                float  qr_tmp = fmax(qr[ijk], 0.0);
                 sb_autoconversion_rain(droplet_nu, density[k], nl, ql_tmp, qr_tmp, &nr_tendency[ijk], &qr_tendency[ijk]);
 
 
@@ -596,8 +596,8 @@ void sb_autoconversion_rain_wrapper(const struct DimStruct *dims,  double (*drop
     return;
 }
 
-void sb_accretion_rain_wrapper(const struct DimStruct *dims, double* restrict density,  double* restrict ql,
-                               double* restrict qr, double* restrict qr_tendency){
+void sb_accretion_rain_wrapper(const struct DimStruct *dims, float * restrict density,  float * restrict ql,
+                               float * restrict qr, float * restrict qr_tendency){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -614,8 +614,8 @@ void sb_accretion_rain_wrapper(const struct DimStruct *dims, double* restrict de
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                const double ql_tmp = fmax(ql[ijk], 0.0);
-                const double qr_tmp = fmax(qr[ijk], 0.0);
+                const float  ql_tmp = fmax(ql[ijk], 0.0);
+                const float  qr_tmp = fmax(qr[ijk], 0.0);
                 sb_accretion_rain(density[k], ql_tmp, qr_tmp, &qr_tendency[ijk]);
 
             }
@@ -624,12 +624,12 @@ void sb_accretion_rain_wrapper(const struct DimStruct *dims, double* restrict de
     return;
 }
 
-void sb_selfcollection_breakup_rain_wrapper(const struct DimStruct *dims, double (*rain_mu)(double,double,double),
-                                            double* restrict density, double* restrict nr, double* restrict qr, double* restrict nr_tendency){
+void sb_selfcollection_breakup_rain_wrapper(const struct DimStruct *dims, float  (*rain_mu)(float ,float ,float ),
+                                            float * restrict density, float * restrict nr, float * restrict qr, float * restrict nr_tendency){
 
     //Here we compute the source terms for nr and qr (number and mass of rain)
     //Temporal substepping is used to help ensure boundedness of moments
-    double rain_mass, Dm, mu;
+    float  rain_mass, Dm, mu;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
     const ssize_t imin = dims->gw;
@@ -646,11 +646,11 @@ void sb_selfcollection_breakup_rain_wrapper(const struct DimStruct *dims, double
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
                //obtain some parameters
-                const double qr_tmp = fmax(qr[ijk],0.0);
-                const double nr_tmp = fmax(fmin(nr[ijk], qr_tmp/RAIN_MIN_MASS),qr_tmp/RAIN_MAX_MASS);
-                const double rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, RAIN_MIN_MASS, RAIN_MAX_MASS);
-                const double Dm = cbrt(rain_mass * 6.0/DENSITY_LIQUID/pi);
-                const double mu = rain_mu(density[k], qr_tmp, Dm);
+                const float  qr_tmp = fmax(qr[ijk],0.0);
+                const float  nr_tmp = fmax(fmin(nr[ijk], qr_tmp/RAIN_MIN_MASS),qr_tmp/RAIN_MAX_MASS);
+                const float  rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, RAIN_MIN_MASS, RAIN_MAX_MASS);
+                const float  Dm = cbrt(rain_mass * 6.0/DENSITY_LIQUID/pi);
+                const float  mu = rain_mu(density[k], qr_tmp, Dm);
 
                 //compute the source terms
                 sb_selfcollection_breakup_rain(density[k], nr_tmp, qr_tmp, mu, rain_mass, Dm, &nr_tendency[ijk]);
@@ -661,13 +661,13 @@ void sb_selfcollection_breakup_rain_wrapper(const struct DimStruct *dims, double
     return;
 }
 
-void sb_evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
-                             double (*rain_mu)(double,double,double),  double* restrict density, double* restrict p0,  double* restrict temperature,  double* restrict qt,
-                             double* restrict ql, double* restrict nr, double* restrict qr, double* restrict nr_tendency, double* restrict qr_tendency){
+void sb_evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStruct *LT, float  (*lam_fp)(float ), float  (*L_fp)(float , float ),
+                             float  (*rain_mu)(float ,float ,float ),  float * restrict density, float * restrict p0,  float * restrict temperature,  float * restrict qt,
+                             float * restrict ql, float * restrict nr, float * restrict qr, float * restrict nr_tendency, float * restrict qr_tendency){
 
     //Here we compute the source terms for nr and qr (number and mass of rain)
     //Temporal substepping is used to help ensure boundedness of moments
-    double rain_mass, Dm, mu, Dp;
+    float  rain_mass, Dm, mu, Dp;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
     const ssize_t imin = dims->gw;
@@ -683,16 +683,16 @@ void sb_evaporation_rain_wrapper(const struct DimStruct *dims, struct LookupStru
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                const double qr_tmp = fmax(qr[ijk],0.0);
-                const double nr_tmp = fmax(fmin(nr[ijk], qr_tmp/RAIN_MIN_MASS),qr_tmp/RAIN_MAX_MASS);
-                const double qv = qt[ijk] - ql[ijk];
-                const double sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt[ijk]);
-                const double g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
+                const float  qr_tmp = fmax(qr[ijk],0.0);
+                const float  nr_tmp = fmax(fmin(nr[ijk], qr_tmp/RAIN_MIN_MASS),qr_tmp/RAIN_MAX_MASS);
+                const float  qv = qt[ijk] - ql[ijk];
+                const float  sat_ratio = microphysics_saturation_ratio(LT, temperature[ijk], p0[k], qt[ijk]);
+                const float  g_therm = microphysics_g(LT, lam_fp, L_fp, temperature[ijk]);
                 //obtain some parameters
-                const double rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, RAIN_MIN_MASS, RAIN_MAX_MASS);
-                const double Dm = cbrt(rain_mass * 6.0/DENSITY_LIQUID/pi);
-                const double mu = rain_mu(density[k], qr_tmp, Dm);
-                const double Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
+                const float  rain_mass = microphysics_mean_mass(nr_tmp, qr_tmp, RAIN_MIN_MASS, RAIN_MAX_MASS);
+                const float  Dm = cbrt(rain_mass * 6.0/DENSITY_LIQUID/pi);
+                const float  mu = rain_mu(density[k], qr_tmp, Dm);
+                const float  Dp = Dm * cbrt(tgamma(mu + 1.0) / tgamma(mu + 4.0));
                 //compute the source terms
                 sb_evaporation_rain( g_therm, sat_ratio, nr_tmp, qr_tmp, mu, rain_mass, Dp, Dm, &nr_tendency[ijk], &qr_tendency[ijk]);
 

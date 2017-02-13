@@ -23,7 +23,7 @@ cdef class PrognosticVariables:
         self.nv = 0
         self.nv_scalars = 0
         self.nv_velocities = 0
-        self.bc_type = np.array([],dtype=np.double,order='c')
+        self.bc_type = np.array([],dtype=np.float32,order='c')
         self.var_type = np.array([],dtype=np.int,order='c')
         self.velocity_directions = np.zeros((Gr.dims.dims,),dtype=np.int,order='c')
         self.velocity_names_directional = ["" for dim in range(Gr.dims.dims)]
@@ -39,9 +39,9 @@ cdef class PrognosticVariables:
 
         #Add bc type to array
         if bc_type == "sym":
-            self.bc_type = np.append(self.bc_type,[1.0])
+            self.bc_type = np.array(np.append(self.bc_type,[1.0]),dtype=np.float32)
         elif bc_type =="asym":
-            self.bc_type = np.append(self.bc_type,[-1.0])
+            self.bc_type = np.array(np.append(self.bc_type,[-1.0]), dtype=np.float32)
         else:
             Pa.root_print("Not a valid bc_type. Killing simulation now!")
             Pa.kill()
@@ -71,8 +71,8 @@ cdef class PrognosticVariables:
         return
 
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.values = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
-        self.tendencies = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
+        self.values = np.zeros((self.nv*Gr.dims.npg),dtype=np.float32,order='c')
+        self.tendencies = np.zeros((self.nv*Gr.dims.npg),dtype=np.float32,order='c')
 
         #Add prognostic variables to Statistics IO
         Pa.root_print('Setting up statistical output files for Prognostic Variables')
@@ -103,7 +103,7 @@ cdef class PrognosticVariables:
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS ,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t var_shift, var_shift2
-            double [:] tmp
+            float [:] tmp
 
         for var_name in self.name_index.keys():
             var_shift = self.get_varshift(Gr,var_name)
@@ -180,10 +180,10 @@ cdef class PrognosticVariables:
 
     cdef void update_all_bcs(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
 
-        cdef double* send_buffer
-        cdef double* recv_buffer
-        cdef double a =0
-        cdef double b = 0
+        cdef float* send_buffer
+        cdef float* recv_buffer
+        cdef float a =0
+        cdef float b = 0
         cdef Py_ssize_t [:] shift = np.array([-1,1],dtype=np.int,order='c')
         cdef Py_ssize_t d, i, s
         cdef Py_ssize_t ierr
@@ -198,8 +198,8 @@ cdef class PrognosticVariables:
         for d in xrange(Gr.dims.dims):
 
             #Allocate memory for send buffer using python memory manager for safety
-            send_buffer = <double*> PyMem_Malloc(self.nv * Gr.dims.nbuffer[d] * sizeof(double))
-            recv_buffer = <double*> PyMem_Malloc(self.nv * Gr.dims.nbuffer[d] * sizeof(double))
+            send_buffer = <float*> PyMem_Malloc(self.nv * Gr.dims.nbuffer[d] * sizeof(float))
+            recv_buffer = <float*> PyMem_Malloc(self.nv * Gr.dims.nbuffer[d] * sizeof(float))
             #Loop over shifts (this should only be -1 or 1)
             for s in shift:
                 #Now loop over variables and store in send buffer
@@ -212,9 +212,9 @@ cdef class PrognosticVariables:
                 #Compute the mpi shifts (lower and upper) in the world communicator for dimeniosn d
                 ierr = mpi.MPI_Cart_shift(Pa.cart_comm_world,d,s,&source_rank,&dest_rank)
 
-                ierr = mpi.MPI_Sendrecv(&send_buffer[0],self.nv*Gr.dims.nbuffer[d],mpi.MPI_DOUBLE,dest_rank,0,
+                ierr = mpi.MPI_Sendrecv(&send_buffer[0],self.nv*Gr.dims.nbuffer[d],mpi.MPI_FLOAT,dest_rank,0,
                                             &recv_buffer[0],self.nv*Gr.dims.nbuffer[d],
-                                            mpi.MPI_DOUBLE,source_rank,0,Pa.cart_comm_world,&status)
+                                            mpi.MPI_FLOAT,source_rank,0,Pa.cart_comm_world,&status)
 
 
                 for i in xrange(self.nv):
@@ -279,7 +279,7 @@ cdef class PrognosticVariables:
         Re.restart_data['PV']['velocity_names_directional'] = self.velocity_names_directional
 
         cdef:
-            double [:] values = np.empty((self.nv * Gr.dims.npl),dtype=np.double,order='c')
+            float [:] values = np.empty((self.nv * Gr.dims.npl),dtype=np.float32,order='c')
             Py_ssize_t imin = Gr.dims.gw
             Py_ssize_t jmin = Gr.dims.gw
             Py_ssize_t kmin = Gr.dims.gw
@@ -324,7 +324,7 @@ cdef class PrognosticVariables:
 
 
         cdef:
-            double [:] values = Re.restart_data['PV']['values']
+            float [:] values = Re.restart_data['PV']['values']
             Py_ssize_t imin = Gr.dims.gw
             Py_ssize_t jmin = Gr.dims.gw
             Py_ssize_t kmin = Gr.dims.gw

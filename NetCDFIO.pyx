@@ -150,7 +150,7 @@ cdef class NetCDFIO_Stats:
             root_grp.close()
         return
 
-    cpdef write_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa):
+    cpdef write_profile(self, var_name, float[:] data, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
             #root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             #profile_grp = root_grp.groups['profiles']
@@ -159,7 +159,7 @@ cdef class NetCDFIO_Stats:
             #root_grp.close()
         return
 
-    cpdef write_reference_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa):
+    cpdef write_reference_profile(self, var_name, float[:] data, ParallelMPI.ParallelMPI Pa):
         '''
         Writes a profile to the reference group NetCDF Stats file. The variable must have already been
         added to the NetCDF file using add_reference_profile
@@ -177,7 +177,7 @@ cdef class NetCDFIO_Stats:
         return
 
     @cython.wraparound(True)
-    cpdef write_ts(self, var_name, double data, ParallelMPI.ParallelMPI Pa):
+    cpdef write_ts(self, var_name, float data, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
             #root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             #ts_grp = root_grp.groups['timeseries']
@@ -186,7 +186,7 @@ cdef class NetCDFIO_Stats:
             #root_grp.close()
         return
 
-    cpdef write_simulation_time(self, double t, ParallelMPI.ParallelMPI Pa):
+    cpdef write_simulation_time(self, float t, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
             #root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             #profile_grp = root_grp.groups['profiles']
@@ -307,7 +307,7 @@ cdef class NetCDFIO_Fields:
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
             Py_ssize_t var_shift
-            double[:] data = np.empty((Gr.dims.npl,), dtype=np.double, order='c')
+            float[:] data = np.empty((Gr.dims.npl,), dtype=np.float32, order='c')
             Py_ssize_t count
         for name in PV.name_index.keys():
             self.add_field(name)
@@ -339,7 +339,7 @@ cdef class NetCDFIO_Fields:
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
             Py_ssize_t var_shift
-            double[:] data = np.empty((Gr.dims.npl,), dtype=np.double, order='c')
+            float[:] data = np.empty((Gr.dims.npl,), dtype=np.float32, order='c')
             Py_ssize_t count
         for name in self.diagnostic_fields:
             try:
@@ -367,7 +367,7 @@ cdef class NetCDFIO_Fields:
         rootgrp.close()
         return
 
-    cpdef write_field(self, name, double[:] data):
+    cpdef write_field(self, name, float[:] data):
         rootgrp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
         fieldgrp = rootgrp.groups['fields']
         var = fieldgrp.variables[name]
@@ -436,7 +436,7 @@ cdef class NetCDFIO_CondStats:
                 os.path.join( outpath, namelist['meta']['simname'] + '.in'))
         return
 
-    cpdef create_condstats_group(self, str groupname, str dimname, double [:] dimval, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+    cpdef create_condstats_group(self, str groupname, str dimname, float [:] dimval, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
 
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'w', format='NETCDF4')
@@ -466,7 +466,7 @@ cdef class NetCDFIO_CondStats:
         return
 
 
-    cpdef write_condstat(self, varname, groupname, double [:,:] data, ParallelMPI.ParallelMPI Pa):
+    cpdef write_condstat(self, varname, groupname, float [:,:] data, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             sub_grp = root_grp.groups[groupname]
@@ -478,7 +478,7 @@ cdef class NetCDFIO_CondStats:
         return
 
 
-    cpdef write_condstat_time(self, double t, ParallelMPI.ParallelMPI Pa):
+    cpdef write_condstat_time(self, float t, ParallelMPI.ParallelMPI Pa):
         if Pa.rank == 0:
             try:
                 root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')

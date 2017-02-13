@@ -10,12 +10,12 @@ from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
 cdef class LatentHeat:
     cdef:
         #In the functions pointed to by the function pointer L* must not require gil
-        double (*L_fp)(double T, double Lambda) nogil
-        double (*Lambda_fp)(double T) nogil
+        float (*L_fp)(float T, float Lambda) nogil
+        float (*Lambda_fp)(float T) nogil
 
-    cpdef L(self, double T, double Lambda)
+    cpdef L(self, float T, float Lambda)
 
-    cpdef Lambda(self, double T)
+    cpdef Lambda(self, float T)
 
 
 cdef class ClausiusClapeyron:

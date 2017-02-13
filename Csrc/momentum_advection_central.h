@@ -4,13 +4,13 @@
 #include "flux_divergence.h"
 #include<stdio.h>
 
-void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
-    double* restrict alpha0, double* restrict alpha0_half,
-    double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+void second_order_m(struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,
+    float * restrict alpha0, float * restrict alpha0_half,
+    float * restrict vel_advected, float * restrict vel_advecting,
+    float * restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
         // Dynamically allocate flux array
-        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        float  *flux = (float  *)malloc(sizeof(float )*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -76,13 +76,13 @@ void second_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
     }
 
 
-void fourth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
-        double* restrict alpha0, double* restrict alpha0_half,
-        double* restrict vel_advected, double* restrict vel_advecting,
-        double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+void fourth_order_m(struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,
+        float * restrict alpha0, float * restrict alpha0_half,
+        float * restrict vel_advected, float * restrict vel_advecting,
+        float * restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
         // Dynamically allocate flux array
-        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        float  *flux = (float  *)malloc(sizeof(float )*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -152,14 +152,14 @@ void fourth_order_m(struct DimStruct *dims, double* restrict rho0, double* restr
         return;
     }
 
-void sixth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
-    double* restrict alpha0, double* restrict alpha0_half,
-    double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+void sixth_order_m(struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,
+    float * restrict alpha0, float * restrict alpha0_half,
+    float * restrict vel_advected, float * restrict vel_advecting,
+    float * restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
 
         // Dynamically allocate flux array
-        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        float  *flux = (float  *)malloc(sizeof(float )*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -231,13 +231,13 @@ void sixth_order_m(struct DimStruct *dims, double* restrict rho0, double* restri
     }
 
 
-void eighth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
-    double* restrict alpha0, double* restrict alpha0_half,
-    double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+void eighth_order_m(struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,
+    float * restrict alpha0, float * restrict alpha0_half,
+    float * restrict vel_advected, float * restrict vel_advecting,
+    float * restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
         // Dynamically allocate flux array
-        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        float  *flux = (float  *)malloc(sizeof(float )*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];

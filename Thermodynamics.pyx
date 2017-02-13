@@ -27,7 +27,7 @@ cdef class LatentHeat:
 
         return
 
-    cpdef L(self,double T, double Lambda):
+    cpdef L(self,float T, float Lambda):
         '''
         Provide a python interface to the latent heat function pointer.
         :param T (Thermodynamic Temperature):
@@ -35,7 +35,7 @@ cdef class LatentHeat:
         '''
         return self.L_fp(T, Lambda)
 
-    cpdef Lambda(self, double T):
+    cpdef Lambda(self, float T):
         return self.Lambda_fp(T)
 
 cdef class ClausiusClapeyron:
@@ -47,10 +47,10 @@ cdef class ClausiusClapeyron:
 
         #Now integrate the ClausiusClapeyron equation
         cdef:
-            double Tmin
-            double Tmax
+            float Tmin
+            float Tmax
             long n_lookup
-            double [:] pv
+            float [:] pv
 
         try:
             Tmin = namelist['ClausiusClapeyron']['temperature_min']
@@ -100,10 +100,10 @@ cdef class ClausiusClapeyron:
         pv0 = np.log(pv_star_t)
 
         #Integrate
-        pv_above_Tt = np.exp(odeint(rhs,pv0,T_above_Tt,hmax=0.1)[1:])
-        pv_below_Tt = np.exp(odeint(rhs,pv0,T_below_Tt,hmax=0.1)[1:])[::-1]
+        pv_above_Tt = np.array(np.exp(odeint(rhs,pv0,T_above_Tt,hmax=0.1)[1:]),dtype=np.float32)
+        pv_below_Tt = np.array(np.exp(odeint(rhs,pv0,T_below_Tt,hmax=0.1)[1:])[::-1], dtype=np.float32)
         pv = np.append(pv_below_Tt,pv_above_Tt )
-        self.LT.initialize(T,pv)
+        self.LT.initialize(np.array(T,dtype=np.float32),np.array(pv,dtype=np.float32))
 
         return
 

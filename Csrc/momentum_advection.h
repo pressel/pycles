@@ -10,10 +10,10 @@
 #include<stdio.h>
 
 
-void compute_advective_tendencies_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
-                                double* restrict alpha0, double* restrict alpha0_half,
-                                double* restrict vel_advected, double* restrict vel_advecting,
-                                double* restrict tendency, ssize_t d_advected, ssize_t d_advecting, int scheme){
+void compute_advective_tendencies_m(struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,
+                                float * restrict alpha0, float * restrict alpha0_half,
+                                float * restrict vel_advected, float * restrict vel_advecting,
+                                float * restrict tendency, ssize_t d_advected, ssize_t d_advecting, int scheme){
 
     switch(scheme){
         case 2:

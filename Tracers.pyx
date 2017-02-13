@@ -21,7 +21,7 @@ include "parameters.pxi"
 import cython
 
 cdef extern from "thermodynamic_functions.h":
-    inline double pv_c(double p0, double qt, double qv) nogil
+    inline float pv_c(float p0, float qt, float qv) nogil
 
 def TracersFactory(namelist):
     try:
@@ -91,7 +91,7 @@ cdef class UpdraftTracers:
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t i,j,k,ishift,jshift,ijk
             Py_ssize_t var_shift
-            double tau
+            float tau
 
         # Set the source term
         for level in self.tracer_dict.keys():
@@ -120,17 +120,17 @@ cdef class UpdraftTracers:
         # Ref: M. G. Lawrence, "The relationship between relative humidity and the dew point
         # temperature in moist air: A simple conversion and applications", Bull. Am. Meteorol. Soc., 86, 225-233, 2005
         cdef:
-            double [:] T_dew = np.zeros(Gr.dims.nl[0]*Gr.dims.nl[1],dtype=np.double,order='c')
-            double [:] z_lcl = np.zeros(Gr.dims.nl[0]*Gr.dims.nl[1],dtype=np.double,order='c')
+            float [:] T_dew = np.zeros(Gr.dims.nl[0]*Gr.dims.nl[1],dtype=np.float32,order='c')
+            float [:] z_lcl = np.zeros(Gr.dims.nl[0]*Gr.dims.nl[1],dtype=np.float32,order='c')
             Py_ssize_t t_shift, qv_shift, qt_shift
             Py_ssize_t  count = 0
-            double B1 = 243.04  # C
-            double A1 = 17.625 # no units
-            double C1 = 610.94 # Pa
-            double CtoK = 273.15 # additive celsius to kelvin conversion factor
-            double vapor_pressure
-            double nxny_i =1.0/( Gr.dims.n[0] * Gr.dims.n[1])
-            double lcl_, lcl
+            float B1 = 243.04  # C
+            float A1 = 17.625 # no units
+            float C1 = 610.94 # Pa
+            float CtoK = 273.15 # additive celsius to kelvin conversion factor
+            float vapor_pressure
+            float nxny_i =1.0/( Gr.dims.n[0] * Gr.dims.n[1])
+            float lcl_, lcl
 
 
 

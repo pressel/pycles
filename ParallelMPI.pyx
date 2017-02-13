@@ -135,7 +135,7 @@ cdef class ParallelMPI:
 
         return
 
-    cdef double domain_scalar_sum(self, double local_value):
+    cdef float domain_scalar_sum(self, float local_value):
         '''
         Compute the sum over all mpi ranks of a single scalar of type double.
         :param local_value: the value to be summed over the ranks
@@ -143,15 +143,15 @@ cdef class ParallelMPI:
         '''
 
         cdef:
-            double global_sum
+            float global_sum
 
-        mpi.MPI_Allreduce(&local_value, &global_sum,1,mpi.MPI_DOUBLE,mpi.MPI_SUM,self.comm_world)
+        mpi.MPI_Allreduce(&local_value, &global_sum,1,mpi.MPI_FLOAT,mpi.MPI_SUM,self.comm_world)
 
         return global_sum
 
 
 
-    cdef double domain_scalar_max(self, double local_value):
+    cdef float domain_scalar_max(self, float local_value):
         '''
         Compute the maximum over all mpi ranks of a single scalar of type double.
         :param local_value: the value to be maxed over the ranks
@@ -159,13 +159,13 @@ cdef class ParallelMPI:
         '''
 
         cdef:
-            double global_max
+            float global_max
 
-        mpi.MPI_Allreduce(&local_value, &global_max,1,mpi.MPI_DOUBLE,mpi.MPI_MAX,self.comm_world)
+        mpi.MPI_Allreduce(&local_value, &global_max,1,mpi.MPI_FLOAT,mpi.MPI_MAX,self.comm_world)
 
         return global_max
 
-    cdef double domain_scalar_min(self, double local_value):
+    cdef float domain_scalar_min(self, float local_value):
         '''
         Compute the minimum over all mpi ranks of a single scalar of type double.
         :param local_value: the value to be min-ed over the ranks
@@ -173,13 +173,13 @@ cdef class ParallelMPI:
         '''
 
         cdef:
-            double  global_min
+            float  global_min
 
-        mpi.MPI_Allreduce(&local_value, &global_min,1,mpi.MPI_DOUBLE,mpi.MPI_MIN,self.comm_world)
+        mpi.MPI_Allreduce(&local_value, &global_min,1,mpi.MPI_FLOAT,mpi.MPI_MIN,self.comm_world)
 
         return global_min
 
-    cdef double [:] domain_vector_sum(self, double [:] local_vector, Py_ssize_t n):
+    cdef float [:] domain_vector_sum(self, float [:] local_vector, Py_ssize_t n):
         '''
         Compute the sum over all mpi ranks of a vector of type double.
         :param local_vector: the value to be summed over the ranks
@@ -187,26 +187,26 @@ cdef class ParallelMPI:
         '''
 
         cdef:
-            double [:] global_sum = np.empty((n,),dtype=np.double,order='c')
+            float [:] global_sum = np.empty((n,),dtype=np.float32,order='c')
 
-        mpi.MPI_Allreduce(&local_vector[0], &global_sum[0],n,mpi.MPI_DOUBLE,mpi.MPI_SUM,self.comm_world)
+        mpi.MPI_Allreduce(&local_vector[0], &global_sum[0],n,mpi.MPI_FLOAT,mpi.MPI_SUM,self.comm_world)
 
         return global_sum
 
-    cdef double [:] HorizontalMean(self, Grid.Grid Gr, double *values):
+    cdef float [:] HorizontalMean(self, Grid.Grid Gr, float *values):
         '''
         Compute the horizontal mean of the array pointed to by values.
         values should have dimension of Gr.dims.nlg[0] * Gr.dims.nlg[1]
         * Gr.dims.nlg[1].
 
         :param Gr: Grid class
-        :param values1: pointer to array of type double containing first value in product
-        :return: memoryview type double with dimension Gr.dims.nlg[2]
+        :param values1: pointer to array of type float containing first value in product
+        :return: memoryview type float with dimension Gr.dims.nlg[2]
         '''
 
         cdef:
-            double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            float [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
             int i,j,k,ijk
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
@@ -217,7 +217,7 @@ cdef class ParallelMPI:
             int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             int jstride = Gr.dims.nlg[2]
             int ishift, jshift
-            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+            float n_horizontal_i = 1.0/np.float32(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
             for i in xrange(imin,imax):
@@ -233,28 +233,28 @@ cdef class ParallelMPI:
         #processes with the the same vertical rank
 
         mpi.MPI_Allreduce(&mean_local[0],&mean[0],Gr.dims.nlg[2],
-                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+                          mpi.MPI_FLOAT,mpi.MPI_SUM,self.cart_comm_sub_xy)
 
         for i in xrange(Gr.dims.nlg[2]):
             mean[i] = mean[i]*n_horizontal_i
 
         return mean
 
-    cdef double [:] HorizontalMeanofSquares(self, Grid.Grid Gr, const double *values1, const double *values2):
+    cdef float [:] HorizontalMeanofSquares(self, Grid.Grid Gr, const float *values1, const float *values2):
         '''
         Compute the horizontal mean of the product of two variables (values1 and values2). values1 and values2 are
         passed in as pointers of type double. These should have dimension of Gr.dims.nlg[0] * Gr.dims.nlg[1]
         * Gr.dims.nlg[1].
 
         :param Gr: Grid class
-        :param values1: pointer to array of type double containing first value in product
-        :param values2: pointer to array of type double containing second value in product
-        :return: memoryview type double with dimension Gr.dims.nlg[2]
+        :param values1: pointer to array of type float containing first value in product
+        :param values2: pointer to array of type float containing second value in product
+        :return: memoryview type float with dimension Gr.dims.nlg[2]
         '''
 
         cdef:
-            double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            float [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
             int i,j,k,ijk
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
@@ -265,7 +265,7 @@ cdef class ParallelMPI:
             int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             int jstride = Gr.dims.nlg[2]
             int ishift, jshift
-            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+            float n_horizontal_i = 1.0/np.float32(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
             for i in xrange(imin,imax):
@@ -282,17 +282,17 @@ cdef class ParallelMPI:
         #processes with the the same vertical rank
 
         mpi.MPI_Allreduce(&mean_local[0],&mean[0],Gr.dims.nlg[2],
-                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+                          mpi.MPI_FLOAT,mpi.MPI_SUM,self.cart_comm_sub_xy)
 
         for i in xrange(Gr.dims.nlg[2]):
             mean[i] = mean[i]*n_horizontal_i
         return mean
 
-    cdef double [:] HorizontalMeanofCubes(self,Grid.Grid Gr,const double *values1,const double *values2, const double *values3):
+    cdef float [:] HorizontalMeanofCubes(self,Grid.Grid Gr,const float *values1,const float *values2, const float *values3):
 
         cdef:
-            double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            float [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
             int i,j,k,ijk
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
@@ -303,7 +303,7 @@ cdef class ParallelMPI:
             int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             int jstride = Gr.dims.nlg[2]
             int ishift, jshift
-            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+            float n_horizontal_i = 1.0/np.float32(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
             for i in xrange(imin,imax):
@@ -317,17 +317,17 @@ cdef class ParallelMPI:
         #processes with the the same vertical rank
 
         mpi.MPI_Allreduce(&mean_local[0],&mean[0],Gr.dims.nlg[2],
-                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+                          mpi.MPI_FLOAT,mpi.MPI_SUM,self.cart_comm_sub_xy)
 
         for i in xrange(Gr.dims.nlg[2]):
             mean[i] = mean[i]*n_horizontal_i
 
         return mean
 
-    cdef double [:] HorizontalMaximum(self, Grid.Grid Gr, double *values):
+    cdef float [:] HorizontalMaximum(self, Grid.Grid Gr, float *values):
         cdef:
-            double [:] max_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] max = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            float [:] max_local = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] max = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
             int i,j,k,ijk
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
@@ -338,7 +338,7 @@ cdef class ParallelMPI:
             int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             int jstride = Gr.dims.nlg[2]
             int ishift, jshift
-            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+            float n_horizontal_i = 1.0/np.float32(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
             for k in xrange(kmin,kmax):
@@ -353,13 +353,13 @@ cdef class ParallelMPI:
                         max_local[k] = fmax(max_local[k],values[ijk])
 
         mpi.MPI_Allreduce(&max_local[0],&max[0],Gr.dims.nlg[2],
-                          mpi.MPI_DOUBLE,mpi.MPI_MAX,self.cart_comm_sub_xy)
+                          mpi.MPI_FLOAT,mpi.MPI_MAX,self.cart_comm_sub_xy)
         return max
 
-    cdef double [:] HorizontalMinimum(self, Grid.Grid Gr, double *values):
+    cdef float [:] HorizontalMinimum(self, Grid.Grid Gr, float *values):
         cdef:
-            double [:] min_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] min = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            float [:] min_local = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] min = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
             int i,j,k,ijk
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
@@ -370,7 +370,7 @@ cdef class ParallelMPI:
             int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             int jstride = Gr.dims.nlg[2]
             int ishift, jshift
-            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+            float n_horizontal_i = 1.0/np.float32(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
             for k in xrange(kmin,kmax):
@@ -385,18 +385,18 @@ cdef class ParallelMPI:
                         min_local[k] = fmin(min_local[k],values[ijk])
 
         mpi.MPI_Allreduce(&min_local[0],&min[0],Gr.dims.nlg[2],
-                          mpi.MPI_DOUBLE,mpi.MPI_MIN,self.cart_comm_sub_xy)
+                          mpi.MPI_FLOAT,mpi.MPI_MIN,self.cart_comm_sub_xy)
         return min
 
-    cdef double HorizontalMeanSurface(self,Grid.Grid Gr,double *values):
+    cdef float HorizontalMeanSurface(self,Grid.Grid Gr,float *values):
         # Some assumptions for using this function:
         #--the <values> array is defined for all processors
         #--<values> = 0 on all processors for which zrank !=0
         # this is necessary to ensure that the root processor has the correct mean
 
         cdef:
-            double mean_local = 0.0
-            double mean = 0.0
+            float mean_local = 0.0
+            float mean = 0.0
             int i,j,ij
             int imin = Gr.dims.gw
             int jmin = Gr.dims.gw
@@ -405,7 +405,7 @@ cdef class ParallelMPI:
             int gw = Gr.dims.gw
             int istride_2d = Gr.dims.nlg[1]
             int ishift, jshift
-            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
+            float n_horizontal_i = 1.0/np.float32(Gr.dims.n[1]*Gr.dims.n[0])
 
         with nogil:
             for i in xrange(imin,imax):
@@ -417,7 +417,7 @@ cdef class ParallelMPI:
 
 
         mpi.MPI_Allreduce(&mean_local,&mean,1,
-                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.comm_world)
+                          mpi.MPI_FLOAT,mpi.MPI_SUM,self.comm_world)
 
         mean = mean*n_horizontal_i
 
@@ -427,7 +427,7 @@ cdef class ParallelMPI:
 
 
 
-    cdef double [:] HorizontalMeanConditional(self,Grid.Grid Gr,double *values, double *mask):
+    cdef float [:] HorizontalMeanConditional(self,Grid.Grid Gr,float *values, float *mask):
         '''
         This function computes horizontal means given a binary conditional. For example, it can be used to compute
         mean profiles within cloudy air. The mask must be pre-computed.
@@ -439,10 +439,10 @@ cdef class ParallelMPI:
         '''
 
         cdef:
-            double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] sum_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] sum = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            float [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] sum_local = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] sum = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
 
             int i,j,k,ijk
             int imin = Gr.dims.gw
@@ -471,10 +471,10 @@ cdef class ParallelMPI:
         #processes with the the same vertical rank
 
         mpi.MPI_Allreduce(&mean_local[0],&mean[0],Gr.dims.nlg[2],
-                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+                          mpi.MPI_FLOAT,mpi.MPI_SUM,self.cart_comm_sub_xy)
 
         mpi.MPI_Allreduce(&sum_local[0],&sum[0],Gr.dims.nlg[2],
-                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+                          mpi.MPI_FLOAT,mpi.MPI_SUM,self.cart_comm_sub_xy)
 
         for i in xrange(Gr.dims.nlg[2]):
             mean[i] = mean[i]/np.maximum(sum[i], 1.0)
@@ -482,7 +482,7 @@ cdef class ParallelMPI:
         return mean
 
 
-    cdef double [:] HorizontalMeanofSquaresConditional(self,Grid.Grid Gr,double *values1,double *values2, double *mask):
+    cdef float [:] HorizontalMeanofSquaresConditional(self,Grid.Grid Gr,float *values1,float *values2, float *mask):
         '''
         This function computes horizontal means of the product of two array given a binary conditional.
         For example, it can be used to compute mean-square profiles within cloudy air. The mask must be pre-computed.
@@ -497,10 +497,10 @@ cdef class ParallelMPI:
 
 
         cdef:
-            double [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] sum_local = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-            double [:] sum = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            float [:] mean_local = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] mean = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] sum_local = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
+            float [:] sum = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
 
             int i,j,k,ijk
             int imin = Gr.dims.gw
@@ -529,10 +529,10 @@ cdef class ParallelMPI:
         #processes with the the same vertical rank
 
         mpi.MPI_Allreduce(&mean_local[0],&mean[0],Gr.dims.nlg[2],
-                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+                          mpi.MPI_FLOAT,mpi.MPI_SUM,self.cart_comm_sub_xy)
 
         mpi.MPI_Allreduce(&sum_local[0],&sum[0],Gr.dims.nlg[2],
-                          mpi.MPI_DOUBLE,mpi.MPI_SUM,self.cart_comm_sub_xy)
+                          mpi.MPI_FLOAT,mpi.MPI_SUM,self.cart_comm_sub_xy)
 
         for i in xrange(Gr.dims.nlg[2]):
             mean[i] = mean[i]/np.maximum(sum[i], 1.0)
@@ -619,12 +619,12 @@ cdef class Pencil:
         Pa.barrier()
         return
 
-    cdef double [:,:] forward_double(self, Grid.DimStruct *dims, ParallelMPI Pa ,double *data):
+    cdef float [:,:] forward_double(self, Grid.DimStruct *dims, ParallelMPI Pa ,float *data):
 
         cdef:
-            double [:] local_transpose = np.empty((dims.npl,),dtype=np.double,order='c')
-            double [:] recv_buffer = np.empty((self.n_local_pencils * self.pencil_length),dtype=np.double,order='c')
-            double [:,:] pencils = np.empty((self.n_local_pencils,self.pencil_length),dtype=np.double,order='c')
+            float [:] local_transpose = np.empty((dims.npl,),dtype=np.float32,order='c')
+            float [:] recv_buffer = np.empty((self.n_local_pencils * self.pencil_length),dtype=np.float32,order='c')
+            float [:,:] pencils = np.empty((self.n_local_pencils,self.pencil_length),dtype=np.float32,order='c')
 
         #Build send buffer
         self.build_buffer_double(dims, data, &local_transpose[0])
@@ -632,14 +632,14 @@ cdef class Pencil:
         if(self.size > 1):
             #Do all to all communication
             if self.dim == 0:
-                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,
-                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_x)
+                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_FLOAT,
+                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_FLOAT,Pa.cart_comm_sub_x)
             elif self.dim==1:
-                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,
-                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_y)
+                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_FLOAT,
+                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_FLOAT,Pa.cart_comm_sub_y)
             else:
-                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,
-                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_z)
+                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_FLOAT,
+                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_FLOAT,Pa.cart_comm_sub_z)
 
             self.unpack_buffer_double(dims,&recv_buffer[0],pencils)
 
@@ -649,7 +649,7 @@ cdef class Pencil:
 
         return pencils
 
-    cdef void build_buffer_double(self, Grid.DimStruct *dims, double *data, double *local_transpose ):
+    cdef void build_buffer_double(self, Grid.DimStruct *dims, float *data, float *local_transpose ):
         '''
             A method to build a send buffer for Pencils of type double. The function has no return value but does
             have side effects the memory pointed to by *local_transpose.
@@ -720,7 +720,7 @@ cdef class Pencil:
                         local_transpose[ijk_no_gw] = data[ijk]
         return
 
-    cdef void unpack_buffer_double(self,Grid.DimStruct *dims, double *recv_buffer, double  [:,:] pencils):
+    cdef void unpack_buffer_double(self,Grid.DimStruct *dims, float *recv_buffer, float  [:,:] pencils):
 
         cdef:
             long m, p, i
@@ -745,13 +745,13 @@ cdef class Pencil:
                         count += 1
         return
 
-    cdef void reverse_double(self, Grid.DimStruct *dims, ParallelMPI Pa, double [:,:] pencils, double *data):
+    cdef void reverse_double(self, Grid.DimStruct *dims, ParallelMPI Pa, float [:,:] pencils, float *data):
 
         cdef:
-            double [:] send_buffer = np.empty(self.n_local_pencils * self.pencil_length,dtype=np.double,order='c')
-            double [:] recv_buffer = np.empty(dims.npl,dtype=np.double,order='c')
+            float [:] send_buffer = np.empty(self.n_local_pencils * self.pencil_length,dtype=np.float32,order='c')
+            float [:] recv_buffer = np.empty(dims.npl,dtype=np.float32,order='c')
 
-        #This is exactly the inverse operation to forward_double so that the send_counts can be used as the recv_counts
+        #This is exactly the inverse operation to forward_float so that the send_counts can be used as the recv_counts
         #and vice versa
 
         self.reverse_build_buffer_double(dims,pencils,&send_buffer[0])
@@ -759,14 +759,14 @@ cdef class Pencil:
         if(self.size > 1):
             #Do all to all communication
             if self.dim == 0:
-                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,
-                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_x)
+                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_FLOAT,
+                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_FLOAT,Pa.cart_comm_sub_x)
             elif self.dim==1:
-                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,
-                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_y)
+                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_FLOAT,
+                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_FLOAT,Pa.cart_comm_sub_y)
             else:
-                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE,
-                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE,Pa.cart_comm_sub_z)
+                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_FLOAT,
+                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_FLOAT,Pa.cart_comm_sub_z)
 
             self.reverse_unpack_buffer_double(dims,&recv_buffer[0],&data[0])
 
@@ -775,7 +775,7 @@ cdef class Pencil:
 
         return
 
-    cdef void reverse_build_buffer_double(self, Grid.DimStruct *dims, double [:,:] pencils, double *send_buffer):
+    cdef void reverse_build_buffer_double(self, Grid.DimStruct *dims, float [:,:] pencils, float *send_buffer):
         cdef:
             long m, p, i
             long nl_shift, count
@@ -797,7 +797,7 @@ cdef class Pencil:
                         count += 1
         return
 
-    cdef void reverse_unpack_buffer_double(self, Grid.DimStruct *dims, double *recv_buffer, double *data ):
+    cdef void reverse_unpack_buffer_double(self, Grid.DimStruct *dims, float *recv_buffer, float *data ):
 
         cdef:
             long imin = dims.gw
@@ -852,7 +852,7 @@ cdef class Pencil:
                         data[ijk] = recv_buffer[ijk_no_gw]
         return
 
-    cdef void build_buffer_complex(self, Grid.DimStruct *dims, complex *data, complex *local_transpose ):
+    cdef void build_buffer_complex(self, Grid.DimStruct *dims, float complex *data, float complex *local_transpose ):
 
         cdef:
             long imin = dims.gw
@@ -906,7 +906,7 @@ cdef class Pencil:
                         local_transpose[ijk_no_gw] = data[ijk]
         return
 
-    cdef void unpack_buffer_complex(self,Grid.DimStruct *dims, complex *recv_buffer, complex  [:,:] pencils):
+    cdef void unpack_buffer_complex(self,Grid.DimStruct *dims, float complex *recv_buffer, float complex  [:,:] pencils):
 
         cdef:
             long m, p, i
@@ -930,12 +930,12 @@ cdef class Pencil:
                         count += 1
         return
 
-    cdef complex [:,:] forward_complex(self, Grid.DimStruct *dims, ParallelMPI Pa ,complex *data):
+    cdef float complex [:,:] forward_complex(self, Grid.DimStruct *dims, ParallelMPI Pa ,float complex *data):
 
         cdef:
-            complex [:] local_transpose = np.empty((dims.npl,),dtype=np.complex,order='c')
-            complex [:] recv_buffer = np.empty((self.n_local_pencils * self.pencil_length),dtype=np.complex,order='c')
-            complex [:,:] pencils = np.empty((self.n_local_pencils,self.pencil_length),dtype=np.complex,order='c')
+            float complex [:] local_transpose = np.empty((dims.npl,),dtype=np.complex64,order='c')
+            float complex [:] recv_buffer = np.empty((self.n_local_pencils * self.pencil_length),dtype=np.complex64,order='c')
+            float complex [:,:] pencils = np.empty((self.n_local_pencils,self.pencil_length),dtype=np.complex64,order='c')
 
         #Build send buffer
         self.build_buffer_complex(dims, data, &local_transpose[0])
@@ -943,14 +943,14 @@ cdef class Pencil:
         if(self.size > 1):
             #Do all to all communication
             if self.dim == 0:
-                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE_COMPLEX,
-                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE_COMPLEX,Pa.cart_comm_sub_x)
+                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_COMPLEX,
+                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_COMPLEX,Pa.cart_comm_sub_x)
             elif self.dim==1:
-                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE_COMPLEX,
-                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE_COMPLEX,Pa.cart_comm_sub_y)
+                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_COMPLEX,
+                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_COMPLEX,Pa.cart_comm_sub_y)
             else:
-                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE_COMPLEX,
-                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE_COMPLEX,Pa.cart_comm_sub_z)
+                mpi.MPI_Alltoallv(&local_transpose[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_COMPLEX,
+                            &recv_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_COMPLEX,Pa.cart_comm_sub_z)
 
 
             self.unpack_buffer_complex(dims,&recv_buffer[0],pencils)
@@ -960,27 +960,27 @@ cdef class Pencil:
 
         return pencils
 
-    cdef void reverse_complex(self, Grid.DimStruct *dims, ParallelMPI Pa, complex [:,:] pencils, complex *data):
+    cdef void reverse_complex(self, Grid.DimStruct *dims, ParallelMPI Pa, float complex [:,:] pencils, float complex *data):
 
         cdef:
-            complex [:] send_buffer = np.empty(self.n_local_pencils * self.pencil_length,dtype=np.complex,order='c')
-            complex [:] recv_buffer = np.empty(dims.npl,dtype=np.complex,order='c')
+            float complex [:] send_buffer = np.empty(self.n_local_pencils * self.pencil_length,dtype=np.complex64,order='c')
+            float complex [:] recv_buffer = np.empty(dims.npl,dtype=np.complex64,order='c')
 
-        #This is exactly the inverse operation to forward_double so that the send_counts can be used as the recv_counts
+        #This is exactly the inverse operation to forward_float so that the send_counts can be used as the recv_counts
         #and vice versa
         self.reverse_build_buffer_complex(dims,pencils,&send_buffer[0])
         if(self.size > 1):
             #Do all to all communication
             if self.dim == 0:
-                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE_COMPLEX,
-                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE_COMPLEX,Pa.cart_comm_sub_x)
+                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_COMPLEX,
+                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_COMPLEX,Pa.cart_comm_sub_x)
             elif self.dim==1:
-                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE_COMPLEX,
-                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE_COMPLEX,Pa.cart_comm_sub_y)
+                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_COMPLEX,
+                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_COMPLEX,Pa.cart_comm_sub_y)
             else:
 
-                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_DOUBLE_COMPLEX,
-                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_DOUBLE_COMPLEX,Pa.cart_comm_sub_z)
+                mpi.MPI_Alltoallv(&send_buffer[0], &self.recv_counts[0], &self.rdispls[0],mpi.MPI_COMPLEX,
+                            &recv_buffer[0], &self.send_counts[0], &self.sdispls[0],mpi.MPI_COMPLEX,Pa.cart_comm_sub_z)
             self.reverse_unpack_buffer_complex(dims,&recv_buffer[0],data)
         else:
             self.reverse_unpack_buffer_complex(dims,&send_buffer[0],data)
@@ -988,7 +988,7 @@ cdef class Pencil:
         return
 
 
-    cdef void reverse_build_buffer_complex(self, Grid.DimStruct *dims, complex [:,:] pencils, complex *send_buffer):
+    cdef void reverse_build_buffer_complex(self, Grid.DimStruct *dims, float complex [:,:] pencils, float complex *send_buffer):
         cdef:
             long m, p, i
             long nl_shift, count
@@ -1011,7 +1011,7 @@ cdef class Pencil:
                         count += 1
         return
 
-    cdef void reverse_unpack_buffer_complex(self, Grid.DimStruct *dims, complex *recv_buffer, complex *data ):
+    cdef void reverse_unpack_buffer_complex(self, Grid.DimStruct *dims, float complex *recv_buffer, float complex *data ):
 
         cdef:
             long imin = dims.gw

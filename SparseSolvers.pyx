@@ -17,15 +17,15 @@ cdef class TDMA:
     cdef void initialize(self, Py_ssize_t n):
 
         self.n = n
-        self.scratch = <double*> PyMem_Malloc(self.n * sizeof(double))
+        self.scratch = <float*> PyMem_Malloc(self.n * sizeof(float))
 
         return
 
-    cdef inline void solve(self, double* x, double* a, double* b, double* c) nogil:
+    cdef inline void solve(self, float* x, float* a, float* b, float* c) nogil:
 
         cdef:
             Py_ssize_t i
-            double m
+            float m
 
         self.scratch[0] = c[0]/b[0]
         x[0] = x[0]/b[0]
@@ -48,10 +48,10 @@ cdef class TDMA:
 
     def test(self):
         n = 4
-        cdef double [:] a = np.array([0, -1, -1, -1], dtype=np.double)
-        cdef double [:] b = np.array([4, 4, 4, 4], dtype=np.double)
-        cdef double [:] c = np.array([-1, -1, -1, 0], dtype=np.double)
-        cdef double [:] d = np.array([5, 5, 10, 23], dtype=np.double)
+        cdef float [:] a = np.array([0, -1, -1, -1], dtype=np.float32)
+        cdef float [:] b = np.array([4, 4, 4, 4], dtype=np.float32)
+        cdef float [:] c = np.array([-1, -1, -1, 0], dtype=np.float32)
+        cdef float [:] d = np.array([5, 5, 10, 23], dtype=np.float32)
 
         self.initialize(4)
         self.solve(&d[0], &a[0], &b[0], &c[0])

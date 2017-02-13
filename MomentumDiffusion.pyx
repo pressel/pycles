@@ -18,11 +18,11 @@ cimport numpy as np
 from FluxDivergence cimport momentum_flux_divergence
 
 cdef extern from 'momentum_diffusion.h':
-    cdef void compute_diffusive_flux_m(Grid.DimStruct *dims, double *strain_rate,
-                                       double *viscosity, double *flux, double *rho0,
-                                       double *rho0_half, Py_ssize_t i1, Py_ssize_t i2)
-    cdef void compute_entropy_source(Grid.DimStruct *dims, double *viscosity,
-                                     double *strain_rate_mag, double *temperature, double *entropy_tendency)
+    cdef void compute_diffusive_flux_m(Grid.DimStruct *dims, float *strain_rate,
+                                       float *viscosity, float *flux, float *rho0,
+                                       float *rho0_half, Py_ssize_t i1, Py_ssize_t i2)
+    cdef void compute_entropy_source(Grid.DimStruct *dims, float *viscosity,
+                                     float *strain_rate_mag, float *temperature, float *entropy_tendency)
 
 cdef class MomentumDiffusion:
 
@@ -38,7 +38,7 @@ cdef class MomentumDiffusion:
              Gr.dims.npg *
              Gr.dims.dims,
              ),
-            dtype=np.double,
+            dtype=np.float32,
             order='c')
 
 
@@ -95,8 +95,8 @@ cdef class MomentumDiffusion:
         cdef:
             Py_ssize_t i,k, d = 2
             Py_ssize_t shift_flux
-            double[:] tmp
-            double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            float[:] tmp
+            float [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
 
         # Output vertical fluxes
         for i in xrange(Gr.dims.dims):
@@ -111,7 +111,7 @@ cdef class MomentumDiffusion:
 
         # Output entropy source from resolved TKE dissipation
         cdef:
-            double[:] data = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            float[:] data = np.zeros((Gr.dims.npg,), dtype=np.float32, order='c')
             Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
             Py_ssize_t temp_shift = DV.get_varshift(Gr, 'temperature')
 

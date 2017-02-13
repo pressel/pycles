@@ -90,8 +90,8 @@ class CumulusStatistics:
                  MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            double [:] cloudmask = np.zeros(Gr.dims.npg,dtype=np.double, order='c')
-            double [:] coremask = np.zeros(Gr.dims.npg,dtype=np.double, order='c')
+            float [:] cloudmask = np.zeros(Gr.dims.npg,dtype=np.float32, order='c')
+            float [:] coremask = np.zeros(Gr.dims.npg,dtype=np.float32, order='c')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             Py_ssize_t b_shift = DV.get_varshift(Gr,'buoyancy')
             Py_ssize_t i,j,k, ijk, ishift, jshift
@@ -104,7 +104,7 @@ class CumulusStatistics:
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
             Py_ssize_t count
-            double [:] mean_buoyancy
+            float [:] mean_buoyancy
 
         mean_buoyancy = Pa.HorizontalMean(Gr, &DV.values[b_shift])
 
@@ -121,7 +121,7 @@ class CumulusStatistics:
                             if DV.values[b_shift+ijk] > mean_buoyancy[k]:
                                 coremask[ijk] = 1.0
 
-        cdef double [:] tmp
+        cdef float [:] tmp
 
         #Compute the statistics
         #-fractions        # cdef Py_ssize_t ths_shift = DV.get_varshift(Gr,'thetas')
@@ -224,7 +224,7 @@ class CumulusStatistics:
         cdef:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+            float[:] data = np.empty((Gr.dims.npg,), dtype=np.float32, order='c')
 
 
         if 'thetas' in DV.name_index:
@@ -272,9 +272,9 @@ class StableBLStatistics:
                  MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         # cdef:
-        #     double [:] total_flux = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+        #     float [:] total_flux = np.zeros(Gr.dims.npg,dtype=np.float32,order='c')
         #     Py_ssize_t d=2, i1, i,j,k, shift_flux
-        #     double [:] flux_profile
+        #     float [:] flux_profile
         #
         # with nogil:
         #     for i1 in xrange(Gr.dims.dims-1):
@@ -289,8 +289,8 @@ class StableBLStatistics:
         #
         # cdef:
         #     Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
-        #     double flux_surface
-        #     double [:] ustar2 = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+        #     float flux_surface
+        #     float [:] ustar2 = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.float32, order='c')
         #
         # with nogil:
         #     for i in xrange(Gr.dims.nlg[0]*Gr.dims.nlg[1]):
@@ -334,13 +334,13 @@ class SmokeStatistics:
             Py_ssize_t level_1
             Py_ssize_t level_2
             Py_ssize_t smoke_shift = PV.get_varshift(Gr, 'smoke')
-            double [:] blh = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-            double blh_mean
-            double smoke_1
-            double smoke_2
-            double z1
-            double z2
-            double dz
+            float [:] blh = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.float32, order='c')
+            float blh_mean
+            float smoke_1
+            float smoke_2
+            float z1
+            float z2
+            float dz
 
         with nogil:
             for i in xrange(Gr.dims.nlg[0]):
@@ -388,13 +388,13 @@ class DYCOMSStatistics:
             Py_ssize_t level_1
             Py_ssize_t level_2
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double [:] blh = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
-            double blh_mean
-            double qt_1
-            double qt_2
-            double z1
-            double z2
-            double dz
+            float [:] blh = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.float32, order='c')
+            float blh_mean
+            float qt_1
+            float qt_2
+            float z1
+            float z2
+            float dz
 
         with nogil:
             for i in xrange(Gr.dims.nlg[0]):
@@ -458,47 +458,47 @@ class TKEStatistics:
             Py_ssize_t p_shift = DV.get_varshift(Gr, 'dynamic_pressure')
             Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
 
-            double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] wc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] wc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] up = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] vp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] wp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] up = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] vp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] wp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] ucp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] vcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] wcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] ucp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] vcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] wcp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] upup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] upvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] upwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] upup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] upvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] upwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] vpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] vpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] vpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] vpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] wpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] wpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] uppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] vppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] wppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] uppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] vppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] wppp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] wpep = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] wpbp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] wpep = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] wpbp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] tke = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] tke_nd = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] tke = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] tke_nd = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            #double [:] epup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            #double [:] epvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] epwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            #float [:] epup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            #float [:] epvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] epwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] e_adv = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] e_dis = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] e_adv = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] e_dis = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] tke_S = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] tke_P = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] tke_T = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] tke_S = np.zeros(Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] tke_P = np.zeros(Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] tke_T = np.zeros(Gr.dims.nlg[2], dtype=np.float32, order='c')
 
         #Interpolate to cell centers
         with nogil:
@@ -514,12 +514,12 @@ class TKEStatistics:
 
         #Compute the horizontal means of the cell centered velocities
         cdef:
-            double [:] ucmean = Pa.HorizontalMean(Gr, &uc[0])
-            double [:] vcmean = Pa.HorizontalMean(Gr, &vc[0])
-            double [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
-            double [:] bmean = Pa.HorizontalMean(Gr, &DV.values[b_shift])
-            double [:] pmean = Pa.HorizontalMean(Gr, &DV.values[p_shift])
-            double  bp, pp
+            float [:] ucmean = Pa.HorizontalMean(Gr, &uc[0])
+            float [:] vcmean = Pa.HorizontalMean(Gr, &vc[0])
+            float [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
+            float [:] bmean = Pa.HorizontalMean(Gr, &DV.values[b_shift])
+            float [:] pmean = Pa.HorizontalMean(Gr, &DV.values[p_shift])
+            float  bp, pp
 
         #Compute the TKE
         with nogil:
@@ -556,17 +556,17 @@ class TKEStatistics:
                         wpbp[ijk] = wp[ijk] * bp
 
         cdef:
-            double [:] upup_mean = Pa.HorizontalMean(Gr, &upup[0])
-            double [:] upvp_mean = Pa.HorizontalMean(Gr, &upvp[0])
-            double [:] upwp_mean = Pa.HorizontalMean(Gr, &upwp[0])
-            double [:] vpvp_mean = Pa.HorizontalMean(Gr, &vpvp[0])
-            double [:] vpwp_mean = Pa.HorizontalMean(Gr, &vpwp[0])
-            double [:] wpwp_mean = Pa.HorizontalMean(Gr, &wpwp[0])
-            double [:] wppp_mean = Pa.HorizontalMean(Gr, &wppp[0])
-            double [:] tke_mean = Pa.HorizontalMean(Gr, &tke_nd[0])
-            double [:] tkemean = Pa.HorizontalMean(Gr, &tke[0])
-            double [:] tkendmean = Pa.HorizontalMean(Gr, &tke_nd[0])
-            double [:] tke_B = Pa.HorizontalMean(Gr, &wpbp[0])
+            float [:] upup_mean = Pa.HorizontalMean(Gr, &upup[0])
+            float [:] upvp_mean = Pa.HorizontalMean(Gr, &upvp[0])
+            float [:] upwp_mean = Pa.HorizontalMean(Gr, &upwp[0])
+            float [:] vpvp_mean = Pa.HorizontalMean(Gr, &vpvp[0])
+            float [:] vpwp_mean = Pa.HorizontalMean(Gr, &vpwp[0])
+            float [:] wpwp_mean = Pa.HorizontalMean(Gr, &wpwp[0])
+            float [:] wppp_mean = Pa.HorizontalMean(Gr, &wppp[0])
+            float [:] tke_mean = Pa.HorizontalMean(Gr, &tke_nd[0])
+            float [:] tkemean = Pa.HorizontalMean(Gr, &tke[0])
+            float [:] tkendmean = Pa.HorizontalMean(Gr, &tke_nd[0])
+            float [:] tke_B = Pa.HorizontalMean(Gr, &wpbp[0])
 
         #Compute the Shear Production
         with nogil:
@@ -590,7 +590,7 @@ class TKEStatistics:
                         epwp[ijk] = (wc[ijk] - wcmean[k])*(tke_nd[ijk] - tke_mean[k])
 
         cdef:
-            double [:] epwp_mean = Pa.HorizontalMean(Gr, &epwp[0])
+            float [:] epwp_mean = Pa.HorizontalMean(Gr, &epwp[0])
 
         #Compute Turbulent Transport
         with nogil:
@@ -609,8 +609,8 @@ class TKEStatistics:
                         e_adv[ijk] -= vcmean[k] * (tke_nd[ijk+jstride] - tke_nd[ijk-jstride])*0.5*Gr.dims.dxi[1]
 
         cdef:
-            double [:] tke_A = Pa.HorizontalMean(Gr, &e_adv[0])
-            double nu
+            float [:] tke_A = Pa.HorizontalMean(Gr, &e_adv[0])
+            float nu
 
         #Compute the dissipation of TKE
         with nogil:
@@ -627,7 +627,7 @@ class TKEStatistics:
                         e_dis[ijk] *= nu
 
         cdef:
-            double [:] tke_D = Pa.HorizontalMean(Gr, &e_dis[0])
+            float [:] tke_D = Pa.HorizontalMean(Gr, &e_dis[0])
 
         #Write data
         NS.write_profile('tke_mean', tkemean[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -688,37 +688,37 @@ class FluxStatistics:
             Py_ssize_t b_shift = DV.get_varshift(Gr, 'buoyancy')
             Py_ssize_t th_shift
             Py_ssize_t diff_shift = DV.get_varshift(Gr, 'diffusivity')
-            double bp, thp
+            float bp, thp
 
 
-            double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] wc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] wc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] up = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] vp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] wp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] up = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] vp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] wp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] upwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] vpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] upwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] vpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
-            double [:] bpup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] bpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] bpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-
-
-            double [:] thpup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] thpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] thpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-
-            double [:] b_xsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] b_ysgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] b_zsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] bpup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] bpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] bpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
 
-            double [:] th_xsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] th_ysgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-            double [:] th_zsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
+            float [:] thpup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] thpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] thpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+
+            float [:] b_xsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] b_ysgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] b_zsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+
+
+            float [:] th_xsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] th_ysgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
+            float [:] th_zsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.float32, order='c')
 
 
         if 'theta' in DV.name_index:
@@ -742,11 +742,11 @@ class FluxStatistics:
 
         #Compute the horizontal means of the cell centered velocities
         cdef:
-            double [:] ucmean = Pa.HorizontalMean(Gr, &uc[0])
-            double [:] vcmean = Pa.HorizontalMean(Gr, &vc[0])
-            double [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
-            double [:] bmean = Pa.HorizontalMean(Gr, &DV.values[b_shift])
-            double [:] thmean = Pa.HorizontalMean(Gr, &DV.values[th_shift])
+            float [:] ucmean = Pa.HorizontalMean(Gr, &uc[0])
+            float [:] vcmean = Pa.HorizontalMean(Gr, &vc[0])
+            float [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
+            float [:] bmean = Pa.HorizontalMean(Gr, &DV.values[b_shift])
+            float [:] thmean = Pa.HorizontalMean(Gr, &DV.values[th_shift])
 
         #Compute the fluxes
         with nogil:
@@ -786,24 +786,24 @@ class FluxStatistics:
 
 
         cdef:
-            double [:] thpup_mean = Pa.HorizontalMean(Gr, &thpup[0])
-            double [:] thpvp_mean = Pa.HorizontalMean(Gr, &thpvp[0])
-            double [:] thpwp_mean = Pa.HorizontalMean(Gr, &thpwp[0])
+            float [:] thpup_mean = Pa.HorizontalMean(Gr, &thpup[0])
+            float [:] thpvp_mean = Pa.HorizontalMean(Gr, &thpvp[0])
+            float [:] thpwp_mean = Pa.HorizontalMean(Gr, &thpwp[0])
 
-            double [:] bpup_mean = Pa.HorizontalMean(Gr, &bpup[0])
-            double [:] bpvp_mean = Pa.HorizontalMean(Gr, &bpvp[0])
-            double [:] bpwp_mean = Pa.HorizontalMean(Gr, &bpwp[0])
+            float [:] bpup_mean = Pa.HorizontalMean(Gr, &bpup[0])
+            float [:] bpvp_mean = Pa.HorizontalMean(Gr, &bpvp[0])
+            float [:] bpwp_mean = Pa.HorizontalMean(Gr, &bpwp[0])
 
-            double [:] upwp_mean = Pa.HorizontalMean(Gr, &upwp[0])
-            double [:] vpwp_mean = Pa.HorizontalMean(Gr, &vpwp[0])
+            float [:] upwp_mean = Pa.HorizontalMean(Gr, &upwp[0])
+            float [:] vpwp_mean = Pa.HorizontalMean(Gr, &vpwp[0])
 
-            double [:] th_xsgs_mean = Pa.HorizontalMean(Gr, &th_xsgs[0])
-            double [:] th_ysgs_mean = Pa.HorizontalMean(Gr, &th_ysgs[0])
-            double [:] th_zsgs_mean = Pa.HorizontalMean(Gr, &th_zsgs[0])
+            float [:] th_xsgs_mean = Pa.HorizontalMean(Gr, &th_xsgs[0])
+            float [:] th_ysgs_mean = Pa.HorizontalMean(Gr, &th_ysgs[0])
+            float [:] th_zsgs_mean = Pa.HorizontalMean(Gr, &th_zsgs[0])
 
-            double [:] b_xsgs_mean = Pa.HorizontalMean(Gr, &b_xsgs[0])
-            double [:] b_ysgs_mean = Pa.HorizontalMean(Gr, &b_ysgs[0])
-            double [:] b_zsgs_mean = Pa.HorizontalMean(Gr, &b_zsgs[0])
+            float [:] b_xsgs_mean = Pa.HorizontalMean(Gr, &b_xsgs[0])
+            float [:] b_ysgs_mean = Pa.HorizontalMean(Gr, &b_ysgs[0])
+            float [:] b_zsgs_mean = Pa.HorizontalMean(Gr, &b_zsgs[0])
 
         if 'theta' in DV.name_index:
             NS.write_profile('resolved_x_flux_theta', thpup_mean[Gr.dims.gw:-Gr.dims.gw], Pa)

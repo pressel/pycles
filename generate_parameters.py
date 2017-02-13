@@ -73,7 +73,7 @@ def main():
     fh.write('\n')
     for param in parameters:
         fh.write(
-            'cdef double ' + param + ' = ' + str(parameters[param]) + '\n')
+            'cdef float ' + param + ' = ' + str(parameters[param]) + '\n')
     fh.write('#' + 'End Generated Code')
     fh.close()
 

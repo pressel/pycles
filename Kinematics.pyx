@@ -14,10 +14,10 @@ import numpy as np
 cimport numpy as np
 
 cdef extern from "kinematics.h":
-    void compute_velocity_gradient(Grid.DimStruct *dims, double *v, double *vgrad, long d)
-    void compute_strain_rate(Grid.DimStruct *dims, double *vgrad, double *strain_rate)
-    void compute_strain_rate_mag(Grid.DimStruct *dims, double *vgrad, double *strain_rate)
-    void compute_wind_speed_angle(Grid.DimStruct *dims, double *u, double *v, double *wind_speed, double *wind_angle, double u0, double v0)
+    void compute_velocity_gradient(Grid.DimStruct *dims, float *v, float *vgrad, long d)
+    void compute_strain_rate(Grid.DimStruct *dims, float *vgrad, float *strain_rate)
+    void compute_strain_rate_mag(Grid.DimStruct *dims, float *vgrad, float *strain_rate)
+    void compute_wind_speed_angle(Grid.DimStruct *dims, float *u, float *v, float *wind_speed, float *wind_angle, float u0, float v0)
 
 cdef class Kinematics:
     def __init__(self):
@@ -25,13 +25,13 @@ cdef class Kinematics:
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.vgrad = np.zeros(
-            Gr.dims.npg * Gr.dims.dims * Gr.dims.dims, dtype=np.double, order='c')
+            Gr.dims.npg * Gr.dims.dims * Gr.dims.dims, dtype=np.float32, order='c')
         self.strain_rate = np.zeros(
-            Gr.dims.npg * Gr.dims.dims * Gr.dims.dims, dtype=np.double, order='c')
-        self.strain_rate_mag = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+            Gr.dims.npg * Gr.dims.dims * Gr.dims.dims, dtype=np.float32, order='c')
+        self.strain_rate_mag = np.zeros(Gr.dims.npg, dtype=np.float32, order='c')
 
-        self.wind_speed = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
-        self.wind_angle = np.zeros(Gr.dims.npg, dtype=np.double, order='c')
+        self.wind_speed = np.zeros(Gr.dims.npg, dtype=np.float32, order='c')
+        self.wind_angle = np.zeros(Gr.dims.npg, dtype=np.float32, order='c')
 
         NS.add_profile('strain_rate_magnitude', Gr, Pa)
         NS.add_profile('wind_speed', Gr, Pa)
@@ -59,7 +59,7 @@ cdef class Kinematics:
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
-            double [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
+            float [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.float32,order='c')
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 

@@ -8,7 +8,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 
 cdef class MomentumDiffusion:
     cdef:
-        double[:] flux
+        float[:] flux
         Py_ssize_t n_fluxes
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

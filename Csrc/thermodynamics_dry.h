@@ -5,12 +5,12 @@
 #include "advection_interpolation.h"
 #include<stdio.h>
 
-inline double eos_c(double pd, double s){
+inline float  eos_c(float  pd, float  s){
     return T_tilde*(exp( (s - sd_tilde + Rd *log(pd/p_tilde))/cpd));
 };
 
-void eos_update(struct DimStruct *dims, double* restrict pd, double* restrict s, double* restrict T,
-    double* restrict alpha ){
+void eos_update(struct DimStruct *dims, float * restrict pd, float * restrict s, float * restrict T,
+    float * restrict alpha ){
 
     ssize_t i,j,k;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -36,7 +36,7 @@ void eos_update(struct DimStruct *dims, double* restrict pd, double* restrict s,
     return;
 };
 
-void buoyancy_update(struct DimStruct *dims, double* restrict alpha0, double* restrict alpha, double* restrict buoyancy, double* restrict wt){
+void buoyancy_update(struct DimStruct *dims, float * restrict alpha0, float * restrict alpha, float * restrict buoyancy, float * restrict wt){
 
     ssize_t i,j,k;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -72,7 +72,7 @@ void buoyancy_update(struct DimStruct *dims, double* restrict alpha0, double* re
     return;
 }
 
-void bvf_dry(struct DimStruct* dims,  double* restrict p0, double* restrict T,double* restrict theta, double* restrict bvf){
+void bvf_dry(struct DimStruct* dims,  float * restrict p0, float * restrict T,float * restrict theta, float * restrict bvf){
 
     ssize_t i,j,k;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -83,7 +83,7 @@ void bvf_dry(struct DimStruct* dims,  double* restrict p0, double* restrict T,do
     const ssize_t imax = dims->nlg[0];
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2];
-    const double dzi = 1.0/dims->dx[2];
+    const float  dzi = 1.0/dims->dx[2];
 
     for (i=imin; i<imax; i++){
        const ssize_t ishift = i * istride;

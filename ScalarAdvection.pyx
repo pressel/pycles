@@ -21,12 +21,12 @@ cimport numpy as np
 import cython
 
 cdef extern from "scalar_advection.h":
-    void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity,
-                                    double *scalar, double* flux, int d, int scheme) nogil
+    void compute_advective_fluxes_a(Grid.DimStruct *dims, float *rho0, float *rho0_half, float *velocity,
+                                    float *scalar, float* flux, int d, int scheme) nogil
 
-    void compute_qt_sedimentation_s_source(Grid.DimStruct *dims, double *p0_half, double* rho0_half, double *flux,
-                                    double* qt, double* qv, double* T, double* tendency, double (*lam_fp)(double),
-                                    double (*L_fp)(double, double), double dx, Py_ssize_t d)nogil
+    void compute_qt_sedimentation_s_source(Grid.DimStruct *dims, float *p0_half, float* rho0_half, float *flux,
+                                    float* qt, float* qv, float* T, float* tendency, float (*lam_fp)(float),
+                                    float (*L_fp)(float, float), float dx, Py_ssize_t d)nogil
 
 
 cdef class ScalarAdvection:
@@ -52,7 +52,7 @@ cdef class ScalarAdvection:
 
     cpdef initialize(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        self.flux = np.zeros((PV.nv_scalars*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')
+        self.flux = np.zeros((PV.nv_scalars*Gr.dims.npg*Gr.dims.dims,),dtype=np.float32,order='c')
 
         #Initialize output fields
         for i in xrange(PV.nv):
@@ -122,8 +122,8 @@ cdef class ScalarAdvection:
 
         cdef:
             Py_ssize_t scalar_count =  0, i, d = 2, flux_shift, k
-            double[:] tmp
-            double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            float[:] tmp
+            float [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
 
         for i in xrange(PV.nv):
             if PV.var_type[i] == 1:

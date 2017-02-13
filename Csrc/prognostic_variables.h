@@ -9,7 +9,7 @@ long w;
 };
 
 void build_buffer(long nv, long dim, long s ,struct DimStruct *dims,
-    double* restrict values, double* restrict  buffer){
+    float * restrict values, float * restrict  buffer){
 
 
     long i,j,k;
@@ -109,7 +109,7 @@ void build_buffer(long nv, long dim, long s ,struct DimStruct *dims,
 }
 
 void buffer_to_values(ssize_t dim, ssize_t s, struct DimStruct *dims,
-    double* restrict values, double* restrict buffer){
+    float * restrict values, float * restrict buffer){
 
     ssize_t i,j,k;
 
@@ -202,8 +202,8 @@ void buffer_to_values(ssize_t dim, ssize_t s, struct DimStruct *dims,
     return;
 }
 
-void set_bcs(ssize_t dim, ssize_t s, double bc_factor ,struct DimStruct *dims,
-    double* restrict values){
+void set_bcs(ssize_t dim, ssize_t s, float  bc_factor ,struct DimStruct *dims,
+    float * restrict values){
 
         ssize_t i,j,k;
 
@@ -270,7 +270,7 @@ void set_bcs(ssize_t dim, ssize_t s, double bc_factor ,struct DimStruct *dims,
 }
 
 
-void set_to_zero(ssize_t nv, struct DimStruct *dims, double* restrict array){
+void set_to_zero(ssize_t nv, struct DimStruct *dims, float * restrict array){
 
     ssize_t i;
     for (i = 0; i<dims->npg*nv; i++){

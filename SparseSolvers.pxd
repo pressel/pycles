@@ -1,8 +1,8 @@
 cdef class TDMA:
 
     cdef:
-        double* scratch
+        float* scratch
         Py_ssize_t n
         void initialize(self, Py_ssize_t n)
-        inline void solve(self, double* x, double* a, double* b, double* c) nogil
+        inline void solve(self, float* x, float* a, float* b, float* c) nogil
         void destroy(self)

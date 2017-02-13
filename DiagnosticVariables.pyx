@@ -14,9 +14,9 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 cimport mpi4py.libmpi as mpi
 
 cdef extern from "prognostic_variables.h":
-        void build_buffer(int nv, int dim, int s ,Grid.DimStruct *dims, double* values, double* buffer)
-        void buffer_to_values(int dim, int s, Grid.DimStruct *dims, double* values, double* buffer)
-        void set_bcs( int dim, int s, double bc_factor,  Grid.DimStruct *dims, double* values)
+        void build_buffer(int nv, int dim, int s ,Grid.DimStruct *dims, float* values, float* buffer)
+        void buffer_to_values(int dim, int s, Grid.DimStruct *dims, float* values, float* buffer)
+        void set_bcs( int dim, int s, float bc_factor,  Grid.DimStruct *dims, float* values)
 
 cdef class DiagnosticVariables:
     def __init__(self):
@@ -24,7 +24,7 @@ cdef class DiagnosticVariables:
         self.index_name = []
         self.units = {}
         self.nv = 0
-        self.bc_type = np.array([],dtype=np.double,order='c')
+        self.bc_type = np.array([],dtype=np.float32,order='c')
 
         self.name_index_2d = {}
         self.units_2d = {}
@@ -39,9 +39,9 @@ cdef class DiagnosticVariables:
         self.units[name] = units
         #Add bc type to array
         if bc_type == "sym":
-            self.bc_type = np.append(self.bc_type,[1.0])
+            self.bc_type = np.array(np.append(self.bc_type[:],np.array([1.0],dtype=np.float32)),dtype=np.float32)
         elif bc_type =="asym":
-            self.bc_type = np.append(self.bc_type,[-1.0])
+            self.bc_type = np.array(np.append(self.bc_type[:],np.array([-1.0],dtype=np.float32)),dtype=np.float32)
         else:
             Pa.root_print("Not a valid bc_type. Killing simulation now!")
             Pa.kill()
@@ -63,8 +63,8 @@ cdef class DiagnosticVariables:
     cdef void communicate_variable(self, Grid.Grid Gr, ParallelMPI.ParallelMPI PM, long nv):
 
         cdef:
-            double*  send_buffer
-            double*  recv_buffer
+            float*  send_buffer
+            float*  recv_buffer
             long d, s
             long var_shift, buffer_var_shift
             long [:] shift = np.array([-1,1],dtype=np.int,order='c')
@@ -77,8 +77,8 @@ cdef class DiagnosticVariables:
         for d in xrange(Gr.dims.dims):
             buffer_var_shift = 0
             #Allocate memory for send and recv buffers.
-            send_buffer = <double*> PyMem_Malloc(Gr.dims.nbuffer[d] * sizeof(double))
-            recv_buffer = <double*> PyMem_Malloc(Gr.dims.nbuffer[d] * sizeof(double))
+            send_buffer = <float*> PyMem_Malloc(Gr.dims.nbuffer[d] * sizeof(float))
+            recv_buffer = <float*> PyMem_Malloc(Gr.dims.nbuffer[d] * sizeof(float))
             for s in shift:
 
                 #Since we are only sending one variable at a time the first argument in buld_buffer should be 0
@@ -90,9 +90,9 @@ cdef class DiagnosticVariables:
 
 
                 #Do send and recv given shift
-                ierr = mpi.MPI_Sendrecv(&send_buffer[0],Gr.dims.nbuffer[d],mpi.MPI_DOUBLE,dest_rank,0,
+                ierr = mpi.MPI_Sendrecv(&send_buffer[0],Gr.dims.nbuffer[d],mpi.MPI_FLOAT,dest_rank,0,
                                             &recv_buffer[0],Gr.dims.nbuffer[d],
-                                            mpi.MPI_DOUBLE,source_rank,0,PM.cart_comm_world,&status)
+                                            mpi.MPI_FLOAT,source_rank,0,PM.cart_comm_world,&status)
 
                 #If communicated values are to be used copy them into the correct location
                 if source_rank >= 0:
@@ -123,8 +123,8 @@ cdef class DiagnosticVariables:
         return
 
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.values = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
-        self.values_2d = np.zeros((self.nv_2d*Gr.dims.nlg[0]*Gr.dims.nlg[1]),dtype=np.double,order='c' )
+        self.values = np.zeros((self.nv*Gr.dims.npg),dtype=np.float32,order='c')
+        self.values_2d = np.zeros((self.nv_2d*Gr.dims.nlg[0]*Gr.dims.nlg[1]),dtype=np.float32,order='c' )
 
 
         #Add prognostic variables to Statistics IO
@@ -153,8 +153,8 @@ cdef class DiagnosticVariables:
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
             int var_shift
-            double [:] tmp
-            double tmp2
+            float [:] tmp
+            float tmp2
 
         for var_name in self.name_index.keys():
             var_shift = self.get_varshift(Gr,var_name)

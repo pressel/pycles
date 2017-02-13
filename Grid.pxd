@@ -21,34 +21,34 @@ cdef extern from "grid.h":
         int [3] nbuffer
         int [3] ghosted_stride
 
-        double [3] dx
-        double [3] dxi
+        float [3] dx
+        float [3] dxi
 
 cdef class Grid:
     cdef:
         DimStruct dims
 
-        double [:] x
-        double [:] x_half
-        double [:] y
-        double [:] y_half
-        double [:] z
-        double [:] z_half
+        float [:] x
+        float [:] x_half
+        float [:] y
+        float [:] y_half
+        float [:] z
+        float [:] z_half
 
-        double [:] xl
-        double [:] xl_half
-        double [:] yl
-        double [:] yl_half
-        double [:] zl
-        double [:] zl_half
+        float [:] xl
+        float [:] xl_half
+        float [:] yl
+        float [:] yl_half
+        float [:] zl
+        float [:] zl_half
 
         void compute_global_dims(self)
         void compute_local_dims(self,ParallelMPI.ParallelMPI Parallel)
         void compute_coordinates(self)
 
-    cpdef extract_local(self, double [:] global_array, int dim)
+    cpdef extract_local(self, float [:] global_array, int dim)
 
-    cpdef extract_local_ghosted(self, double [:] global_array, int dim)
+    cpdef extract_local_ghosted(self, float [:] global_array, int dim)
 
     cpdef restart(self, Restart.Restart Re)
 

@@ -4,7 +4,7 @@ import cython
 @cython.boundscheck(False)  # Turn off numpy array index bounds checking
 @cython.wraparound(False)  # Turn off numpy array wrap around indexing
 @cython.cdivision(True)
-cpdef to_3d(double[:] f_data, int nl_0, int nl_1, int nl_2, int indx_lo_0,
+cpdef to_3d(float[:] f_data, int nl_0, int nl_1, int nl_2, int indx_lo_0,
             int indx_lo_1, int indx_lo_2, double[:, :, :] f_data_3d):
 
     cdef:

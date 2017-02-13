@@ -193,7 +193,7 @@ cdef class TimeStepping:
         self.n_rk_steps = 2
 
         #Initialize storage
-        self.value_copies = np.zeros((1,PV.values.shape[0]),dtype=np.double,order='c')
+        self.value_copies = np.zeros((1,PV.values.shape[0]),dtype=np.float32,order='c')
         self.tendency_copies = None
 
         return
@@ -204,7 +204,7 @@ cdef class TimeStepping:
         self.n_rk_steps = 3
 
         #Initialize storage
-        self.value_copies = np.zeros((1,PV.values.shape[0]),dtype=np.double,order='c')
+        self.value_copies = np.zeros((1,PV.values.shape[0]),dtype=np.float32,order='c')
         self.tendency_copies = None
 
         return
@@ -214,16 +214,16 @@ cdef class TimeStepping:
         self.n_rk_steps = 5
 
         #Initialize storage
-        self.value_copies = np.zeros((3,PV.values.shape[0]),dtype=np.double,order='c')
-        self.tendency_copies = np.zeros((1,PV.values.shape[0]),dtype=np.double,order='c')
+        self.value_copies = np.zeros((3,PV.values.shape[0]),dtype=np.float32,order='c')
+        self.tendency_copies = np.zeros((1,PV.values.shape[0]),dtype=np.float32,order='c')
 
         return
 
     cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            double cfl_max_local = -9999.0
-            double [3] dxi = Gr.dims.dxi
+            float cfl_max_local = -9999.0
+            float [3] dxi = Gr.dims.dxi
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
@@ -236,7 +236,7 @@ cdef class TimeStepping:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t i,j,k, ijk, ishift, jshift
-            double w
+            float w
             Py_ssize_t isedv
 
         with nogil:
@@ -253,7 +253,7 @@ cdef class TimeStepping:
                         cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2]))
 
         mpi.MPI_Allreduce(&cfl_max_local,&self.cfl_max,1,
-                          mpi.MPI_DOUBLE,mpi.MPI_MAX,Pa.comm_world)
+                          mpi.MPI_FLOAT,mpi.MPI_MAX,Pa.comm_world)
 
         self.cfl_max += 1e-11
 
@@ -262,7 +262,7 @@ cdef class TimeStepping:
             Pa.kill()
         return
 
-    cdef inline double cfl_time_step(self):
+    cdef inline float cfl_time_step(self):
         return fmin(self.dt_max,self.cfl_limit/(self.cfl_max/self.dt))
 
     cpdef restart(self, Restart.Restart Re):

@@ -9,8 +9,8 @@ cdef class VisualizationOutput:
     cdef:
         str vis_path
         str uuid
-        public double last_vis_time
-        public double frequency
+        public float last_vis_time
+        public float frequency
 
     cpdef initialize(self)
     cpdef write(self, Grid.Grid Gr,  ReferenceState.ReferenceState RS,

@@ -7,9 +7,9 @@ from NetCDFIO cimport NetCDFIO_Stats
 
 cdef class ScalarDiffusion:
     cdef:
-        double [:] flux
-        double (*L_fp)(double T, double Lambda) nogil
-        double (*Lambda_fp)(double T) nogil
+        float [:] flux
+        float (*L_fp)(float T, float Lambda) nogil
+        float (*Lambda_fp)(float T) nogil
         bint qt_entropy_source
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,

@@ -12,7 +12,7 @@ cdef class Lookup:
     def __init__(self):
         pass
 
-    cpdef initialize(self, double[:] x, double[:] y):
+    cpdef initialize(self, float[:] x, float[:] y):
         cdef long n = np.shape(y)[0]
         init_table( &self.LookupStructC, n, &x[0], &y[0])
         return
@@ -24,8 +24,8 @@ cdef class Lookup:
     cpdef table_bounds(self):
         return self.LookupStructC.x_min, self.LookupStructC.x_max, self.LookupStructC.y_min, self.LookupStructC.y_max
 
-    cpdef lookup(self, double x):
+    cpdef lookup(self, float x):
         return lookup(&self.LookupStructC, x)
 
-    cdef inline double fast_lookup(self, double x) nogil:
+    cdef inline float fast_lookup(self, float x) nogil:
         return lookup(&self.LookupStructC, x)

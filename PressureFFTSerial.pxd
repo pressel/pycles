@@ -7,11 +7,11 @@ cimport DiagnosticVariables
 cdef class PressureFFTSerial:
 
     cdef:
-        double [:] a
-        double [:] b
-        double [:] c
-        double [:] kx2
-        double [:] ky2
+        float [:] a
+        float [:] b
+        float [:] c
+        float [:] kx2
+        float [:] ky2
         inline void compute_diagonal(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Py_ssize_t i, Py_ssize_t j) nogil
     cdef SparseSolvers.TDMA TDMA_Solver
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, ParallelMPI.ParallelMPI Pa)

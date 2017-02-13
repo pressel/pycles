@@ -19,11 +19,11 @@ from FluxDivergence cimport scalar_flux_divergence
 import cython
 
 cdef extern from "scalar_diffusion.h":
-    void compute_diffusive_flux(Grid.DimStruct *dims, double *alpha0, double *alpha0_half, double *diffusivity,
-                                double *scalar, double *flux, double dx, size_t d, Py_ssize_t scheme, double factor)
-    void compute_qt_diffusion_s_source(Grid.DimStruct *dims, double *p0_half, double *alpha0, double *alpha0_half,
-                                       double *flux, double *qt, double *qv, double *T, double *tendency, double (*lam_fp)(double),
-                                       double (*L_fp)(double, double), double dx, Py_ssize_t d )
+    void compute_diffusive_flux(Grid.DimStruct *dims, float *alpha0, float *alpha0_half, float *diffusivity,
+                                float *scalar, float *flux, float dx, size_t d, Py_ssize_t scheme, float factor)
+    void compute_qt_diffusion_s_source(Grid.DimStruct *dims, float *p0_half, float *alpha0, float *alpha0_half,
+                                       float *flux, float *qt, float *qv, float *T, float *tendency, float (*lam_fp)(float),
+                                       float (*L_fp)(float, float), float dx, Py_ssize_t d )
 
 cdef class ScalarDiffusion:
     def __init__(self, namelist, LatentHeat LH, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
@@ -51,7 +51,7 @@ cdef class ScalarDiffusion:
         :param Pa: ParallelMPI class
         :return:
         '''
-        self.flux = np.zeros((PV.nv_scalars*Gr.dims.npg*Gr.dims.dims,),dtype=np.double,order='c')
+        self.flux = np.zeros((PV.nv_scalars*Gr.dims.npg*Gr.dims.dims,),dtype=np.float32,order='c')
 
         #Initialize output fields
         for i in xrange(PV.nv):
@@ -87,7 +87,7 @@ cdef class ScalarDiffusion:
             Py_ssize_t n_e = -9999
             Py_ssize_t d, i ,scalar_shift, scalar_count = 0, flux_shift
             Py_ssize_t diff_shift_n = DV.get_varshift(Gr,'diffusivity')
-            double flux_factor = 1.0
+            float flux_factor = 1.0
 
         if 'qt' in PV.name_index:
             n_qt = PV.name_index['qt']
@@ -147,9 +147,9 @@ cdef class ScalarDiffusion:
             Py_ssize_t d
             Py_ssize_t i
             Py_ssize_t k
-            double[:] data = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-            double[:] tmp
-            double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            float[:] data = np.zeros((Gr.dims.npg,), dtype=np.float32, order='c')
+            float[:] tmp
+            float [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
 
             Py_ssize_t s_shift
             Py_ssize_t qt_shift

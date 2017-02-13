@@ -19,29 +19,29 @@ from NetCDFIO cimport NetCDFIO_Stats, NetCDFIO_Fields
 from libc.math cimport fmax, fmin
 
 cdef extern from "thermodynamics_sa.h":
-    inline double alpha_c(double p0, double T, double qt, double qv) nogil
-    void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
-    void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
-                    double * qv, double * ql, double * qi, double * alpha)
-    void buoyancy_update_sa(Grid.DimStruct *dims, double *alpha0, double *alpha, double *buoyancy, double *wt)
-    void bvf_sa(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *T, double *qt, double *qv, double *theta_rho, double *bvf)
-    void thetali_update(Grid.DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double *p0, double *T, double *qt, double *ql, double *qi, double *thetali)
-    void clip_qt(Grid.DimStruct *dims, double  *qt, double clip_value)
+    inline float alpha_c(float p0, float T, float qt, float qv) nogil
+    void eos_c(Lookup.LookupStruct *LT, float(*lam_fp)(float), float(*L_fp)(float, float), float p0, float s, float qt, float *T, float *qv, float *ql, float *qi) nogil
+    void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, float(*lam_fp)(float), float(*L_fp)(float, float), float *p0, float *s, float *qt, float *T,
+                    float * qv, float * ql, float * qi, float * alpha)
+    void buoyancy_update_sa(Grid.DimStruct *dims, float *alpha0, float *alpha, float *buoyancy, float *wt)
+    void bvf_sa(Grid.DimStruct * dims, Lookup.LookupStruct * LT, float(*lam_fp)(float), float(*L_fp)(float, float), float *p0, float *T, float *qt, float *qv, float *theta_rho, float *bvf)
+    void thetali_update(Grid.DimStruct *dims, float (*lam_fp)(float), float (*L_fp)(float, float), float *p0, float *T, float *qt, float *ql, float *qi, float *thetali)
+    void clip_qt(Grid.DimStruct *dims, float  *qt, float clip_value)
 
 cdef extern from "thermodynamic_functions.h":
     # Dry air partial pressure
-    inline double pd_c(double p0, double qt, double qv) nogil
+    inline float pd_c(float p0, float qt, float qv) nogil
     # Water vapor partial pressure
-    inline double pv_c(double p0, double qt, double qv) nogil
+    inline float pv_c(float p0, float qt, float qv) nogil
 
 
 cdef extern from "entropies.h":
     # Specific entropy of dry air
-    inline double sd_c(double pd, double T) nogil
+    inline float sd_c(float pd, float T) nogil
     # Specific entropy of water vapor
-    inline double sv_c(double pv, double T) nogil
+    inline float sv_c(float pv, float T) nogil
     # Specific entropy of condensed water
-    inline double sc_c(double L, double T) nogil
+    inline float sc_c(float L, float T) nogil
 
 
 cdef class ThermodynamicsSA:
@@ -133,7 +133,7 @@ cdef class ThermodynamicsSA:
 
         return
 
-    cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
+    cpdef entropy(self, float p0, float T, float qt, float ql, float qi):
         '''
         Provide a python wrapper for the c function that computes the specific entropy
         consistent with Pressel et al. 2015 equation (40)
@@ -145,16 +145,16 @@ cdef class ThermodynamicsSA:
         :return: moist specific entropy
         '''
         cdef:
-            double qv = qt - ql - qi
-            double qd = 1.0 - qt
-            double pd = pd_c(p0, qt, qv)
-            double pv = pv_c(p0, qt, qv)
-            double Lambda = self.Lambda_fp(T)
-            double L = self.L_fp(T, Lambda)
+            float qv = qt - ql - qi
+            float qd = 1.0 - qt
+            float pd = pd_c(p0, qt, qv)
+            float pv = pv_c(p0, qt, qv)
+            float Lambda = self.Lambda_fp(T)
+            float L = self.L_fp(T, Lambda)
 
         return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
 
-    cpdef alpha(self, double p0, double T, double qt, double qv):
+    cpdef alpha(self, float p0, float T, float qt, float qv):
         '''
         Provide a python wrapper for the C function that computes the specific volume
         consistent with Pressel et al. 2015 equation (44).
@@ -167,9 +167,9 @@ cdef class ThermodynamicsSA:
         '''
         return alpha_c(p0, T, qt, qv)
 
-    cpdef eos(self, double p0, double s, double qt):
+    cpdef eos(self, float p0, float s, float qt):
         cdef:
-            double T, qv, qc, ql, qi, lam
+            float T, qv, qc, ql, qi, lam
         eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
         return T, ql, qi
 
@@ -216,7 +216,7 @@ cdef class ThermodynamicsSA:
         return self.CC.LT.fast_lookup(t)
 
     cpdef get_lh(self, t):
-        cdef double lam = self.Lambda_fp(t)
+        cdef float lam = self.Lambda_fp(t)
         return self.L_fp(t, lam)
 
     cpdef write_fields(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
@@ -235,7 +235,7 @@ cdef class ThermodynamicsSA:
             Py_ssize_t count
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double[:] data = np.empty((Gr.dims.npl,), dtype=np.double, order='c')
+            float[:] data = np.empty((Gr.dims.npl,), dtype=np.float32, order='c')
 
 
         # Add entropy potential temperature to 3d fields
@@ -269,8 +269,8 @@ cdef class ThermodynamicsSA:
             Py_ssize_t count
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
-            double[:] tmp
+            float[:] data = np.empty((Gr.dims.npg,), dtype=np.float32, order='c')
+            float[:] tmp
 
 
 
@@ -353,7 +353,7 @@ cdef class ThermodynamicsSA:
 
         cdef:
             Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
-            double pv_star, pv
+            float pv_star, pv
 
 
         # Ouput profiles of relative humidity
@@ -412,20 +412,20 @@ cdef class ThermodynamicsSA:
             Py_ssize_t pi, k
             ParallelMPI.Pencil z_pencil = ParallelMPI.Pencil()
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
-            double[:, :] ql_pencils
+            float[:, :] ql_pencils
             # Cloud indicator
-            double[:] ci
-            double cb
-            double ct
+            float[:] ci
+            float cb
+            float ct
             # Weighted sum of local cloud indicator
-            double ci_weighted_sum = 0.0
-            double mean_divisor = np.double(Gr.dims.n[0] * Gr.dims.n[1])
+            float ci_weighted_sum = 0.0
+            float mean_divisor = np.float32(Gr.dims.n[0] * Gr.dims.n[1])
 
-            double dz = Gr.dims.dx[2]
-            double[:] lwp
-            double lwp_weighted_sum = 0.0
+            float dz = Gr.dims.dx[2]
+            float[:] lwp
+            float lwp_weighted_sum = 0.0
 
-            double[:] cf_profile = np.zeros((Gr.dims.n[2]), dtype=np.double, order='c')
+            float[:] cf_profile = np.zeros((Gr.dims.n[2]), dtype=np.float32, order='c')
 
         # Initialize the z-pencil
         z_pencil.initialize(Gr, Pa, 2)
@@ -442,7 +442,7 @@ cdef class ThermodynamicsSA:
         NS.write_profile('cloud_fraction', cf_profile, Pa)
 
         # Compute all or nothing cloud fraction
-        ci = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
+        ci = np.empty((z_pencil.n_local_pencils), dtype=np.float32, order='c')
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
@@ -474,7 +474,7 @@ cdef class ThermodynamicsSA:
         NS.write_ts('cloud_top', ct, Pa)
 
         # Compute liquid water path
-        lwp = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
+        lwp = np.empty((z_pencil.n_local_pencils), dtype=np.float32, order='c')
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 lwp[pi] = 0.0

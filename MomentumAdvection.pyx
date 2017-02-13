@@ -15,9 +15,9 @@ import numpy as np
 cimport numpy as np
 
 cdef extern from "momentum_advection.h":
-    void compute_advective_tendencies_m(Grid.DimStruct *dims, double *rho0, double *rho0_half,
-                                    double *alpha0, double *alpha0_half, double *vel_advected,
-                                    double *vel_advecting, double *tendency, Py_ssize_t d_advected,
+    void compute_advective_tendencies_m(Grid.DimStruct *dims, float *rho0, float *rho0_half,
+                                    float *alpha0, float *alpha0_half, float *vel_advected,
+                                    float *vel_advecting, float *tendency, Py_ssize_t d_advected,
                                     Py_ssize_t d_advecting, Py_ssize_t scheme) nogil
 cdef class MomentumAdvection:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
@@ -72,8 +72,8 @@ cdef class MomentumAdvection:
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         # cdef:
         #     Py_ssize_t i_advected, i_advecting = 2, shift_flux, k
-        #     double[:] tmp
-        #     double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        #     float[:] tmp
+        #     float [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.float32,order='c')
         #
         #
         # for i_advected in xrange(Gr.dims.dims):
@@ -88,13 +88,13 @@ cdef class MomentumAdvection:
 
         return
 
-    cpdef double [:, :, :] get_flux(self, Py_ssize_t i_advected, Py_ssize_t i_advecting, Grid.Grid Gr):
+    cpdef float [:, :, :] get_flux(self, Py_ssize_t i_advected, Py_ssize_t i_advecting, Grid.Grid Gr):
         '''
         Returns momentum flux tensor component.
         :param i_advected: direction of advection velocity
         :param i_advecting:  direction of advecting velocity
         :param Gr: Grid class
-        :return: memory view type double rank-3
+        :return: memory view type float rank-3
         '''
         cdef:
             Py_ssize_t shift_flux = i_advected * Gr.dims.dims * Gr.dims.npg + i_advecting * Gr.dims.npg
@@ -110,8 +110,8 @@ cdef class MomentumAdvection:
             Py_ssize_t jmax = Gr.dims.nlg[1]
             Py_ssize_t kmax = Gr.dims.nlg[2]
 
-            cdef double[:, :, :] return_flux = np.empty((Gr.dims.nlg[0], Gr.dims.nlg[1], Gr.dims.nlg[2]), dtype=np.double, order='c')
-            cdef double[:] flux = self.flux
+            cdef float[:, :, :] return_flux = np.empty((Gr.dims.nlg[0], Gr.dims.nlg[1], Gr.dims.nlg[2]), dtype=np.float32, order='c')
+            cdef float[:] flux = self.flux
 
         with nogil:
             for i in xrange(imin, imax):

@@ -57,8 +57,8 @@ cdef class VisualizationOutput:
                 ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            double [:,:] local_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.double, order='c')
-            double [:,:] reduced_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.double, order='c')
+            float [:,:] local_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.float32, order='c')
+            float [:,:] reduced_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.float32, order='c')
             Py_ssize_t i,j,k,ijk
             Py_ssize_t imin = Gr.dims.gw
             Py_ssize_t jmin = Gr.dims.gw
@@ -78,7 +78,7 @@ cdef class VisualizationOutput:
             Py_ssize_t var_shift
             Py_ssize_t i2d, j2d
 
-            double dz = Gr.dims.dx[2]
+            float dz = Gr.dims.dx[2]
 
             dict out_dict = {}
 
@@ -101,7 +101,7 @@ cdef class VisualizationOutput:
 
             del local_lwp
             if Pa.rank == 0:
-                out_dict['lwp'] = np.array(reduced_lwp,dtype=np.double)
+                out_dict['lwp'] = np.array(reduced_lwp,dtype=np.float32)
             del reduced_lwp
         except:
             Pa.root_print('Trouble Writing LWP')
@@ -109,15 +109,15 @@ cdef class VisualizationOutput:
 
         #Write output of Prognostic Variables and Diagnostic Variables
         cdef:
-            double [:,:] local_var
-            double [:,:] reduced_var
+            float [:,:] local_var
+            float [:,:] reduced_var
             list pv_vars = ['qt', 's', 'w']
             list dv_vars = ['ql', 'diffusivity']
 
 
         for var in pv_vars:
-            local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
-            reduced_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
+            local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.float32, order='c')
+            reduced_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.float32, order='c')
             try:
                 var_shift = PV.get_varshift(Gr, var)
 
@@ -136,7 +136,7 @@ cdef class VisualizationOutput:
                 comm.Reduce(local_var, reduced_var, op=MPI.SUM)
                 del local_var
                 if Pa.rank == 0:
-                    out_dict[var] = np.array(reduced_var, dtype=np.double)
+                    out_dict[var] = np.array(reduced_var, dtype=np.float32)
                 del reduced_var
 
 
@@ -146,8 +146,8 @@ cdef class VisualizationOutput:
 
 
         for var in dv_vars:
-            local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
-            reduced_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
+            local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.float32, order='c')
+            reduced_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.float32, order='c')
             try:
                 var_shift = DV.get_varshift(Gr, var)
 
@@ -166,7 +166,7 @@ cdef class VisualizationOutput:
                 comm.Reduce(local_var, reduced_var, op=MPI.SUM)
                 del local_var
                 if Pa.rank == 0:
-                    out_dict[var] = np.array(reduced_var, dtype=np.double)
+                    out_dict[var] = np.array(reduced_var, dtype=np.float32)
                 del reduced_var
 
 

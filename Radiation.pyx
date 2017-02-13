@@ -59,8 +59,8 @@ cdef class RadiationBase:
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.z_pencil = ParallelMPI.Pencil()
         self.z_pencil.initialize(Gr, Pa, 2)
-        self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-        self.dTdt_rad = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.float32, order='c')
+        self.dTdt_rad = np.zeros((Gr.dims.npg,), dtype=np.float32, order='c')
 
         NS.add_profile('radiative_heating_rate', Gr, Pa)
         NS.add_profile('radiative_entropy_tendency', Gr, Pa)
@@ -96,8 +96,8 @@ cdef class RadiationBase:
             Py_ssize_t ishift, jshift, ijk
 
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-            double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
-            double [:] tmp
+            float [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.float32, order='c')
+            float [:] tmp
 
         # Now update entropy tendencies
         with nogil:
@@ -183,21 +183,21 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t gw = Gr.dims.gw
-            double [:, :] ql_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[ql_shift])
-            double [:, :] qt_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[qt_shift])
-            double[:, :] f_rad = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
-            double[:, :] f_heat = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
-            double q_0
-            double q_1
+            float [:, :] ql_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[ql_shift])
+            float [:, :] qt_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[qt_shift])
+            float [:, :] f_rad = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.float32, order='c')
+            float [:, :] f_heat = np.empty((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.float32, order='c')
+            float q_0
+            float q_1
 
-            double zi
-            double rhoi
-            double dz = Gr.dims.dx[2]
-            double dzi = Gr.dims.dxi[2]
-            double[:] z = Gr.z
-            double[:] rho = Ref.rho0
-            double[:] rho_half = Ref.rho0_half
-            double cbrt_z = 0
+            float zi
+            float rhoi
+            float dz = Gr.dims.dx[2]
+            float dzi = Gr.dims.dxi[2]
+            float[:] z = Gr.z
+            float[:] rho = Ref.rho0
+            float[:] rho_half = Ref.rho0_half
+            float cbrt_z = 0
 
         with nogil:
             for pi in xrange(self.z_pencil.n_local_pencils):
@@ -311,20 +311,20 @@ cdef class RadiationSmoke(RadiationBase):
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t smoke_shift = PV.get_varshift(Gr, 'smoke')
             Py_ssize_t gw = Gr.dims.gw
-            double [:, :] smoke_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[smoke_shift])
-            double[:, :] f_rad = np.zeros((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.double, order='c')
-            double[:, :] f_heat = np.zeros((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.double, order='c')
+            float [:, :] smoke_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[smoke_shift])
+            float [:, :] f_rad = np.zeros((self.z_pencil.n_local_pencils, Gr.dims.n[2] + 1), dtype=np.float32, order='c')
+            float [:, :] f_heat = np.zeros((self.z_pencil.n_local_pencils, Gr.dims.n[2]), dtype=np.float32, order='c')
 
-            double q_0
+            float q_0
 
-            double zi
-            double rhoi
-            double dz = Gr.dims.dx[2]
-            double dzi = Gr.dims.dxi[2]
-            double[:] z = Gr.z
-            double[:] rho = Ref.rho0
-            double[:] rho_half = Ref.rho0_half
-            double cbrt_z = 0
+            float zi
+            float rhoi
+            float dz = Gr.dims.dx[2]
+            float dzi = Gr.dims.dxi[2]
+            float[:] z = Gr.z
+            float[:] rho = Ref.rho0
+            float[:] rho_half = Ref.rho0_half
+            float cbrt_z = 0
             Py_ssize_t kk
 
 
@@ -368,28 +368,28 @@ cdef class RadiationSmoke(RadiationBase):
 
 # Note: the RRTM modules are compiled in the 'RRTMG' directory:
 cdef extern:
-    void c_rrtmg_lw_init(double *cpdair)
+    void c_rrtmg_lw_init(float *cpdair)
     void c_rrtmg_lw (
              int *ncol    ,int *nlay    ,int *icld    ,int *idrv    ,
-             double *play    ,double *plev    ,double *tlay    ,double *tlev    ,double *tsfc    ,
-             double *h2ovmr  ,double *o3vmr   ,double *co2vmr  ,double *ch4vmr  ,double *n2ovmr  ,double *o2vmr,
-             double *cfc11vmr,double *cfc12vmr,double *cfc22vmr,double *ccl4vmr ,double *emis    ,
-             int *inflglw ,int *iceflglw,int *liqflglw,double *cldfr   ,
-             double *taucld  ,double *cicewp  ,double *cliqwp  ,double *reice   ,double *reliq   ,
-             double *tauaer  ,
-             double *uflx    ,double *dflx    ,double *hr      ,double *uflxc   ,double *dflxc,  double *hrc,
-             double *duflx_dt,double *duflxc_dt )
-    void c_rrtmg_sw_init(double *cpdair)
+             float *play    ,float *plev    ,float *tlay    ,float *tlev    ,float *tsfc    ,
+             float *h2ovmr  ,float *o3vmr   ,float *co2vmr  ,float *ch4vmr  ,float *n2ovmr  ,float *o2vmr,
+             float *cfc11vmr,float *cfc12vmr,float *cfc22vmr,float *ccl4vmr ,float *emis    ,
+             int *inflglw ,int *iceflglw,int *liqflglw,float *cldfr   ,
+             float *taucld  ,float *cicewp  ,float *cliqwp  ,float *reice   ,float *reliq   ,
+             float *tauaer  ,
+             float *uflx    ,float *dflx    ,float *hr      ,float *uflxc   ,float *dflxc,  float *hrc,
+             float *duflx_dt,float *duflxc_dt )
+    void c_rrtmg_sw_init(float *cpdair)
     void c_rrtmg_sw (int *ncol    ,int *nlay    ,int *icld    ,int *iaer    ,
-             double *play    ,double *plev    ,double *tlay    ,double *tlev    ,double *tsfc    ,
-             double *h2ovmr  ,double *o3vmr   ,double *co2vmr  ,double *ch4vmr  ,double *n2ovmr  ,double *o2vmr,
-             double *asdir   ,double *asdif   ,double *aldir   ,double *aldif   ,
-             double *coszen  ,double *adjes   ,int *dyofyr  ,double *scon    ,
-             int *inflgsw ,int *iceflgsw,int *liqflgsw,double *cldfr   ,
-             double *taucld  ,double *ssacld  ,double *asmcld  ,double *fsfcld  ,
-             double *cicewp  ,double *cliqwp  ,double *reice   ,double *reliq   ,
-             double *tauaer  ,double *ssaaer  ,double *asmaer  ,double *ecaer   ,
-             double *swuflx  ,double *swdflx  ,double *swhr    ,double *swuflxc ,double *swdflxc ,double *swhrc)
+             float *play    ,float *plev    ,float *tlay    ,float *tlev    ,float *tsfc    ,
+             float *h2ovmr  ,float *o3vmr   ,float *co2vmr  ,float *ch4vmr  ,float *n2ovmr  ,float *o2vmr,
+             float *asdir   ,float *asdif   ,float *aldir   ,float *aldif   ,
+             float *coszen  ,float *adjes   ,int *dyofyr  ,float *scon    ,
+             int *inflgsw ,int *iceflgsw,int *liqflgsw,float *cldfr   ,
+             float *taucld  ,float *ssacld  ,float *asmcld  ,float *fsfcld  ,
+             float *cicewp  ,float *cliqwp  ,float *reice   ,float *reliq   ,
+             float *tauaer  ,float *ssaaer  ,float *asmaer  ,float *ecaer   ,
+             float *swuflx  ,float *swdflx  ,float *swhr    ,float *swuflxc ,float *swdflxc ,float *swhrc)
 
 
 
@@ -531,20 +531,20 @@ cdef class RadiationRRTM(RadiationBase):
         cdef:
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-            double [:,:] qv_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[qv_shift])
-            double [:,:] t_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[t_shift])
+            float [:,:] qv_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[qv_shift])
+            float [:,:] t_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[t_shift])
             Py_ssize_t nz = Gr.dims.n[2]
             Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t i,k
             Py_ssize_t n_adiabat
-            double [:] pressures_adiabat
+            float [:] pressures_adiabat
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
         if self.modified_adiabat:
             # pressures = profile_data[self.profile_name]['pressure'][:]
             pressures = np.arange(25*100, 1015*100, 10*100)
-            pressures = np.array(pressures[::-1], dtype=np.double)
+            pressures = np.array(pressures[::-1], dtype=np.float32)
             n_adiabat = np.shape(pressures)[0]
             self.reference_profile.initialize(Pa, pressures, n_adiabat, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
             temperatures =np.array( self.reference_profile.temperature)
@@ -574,9 +574,9 @@ cdef class RadiationRRTM(RadiationBase):
         # we declare these as class members in case we want to modify the buffer zone during run time
         # i.e. if there is some drift to top of LES profiles
 
-        self.p_ext = np.zeros((self.n_ext,),dtype=np.double)
-        self.t_ext = np.zeros((self.n_ext,),dtype=np.double)
-        self.rv_ext = np.zeros((self.n_ext,),dtype=np.double)
+        self.p_ext = np.zeros((self.n_ext,),dtype=np.float32)
+        self.t_ext = np.zeros((self.n_ext,),dtype=np.float32)
+        self.rv_ext = np.zeros((self.n_ext,),dtype=np.float32)
         cdef Py_ssize_t count = 0
         for k in xrange(len(pressures)-n_profile, len(pressures)):
             self.p_ext[self.n_buffer+count] = pressures[k]
@@ -599,14 +599,14 @@ cdef class RadiationRRTM(RadiationBase):
                 Pa.kill()
 
             # Pressures of "data" points for interpolation, must be INCREASING pressure
-            xi = np.array([self.p_ext[self.n_buffer+1],self.p_ext[self.n_buffer],Ref.p0_half_global[nz + gw -1],Ref.p0_half_global[nz + gw -2] ],dtype=np.double)
+            xi = np.array([self.p_ext[self.n_buffer+1],self.p_ext[self.n_buffer],Ref.p0_half_global[nz + gw -1],Ref.p0_half_global[nz + gw -2] ],dtype=np.float32)
 
             # interpolation for temperature
-            ti = np.array([self.t_ext[self.n_buffer+1],self.t_ext[self.n_buffer], t_pencils[0,nz-1],t_pencils[0,nz-2] ], dtype = np.double)
+            ti = np.array([self.t_ext[self.n_buffer+1],self.t_ext[self.n_buffer], t_pencils[0,nz-1],t_pencils[0,nz-2] ], dtype = np.float32)
             # interpolation for vapor mixing ratio
             rv_m2 = qv_pencils[0, nz-2]/ (1.0 - qv_pencils[0, nz-2])
             rv_m1 = qv_pencils[0,nz-1]/(1.0-qv_pencils[0,nz-1])
-            ri = np.array([self.rv_ext[self.n_buffer+1],self.rv_ext[self.n_buffer], rv_m1, rv_m2 ], dtype = np.double)
+            ri = np.array([self.rv_ext[self.n_buffer+1],self.rv_ext[self.n_buffer], rv_m1, rv_m2 ], dtype = np.float32)
 
             for i in xrange(self.n_buffer):
                 self.rv_ext[i] = pchip_interpolate(xi, ri, self.p_ext[i] )
@@ -633,8 +633,8 @@ cdef class RadiationRRTM(RadiationBase):
         #---END Plotting to evaluate implementation of buffer zone
 
 
-        self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
-        self.pi_full = np.zeros((self.n_ext+1+nz,),dtype=np.double)
+        self.p_full = np.zeros((self.n_ext+nz,), dtype=np.float32)
+        self.pi_full = np.zeros((self.n_ext+1+nz,),dtype=np.float32)
 
         self.p_full[0:nz] = Ref.p0_half_global[gw:nz+gw]
         self.p_full[nz:]=self.p_ext[:]
@@ -662,7 +662,7 @@ cdef class RadiationRRTM(RadiationBase):
                 use_o3in = False
 
         #Initialize rrtmg_lw and rrtmg_sw
-        cdef double cpdair = np.float64(cpd)
+        cdef float cpdair = np.float3264(cpd)
         c_rrtmg_lw_init(&cpdair)
         c_rrtmg_sw_init(&cpdair)
 
@@ -678,7 +678,7 @@ cdef class RadiationRRTM(RadiationBase):
 
         # 9 Gases: O3, CO2, CH4, N2O, O2, CFC11, CFC12, CFC22, CCL4
         # From rad_driver.f90, lines 546 to 552
-        trace = np.zeros((9,lw_np),dtype=np.double,order='F')
+        trace = np.zeros((9,lw_np),dtype=np.float32,order='F')
         for i in xrange(lw_ngas):
             gas_name = ''.join(lw_gas.variables['AbsorberNames'][i,:])
             if 'O3' in gas_name:
@@ -701,7 +701,7 @@ cdef class RadiationRRTM(RadiationBase):
                 trace[8,:] = lw_absorber[:,i].reshape(1,lw_np)
 
         # From rad_driver.f90, lines 585 to 620
-        trpath = np.zeros((nz + self.n_ext + 1, 9),dtype=np.double,order='F')
+        trpath = np.zeros((nz + self.n_ext + 1, 9),dtype=np.float32,order='F')
         # plev = self.pi_full[:]/100.0
         for i in xrange(1, nz + self.n_ext + 1):
             trpath[i,:] = trpath[i-1,:]
@@ -718,16 +718,16 @@ cdef class RadiationRRTM(RadiationBase):
             if (self.pi_full[i]/100.0 < lw_pressure[lw_np-1]):
                 trpath[i,:] = trpath[i,:] + (np.min((self.pi_full[i-1]/100.0,lw_pressure[lw_np-1]))-self.pi_full[i]/100.0)/g*trace[:,lw_np-1]
 
-        tmpTrace = np.zeros((nz + self.n_ext,9),dtype=np.double,order='F')
+        tmpTrace = np.zeros((nz + self.n_ext,9),dtype=np.float32,order='F')
         for i in xrange(9):
             for k in xrange(nz + self.n_ext):
                 tmpTrace[k,i] = g*100.0/(self.pi_full[k]-self.pi_full[k+1])*(trpath[k+1,i]-trpath[k,i])
 
         if use_o3in == False:
-            self.o3vmr  = np.array(tmpTrace[:,0],dtype=np.double, order='F')
+            self.o3vmr  = np.array(tmpTrace[:,0],dtype=np.float32, order='F')
         else:
             # o3_trace, o3_pressure
-            trpath_o3 = np.zeros(nz + self.n_ext+1, dtype=np.double, order='F')
+            trpath_o3 = np.zeros(nz + self.n_ext+1, dtype=np.float32, order='F')
             # plev = self.pi_full/100.0
             o3_np = o3_trace.shape[0]
             for i in xrange(1, nz + self.n_ext+1):
@@ -744,19 +744,19 @@ cdef class RadiationRRTM(RadiationBase):
                         trpath_o3[i] = trpath_o3[i] + (plow-pupp)/g*(wgtlow*o3_trace[m-1]  + wgtupp*o3_trace[m])
                 if (self.pi_full[i]/100.0 < o3_pressure[o3_np-1]):
                     trpath_o3[i] = trpath_o3[i] + (np.min((self.pi_full[i-1]/100.0,o3_pressure[o3_np-1]))-self.pi_full[i]/100.0)/g*o3_trace[o3_np-1]
-            tmpTrace_o3 = np.zeros( nz + self.n_ext, dtype=np.double, order='F')
+            tmpTrace_o3 = np.zeros( nz + self.n_ext, dtype=np.float32, order='F')
             for k in xrange(nz + self.n_ext):
                 tmpTrace_o3[k] = g *100.0/(self.pi_full[k]-self.pi_full[k+1])*(trpath_o3[k+1]-trpath_o3[k])
-            self.o3vmr = np.array(tmpTrace_o3[:],dtype=np.double, order='F')
+            self.o3vmr = np.array(tmpTrace_o3[:],dtype=np.float32, order='F')
 
-        self.co2vmr = np.array(tmpTrace[:,1],dtype=np.double, order='F')
-        self.ch4vmr =  np.array(tmpTrace[:,2],dtype=np.double, order='F')
-        self.n2ovmr =  np.array(tmpTrace[:,3],dtype=np.double, order='F')
-        self.o2vmr  =  np.array(tmpTrace[:,4],dtype=np.double, order='F')
-        self.cfc11vmr =  np.array(tmpTrace[:,5],dtype=np.double, order='F')
-        self.cfc12vmr =  np.array(tmpTrace[:,6],dtype=np.double, order='F')
-        self.cfc22vmr = np.array( tmpTrace[:,7],dtype=np.double, order='F')
-        self.ccl4vmr  =  np.array(tmpTrace[:,8],dtype=np.double, order='F')
+        self.co2vmr = np.array(tmpTrace[:,1],dtype=np.float32, order='F')
+        self.ch4vmr =  np.array(tmpTrace[:,2],dtype=np.float32, order='F')
+        self.n2ovmr =  np.array(tmpTrace[:,3],dtype=np.float32, order='F')
+        self.o2vmr  =  np.array(tmpTrace[:,4],dtype=np.float32, order='F')
+        self.cfc11vmr =  np.array(tmpTrace[:,5],dtype=np.float32, order='F')
+        self.cfc12vmr =  np.array(tmpTrace[:,6],dtype=np.float32, order='F')
+        self.cfc22vmr = np.array( tmpTrace[:,7],dtype=np.float32, order='F')
+        self.ccl4vmr  =  np.array(tmpTrace[:,8],dtype=np.float32, order='F')
 
 
         return
@@ -818,11 +818,11 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
             Py_ssize_t qi_shift
-            double [:,:] t_pencil = self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[t_shift])
-            double [:,:] qv_pencil = self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[qv_shift])
-            double [:,:] ql_pencil = self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[ql_shift])
-            double [:,:] qi_pencil = np.zeros((n_pencils,nz),dtype=np.double, order='c')
-            double [:,:] rl_full = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
+            float [:,:] t_pencil = self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[t_shift])
+            float [:,:] qv_pencil = self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[qv_shift])
+            float [:,:] ql_pencil = self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[ql_shift])
+            float [:,:] qi_pencil = np.zeros((n_pencils,nz),dtype=np.float32, order='c')
+            float [:,:] rl_full = np.zeros((n_pencils,nz_full), dtype=np.float32, order='F')
             Py_ssize_t k, ip
             bint use_ice = False
             Py_ssize_t gw = Gr.dims.gw
@@ -837,60 +837,60 @@ cdef class RadiationRRTM(RadiationBase):
 
         # Define input arrays for RRTM
         cdef:
-            double [:,:] play_in = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
-            double [:,:] plev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.double, order='F')
-            double [:,:] tlay_in = np.zeros((n_pencils,nz_full), dtype=np.double, order='F')
-            double [:,:] tlev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.double, order='F')
-            double [:] tsfc_in = np.ones((n_pencils),dtype=np.double,order='F') * Sur.T_surface
-            double [:,:] h2ovmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] o3vmr_in  = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] co2vmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] ch4vmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] n2ovmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] o2vmr_in  = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] cfc11vmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] cfc12vmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] cfc22vmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] ccl4vmr_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] emis_in = np.ones((n_pencils,16),dtype=np.double,order='F') * 0.95
-            double [:,:] cldfr_in  = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] cicewp_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] cliqwp_in = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] reice_in  = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:] reliq_in  = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double [:] coszen_in = np.ones((n_pencils),dtype=np.double,order='F') *self.coszen
-            double [:] asdir_in = np.ones((n_pencils),dtype=np.double,order='F') * self.adir
-            double [:] asdif_in = np.ones((n_pencils),dtype=np.double,order='F') * self.adif
-            double [:] aldir_in = np.ones((n_pencils),dtype=np.double,order='F') * self.adir
-            double [:] aldif_in = np.ones((n_pencils),dtype=np.double,order='F') * self.adif
-            double [:,:,:] taucld_lw_in  = np.zeros((16,n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:,:] tauaer_lw_in  = np.zeros((n_pencils,nz_full,16),dtype=np.double,order='F')
-            double [:,:,:] taucld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:,:] ssacld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:,:] asmcld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:,:] fsfcld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.double,order='F')
-            double [:,:,:] tauaer_sw_in  = np.zeros((n_pencils,nz_full,14),dtype=np.double,order='F')
-            double [:,:,:] ssaaer_sw_in  = np.zeros((n_pencils,nz_full,14),dtype=np.double,order='F')
-            double [:,:,:] asmaer_sw_in  = np.zeros((n_pencils,nz_full,14),dtype=np.double,order='F')
-            double [:,:,:] ecaer_sw_in  = np.zeros((n_pencils,nz_full,6),dtype=np.double,order='F')
+            float [:,:] play_in = np.zeros((n_pencils,nz_full), dtype=np.float32, order='F')
+            float [:,:] plev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.float32, order='F')
+            float [:,:] tlay_in = np.zeros((n_pencils,nz_full), dtype=np.float32, order='F')
+            float [:,:] tlev_in = np.zeros((n_pencils,nz_full + 1), dtype=np.float32, order='F')
+            float [:] tsfc_in = np.ones((n_pencils),dtype=np.float32,order='F') * Sur.T_surface
+            float [:,:] h2ovmr_in = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] o3vmr_in  = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] co2vmr_in = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] ch4vmr_in = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] n2ovmr_in = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] o2vmr_in  = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] cfc11vmr_in = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] cfc12vmr_in = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] cfc22vmr_in = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] ccl4vmr_in = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] emis_in = np.ones((n_pencils,16),dtype=np.float32,order='F') * 0.95
+            float [:,:] cldfr_in  = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] cicewp_in = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] cliqwp_in = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] reice_in  = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:] reliq_in  = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:] coszen_in = np.ones((n_pencils),dtype=np.float32,order='F') *self.coszen
+            float [:] asdir_in = np.ones((n_pencils),dtype=np.float32,order='F') * self.adir
+            float [:] asdif_in = np.ones((n_pencils),dtype=np.float32,order='F') * self.adif
+            float [:] aldir_in = np.ones((n_pencils),dtype=np.float32,order='F') * self.adir
+            float [:] aldif_in = np.ones((n_pencils),dtype=np.float32,order='F') * self.adif
+            float [:,:,:] taucld_lw_in  = np.zeros((16,n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:,:] tauaer_lw_in  = np.zeros((n_pencils,nz_full,16),dtype=np.float32,order='F')
+            float [:,:,:] taucld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:,:] ssacld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:,:] asmcld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:,:] fsfcld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.float32,order='F')
+            float [:,:,:] tauaer_sw_in  = np.zeros((n_pencils,nz_full,14),dtype=np.float32,order='F')
+            float [:,:,:] ssaaer_sw_in  = np.zeros((n_pencils,nz_full,14),dtype=np.float32,order='F')
+            float [:,:,:] asmaer_sw_in  = np.zeros((n_pencils,nz_full,14),dtype=np.float32,order='F')
+            float [:,:,:] ecaer_sw_in  = np.zeros((n_pencils,nz_full,6),dtype=np.float32,order='F')
 
             # Output
-            double[:,:] uflx_lw_out = np.zeros((n_pencils,nz_full +1),dtype=np.double,order='F')
-            double[:,:] dflx_lw_out = np.zeros((n_pencils,nz_full +1),dtype=np.double,order='F')
-            double[:,:] hr_lw_out = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double[:,:] uflxc_lw_out = np.zeros((n_pencils,nz_full +1),dtype=np.double,order='F')
-            double[:,:] dflxc_lw_out = np.zeros((n_pencils,nz_full +1),dtype=np.double,order='F')
-            double[:,:] hrc_lw_out = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double[:,:] duflx_dt_out = np.zeros((n_pencils,nz_full +1),dtype=np.double,order='F')
-            double[:,:] duflxc_dt_out = np.zeros((n_pencils,nz_full +1),dtype=np.double,order='F')
-            double[:,:] uflx_sw_out = np.zeros((n_pencils,nz_full +1),dtype=np.double,order='F')
-            double[:,:] dflx_sw_out = np.zeros((n_pencils,nz_full +1),dtype=np.double,order='F')
-            double[:,:] hr_sw_out = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
-            double[:,:] uflxc_sw_out = np.zeros((n_pencils,nz_full +1),dtype=np.double,order='F')
-            double[:,:] dflxc_sw_out = np.zeros((n_pencils,nz_full +1),dtype=np.double,order='F')
-            double[:,:] hrc_sw_out = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
+            float[:,:] uflx_lw_out = np.zeros((n_pencils,nz_full +1),dtype=np.float32,order='F')
+            float[:,:] dflx_lw_out = np.zeros((n_pencils,nz_full +1),dtype=np.float32,order='F')
+            float[:,:] hr_lw_out = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float[:,:] uflxc_lw_out = np.zeros((n_pencils,nz_full +1),dtype=np.float32,order='F')
+            float[:,:] dflxc_lw_out = np.zeros((n_pencils,nz_full +1),dtype=np.float32,order='F')
+            float[:,:] hrc_lw_out = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float[:,:] duflx_dt_out = np.zeros((n_pencils,nz_full +1),dtype=np.float32,order='F')
+            float[:,:] duflxc_dt_out = np.zeros((n_pencils,nz_full +1),dtype=np.float32,order='F')
+            float[:,:] uflx_sw_out = np.zeros((n_pencils,nz_full +1),dtype=np.float32,order='F')
+            float[:,:] dflx_sw_out = np.zeros((n_pencils,nz_full +1),dtype=np.float32,order='F')
+            float[:,:] hr_sw_out = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
+            float[:,:] uflxc_sw_out = np.zeros((n_pencils,nz_full +1),dtype=np.float32,order='F')
+            float[:,:] dflxc_sw_out = np.zeros((n_pencils,nz_full +1),dtype=np.float32,order='F')
+            float[:,:] hrc_sw_out = np.zeros((n_pencils,nz_full),dtype=np.float32,order='F')
 
-            double rv_to_reff = np.exp(np.log(1.2)**2.0)*10.0*1000.0
+            float rv_to_reff = np.exp(np.log(1.2)**2.0)*10.0*1000.0
 
         with nogil:
             for k in xrange(nz, nz_full):
@@ -979,9 +979,9 @@ cdef class RadiationRRTM(RadiationBase):
              &tauaer_sw_in[0,0,0]  ,&ssaaer_sw_in[0,0,0]  ,&asmaer_sw_in[0,0,0]  ,&ecaer_sw_in[0,0,0]   ,
              &uflx_sw_out[0,0]    ,&dflx_sw_out[0,0]    ,&hr_sw_out[0,0]      ,&uflxc_sw_out[0,0]   ,&dflxc_sw_out[0,0], &hrc_sw_out[0,0])
 
-        cdef double [:,:] heating_rate_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
-        cdef double srf_lw_up_local =0.0, srf_lw_down_local=0.0, srf_sw_up_local=0.0, srf_sw_down_local=0.0
-        cdef double nxny_i = 1.0/(Gr.dims.n[0]*Gr.dims.n[1])
+        cdef float [:,:] heating_rate_pencil = np.zeros((n_pencils,nz), dtype=np.float32, order='c')
+        cdef float srf_lw_up_local =0.0, srf_lw_down_local=0.0, srf_sw_up_local=0.0, srf_sw_down_local=0.0
+        cdef float nxny_i = 1.0/(Gr.dims.n[0]*Gr.dims.n[1])
         with nogil:
            for ip in xrange(n_pencils):
                srf_lw_up_local   += uflx_lw_out[ip,0] * nxny_i

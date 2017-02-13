@@ -10,15 +10,15 @@ from NetCDFIO cimport NetCDFIO_Fields,  NetCDFIO_Stats
 cdef class ThermodynamicsDry:
 
     cdef:
-        double (*L_fp)(double T, double Lambda) nogil
-        double (*Lambda_fp)(double T) nogil
+        float (*L_fp)(float T, float Lambda) nogil
+        float (*Lambda_fp)(float T) nogil
         Thermodynamics.ClausiusClapeyron CC
 
     cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
-    cpdef eos(self, double p0, double s, double qt)
-    cpdef alpha(self, double p0, double T, double qt, double qv)
+    cpdef entropy(self,float p0, float T,float qt, float ql, float qi)
+    cpdef eos(self, float p0, float s, float qt)
+    cpdef alpha(self, float p0, float T, float qt, float qv)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
     cpdef get_pv_star(self,t)

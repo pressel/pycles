@@ -70,29 +70,29 @@ cdef class SpectraStatistics:
 
         cdef:
             Py_ssize_t ii, i,  jj, j
-            double xi, yj
+            float xi, yj
 
         # Set up the wavenumber vectors
         self.nwave = int( np.ceil(np.sqrt(2.0) * (Gr.dims.n[0] + 1.0) * 0.5 ) + 1.0)
         self.dk = 2.0 * pi/(Gr.dims.n[0]*Gr.dims.dx[0])
-        self.wavenumbers = np.arange(self.nwave, dtype=np.double) * self.dk
+        self.wavenumbers = np.arange(self.nwave, dtype=np.float32) * self.dk
 
-        self.kx = np.zeros(Gr.dims.nl[0],dtype=np.double,order='c')
-        self.ky = np.zeros(Gr.dims.nl[1],dtype=np.double,order='c')
+        self.kx = np.zeros(Gr.dims.nl[0],dtype=np.float32,order='c')
+        self.ky = np.zeros(Gr.dims.nl[1],dtype=np.float32,order='c')
 
         for ii in xrange(Gr.dims.nl[0]):
             i = Gr.dims.indx_lo[0] + ii
             if i <= (Gr.dims.n[0])/2:
-                xi = np.double(i)
+                xi = np.float32(i)
             else:
-                xi = np.double(i - Gr.dims.n[0])
+                xi = np.float32(i - Gr.dims.n[0])
             self.kx[ii] = xi * self.dk
         for jj in xrange(Gr.dims.nl[1]):
             j = Gr.dims.indx_lo[1] + jj
             if j <= Gr.dims.n[1]/2:
-                yj = np.double(j)
+                yj = np.float32(j)
             else:
-                yj = np.double(j-Gr.dims.n[1])
+                yj = np.float32(j-Gr.dims.n[1])
             self.ky[jj] = yj * self.dk
 
         NC.create_condstats_group('spectra','wavenumber', self.wavenumbers, Gr, Pa)
@@ -151,14 +151,14 @@ cdef class SpectraStatistics:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
-            complex [:] data_fft= np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
-            complex [:] data_fft_s= np.zeros(Gr.dims.npg,dtype=np.complex,order='c')
-            double [:] uc = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
-            double [:] vc = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
-            double [:] wc = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            float complex [:] data_fft= np.zeros(Gr.dims.npg,dtype=np.complex64,order='c')
+            float complex [:] data_fft_s= np.zeros(Gr.dims.npg,dtype=np.complex64,order='c')
+            float [:] uc = np.zeros(Gr.dims.npg,dtype=np.float32,order='c')
+            float [:] vc = np.zeros(Gr.dims.npg,dtype=np.float32,order='c')
+            float [:] wc = np.zeros(Gr.dims.npg,dtype=np.float32,order='c')
             Py_ssize_t npg = Gr.dims.npg
             Py_ssize_t gw = Gr.dims.gw
-            double [:,:] spec_u, spec_v, spec_w, spec
+            float [:,:] spec_u, spec_v, spec_w, spec
 
 
 
@@ -245,10 +245,10 @@ cdef class SpectraStatistics:
 
         return
 
-    cpdef forward_transform(self, Grid.Grid Gr,ParallelMPI.ParallelMPI Pa, double [:] data, complex [:] data_fft):
+    cpdef forward_transform(self, Grid.Grid Gr,ParallelMPI.ParallelMPI Pa, float [:] data, float complex [:] data_fft):
         cdef:
-            double [:,:] x_pencil
-            complex [:,:] x_pencil_fft,  y_pencil, y_pencil_fft
+            float [:,:] x_pencil
+            float complex [:,:] x_pencil_fft,  y_pencil, y_pencil_fft
 
 
         #Do fft in x direction
@@ -265,18 +265,18 @@ cdef class SpectraStatistics:
 
 
 
-    cpdef fluctuation_forward_transform(self, Grid.Grid Gr,ParallelMPI.ParallelMPI Pa, double [:] data, complex [:] data_fft):
+    cpdef fluctuation_forward_transform(self, Grid.Grid Gr,ParallelMPI.ParallelMPI Pa, float [:] data, float complex [:] data_fft):
         cdef:
-            double [:,:] x_pencil
-            complex [:,:] x_pencil_fft,  y_pencil, y_pencil_fft
+            float [:,:] x_pencil
+            float complex [:,:] x_pencil_fft,  y_pencil, y_pencil_fft
             Py_ssize_t i, j, k,  ijk
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t ishift
             Py_ssize_t jshift
-            double [:] fluctuation = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            float [:] fluctuation = np.zeros(Gr.dims.npg,dtype=np.float32,order='c')
         cdef:
-            double [:] data_mean = Pa.HorizontalMean(Gr, &data[0])
+            float [:] data_mean = Pa.HorizontalMean(Gr, &data[0])
 
         with nogil:
             for i in xrange(1, Gr.dims.nlg[0]):
@@ -307,18 +307,18 @@ cdef class SpectraStatistics:
 
 
 
-    cpdef compute_spectrum(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, complex [:] data_fft ):
+    cpdef compute_spectrum(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, float complex [:] data_fft ):
         cdef:
             Py_ssize_t i, j, k, ijk, ik, kg, ishift, jshift
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t nwave = self.nwave
-            double [:] kx = self.kx
-            double [:] ky = self.ky
-            double dk = self.dk
-            double kmag
-            double [:,:] spec = np.zeros((Gr.dims.nl[2],self.nwave),dtype=np.double, order ='c')
+            float [:] kx = self.kx
+            float [:] ky = self.ky
+            float dk = self.dk
+            float kmag
+            float [:,:] spec = np.zeros((Gr.dims.nl[2],self.nwave),dtype=np.float32, order ='c')
 
         with nogil:
             for i in xrange(Gr.dims.nl[0]):
@@ -341,18 +341,18 @@ cdef class SpectraStatistics:
 
 
 
-    cpdef compute_cospectrum(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, complex [:] data_fft_1,  complex [:] data_fft_2):
+    cpdef compute_cospectrum(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, float complex [:] data_fft_1,  float complex [:] data_fft_2):
         cdef:
             Py_ssize_t i, j, k, ijk, ik, kg, ishift, jshift
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t nwave = self.nwave
-            double [:] kx = self.kx
-            double [:] ky = self.ky
-            double dk = self.dk
-            double kmag, R1, R2
-            double [:,:] spec = np.zeros((Gr.dims.nl[2],self.nwave),dtype=np.double, order ='c')
+            float [:] kx = self.kx
+            float [:] ky = self.ky
+            float dk = self.dk
+            float kmag, R1, R2
+            float [:,:] spec = np.zeros((Gr.dims.nl[2],self.nwave),dtype=np.float32, order ='c')
 
         with nogil:
             for i in xrange(Gr.dims.nl[0]):

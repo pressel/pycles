@@ -190,12 +190,12 @@ class Simulation3d:
 
     def io(self):
         cdef:
-            double fields_dt = 0.0
-            double stats_dt = 0.0
-            double condstats_dt = 0.0
-            double restart_dt = 0.0
-            double vis_dt = 0.0
-            double min_dt = 0.0
+            float fields_dt = 0.0
+            float stats_dt = 0.0
+            float condstats_dt = 0.0
+            float restart_dt = 0.0
+            float vis_dt = 0.0
+            float min_dt = 0.0
 
         if self.TS.t > 0 and self.TS.rk_step == self.TS.n_rk_steps - 1:
             # Adjust time step for output if necessary

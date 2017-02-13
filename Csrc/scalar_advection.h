@@ -4,7 +4,7 @@
 #include "thermodynamic_functions.h"
 #include "entropies.h"
 
-void second_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void second_order_a(const struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,const float * restrict velocity, const float * restrict scalar, float * restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -48,7 +48,7 @@ void second_order_a(const struct DimStruct *dims, double* restrict rho0, double*
     return;
 }
 
-void fourth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void fourth_order_a(const struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,const float * restrict velocity, const float * restrict scalar, float * restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -97,7 +97,7 @@ void fourth_order_a(const struct DimStruct *dims, double* restrict rho0, double*
 
 
 
-void sixth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void sixth_order_a(const struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,const float * restrict velocity, const float * restrict scalar, float * restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -146,7 +146,7 @@ void sixth_order_a(const struct DimStruct *dims, double* restrict rho0, double* 
     return;
 }
 
-void eighth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void eighth_order_a(const struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,const float * restrict velocity, const float * restrict scalar, float * restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -197,7 +197,7 @@ void eighth_order_a(const struct DimStruct *dims, double* restrict rho0, double*
     return;
 }
 
-void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void upwind_first_a(const struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,const float * restrict velocity, const float * restrict scalar, float * restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -221,9 +221,9 @@ void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double*
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
-                    const double phip = scalar[ijk];
+                    const float  phip = scalar[ijk];
                     // Up wind for negative velocity
-                    const double phim =scalar[ijk+sp1];
+                    const float  phim =scalar[ijk+sp1];
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0[k];
                 } // End k loop
             } // End j loop
@@ -237,9 +237,9 @@ void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double*
                 for(ssize_t k=kmin;k<kmax;k++){
                     const ssize_t ijk = ishift + jshift + k ;
                     //Upwind for positive velocity
-                    const double phip = scalar[ijk];
+                    const float  phip = scalar[ijk];
                     // Up wind for negative velocity
-                    const double phim =scalar[ijk+sp1];
+                    const float  phim =scalar[ijk+sp1];
                     flux[ijk] =  0.5 * ((velocity[ijk]+fabs(velocity[ijk]))*phip + (velocity[ijk]-fabs(velocity[ijk]))*phim)*rho0_half[k];
                 } // End k loop
             } // End j loop
@@ -248,7 +248,7 @@ void upwind_first_a(const struct DimStruct *dims, double* restrict rho0, double*
     return;
 }
 
-void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_third_order_a(const struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,const float * restrict velocity, const float * restrict scalar, float * restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -275,12 +275,12 @@ void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno3(scalar[ijk+sm1],
+                    const float  phip = interp_weno3(scalar[ijk+sm1],
                                                      scalar[ijk],
                                                      scalar[ijk+sp1]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno3(scalar[ijk+sp2],
+                    const float  phim = interp_weno3(scalar[ijk+sp2],
                                                      scalar[ijk+sp1],
                                                      scalar[ijk]);
 
@@ -298,12 +298,12 @@ void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno3(scalar[ijk+sm1],
+                    const float  phip = interp_weno3(scalar[ijk+sm1],
                                                      scalar[ijk],
                                                      scalar[ijk+sp1]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno3(scalar[ijk+sp2],
+                    const float  phim = interp_weno3(scalar[ijk+sp2],
                                                      scalar[ijk+sp1],
                                                      scalar[ijk]);
 
@@ -316,7 +316,7 @@ void weno_third_order_a(const struct DimStruct *dims, double* restrict rho0, dou
 }
 
 
-void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_fifth_order_a(const struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,const float * restrict velocity, const float * restrict scalar, float * restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -345,14 +345,14 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno5(scalar[ijk + sm2],
+                    const float  phip = interp_weno5(scalar[ijk + sm2],
                                                      scalar[ijk + sm1],
                                                      scalar[ijk],
                                                      scalar[ijk + sp1],
                                                      scalar[ijk + sp2]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno5(scalar[ijk + sp3],
+                    const float  phim = interp_weno5(scalar[ijk + sp3],
                                                      scalar[ijk + sp2],
                                                      scalar[ijk + sp1],
                                                      scalar[ijk],
@@ -372,14 +372,14 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno5(scalar[ijk + sm2],
+                    const float  phip = interp_weno5(scalar[ijk + sm2],
                                                      scalar[ijk + sm1],
                                                      scalar[ijk],
                                                      scalar[ijk + sp1],
                                                      scalar[ijk + sp2]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno5(scalar[ijk + sp3],
+                    const float  phim = interp_weno5(scalar[ijk + sp3],
                                                      scalar[ijk + sp2],
                                                      scalar[ijk + sp1],
                                                      scalar[ijk],
@@ -393,7 +393,7 @@ void weno_fifth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
     return;
 }
 
-void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_seventh_order_a(const struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,const float * restrict velocity, const float * restrict scalar, float * restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -424,7 +424,7 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno7(scalar[ijk + sm3],
+                    const float  phip = interp_weno7(scalar[ijk + sm3],
                                                      scalar[ijk + sm2],
                                                      scalar[ijk + sm1],
                                                      scalar[ijk],
@@ -433,7 +433,7 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
                                                      scalar[ijk + sp3]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno7(scalar[ijk + sp4],
+                    const float  phim = interp_weno7(scalar[ijk + sp4],
                                                      scalar[ijk + sp3],
                                                      scalar[ijk + sp2],
                                                      scalar[ijk + sp1],
@@ -455,7 +455,7 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
                     const ssize_t ijk = ishift + jshift + k ;
 
                      //Upwind for positive velocity
-                    const double phip = interp_weno7(scalar[ijk + sm3],
+                    const float  phip = interp_weno7(scalar[ijk + sm3],
                                                      scalar[ijk + sm2],
                                                      scalar[ijk + sm1],
                                                      scalar[ijk],
@@ -464,7 +464,7 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
                                                      scalar[ijk + sp3]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno7(scalar[ijk + sp4],
+                    const float  phim = interp_weno7(scalar[ijk + sp4],
                                                      scalar[ijk + sp3],
                                                      scalar[ijk + sp2],
                                                      scalar[ijk + sp1],
@@ -480,7 +480,7 @@ void weno_seventh_order_a(const struct DimStruct *dims, double* restrict rho0, d
     return;
 }
 
-void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_ninth_order_a(const struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,const float * restrict velocity, const float * restrict scalar, float * restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -513,7 +513,7 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno9(scalar[ijk + sm4],
+                    const float  phip = interp_weno9(scalar[ijk + sm4],
                                                      scalar[ijk + sm3],
                                                      scalar[ijk + sm2],
                                                      scalar[ijk + sm1],
@@ -524,7 +524,7 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                                                      scalar[ijk + sp4]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno9(scalar[ijk + sp5],
+                    const float  phim = interp_weno9(scalar[ijk + sp5],
                                                      scalar[ijk + sp4],
                                                      scalar[ijk + sp3],
                                                      scalar[ijk + sp2],
@@ -548,7 +548,7 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno9(scalar[ijk + sm4],
+                    const float  phip = interp_weno9(scalar[ijk + sm4],
                                                      scalar[ijk + sm3],
                                                      scalar[ijk + sm2],
                                                      scalar[ijk + sm1],
@@ -559,7 +559,7 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
                                                      scalar[ijk + sp4]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno9(scalar[ijk + sp5],
+                    const float  phim = interp_weno9(scalar[ijk + sp5],
                                                      scalar[ijk + sp4],
                                                      scalar[ijk + sp3],
                                                      scalar[ijk + sp2],
@@ -577,7 +577,7 @@ void weno_ninth_order_a(const struct DimStruct *dims, double* restrict rho0, dou
     return;
 }
 
-void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,const double* restrict velocity, const double* restrict scalar, double* restrict flux, int d){
+void weno_eleventh_order_a(const struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,const float * restrict velocity, const float * restrict scalar, float * restrict flux, int d){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -612,7 +612,7 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno11(scalar[ijk + sm5],
+                    const float  phip = interp_weno11(scalar[ijk + sm5],
                                                       scalar[ijk + sm4],
                                                       scalar[ijk + sm3],
                                                       scalar[ijk + sm2],
@@ -625,7 +625,7 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
                                                       scalar[ijk + sp5]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno11(scalar[ijk + sp6],
+                    const float  phim = interp_weno11(scalar[ijk + sp6],
                                                       scalar[ijk + sp5],
                                                       scalar[ijk + sp4],
                                                       scalar[ijk + sp3],
@@ -651,7 +651,7 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
                     const ssize_t ijk = ishift + jshift + k ;
 
                     //Upwind for positive velocity
-                    const double phip = interp_weno11(scalar[ijk + sm5],
+                    const float  phip = interp_weno11(scalar[ijk + sm5],
                                                       scalar[ijk + sm4],
                                                       scalar[ijk + sm3],
                                                       scalar[ijk + sm2],
@@ -664,7 +664,7 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
                                                       scalar[ijk + sp5]);
 
                     // Up wind for negative velocity
-                    const double phim = interp_weno11(scalar[ijk + sp6],
+                    const float  phim = interp_weno11(scalar[ijk + sp6],
                                                       scalar[ijk + sp5],
                                                       scalar[ijk + sp4],
                                                       scalar[ijk + sp3],
@@ -686,8 +686,8 @@ void weno_eleventh_order_a(const struct DimStruct *dims, double* restrict rho0, 
 
 
 
-void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, double* rho0_half ,double* restrict velocity, double* restrict scalar,
-                                double* restrict flux, int d, int scheme){
+void compute_advective_fluxes_a(struct DimStruct *dims, float * restrict rho0, float * rho0_half ,float * restrict velocity, float * restrict scalar,
+                                float * restrict flux, int d, int scheme){
     switch(scheme){
         case 1:
             upwind_first_a(dims, rho0, rho0_half, velocity, scalar, flux, d);
@@ -730,9 +730,9 @@ void compute_advective_fluxes_a(struct DimStruct *dims, double* restrict rho0, d
 
 
 
-void compute_qt_sedimentation_s_source(const struct DimStruct *dims, double *p0_half,  double* rho0_half, double *flux,
-                                    double* qt, double* qv, double* T, double* tendency, double (*lam_fp)(double),
-                                    double (*L_fp)(double, double), double dx, ssize_t d){
+void compute_qt_sedimentation_s_source(const struct DimStruct *dims, float  *p0_half,  float * rho0_half, float  *flux,
+                                    float * qt, float * qv, float * T, float * tendency, float  (*lam_fp)(float ),
+                                    float  (*L_fp)(float , float ), float  dx, ssize_t d){
 
     const ssize_t imin = dims->gw;
     const ssize_t jmin = dims->gw;
@@ -745,7 +745,7 @@ void compute_qt_sedimentation_s_source(const struct DimStruct *dims, double *p0_
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
 
-    const double dxi = 1.0/dx;
+    const float  dxi = 1.0/dx;
     const ssize_t stencil[3] = {istride,jstride,1};
 
     for(ssize_t i=imin; i<imax; i++){
@@ -756,17 +756,17 @@ void compute_qt_sedimentation_s_source(const struct DimStruct *dims, double *p0_
                 const ssize_t ijk = ishift + jshift + k;
 
                 // Compute Dry air entropy specific entropy
-                double pd = pd_c(p0_half[k],qt[ijk],qv[ijk]);
-                double sd = sd_c(pd,T[ijk]);
+                float  pd = pd_c(p0_half[k],qt[ijk],qv[ijk]);
+                float  sd = sd_c(pd,T[ijk]);
 
                 //Compute water vapor entropy specific entrop
-                double pv = pv_c(p0_half[k],qt[ijk],qv[ijk]);
-                double sv = sv_c(pv,T[ijk]);
+                float  pv = pv_c(p0_half[k],qt[ijk],qv[ijk]);
+                float  sv = sv_c(pv,T[ijk]);
 
                 //Compute water entropy
-                double lam = lam_fp(T[ijk]);
-                double L = L_fp(T[ijk],lam);
-                double sw = sv - (((qt[ijk] - qv[ijk])/qt[ijk])*L/T[ijk]);
+                float  lam = lam_fp(T[ijk]);
+                float  L = L_fp(T[ijk],lam);
+                float  sw = sv - (((qt[ijk] - qv[ijk])/qt[ijk])*L/T[ijk]);
 
                 tendency[ijk] -= (sw - sd) / rho0_half[k] * (flux[ijk + stencil[d]] - flux[ijk])*dxi;
             }  // End k loop

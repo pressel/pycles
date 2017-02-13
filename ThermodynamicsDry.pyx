@@ -19,17 +19,17 @@ import cython
 
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 cdef extern from "entropies.h":
-    inline double sd_c(double p0, double T) nogil
+    inline float sd_c(float p0, float T) nogil
 
 
 cdef extern from "thermodynamics_dry.h":
-    inline double eos_c(double p0, double s) nogil
-    inline double alpha_c(double p0, double T, double qt, double qv) nogil
-    void eos_update(Grid.DimStruct *dims, double *pd, double *s, double *T,
-                    double *alpha)
-    void buoyancy_update(Grid.DimStruct *dims, double *alpha0, double *alpha,double *buoyancy,
-                         double *wt)
-    void bvf_dry(Grid.DimStruct* dims,  double* p0, double* T, double* theta, double* bvf)
+    inline float eos_c(float p0, float s) nogil
+    inline float alpha_c(float p0, float T, float qt, float qv) nogil
+    void eos_update(Grid.DimStruct *dims, float *pd, float *s, float *T,
+                    float *alpha)
+    void buoyancy_update(Grid.DimStruct *dims, float *alpha0, float *alpha,float *buoyancy,
+                         float *wt)
+    void bvf_dry(Grid.DimStruct* dims,  float* p0, float* T, float* theta, float* bvf)
 
 
 cdef class ThermodynamicsDry:
@@ -64,20 +64,20 @@ cdef class ThermodynamicsDry:
 
         return
 
-    cpdef entropy(self,double p0, double T,double qt, double ql, double qi):
+    cpdef entropy(self,float p0, float T,float qt, float ql, float qi):
         qt = 0.0
         ql = 0.0
         qi = 0.0
         return sd_c(p0,T)
 
 
-    cpdef eos(self,double p0, double s, double qt):
+    cpdef eos(self,float p0, float s, float qt):
         ql = 0.0
         qi = 0.0
         return eos_c(p0,s), ql, qi
 
 
-    cpdef alpha(self, double p0, double T, double qt, double qv):
+    cpdef alpha(self, float p0, float T, float qt, float qv):
         qv = 0.0
         qt = 0.0
         return alpha_c(p0,T,qv,qt)
@@ -104,7 +104,7 @@ cdef class ThermodynamicsDry:
 
 
     cpdef get_lh(self,t):
-        cdef double lam = self.Lambda_fp(t)
+        cdef float lam = self.Lambda_fp(t)
         return self.L_fp(lam,t)
 
     cpdef write_fields(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
@@ -122,7 +122,7 @@ cdef class ThermodynamicsDry:
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
             Py_ssize_t count
             Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
-            double [:] data = np.empty((Gr.dims.npl,),dtype=np.double,order='c')
+            float [:] data = np.empty((Gr.dims.npl,),dtype=np.float32,order='c')
 
         #Add entropy potential temperature to 3d fields
         with nogil:
@@ -155,8 +155,8 @@ cdef class ThermodynamicsDry:
             Py_ssize_t kmax = Gr.dims.nlg[2]
             Py_ssize_t count
             Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
-            double [:] data = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
-            double [:] tmp
+            float [:] data = np.empty((Gr.dims.npg,),dtype=np.float32,order='c')
+            float [:] tmp
 
         #Add entropy potential temperature to 3d fields
         with nogil:

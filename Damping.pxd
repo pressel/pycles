@@ -16,10 +16,10 @@ cdef class Dummy:
                  DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
 cdef class Rayleigh:
     cdef:
-        double z_d  # Depth of damping layer
-        double gamma_r  # Inverse damping timescale
-        double[:] gamma_zhalf
-        double[:] gamma_z
+        float z_d  # Depth of damping layer
+        float gamma_r  # Inverse damping timescale
+        float[:] gamma_zhalf
+        float[:] gamma_z
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)

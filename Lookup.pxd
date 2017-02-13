@@ -2,24 +2,24 @@
 cdef extern from "lookup.h":
     struct LookupStruct:
         int n_table
-        double y_max
-        double y_min
-        double x_max
-        double x_min
-        double dx
-        double dxi
-        double* table_values
+        float y_max
+        float y_min
+        float x_max
+        float x_min
+        float dx
+        float dxi
+        float* table_values
 
-    void init_table(LookupStruct *LT, long n, double *x, double *y) nogil
+    void init_table(LookupStruct *LT, long n, float *x, float *y) nogil
     void free_table(LookupStruct *LT) nogil
-    inline double lookup(LookupStruct * LT, double x) nogil
+    inline float lookup(LookupStruct * LT, float x) nogil
 
 cdef class Lookup:
     cdef:
         LookupStruct LookupStructC
-    cpdef initialize(self, double[:] x, double[:] y)
+    cpdef initialize(self, float[:] x, float[:] y)
     cpdef finalize(self)
     cpdef table_bounds(self)
-    cpdef lookup(self, double x)
+    cpdef lookup(self, float x)
     cdef:
-        inline double fast_lookup(self, double x) nogil
+        inline float fast_lookup(self, float x) nogil

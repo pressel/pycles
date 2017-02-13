@@ -4,13 +4,13 @@
 #include "flux_divergence.h"
 #include<stdio.h>
 
-void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
-    double* restrict alpha0, double* restrict alpha0_half,
-    double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+void weno_third_order_m(struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,
+    float * restrict alpha0, float * restrict alpha0_half,
+    float * restrict vel_advected, float * restrict vel_advecting,
+    float * restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
         // Dynamically allocate flux array
-        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        float  *flux = (float  *)malloc(sizeof(float )*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -38,16 +38,16 @@ void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
                         //Upwind for positive velocity
-                        const double phip = interp_weno3(vel_advected[ijk + sm1_ed],
+                        const float  phip = interp_weno3(vel_advected[ijk + sm1_ed],
                                                         vel_advected[ijk],
                                                         vel_advected[ijk + sp1_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno3(vel_advected[ijk + sp2_ed],
+                        const float  phim = interp_weno3(vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
                                                          vel_advected[ijk]);
 
-                        const double vel_adv = interp_2(vel_advecting[ijk],
+                        const float  vel_adv = interp_2(vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing]);
 
                         flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k] ;
@@ -63,15 +63,15 @@ void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
                         //Upwind for positive velocity
-                        const double phip = interp_weno3(vel_advected[ijk + sm1_ed],
+                        const float  phip = interp_weno3(vel_advected[ijk + sm1_ed],
                                             vel_advected[ijk],
                                             vel_advected[ijk + sp1_ed]);
 
                         // Up wind for negative velocity
-                        const double phim = interp_weno3(vel_advected[ijk + sp2_ed],
+                        const float  phim = interp_weno3(vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
                                                          vel_advected[ijk]);
-                        const double vel_adv = interp_2(vel_advecting[ijk],
+                        const float  vel_adv = interp_2(vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing]);
 
                         flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0_half[k+1];
@@ -87,16 +87,16 @@ void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
                         //Upwind for positive velocity
-                        const double phip = interp_weno3(vel_advected[ijk + sm1_ed],
+                        const float  phip = interp_weno3(vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
                                                          vel_advected[ijk + sp1_ed]);
 
                         // Up wind for negative velocity
-                        const double phim = interp_weno3(vel_advected[ijk + sp2_ed],
+                        const float  phim = interp_weno3(vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
                                                          vel_advected[ijk]);
 
-                        const double vel_adv = interp_2(vel_advecting[ijk],
+                        const float  vel_adv = interp_2(vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing]);
 
                         flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
@@ -110,13 +110,13 @@ void weno_third_order_m(struct DimStruct *dims, double* restrict rho0, double* r
         return;
     }
 
-void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
-    double* restrict alpha0, double* restrict alpha0_half,
-    double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+void weno_fifth_order_m(struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,
+    float * restrict alpha0, float * restrict alpha0_half,
+    float * restrict vel_advected, float * restrict vel_advecting,
+    float * restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
         // Dynamically allocate flux array
-        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        float  *flux = (float  *)malloc(sizeof(float )*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -151,20 +151,20 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno5(vel_advected[ijk + sm2_ed],
+                        const float  phip = interp_weno5(vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
                                                          vel_advected[ijk + sp1_ed],
                                                          vel_advected[ijk + sp2_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno5(vel_advected[ijk + sp3_ed],
+                        const float  phim = interp_weno5(vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
                                                          vel_advected[ijk],
                                                          vel_advected[ijk + sm1_ed]);
 
-                        const double vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
+                        const float  vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing]);
@@ -183,20 +183,20 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno5(vel_advected[ijk + sm2_ed],
+                        const float  phip = interp_weno5(vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
                                                          vel_advected[ijk + sp1_ed],
                                                          vel_advected[ijk + sp2_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno5(vel_advected[ijk + sp3_ed],
+                        const float  phim = interp_weno5(vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
                                                          vel_advected[ijk],
                                                          vel_advected[ijk + sm1_ed]);
 
-                        const double vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
+                        const float  vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing]);
@@ -215,20 +215,20 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno5(vel_advected[ijk + sm2_ed],
+                        const float  phip = interp_weno5(vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
                                                          vel_advected[ijk + sp1_ed],
                                                          vel_advected[ijk + sp2_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno5(vel_advected[ijk + sp3_ed],
+                        const float  phim = interp_weno5(vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
                                                          vel_advected[ijk],
                                                          vel_advected[ijk + sm1_ed]);
 
-                        const double vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
+                        const float  vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing]);
@@ -244,13 +244,13 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
         return;
     }
 
-void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
-    double* restrict alpha0, double* restrict alpha0_half,
-    double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+void weno_seventh_order_m(struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,
+    float * restrict alpha0, float * restrict alpha0_half,
+    float * restrict vel_advected, float * restrict vel_advecting,
+    float * restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
         // Dynamically allocate flux array
-        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        float  *flux = (float  *)malloc(sizeof(float )*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -288,7 +288,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno7(vel_advected[ijk + sm3_ed],
+                        const float  phip = interp_weno7(vel_advected[ijk + sm3_ed],
                                                          vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
@@ -297,7 +297,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                                                          vel_advected[ijk + sp3_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno7(vel_advected[ijk + sp4_ed],
+                        const float  phim = interp_weno7(vel_advected[ijk + sp4_ed],
                                                          vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
@@ -305,7 +305,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk + sm2_ed]);
 
-                        const double vel_adv = interp_6(vel_advecting[ijk + sm2_ing],
+                        const float  vel_adv = interp_6(vel_advecting[ijk + sm2_ing],
                                                         vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
@@ -326,7 +326,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno7(vel_advected[ijk + sm3_ed],
+                        const float  phip = interp_weno7(vel_advected[ijk + sm3_ed],
                                                          vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
@@ -335,7 +335,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                                                          vel_advected[ijk + sp3_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno7(vel_advected[ijk + sp4_ed],
+                        const float  phim = interp_weno7(vel_advected[ijk + sp4_ed],
                                                          vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
@@ -343,7 +343,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk + sm2_ed]);
 
-                        const double vel_adv = interp_6(vel_advecting[ijk + sm2_ing],
+                        const float  vel_adv = interp_6(vel_advecting[ijk + sm2_ing],
                                                         vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
@@ -363,7 +363,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                     for(ssize_t k=kmin;k<kmax;k++){
                         const ssize_t ijk = ishift + jshift + k;
                         //Upwind for positive velocity
-                        const double phip = interp_weno7(vel_advected[ijk + sm3_ed],
+                        const float  phip = interp_weno7(vel_advected[ijk + sm3_ed],
                                                          vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk],
@@ -372,7 +372,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                                                          vel_advected[ijk + sp3_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno7(vel_advected[ijk + sp4_ed],
+                        const float  phim = interp_weno7(vel_advected[ijk + sp4_ed],
                                                          vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
                                                          vel_advected[ijk + sp1_ed],
@@ -380,7 +380,7 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
                                                          vel_advected[ijk + sm1_ed],
                                                          vel_advected[ijk + sm2_ed]);
 
-                        const double vel_adv = interp_6(vel_advecting[ijk + sm2_ing],
+                        const float  vel_adv = interp_6(vel_advecting[ijk + sm2_ing],
                                                         vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
@@ -399,13 +399,13 @@ void weno_seventh_order_m(struct DimStruct *dims, double* restrict rho0, double*
     }
 
 
-void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
-    double* restrict alpha0, double* restrict alpha0_half,
-    double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+void weno_ninth_order_m(struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,
+    float * restrict alpha0, float * restrict alpha0_half,
+    float * restrict vel_advected, float * restrict vel_advecting,
+    float * restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
         // Dynamically allocate flux array
-        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        float  *flux = (float  *)malloc(sizeof(float )*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -447,7 +447,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno9(vel_advected[ijk + sm4_ed],
+                        const float  phip = interp_weno9(vel_advected[ijk + sm4_ed],
                                                         vel_advected[ijk + sm3_ed],
                                                         vel_advected[ijk + sm2_ed],
                                                         vel_advected[ijk + sm1_ed],
@@ -458,7 +458,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                                         vel_advected[ijk + sp4_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno9(vel_advected[ijk + sp5_ed],
+                        const float  phim = interp_weno9(vel_advected[ijk + sp5_ed],
                                                          vel_advected[ijk + sp4_ed],
                                                          vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
@@ -468,7 +468,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                                          vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm3_ed]);
 
-                        const double vel_adv = interp_8(vel_advecting[ijk + sm3_ing],
+                        const float  vel_adv = interp_8(vel_advecting[ijk + sm3_ing],
                                                         vel_advecting[ijk + sm2_ing],
                                                         vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
@@ -493,7 +493,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno9(vel_advected[ijk + sm4_ed],
+                        const float  phip = interp_weno9(vel_advected[ijk + sm4_ed],
                                                         vel_advected[ijk + sm3_ed],
                                                         vel_advected[ijk + sm2_ed],
                                                         vel_advected[ijk + sm1_ed],
@@ -504,7 +504,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                                         vel_advected[ijk + sp4_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno9(vel_advected[ijk + sp5_ed],
+                        const float  phim = interp_weno9(vel_advected[ijk + sp5_ed],
                                                          vel_advected[ijk + sp4_ed],
                                                          vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
@@ -514,7 +514,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                                          vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm3_ed]);
 
-                        const double vel_adv = interp_8(vel_advecting[ijk+sm3_ing],
+                        const float  vel_adv = interp_8(vel_advecting[ijk+sm3_ing],
                                                         vel_advecting[ijk+sm2_ing],
                                                         vel_advecting[ijk+sm1_ing],
                                                         vel_advecting[ijk],
@@ -538,7 +538,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno9(vel_advected[ijk + sm4_ed],
+                        const float  phip = interp_weno9(vel_advected[ijk + sm4_ed],
                                                         vel_advected[ijk + sm3_ed],
                                                         vel_advected[ijk + sm2_ed],
                                                         vel_advected[ijk + sm1_ed],
@@ -549,7 +549,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                                         vel_advected[ijk + sp4_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno9(vel_advected[ijk + sp5_ed],
+                        const float  phim = interp_weno9(vel_advected[ijk + sp5_ed],
                                                          vel_advected[ijk + sp4_ed],
                                                          vel_advected[ijk + sp3_ed],
                                                          vel_advected[ijk + sp2_ed],
@@ -559,7 +559,7 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                                          vel_advected[ijk + sm2_ed],
                                                          vel_advected[ijk + sm3_ed]);
 
-                        const double vel_adv = interp_8(vel_advecting[ijk + sm3_ing],
+                        const float  vel_adv = interp_8(vel_advecting[ijk + sm3_ing],
                                                         vel_advecting[ijk + sm2_ing],
                                                         vel_advecting[ijk + sm1_ing],
                                                         vel_advecting[ijk],
@@ -580,13 +580,13 @@ void weno_ninth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
         return;
     }
 
-void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double* restrict rho0_half,
-    double* restrict alpha0, double* restrict alpha0_half,
-    double* restrict vel_advected, double* restrict vel_advecting,
-    double* restrict tendency, ssize_t d_advected, ssize_t d_advecting){
+void weno_eleventh_order_m(struct DimStruct *dims, float * restrict rho0, float * restrict rho0_half,
+    float * restrict alpha0, float * restrict alpha0_half,
+    float * restrict vel_advected, float * restrict vel_advecting,
+    float * restrict tendency, ssize_t d_advected, ssize_t d_advecting){
 
         // Dynamically allocate flux array
-        double *flux = (double *)malloc(sizeof(double)*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
+        float  *flux = (float  *)malloc(sizeof(float )*dims->nlg[0] * dims->nlg[1] * dims->nlg[2]);
 
         const ssize_t istride = dims->nlg[1] * dims->nlg[2];
         const ssize_t jstride = dims->nlg[2];
@@ -632,7 +632,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno11(vel_advected[ijk + sm5_ed],
+                        const float  phip = interp_weno11(vel_advected[ijk + sm5_ed],
                                                           vel_advected[ijk + sm4_ed],
                                                           vel_advected[ijk + sm3_ed],
                                                           vel_advected[ijk + sm2_ed],
@@ -645,7 +645,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                                                           vel_advected[ijk + sp5_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno11(vel_advected[ijk + sp6_ed],
+                        const float  phim = interp_weno11(vel_advected[ijk + sp6_ed],
                                                           vel_advected[ijk + sp5_ed],
                                                           vel_advected[ijk + sp4_ed],
                                                           vel_advected[ijk + sp3_ed],
@@ -657,7 +657,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                                                           vel_advected[ijk + sm3_ed],
                                                           vel_advected[ijk + sm4_ed]);
 
-                        const double vel_adv = interp_10(vel_advecting[ijk + sm4_ing],
+                        const float  vel_adv = interp_10(vel_advecting[ijk + sm4_ing],
                                                          vel_advecting[ijk + sm3_ing],
                                                          vel_advecting[ijk + sm2_ing],
                                                          vel_advecting[ijk + sm1_ing],
@@ -682,7 +682,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno11(vel_advected[ijk + sm5_ed],
+                        const float  phip = interp_weno11(vel_advected[ijk + sm5_ed],
                                                           vel_advected[ijk + sm4_ed],
                                                           vel_advected[ijk + sm3_ed],
                                                           vel_advected[ijk + sm2_ed],
@@ -695,7 +695,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                                                           vel_advected[ijk + sp5_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno11(vel_advected[ijk + sp6_ed],
+                        const float  phim = interp_weno11(vel_advected[ijk + sp6_ed],
                                                           vel_advected[ijk + sp5_ed],
                                                           vel_advected[ijk + sp4_ed],
                                                           vel_advected[ijk + sp3_ed],
@@ -707,7 +707,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                                                           vel_advected[ijk + sm3_ed],
                                                           vel_advected[ijk + sm4_ed]);
 
-                        const double vel_adv = interp_10(vel_advecting[ijk + sm4_ing],
+                        const float  vel_adv = interp_10(vel_advecting[ijk + sm4_ing],
                                                          vel_advecting[ijk + sm3_ing],
                                                          vel_advecting[ijk + sm2_ing],
                                                          vel_advecting[ijk + sm1_ing],
@@ -732,7 +732,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                         const ssize_t ijk = ishift + jshift + k;
 
                         //Upwind for positive velocity
-                        const double phip = interp_weno11(vel_advected[ijk + sm5_ed],
+                        const float  phip = interp_weno11(vel_advected[ijk + sm5_ed],
                                                           vel_advected[ijk + sm4_ed],
                                                           vel_advected[ijk + sm3_ed],
                                                           vel_advected[ijk + sm2_ed],
@@ -745,7 +745,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                                                           vel_advected[ijk + sp5_ed]);
 
                         // Upwind for negative velocity
-                        const double phim = interp_weno11(vel_advected[ijk + sp6_ed],
+                        const float  phim = interp_weno11(vel_advected[ijk + sp6_ed],
                                                           vel_advected[ijk + sp5_ed],
                                                           vel_advected[ijk + sp4_ed],
                                                           vel_advected[ijk + sp3_ed],
@@ -757,7 +757,7 @@ void weno_eleventh_order_m(struct DimStruct *dims, double* restrict rho0, double
                                                           vel_advected[ijk + sm3_ed],
                                                           vel_advected[ijk + sm4_ed]);
 
-                        const double vel_adv = interp_10(vel_advecting[ijk + sm4_ing],
+                        const float  vel_adv = interp_10(vel_advecting[ijk + sm4_ing],
                                                          vel_advecting[ijk + sm3_ing],
                                                          vel_advecting[ijk + sm2_ing],
                                                          vel_advecting[ijk + sm1_ing],

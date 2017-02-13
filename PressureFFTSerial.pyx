@@ -27,7 +27,7 @@ cdef class PressureFFTSerial:
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, ParallelMPI.ParallelMPI Pa):
         self.compute_modified_wave_numbers(Gr)
         self.compute_off_diagonals(Gr,RS)
-        self.b = np.zeros(Gr.dims.nl[2],dtype=np.double,order='c')
+        self.b = np.zeros(Gr.dims.nl[2],dtype=np.float32,order='c')
 
         self.TDMA_Solver = SparseSolvers.TDMA()
         self.TDMA_Solver.initialize(Gr.dims.nl[2])
@@ -36,23 +36,23 @@ cdef class PressureFFTSerial:
         return
 
     cpdef compute_modified_wave_numbers(self,Grid.Grid Gr):
-        self.kx2 = np.zeros(Gr.dims.nl[0],dtype=np.double,order='c')
-        self.ky2 = np.zeros(Gr.dims.nl[1],dtype=np.double,order='c')
+        self.kx2 = np.zeros(Gr.dims.nl[0],dtype=np.float32,order='c')
+        self.ky2 = np.zeros(Gr.dims.nl[1],dtype=np.float32,order='c')
         cdef:
-            double xi, yi
+            float xi, yi
             Py_ssize_t i,j
         for i in xrange(Gr.dims.nl[0]):
             if i <= Gr.dims.nl[0]/2:
-                xi = np.double(i)
+                xi = np.float32(i)
             else:
-                xi = np.double(i - Gr.dims.nl[0])
+                xi = np.float32(i - Gr.dims.nl[0])
             self.kx2[i] = (2.0 * cos((2.0 * pi/Gr.dims.nl[0]) * xi)-2.0)/Gr.dims.dx[0]/Gr.dims.dx[0]
 
         for j in xrange(Gr.dims.nl[1]):
             if j <= Gr.dims.nl[1]/2:
-                yi = np.double(j)
+                yi = np.float32(j)
             else:
-                yi = np.double(j-Gr.dims.nl[1])
+                yi = np.float32(j-Gr.dims.nl[1])
             self.ky2[j] = (2.0 * cos((2.0 * pi/Gr.dims.nl[1]) * yi)-2.0)/Gr.dims.dx[1]/Gr.dims.dx[1]
 
         #Remove the odd-ball
@@ -67,9 +67,9 @@ cdef class PressureFFTSerial:
             Py_ssize_t  k
 
         #self.a is the lower diagonal
-        self.a = np.zeros(Gr.dims.nl[2],dtype=np.double,order='c')
+        self.a = np.zeros(Gr.dims.nl[2],dtype=np.float32,order='c')
         #self.c is the upper diagonal
-        self.c = np.zeros(Gr.dims.nl[2],dtype=np.double,order='c')
+        self.c = np.zeros(Gr.dims.nl[2],dtype=np.float32,order='c')
 
         #Set boundary conditions at the surface
         self.a[0] =  0.0
@@ -91,8 +91,8 @@ cdef class PressureFFTSerial:
 
         cdef:
             Py_ssize_t k
-            double kx2 = self.kx2[i]
-            double ky2 = self.ky2[j]
+            float kx2 = self.kx2[i]
+            float ky2 = self.ky2[j]
 
         #Set the matrix rows for the interior point
         self.b[0] = (RS.rho0_half[ Gr.dims.gw] * (kx2 + ky2)
@@ -114,7 +114,7 @@ cdef class PressureFFTSerial:
 
         cdef:
             complex [:,:,:] div_fft
-            double [:,:,:] div = np.empty((Gr.dims.nl[0],Gr.dims.nl[1],Gr.dims.nl[2]),dtype=np.double,order='c')
+            float [:,:,:] div = np.empty((Gr.dims.nl[0],Gr.dims.nl[1],Gr.dims.nl[2]),dtype=np.float32,order='c')
 
             Py_ssize_t i, j,k, count
 
@@ -149,8 +149,8 @@ cdef class PressureFFTSerial:
         div_fft  =  fft2(div,axes=(0,1))
 
         #This is one of the few places in the code where we will use a 3d array this is to avoid a memory copy
-        cdef double [:] dkr = np.empty((Gr.dims.nl[2]),dtype=np.double,order='c')
-        cdef double [:] dki = np.empty((Gr.dims.nl[2]),dtype=np.double,order='c')
+        cdef float [:] dkr = np.empty((Gr.dims.nl[2]),dtype=np.float32,order='c')
+        cdef float [:] dki = np.empty((Gr.dims.nl[2]),dtype=np.float32,order='c')
 
 
         #with nogil:
@@ -171,7 +171,7 @@ cdef class PressureFFTSerial:
                         div_fft[i,j,k] = 0.0 + 0j
 
         cdef:
-            double [:,:,:] p = ifft2(div_fft,axes=(0,1)).real
+            float [:,:,:] p = ifft2(div_fft,axes=(0,1)).real
             Py_ssize_t pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
 
 

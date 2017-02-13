@@ -17,19 +17,19 @@ import numpy as np
 import cython
 
 cdef extern from "sgs.h":
-    void smagorinsky_update(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
-                            double* strain_rate_mag, double cs, double prt)
-    void tke_viscosity_diffusivity(Grid.DimStruct *dims, double* e, double* buoy_freq,double* visc, double* diff,
-                                   double cn, double ck)
-    void tke_dissipation(Grid.DimStruct* dims, double* e, double* e_tendency, double* buoy_freq, double cn, double ck)
-    void tke_shear_production(Grid.DimStruct *dims,  double* e_tendency, double* visc, double* strain_rate_mag)
-    void tke_buoyant_production(Grid.DimStruct *dims,  double* e_tendency, double* diff, double* buoy_freq)
-    void tke_surface(Grid.DimStruct *dims, double* e, double* lmo, double* ustar, double h_bl, double zb) nogil
-    double tke_ell(double cn, double e, double buoy_freq, double delta) nogil
-    void smagorinsky_update_wall(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
-                            double* strain_rate_mag, double cs, double prt)
-    void smagorinsky_update_iles(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
-                            double* strain_rate_mag, double cs, double prt)
+    void smagorinsky_update(Grid.DimStruct* dims, float* visc, float* diff, float* buoy_freq,
+                            float* strain_rate_mag, float cs, float prt)
+    void tke_viscosity_diffusivity(Grid.DimStruct *dims, float* e, float* buoy_freq,float* visc, float* diff,
+                                   float cn, float ck)
+    void tke_dissipation(Grid.DimStruct* dims, float* e, float* e_tendency, float* buoy_freq, float cn, float ck)
+    void tke_shear_production(Grid.DimStruct *dims,  float* e_tendency, float* visc, float* strain_rate_mag)
+    void tke_buoyant_production(Grid.DimStruct *dims,  float* e_tendency, float* diff, float* buoy_freq)
+    void tke_surface(Grid.DimStruct *dims, float* e, float* lmo, float* ustar, float h_bl, float zb) nogil
+    float tke_ell(float cn, float e, float buoy_freq, float delta) nogil
+    void smagorinsky_update_wall(Grid.DimStruct* dims, float* zl_half, float* visc, float* diff, float* buoy_freq,
+                            float* strain_rate_mag, float cs, float prt)
+    void smagorinsky_update_iles(Grid.DimStruct* dims, float* zl_half, float* visc, float* diff, float* buoy_freq,
+                            float* strain_rate_mag, float cs, float prt)
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
@@ -199,10 +199,10 @@ cdef class TKE:
             Py_ssize_t e_shift = PV.get_varshift(Gr,'e')
             Py_ssize_t th_shift
             Py_ssize_t i,k
-            double [:,:] theta_pencil
-            double h_local = 0.0
-            double h_global = 0.0
-            double n_xy_i = 1.0/(Gr.dims.nlg[0]*Gr.dims.nlg[1])
+            float [:,:] theta_pencil
+            float h_local = 0.0
+            float h_global = 0.0
+            float n_xy_i = 1.0/(Gr.dims.nlg[0]*Gr.dims.nlg[1])
 
 
         if 'theta_rho' in DV.name_index:
@@ -250,30 +250,30 @@ cdef class TKE:
             Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
             Py_ssize_t bf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
             Py_ssize_t e_shift = PV.get_varshift(Gr,'e')
-            double [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
+            float [:] mean_tendency = np.empty((Gr.dims.nlg[2],),dtype=np.float32,order='c')
 
-            double [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.double,order='c')
+            float [:] mean = np.empty((Gr.dims.nlg[2],),dtype=np.float32,order='c')
 
-        cdef double [:] tmp_tendency1  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+        cdef float [:] tmp_tendency1  = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
         tke_dissipation(&Gr.dims, &PV.values[e_shift], &tmp_tendency1[0], &DV.values[bf_shift], self.cn, self.ck)
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency1[0])
         NS.write_profile('tke_dissipation_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        cdef double [:] tmp_tendency2  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+        cdef float [:] tmp_tendency2  = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
         tke_shear_production(&Gr.dims,   &tmp_tendency2[0], &DV.values[visc_shift], &Ke.strain_rate_mag[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency2[0])
         NS.write_profile('tke_shear_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        cdef double [:] tmp_tendency3  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+        cdef float [:] tmp_tendency3  = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
         tke_buoyant_production(&Gr.dims,  &tmp_tendency3[0], &DV.values[diff_shift], &DV.values[bf_shift])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency3[0])
         NS.write_profile('tke_buoyancy_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         cdef:
             Py_ssize_t i
-            double delta = (Gr.dims.dx[0] * Gr.dims.dx[1] * Gr.dims.dx[2])**(1.0/3.0)
-            double [:] prt  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mixing_length = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            float delta = (Gr.dims.dx[0] * Gr.dims.dx[1] * Gr.dims.dx[2])**(1.0/3.0)
+            float [:] prt  = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
+            float [:] mixing_length = np.zeros((Gr.dims.npg),dtype=np.float32,order='c')
 
         with nogil:
             for i in xrange(Gr.dims.npg):

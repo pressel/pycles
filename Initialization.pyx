@@ -75,8 +75,8 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift
         Py_ssize_t ijk
-        double t
-        double dist
+        float t
+        float dist
 
     t_min = 9999.9
     for i in xrange(Gr.dims.nlg[0]):
@@ -158,9 +158,9 @@ def InitSaturatedBubble(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVari
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift
         Py_ssize_t ijk
-        double t
-        double dist
-        double thetas
+        float t
+        float dist
+        float thetas
 
     for i in xrange(Gr.dims.nlg[0]):
         ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -202,12 +202,12 @@ def InitSullivanPatton(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVaria
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift, e_varshift
         Py_ssize_t ijk
-        double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double t
+        float [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+        float t
 
         #Generate initial perturbations (here we are generating more than we need)
-        cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
-        cdef double theta_pert_
+        cdef float [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+        cdef float theta_pert_
 
     for k in xrange(Gr.dims.nlg[2]):
         if Gr.zl_half[k] <=  974.0:
@@ -217,7 +217,7 @@ def InitSullivanPatton(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVaria
         else:
             theta[k] = 308.0 + (Gr.zl_half[k] - 1074.0) * 0.003
 
-    cdef double [:] p0 = RS.p0_half
+    cdef float [:] p0 = RS.p0_half
 
     #Now loop and set the initial condition
     for i in xrange(Gr.dims.nlg[0]):
@@ -277,11 +277,11 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift
         Py_ssize_t ijk, e_varshift
-        double temp
-        double qt_
-        double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        float temp
+        float qt_
+        float [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+        float [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+        float [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.float32,order='c')
         Py_ssize_t count
 
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
@@ -381,13 +381,13 @@ def InitGabls(namelist,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift, e_varshift
         Py_ssize_t ijk
-        double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double t
+        float [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+        float t
 
         #Generate initial perturbations (here we are generating more than we need)
 
-        cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
-        cdef double theta_pert_
+        cdef float [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+        cdef float theta_pert_
 
     for k in xrange(Gr.dims.nlg[2]):
         if Gr.zl_half[k] <=  100.0:
@@ -396,7 +396,7 @@ def InitGabls(namelist,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
         else:
             theta[k] = 265.0 + (Gr.zl_half[k] - 100.0) * 0.01
 
-    cdef double [:] p0 = RS.p0_half
+    cdef float [:] p0 = RS.p0_half
 
     #Now loop and set the initial condition
     #First set the velocities
@@ -479,8 +479,8 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
-        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        float [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
         Py_ssize_t e_varshift
 
     for k in xrange(Gr.dims.nlg[2]):
@@ -536,8 +536,8 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
     #Generate initial perturbations (here we are generating more than we need)
     np.random.seed(Pa.rank)
-    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
-    cdef double theta_pert_
+    cdef float [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef float theta_pert_
 
     for i in xrange(Gr.dims.nlg[0]):
         ishift = istride * i
@@ -583,8 +583,8 @@ def InitDYCOMS_RF02(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
     RS.qtg = 9.0/1000.0
     RS.u0 = 5.0
     RS.v0 = -5.5
-    cdef double cp_ref = 1004.0
-    cdef double L_ref = 2.5e6
+    cdef float cp_ref = 1004.0
+    cdef float L_ref = 2.5e6
 
     # Use an exner function with values for Rd, and cp given in Stevens 2004 to compute temperature given $\theta_l$
     RS.Tg = 288.3 * (RS.Pg/p_tilde)**(287.0/cp_ref)
@@ -604,10 +604,10 @@ def InitDYCOMS_RF02(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
-        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        float [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
 
     for k in xrange(Gr.dims.nlg[2]):
         if Gr.zl_half[k] <=795.0:
@@ -664,8 +664,8 @@ def InitDYCOMS_RF02(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
     #Generate initial perturbations (here we are generating more than we need)
     np.random.seed(Pa.rank)
-    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
-    cdef double theta_pert_
+    cdef float [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef float theta_pert_
 
     for i in xrange(Gr.dims.nlg[0]):
         ishift = istride * i
@@ -724,13 +724,13 @@ def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift, e_varshift
         Py_ssize_t ijk
-        double [:] theta = np.empty((Gr.dims.nlg[2]), dtype=np.double, order='c')
-        double [:] smoke = np.empty((Gr.dims.nlg[2]), dtype=np.double, order='c')
-        double t
+        float [:] theta = np.empty((Gr.dims.nlg[2]), dtype=np.float32, order='c')
+        float [:] smoke = np.empty((Gr.dims.nlg[2]), dtype=np.float32, order='c')
+        float t
 
         #Generate initial perturbations (here we are generating more than we need)
-        cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
-        cdef double theta_pert_
+        cdef float [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+        cdef float theta_pert_
 
     for k in xrange(Gr.dims.nlg[2]):
         if Gr.zl_half[k] <=  687.5:
@@ -744,7 +744,7 @@ def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             theta[k] = 295.0 + (Gr.zl_half[k] - 712.5) * 1e-4
             smoke[k] = 0.0
 
-    cdef double [:] p0 = RS.p0_half
+    cdef float [:] p0 = RS.p0_half
 
     #Now loop and set the initial condition
     for i in xrange(Gr.dims.nlg[0]):
@@ -805,12 +805,12 @@ def InitRico(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift
         Py_ssize_t ijk, e_varshift
-        double temp
-        double qt_
-        double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] v = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        float temp
+        float qt_
+        float [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+        float [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+        float [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.float32,order='c')
+        float [:] v = np.empty((Gr.dims.nlg[2]),dtype=np.float32,order='c')
         Py_ssize_t count
 
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
@@ -948,13 +948,13 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
-        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double p_inversion = 940.0 * 100.0 # for S11, S12: pressure at the inversion
-        double p_interp_les = 880 * 100.0 # for S11, S12:  pressure at which we start interpolating to the forcing profile
-        double p_interp_data = 860 * 100.0 # for S11, S12: pressure at which we blend full to forcing profile
+        float [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float p_inversion = 940.0 * 100.0 # for S11, S12: pressure at the inversion
+        float p_interp_les = 880 * 100.0 # for S11, S12:  pressure at which we start interpolating to the forcing profile
+        float p_interp_data = 860 * 100.0 # for S11, S12: pressure at which we blend full to forcing profile
 
     #Set up profiles. First create thetal from the forcing data, to be used for interpolation
     thetal_data = np.zeros(np.shape(temperature_data))
@@ -1116,8 +1116,8 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     #Generate initial perturbations (here we are generating more than we need)
     np.random.seed(Pa.rank)
-    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
-    cdef double theta_pert_
+    cdef float [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef float theta_pert_
 
     # Here we fill in the 3D arrays
     # We perform saturation adjustment on the S6 data, although this should not actually be necessary (but doesn't hurt)
@@ -1161,9 +1161,9 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.initialize(Gr ,Th, NS, Pa)
 
 
-    cdef double Pg_parcel = 1000.0e2
-    cdef double Tg_parcel = 295.0
-    cdef double RH_ref = 0.3
+    cdef float Pg_parcel = 1000.0e2
+    cdef float Tg_parcel = 295.0
+    cdef float RH_ref = 0.3
     reference_profiles.initialize(Pa, RS.p0_half[:], Gr.dims.nlg[2],Pg_parcel, Tg_parcel, RH_ref)
 
 
@@ -1177,10 +1177,10 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
-        double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        float [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
+        float [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.float32,order='c')
 
     for k in xrange(Gr.dims.nlg[2]):
         if RS.p0_half[k]  > 920.0e2:
@@ -1234,8 +1234,8 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     #Generate initial perturbations (here we are generating more than we need)
     np.random.seed(Pa.rank)
-    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
-    cdef double theta_pert_
+    cdef float [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef float theta_pert_
 
     # Here we fill in the 3D arrays
     # We perform saturation adjustment on the S6 data, although this should not actually be necessary (but doesn't hurt)

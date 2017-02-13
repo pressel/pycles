@@ -28,7 +28,7 @@ cdef class PressureSolver:
         DV.add_variables('dynamic_pressure','Pa','sym',PM)
         DV.add_variables('divergence','1/s','sym',PM)
 
-        self.divergence = np.zeros(Gr.dims.npl,dtype=np.double, order='c')
+        self.divergence = np.zeros(Gr.dims.npl,dtype=np.float32, order='c')
         #self.poisson_solver = PressureFFTSerial.PressureFFTSerial()
         self.poisson_solver = PressureFFTParallel.PressureFFTParallel()
         self.poisson_solver.initialize(Gr,RS,PM)
@@ -48,7 +48,7 @@ cdef class PressureSolver:
             Py_ssize_t pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
             Py_ssize_t div_shift = DV.get_varshift(Gr,'divergence')
 
-        cdef double [:] u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
+        cdef float [:] u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
         #Remove mean u3
         remove_mean_u3(&Gr.dims,&u3_mean[0],&PV.values[w_shift])
         u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
@@ -80,7 +80,7 @@ cdef class PressureSolver:
 
         return
 
-cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, double *u, double *v, double *w ):
+cdef void second_order_pressure_correction(Grid.DimStruct *dims, float *p, float *u, float *v, float *w ):
 
     cdef:
         Py_ssize_t imin = 0
@@ -110,7 +110,7 @@ cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, doub
     return
 
 
-cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity):
+cdef void remove_mean_u3(Grid.DimStruct *dims, float *u3_mean, float *velocity):
 
     cdef:
         Py_ssize_t imin = 0
@@ -135,8 +135,8 @@ cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity
 
     return
 
-cdef void second_order_divergence(Grid.DimStruct *dims, double *alpha0, double *alpha0_half, double *velocity,
-                                  double *divergence, Py_ssize_t d):
+cdef void second_order_divergence(Grid.DimStruct *dims, float *alpha0, float *alpha0_half, float *velocity,
+                                  float *divergence, Py_ssize_t d):
 
     cdef:
         Py_ssize_t imin = dims.gw
@@ -153,7 +153,7 @@ cdef void second_order_divergence(Grid.DimStruct *dims, double *alpha0, double *
         #Compute the s+trides given the dimensionality
         Py_ssize_t [3] p1 = [istride, jstride, 1]
         Py_ssize_t sm1 =  -p1[d]
-        double dxi = 1.0/dims.dx[d]
+        float dxi = 1.0/dims.dx[d]
 
     if d != 2:
         for i in xrange(imin,imax):

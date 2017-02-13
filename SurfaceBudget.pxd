@@ -18,12 +18,12 @@ cdef class SurfaceBudgetNone:
 cdef class SurfaceBudget:
     cdef:
         bint constant_sst
-        double ocean_heat_flux
-        double water_depth_initial
-        double water_depth_final
-        double water_depth_time
-        double fixed_sst_time
-        double water_depth
+        float ocean_heat_flux
+        float water_depth_initial
+        float water_depth_final
+        float water_depth_time
+        float fixed_sst_time
+        float water_depth
 
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
