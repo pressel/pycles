@@ -44,9 +44,6 @@ cdef class Grid:
         self.compute_global_dims()
         self.compute_local_dims(Parallel)
         self.compute_coordinates()
-
-        import sys; sys.exit()
-
         return
 
     cdef inline void compute_global_dims(self):
@@ -132,6 +129,7 @@ cdef class Grid:
         '''
 
 
+
         self.x_half = np.empty((self.dims.n[0]+2*self.dims.gw),dtype=np.double,order='c')
         self.x = np.empty((self.dims.n[0]+2*self.dims.gw),dtype=np.double,order='c')
 
@@ -142,8 +140,10 @@ cdef class Grid:
         self.z = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
 
 
+        beta = 1.0/5000.0
         cdef double zp_max = self.dims.n[2] * self.dims.dx[2]
-        self.dims.dx[2] = np.sqrt(zp_max) / self.dims.n[2]
+        self.dims.dx[2] = (1.0/beta) * np.log(zp_max * (np.exp(beta)-1) + 1)/self.dims.n[2]
+        print self.dims.dx[2]
 
 
         cdef int i, count = 0
@@ -176,6 +176,23 @@ cdef class Grid:
         #Extract just the local components of the height coordinate
         self.yl = self.extract_local_ghosted(self.y,1)
         self.yl_half = self.extract_local_ghosted(self.yl,1)
+
+        #Now set up the tranformation arrays
+        self.zp = (np.exp(beta * np.array(self.z)) - 1.0)/(np.exp(beta) - 1.0)
+        self.zp_half = (np.exp(beta * np.array(self.z_half)) - 1.0)/(np.exp(beta) - 1.0)
+
+
+        self.jac = beta * np.exp(beta * np.array(self.z))/(np.exp(beta) - 1)
+        self.jac_half = beta * np.exp(beta * np.array(self.z_half))/(np.exp(beta) - 1)
+        self.ijac = 1.0/np.array(self.jac)
+        self.ijac_half = 1.0/np.array(self.jac_half)
+        #
+        # print np.array(self.z), np.array(self.zp)#, np.array(self.z)
+        #
+        #
+        self.dims.jac = &self.jac[0]
+        self.dims.jac_half = &self.jac_half[0]
+
 
         return
 

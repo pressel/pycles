@@ -21,4 +21,10 @@ struct DimStruct {
 
         double dx[3]; /// Grid spacing in grid direction
         double dxi[3]; // Inverse gird spacing in grid direction
+
+        double *jac;
+        double *ijac;
+        double *jac_half;
+        double *ijac_half;
+
         };
