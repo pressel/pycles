@@ -114,16 +114,16 @@ cdef class PressureFFTParallel:
 
         #Set boundary conditions at the surface
         self.a[0] =  0.0
-        self.c[0] = Gr.dims.dxi[2] * Gr.dims.dxi[2] * RS.rho0[ Gr.dims.gw]
+        self.c[0] = Gr.dims.dxi[2] * Gr.dims.dxi[2] * RS.rho0[ Gr.dims.gw] * Gr.ijac[Gr.dims.gw] * Gr.ijac_half[Gr.dims.gw]
 
         #Fill Matrix Values
         for k in xrange(1,Gr.dims.n[2]-1):
-            self.a[k] = Gr.dims.dxi[2] * Gr.dims.dxi[2] * RS.rho0[k + Gr.dims.gw-1]
-            self.c[k] = Gr.dims.dxi[2] * Gr.dims.dxi[2] * RS.rho0[k + Gr.dims.gw]
+            self.a[k] = Gr.dims.dxi[2] * Gr.dims.dxi[2] * RS.rho0[k + Gr.dims.gw-1] * Gr.ijac[k + Gr.dims.gw - 1]* Gr.ijac_half[k + Gr.dims.gw - 1]
+            self.c[k] = Gr.dims.dxi[2] * Gr.dims.dxi[2] * RS.rho0[k + Gr.dims.gw] * Gr.ijac[k + Gr.dims.gw] * Gr.ijac_half[k + Gr.dims.gw]
 
         #Now set surface boundary conditions
         k = Gr.dims.n[2]-1
-        self.a[k] = Gr.dims.dxi[2] * Gr.dims.dxi[2] * RS.rho0[k + Gr.dims.gw-1]
+        self.a[k] = Gr.dims.dxi[2] * Gr.dims.dxi[2] * RS.rho0[k + Gr.dims.gw-1] * Gr.ijac[k + Gr.dims.gw - 1] * Gr.ijac_half[k + Gr.dims.gw - 1]
         self.c[k] = 0.0
 
     cdef inline void compute_diagonal(self,Grid.Grid Gr,ReferenceState.ReferenceState RS,Py_ssize_t i, Py_ssize_t j) nogil:
@@ -135,14 +135,14 @@ cdef class PressureFFTParallel:
 
         #Set the matrix rows for the interior point
         self.b[0] = (RS.rho0_half[ Gr.dims.gw] * (kx2 + ky2)
-                         - (RS.rho0[ Gr.dims.gw] )*Gr.dims.dxi[2]*Gr.dims.dxi[2])
+                         - (Gr.ijac[Gr.dims.gw]*Gr.ijac_half[Gr.dims.gw] * RS.rho0[ Gr.dims.gw] )*Gr.dims.dxi[2]*Gr.dims.dxi[2])
 
         for k in xrange(1,Gr.dims.nl[2]-1):
             self.b[k] = (RS.rho0_half[k + Gr.dims.gw] * (kx2 + ky2)
-                         - (RS.rho0[k + Gr.dims.gw] + RS.rho0[k + Gr.dims.gw -1])*Gr.dims.dxi[2]*Gr.dims.dxi[2])
+                         - (Gr.ijac[k + Gr.dims.gw]*Gr.ijac_half[k + Gr.dims.gw] * RS.rho0[k + Gr.dims.gw] + Gr.ijac[k + Gr.dims.gw - 1]*Gr.ijac_half[k + Gr.dims.gw-1]  * RS.rho0[k + Gr.dims.gw -1])*Gr.dims.dxi[2]*Gr.dims.dxi[2])
         k = Gr.dims.nl[2]-1
         self.b[k] = (RS.rho0_half[k + Gr.dims.gw] * (kx2 + ky2)
-                         - (RS.rho0[k + Gr.dims.gw -1])*Gr.dims.dxi[2]*Gr.dims.dxi[2])
+                         - (Gr.ijac[k + Gr.dims.gw - 1]*Gr.ijac_half[k + Gr.dims.gw - 1] * RS.rho0[k + Gr.dims.gw -1])*Gr.dims.dxi[2]*Gr.dims.dxi[2])
 
 
         return

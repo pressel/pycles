@@ -105,7 +105,7 @@ cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, doub
                 ijk = ishift + jshift + k
                 u[ijk] -=  (p[ijk + ip1] - p[ijk])*dims.dxi[0]
                 v[ijk] -=  (p[ijk + jp1] - p[ijk])*dims.dxi[1]
-                w[ijk] -=  (p[ijk + kp1] - p[ijk])*dims.dxi[2]  #(p[ijk + kp1] - p[ijk])*dims.dxi[2]
+                w[ijk] -=  (p[ijk + kp1] - p[ijk])*dims.dxi[2] * dims.ijacl[k] #(p[ijk + kp1] - p[ijk])*dims.dxi[2]
 
     return
 
@@ -170,6 +170,6 @@ cdef void second_order_divergence(Grid.DimStruct *dims, double *alpha0, double *
                 jshift = j * jstride
                 for k in xrange(kmin,kmax):
                      ijk = ishift + jshift + k
-                     divergence[ijk] += ((velocity[ijk]) /alpha0[k] - (velocity[ijk+sm1])/alpha0[k-1])*dxi
+                     divergence[ijk] += ((velocity[ijk]) /alpha0[k] - (velocity[ijk+sm1])/alpha0[k-1])*dxi*dims.ijacl_half[k]
 
     return

@@ -27,4 +27,8 @@ struct DimStruct {
         double *jac_half;
         double *ijac_half;
 
+        double *jacl;
+        double *ijacl;
+        double *jacl_half;
+        double *ijacl_half;
         };

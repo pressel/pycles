@@ -140,11 +140,9 @@ cdef class Grid:
         self.z = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
 
 
-        beta = 1.0/5000.0
         cdef double zp_max = self.dims.n[2] * self.dims.dx[2]
-        self.dims.dx[2] = (1.0/beta) * np.log(zp_max * (np.exp(beta)-1) + 1)/self.dims.n[2]
-        print self.dims.dx[2]
-
+        beta = 1.0/zp_max
+        #self.dims.dx[2] = (1.0/beta) * np.log(zp_max * (np.exp(beta)-1) + 1)/self.dims.n[2]
 
         cdef int i, count = 0
         for i in xrange(-self.dims.gw,self.dims.n[2]+self.dims.gw,1):
@@ -178,20 +176,39 @@ cdef class Grid:
         self.yl_half = self.extract_local_ghosted(self.yl,1)
 
         #Now set up the tranformation arrays
-        self.zp = (np.exp(beta * np.array(self.z)) - 1.0)/(np.exp(beta) - 1.0)
-        self.zp_half = (np.exp(beta * np.array(self.z_half)) - 1.0)/(np.exp(beta) - 1.0)
+        #self.zp = (np.exp(beta * np.array(self.z)) - 1.0)/(np.exp(beta) - 1.0)
+        #self.zp_half = (np.exp(beta * np.array(self.z_half)) - 1.0)/(np.exp(beta) - 1.0)
 
+        self.zp = self.z
+        self.zp_half = self.z_half
 
-        self.jac = beta * np.exp(beta * np.array(self.z))/(np.exp(beta) - 1)
-        self.jac_half = beta * np.exp(beta * np.array(self.z_half))/(np.exp(beta) - 1)
-        self.ijac = 1.0/np.array(self.jac)
-        self.ijac_half = 1.0/np.array(self.jac_half)
-        #
-        # print np.array(self.z), np.array(self.zp)#, np.array(self.z)
-        #
-        #
+        #self.ijac = beta * np.exp(beta * np.array(self.z))/(np.exp(beta) - 1)
+        #self.ijac_half = beta * np.exp(beta * np.array(self.z_half))/(np.exp(beta) - 1)
+        #self.jac = 1.0/np.array(self.ijac)
+        #self.jac_half = 1.0/np.array(self.ijac_half)
+
+        self.ijac = np.ones(np.shape(self.zp),dtype=np.double)
+        self.ijac_half = np.ones(np.shape(self.zp),dtype=np.double)
+        self.jac = np.ones(np.shape(self.zp),dtype=np.double)
+        self.jac_half = np.ones(np.shape(self.zp),dtype=np.double)
+
+        self.jacl = self.extract_local_ghosted(np.array(self.jac),2)
+        self.jacl_half = self.extract_local_ghosted(np.array(self.jac_half),2)
+
+        self.ijacl = self.extract_local_ghosted(np.array(self.ijac),2)
+        self.ijacl_half = self.extract_local_ghosted(np.array(self.ijac_half),2)
+
         self.dims.jac = &self.jac[0]
         self.dims.jac_half = &self.jac_half[0]
+
+        self.dims.ijac = &self.ijac[0]
+        self.dims.ijac_half = &self.ijac[0]
+
+        self.dims.jacl = &self.jacl[0]
+        self.dims.jacl_half = &self.jacl_half[0]
+
+        self.dims.ijacl = &self.ijacl[0]
+        self.dims.ijacl_half = &self.ijacl[0]
 
 
         return

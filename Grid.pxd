@@ -30,6 +30,13 @@ cdef extern from "grid.h":
         double * ijac;
         double * ijac_half;
 
+        double * jacl;
+        double * jacl_half;
+        double * ijacl;
+        double * ijacl_half
+
+
+
 
 cdef class Grid:
     cdef:
@@ -49,13 +56,20 @@ cdef class Grid:
         double [:] zl
         double [:] zl_half
 
-        double [:] zp;
-        double [:] zp_half;
+        double [:] zp
+        double [:] zp_half
+        double [:] zpl
+        double [:] zpl_half
 
         double [:] jac;
         double [:] jac_half;
         double [:] ijac;
         double [:] ijac_half;
+
+        double [:] jacl;
+        double [:] jacl_half;
+        double [:] ijacl;
+        double [:] ijacl_half;
 
         void compute_global_dims(self)
         void compute_local_dims(self,ParallelMPI.ParallelMPI Parallel)
