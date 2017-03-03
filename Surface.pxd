@@ -151,11 +151,11 @@ cdef class SurfaceCGILS(SurfaceBase):
 cdef class SurfaceZGILS(SurfaceBase):
     cdef:
         Py_ssize_t loc
-        bint is_p2
         ClausiusClapeyron CC
         double gustiness
         double z0
-        double ct
+        bint interactive_roughness
+
 
     cpdef initialize(self, dict namelist, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,

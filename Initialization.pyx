@@ -1169,6 +1169,8 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         reference_profiles = AdjustedMoistAdiabat(namelist, LH, Pa)
     else:
         filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
+        #filename = '/Users/cmkaul/Dropbox/LES/kylemaster/pycles/CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
+        print('reference profile filename is ', filename)
         reference_profiles = ReferenceRCE(filename)
 
     try:

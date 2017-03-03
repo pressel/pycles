@@ -871,10 +871,6 @@ cdef class SurfaceZGILS(SurfaceBase):
 
 
         self.gustiness = 0.001
-        try:
-            self.z0 = namelist['surface_budget']['zrough']
-        except:
-            self.z0 = 1.0e-3
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
@@ -890,10 +886,22 @@ cdef class SurfaceZGILS(SurfaceBase):
             Pa.root_print('SURFACE: Must provide a ZGILS location (6/11/12) in namelist')
             Pa.kill()
 
+        try:
+            self.interactive_roughness = namelist['surface_budget']['interactive_zrough']
+        except:
+            self.interactive_roughness = False
+
+        try:
+            self.z0 = namelist['surface_budget']['zrough']
+        except:
+            self.z0 = 1.0e-3
+
         return
 
     cpdef initialize(self, dict namelist, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self, namelist, Gr,Ref,NS,Pa)
+        # Add the statistics output of the roughness length
+        NS.add_ts('roughness_length', Gr, Pa)
         # Get the multiplying factor for current levels of CO2
         # Then convert to a number of CO2 doublings, which is how forcings are rescaled
         try:
@@ -925,23 +933,35 @@ cdef class SurfaceZGILS(SurfaceBase):
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
+        cdef:
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            double mean_windspeed = sqrt((umean[gw]+Ref.u0)*(umean[gw]+Ref.u0) + (vmean[gw]+Ref.v0)*(vmean[gw]+Ref.v0))
+            double zrough = compute_z0(Gr.dims.dx[2]*0.5, mean_windspeed)
+
+
+        if self.interactive_roughness:
+            self.z0 = zrough
+
         if Pa.sub_z_rank != 0:
             return
 
+
         cdef:
-            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
-            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t th_shift = DV.get_varshift(Gr, 'theta_rho')
             double [:] windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
 
+
         compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0], Ref.u0, Ref.v0, self.gustiness)
 
         cdef:
             Py_ssize_t i,j, ijk, ij
-            Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t imax = Gr.dims.nlg[0]
             Py_ssize_t jmax = Gr.dims.nlg[1]
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -996,6 +1016,7 @@ cdef class SurfaceZGILS(SurfaceBase):
 
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.stats_io(self, Gr, NS, Pa)
+        NS.write_ts('roughness_length', self.z0, Pa)
 
         return
 
