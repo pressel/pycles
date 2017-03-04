@@ -32,12 +32,15 @@ def main():
         n_0 = dims['n_0'][0]
         n_1 = dims['n_1'][0]
         n_2 = dims['n_2'][0]
+        x = dims['x'][:]
+        y = dims['y'][:]
+        z = dims['z'][:]
 
         rootgrp.close()
 
-        out_path = os.path.join(args.out_dir, str(d) + '.nc')
+        out_path = os.path.join(args.out_dir, str(1000000 + int(d)) + '.nc')
         if not os.path.exists(out_path):
-            create_file(out_path, n_0, n_1, n_2)
+            create_file(out_path, n_0, n_1, n_2, x, y, z)
         for f in field_keys:
             f_data_3d = np.empty((n_0, n_1, n_2), dtype=np.double, order='c')
             for r in ranks:
@@ -70,12 +73,21 @@ def main():
     return
 
 
-def create_file(fname, nx, ny, nz):
+def create_file(fname, nx, ny, nz, x, y, z):
     rootgrp = nc.Dataset(fname, 'w', format='NETCDF4')
     fieldgrp = rootgrp.createGroup('fields')
     fieldgrp.createDimension('nx', nx)
     fieldgrp.createDimension('ny', ny)
     fieldgrp.createDimension('nz', nz)
+
+    xh = fieldgrp.createVariable('x', 'f8', ('nx',))
+    yh = fieldgrp.createVariable('y', 'f8', ('ny',))
+    zh = fieldgrp.createVariable('z', 'f8', ('nz',))
+
+    xh[:] = x
+    yh[:] = y
+    zh[:] = z
+
 
     rootgrp.close()
     return

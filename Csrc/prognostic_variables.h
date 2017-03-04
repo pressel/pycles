@@ -228,9 +228,9 @@ void set_bcs(ssize_t dim, ssize_t s, double bc_factor ,struct DimStruct *dims,
                              }
                         }
                         else{
-                            values[ishift + jshift + bc_start ] = 0.0;
+                            values[ishift + jshift + bc_start -1] = 0.0;
                             for(k=1;k<dims->gw;k++){
-                                values[ishift + jshift + bc_start + k] = bc_factor * values[ishift + jshift +  bc_start - k ];
+                                values[ishift + jshift + bc_start + k-1] = bc_factor * values[ishift + jshift +  bc_start - k -1];
                             }
                         }
                     }
