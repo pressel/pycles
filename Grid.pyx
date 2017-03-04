@@ -143,8 +143,8 @@ cdef class Grid:
         cdef double zp_max = self.dims.n[2] * self.dims.dx[2]
         beta = 1.0/6000.0 #1.0/zp_max
         self.dims.dx[2] = (1.0/beta) * np.log(zp_max * (np.exp(beta)-1) + 1)/self.dims.n[2]
-        #self.dims.dx[2] = 2.0*zp_max/self.dims.n[2]
         self.dims.dxi[2] = 1.0/self.dims.dx[2]
+
         cdef int i, count = 0
         for i in xrange(-self.dims.gw,self.dims.n[2]+self.dims.gw,1):
             self.z[count] = (i + 1) * self.dims.dx[2]
@@ -180,21 +180,10 @@ cdef class Grid:
         self.zp = (np.exp(beta * np.array(self.z)) - 1.0)/(np.exp(beta) - 1.0)
         self.zp_half =(np.exp(beta * np.array(self.z_half)) - 1.0)/(np.exp(beta) - 1.0)
 
-        print np.array(self.zp)
-        print np.array(self.z)
-
-        #self.zp = self.z
-        #self.zp_half = self.z_half
-
         self.ijac = beta * np.exp(beta * np.array(self.z))/(np.exp(beta) - 1)
         self.ijac_half = beta * np.exp(beta * np.array(self.z_half))/(np.exp(beta) - 1)
         self.jac = 1.0/np.array(self.ijac)
         self.jac_half = 1.0/np.array(self.ijac_half)
-
-        #self.ijac = np.ones(np.shape(self.zp),dtype=np.double) * 0.5
-        #self.ijac_half = np.ones(np.shape(self.zp),dtype=np.double) * 0.5
-        #self.jac = np.ones(np.shape(self.zp),dtype=np.double) * 2.0
-        #self.jac_half = np.ones(np.shape(self.zp),dtype=np.double) * 2.0
 
         self.jacl = self.extract_local_ghosted(np.array(self.jac),2)
         self.jacl_half = self.extract_local_ghosted(np.array(self.jac_half),2)
