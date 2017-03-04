@@ -166,8 +166,8 @@ class Simulation3d:
                 #self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
                 #self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
 
-                self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
-                self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
+                #self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
+                #self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
 
                 #self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
                 #self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)

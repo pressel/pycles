@@ -47,9 +47,6 @@ cdef class ReferenceState:
         :return:
         '''
 
-
-
-
         self.sg = Thermodynamics.entropy(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
 
         # Form a right hand side for integrating the hydrostatic equation to
@@ -73,6 +70,7 @@ cdef class ReferenceState:
         p[Gr.dims.gw - 1:-Gr.dims.gw +1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
         p_half[Gr.dims.gw:-Gr.dims.gw] = odeint(rhs, p0, z_half, hmax=1.0)[1:, 0]
 
+
         # Set boundary conditions
         p[:Gr.dims.gw - 1] = p[2 * Gr.dims.gw - 2:Gr.dims.gw - 1:-1]
         p[-Gr.dims.gw + 1:] = p[-Gr.dims.gw - 1:-2 * Gr.dims.gw:-1]
@@ -82,11 +80,6 @@ cdef class ReferenceState:
 
         p = np.exp(p)
         p_half = np.exp(p_half)
-
-
-        print np.array(p)
-
-
 
         self.p0_global = p
         self.p0_half_global = p_half
