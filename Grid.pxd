@@ -25,6 +25,9 @@ cdef extern from "grid.h":
         double [3] dxi
 
 
+        double zp_half_0
+        double zp_0
+
         double * jac;
         double * jac_half;
         double * ijac;

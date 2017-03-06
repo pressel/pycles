@@ -163,7 +163,6 @@ cdef class Grid:
             self.y_half[count] = (i+0.5)*self.dims.dx[1]
             count += 1
 
-
         #Extract just the local components of the height coordinate
         self.zl = self.extract_local_ghosted(self.z,2)
         self.zl_half = self.extract_local_ghosted(self.zl,2)
@@ -179,6 +178,9 @@ cdef class Grid:
         #Now set up the tranformation arrays
         self.zp = (np.exp(beta * np.array(self.z)) - 1.0)/(np.exp(beta) - 1.0)
         self.zp_half =(np.exp(beta * np.array(self.z_half)) - 1.0)/(np.exp(beta) - 1.0)
+
+        self.dims.zp_half_0 = self.zp_half[self.dims.gw]
+        self.dims.zp_0 = self.zp[self.dims.gw]
 
         self.ijac = beta * np.exp(beta * np.array(self.z))/(np.exp(beta) - 1)
         self.ijac_half = beta * np.exp(beta * np.array(self.z_half))/(np.exp(beta) - 1)
