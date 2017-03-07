@@ -141,7 +141,7 @@ cdef class Grid:
 
 
         cdef double zp_max = self.dims.n[2] * self.dims.dx[2]
-        beta = 1.0/8000.0
+        beta = 1.0/8000.0#* 1.0/ 100000.0 #8000.0
         self.dims.dx[2] = (1.0/beta) * np.log(zp_max * (np.exp(beta)-1) + 1)/self.dims.n[2]
         self.dims.dxi[2] = 1.0/self.dims.dx[2]
 
@@ -181,6 +181,14 @@ cdef class Grid:
 
         self.dims.zp_half_0 = self.zp_half[self.dims.gw]
         self.dims.zp_0 = self.zp[self.dims.gw]
+
+        self.dzp = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
+        self.dzp_half = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
+
+        cdef int k
+        for k in xrange(1,self.dims.n[2]+2*self.dims.gw-1):
+            self.dzp_half[k] = self.zp[k] - self.zp[k-1]
+            self.dzp[k] = self.zp_half[k+1] - self.zp_half[k]
 
         self.ijac = beta * np.exp(beta * np.array(self.z))/(np.exp(beta) - 1)
         self.ijac_half = beta * np.exp(beta * np.array(self.z_half))/(np.exp(beta) - 1)

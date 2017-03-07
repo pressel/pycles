@@ -103,6 +103,10 @@ cdef class NetCDFIO_Stats:
         z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
         z_half = reference_grp.createVariable('z_half', 'f8', ('z'))
         z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
+        zp = reference_grp.createVariable('zp', 'f8', ('z'))
+        zp[:] = np.array(Gr.zp[Gr.dims.gw:-Gr.dims.gw])
+        zp_half = reference_grp.createVariable('zp_half', 'f8', ('z'))
+        zp_half[:] = np.array(Gr.zp_half[Gr.dims.gw:-Gr.dims.gw])
         del z
         del z_half
 

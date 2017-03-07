@@ -135,6 +135,38 @@ cdef class ParallelMPI:
 
         return
 
+
+    cdef double domain_integral(self, Grid.Grid Gr, double* values, double* rho):
+
+        cdef:
+            double global_int, local_int
+            int i,j,k,ijk
+            int imin = Gr.dims.gw
+            int jmin = Gr.dims.gw
+            int kmin = Gr.dims.gw
+            int imax = Gr.dims.nlg[0] - Gr.dims.gw
+            int jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            int kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            int istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            int jstride = Gr.dims.nlg[2]
+            int ishift, jshift
+
+
+        global_int = 0.0
+        local_int = 0.0
+
+        with nogil:
+            for i in xrange(imin, imax):
+                ishift = i * istride
+                for j in xrange(jmin, jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        local_int += values[ijk] * rho[k] * Gr.dims.dx[0] * Gr.dims.dx[1] * Gr.dzp_half[k]
+
+
+        return self.domain_scalar_sum(local_int)
+
     cdef double domain_scalar_sum(self, double local_value):
         '''
         Compute the sum over all mpi ranks of a single scalar of type double.

@@ -59,6 +59,9 @@ cdef class ReferenceState:
         z = np.array(Gr.zp[Gr.dims.gw - 1:-Gr.dims.gw + 1])
         z_half = np.append([0.0], np.array(Gr.zp_half[Gr.dims.gw:-Gr.dims.gw]))
 
+
+        print 'z', np.array(z)
+
         # We are integrating the log pressure so need to take the log of the
         # surface pressure
         p0 = np.log(self.Pg)

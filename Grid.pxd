@@ -64,6 +64,9 @@ cdef class Grid:
         double [:] zpl
         double [:] zpl_half
 
+        double [:] dzp
+        double [:] dzp_half
+
         double [:] jac;
         double [:] jac_half;
         double [:] ijac;
