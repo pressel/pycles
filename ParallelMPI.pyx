@@ -155,14 +155,20 @@ cdef class ParallelMPI:
         global_int = 0.0
         local_int = 0.0
 
+
         with nogil:
             for i in xrange(imin, imax):
                 ishift = i * istride
                 for j in xrange(jmin, jmax):
                     jshift = j * jstride
-                    for k in xrange(kmin, kmax):
+                    local_int +=  (values[ishift + jshift + Gr.dims.gw] * rho[Gr.dims.gw])  * Gr.dims.dx[0] * Gr.dims.dx[1] * (Gr.zp_half[Gr.dims.gw] - Gr.zp[Gr.dims.gw-1])
+                    for k in xrange(kmin + 1, kmax - 1):
                         ijk = ishift + jshift + k
-                        local_int += values[ijk] * rho[k] * Gr.dims.dx[0] * Gr.dims.dx[1] * Gr.dzp_half[k]
+                        local_int += 0.5 * (values[ijk] * rho[k] + values[ijk-1] * rho[k-1])  * Gr.dims.dx[0] * Gr.dims.dx[1] * (Gr.zp_half[k] - Gr.zp_half[k-1])
+                    local_int +=  (values[ishift + jshift + k+1] * rho[k+1])  * Gr.dims.dx[0] * Gr.dims.dx[1] * ( Gr.zp[k+1] - Gr.zp_half[k+1])
+
+                    #with gil:
+                    #    print Gr.zp_half[Gr.dims.gw], Gr.zp[Gr.dims.gw-1], Gr.zp[k+1],  Gr.zp_half[k+1]
 
 
         return self.domain_scalar_sum(local_int)

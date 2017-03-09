@@ -59,9 +59,6 @@ cdef class ReferenceState:
         z = np.array(Gr.zp[Gr.dims.gw - 1:-Gr.dims.gw + 1])
         z_half = np.append([0.0], np.array(Gr.zp_half[Gr.dims.gw:-Gr.dims.gw]))
 
-
-        print 'z', np.array(z)
-
         # We are integrating the log pressure so need to take the log of the
         # surface pressure
         p0 = np.log(self.Pg)
@@ -72,7 +69,6 @@ cdef class ReferenceState:
         # Perform the integration
         p[Gr.dims.gw - 1:-Gr.dims.gw +1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
         p_half[Gr.dims.gw:-Gr.dims.gw] = odeint(rhs, p0, z_half, hmax=1.0)[1:, 0]
-
 
         # Set boundary conditions
         p[:Gr.dims.gw - 1] = p[2 * Gr.dims.gw - 2:Gr.dims.gw - 1:-1]
@@ -86,7 +82,6 @@ cdef class ReferenceState:
 
         self.p0_global = p
         self.p0_half_global = p_half
-
 
         cdef double[:] p_ = p
         cdef double[:] p_half_ = p_half

@@ -16,6 +16,7 @@ cdef class ReferenceState:
         public double [:] rho0_global
         public double [:] rho0_half_global
 
+
         double sg
 
     cdef public:
