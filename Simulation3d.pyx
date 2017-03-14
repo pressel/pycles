@@ -98,6 +98,7 @@ class Simulation3d:
         self.MD.initialize(self.Gr,self.PV,self.DV,self.StatsIO, self.Pa)
 
         self.TS.initialize(namelist,self.PV,self.Pa)
+        self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
 
         if self.Restart.is_restart_run:
             self.Pa.root_print('This run is being restarted!')
@@ -123,9 +124,6 @@ class Simulation3d:
             SetInitialConditions = InitializationFactory(namelist)
             SetInitialConditions(namelist,self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa, self.LH)
             del SetInitialConditions
-
-        self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
-
 
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
