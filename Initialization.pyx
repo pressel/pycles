@@ -1196,7 +1196,7 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     cdef double Pg_parcel = 1000.0e2
     cdef double Tg_parcel = 295.0
     cdef double RH_ref = 0.3
-    reference_profiles.initialize(Pa, RS.p0_half[:], Gr.dims.nlg[2],Pg_parcel, Tg_parcel, RH_ref)
+    reference_profiles.initialize(Pa, RS.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)
 
     cdef:
         Py_ssize_t i, j, k, ijk, ishift, jshift

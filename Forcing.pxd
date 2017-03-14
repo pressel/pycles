@@ -2,6 +2,7 @@ cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
+from ForcingReference cimport *
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
@@ -170,35 +171,4 @@ cdef class ForcingZGILS:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
-
-cdef class ForcingReferenceBase:
-    cdef:
-        double [:] s
-        double [:] qt
-        double [:] temperature
-        double [:] rv
-        double [:] u
-        double [:] v
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
-                     double Pg, double Tg, double RH)
-
-
-
-cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
-    cdef:
-        double (*L_fp)(double T, double Lambda) nogil
-        double (*Lambda_fp)(double T) nogil
-        Thermodynamics.ClausiusClapeyron CC
-    cpdef get_pv_star(self, t)
-    cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
-    cpdef eos(self, double p0, double s, double qt)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
-                     double Pg, double Tg, double RH)
-
-
-cdef class ReferenceRCE(ForcingReferenceBase):
-    cdef:
-        str filename
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
-                     double Pg, double Tg, double RH)
 

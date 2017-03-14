@@ -391,9 +391,6 @@ cdef extern:
              double *tauaer  ,double *ssaaer  ,double *asmaer  ,double *ecaer   ,
              double *swuflx  ,double *swdflx  ,double *swhr    ,double *swuflxc ,double *swdflxc ,double *swhrc)
 
-
-
-
 cdef class RadiationRRTM(RadiationBase):
 
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
@@ -559,7 +556,7 @@ cdef class RadiationRRTM(RadiationBase):
             pressures = np.arange(25*100, 1015*100, 10*100)
             pressures = np.array(pressures[::-1], dtype=np.double)
             n_adiabat = np.shape(pressures)[0]
-            self.reference_profile.initialize(Pa, pressures, n_adiabat, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
+            self.reference_profile.initialize(Pa, pressures, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
             temperatures =np.array( self.reference_profile.temperature)
             vapor_mixing_ratios = np.array(self.reference_profile.rv)
 

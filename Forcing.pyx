@@ -9,6 +9,7 @@ cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
+from ForcingReference cimport *
 from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c, s_tendency_c
 import numpy as np
@@ -942,8 +943,7 @@ cdef class ForcingZGILS:
         cdef double Tg_parcel = 295.0
         cdef double RH_ref = 0.3
 
-        self.forcing_ref.initialize(Pa, Ref.p0_half[:], Gr.dims.nlg[2],
-                                    Pg_parcel, Tg_parcel, RH_ref)
+        self.forcing_ref.initialize(Pa, Ref.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)
 
         cdef:
             Py_ssize_t k
@@ -1172,136 +1172,6 @@ cdef class ForcingZGILS:
 
 
 
-cdef extern from "thermodynamics_sa.h":
-    void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
-cdef extern from "thermodynamic_functions.h":
-    inline double pd_c(double p0, double qt, double qv) nogil
-    inline double pv_c(double p0, double qt, double qv) nogil
-cdef extern from "entropies.h":
-    inline double sd_c(double pd, double T) nogil
-    inline double sv_c(double pv, double T) nogil
-    inline double sc_c(double L, double T) nogil
-
-
-# These classes compute or read in the reference profiles needed for ZGILS cases
-# The base class
-cdef class ForcingReferenceBase:
-    def __init__(self):
-        return
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
-                     double Pg, double Tg, double RH):
-        self.s = np.zeros(n_levels, dtype=np.double, order='c')
-        self.qt = np.zeros(n_levels, dtype=np.double, order='c')
-        self.temperature = np.zeros(n_levels, dtype=np.double, order='c')
-        self.rv = np.zeros(n_levels, dtype=np.double, order='c')
-        self.u = np.zeros(n_levels, dtype=np.double, order='c')
-        self.v = np.zeros(n_levels, dtype=np.double, order='c')
-        return
-
-# Climate change simulations use profiles based on radiative--convective equilibrium solutions obtained as described in
-# Zhihong Tan's dissertation (Section 2.6). Zhihong has provided his reference profiles to be archived with the code, so
-# this class just reads in the data and interpolates to the simulation pressure grid
-
-cdef class ReferenceRCE(ForcingReferenceBase):
-    def __init__(self, filename):
-        self.filename = filename
-        return
-    @cython.wraparound(True)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, Py_ssize_t n_levels,
-                     double Pg, double Tg, double RH):
-
-        ForcingReferenceBase.initialize(self,Pa, pressure_array, n_levels, Pg, Tg, RH)
-        data = nc.Dataset(self.filename, 'r')
-        # Arrays must be flipped (low to high pressure) to use numpy interp function
-        pressure_ref = data.variables['p_full'][::-1]
-        temperature_ref = data.variables['temp_rc'][::-1]
-        qt_ref = data.variables['yv_rc'][::-1]
-        u_ref = data.variables['u'][::-1]
-        v_ref = data.variables['v'][::-1]
-
-        self.temperature = np.array(np.interp(pressure_array, pressure_ref, temperature_ref),
-                                    dtype=np.double, order='c')
-        self.qt = np.array(np.interp(pressure_array, pressure_ref, qt_ref), dtype=np.double, order='c')
-        self.u = np.array(np.interp(pressure_array, pressure_ref, u_ref), dtype=np.double, order='c')
-        self.v = np.array(np.interp(pressure_array, pressure_ref, v_ref), dtype=np.double, order='c')
-
-
-        cdef:
-            double pd, pv
-            Py_ssize_t k
-        # computing entropy assuming sub-saturated
-        for k in xrange(n_levels):
-            pv = pv_c(pressure_array[k], self.qt[k], self.qt[k])
-            pd = pd_c(pressure_array[k], self.qt[k], self.qt[k])
-
-            self.rv[k] =  self.qt[k]/(1.0-self.qt[k])
-            self.s[k] = (sd_c(pd, self.temperature[k]) * (1.0 - self.qt[k])
-                         + sv_c(pv, self.temperature[k]) * self.qt[k])
-            self.u[k] = self.u[k]*0.5 - 5.0
-
-        return
-
-
-# Control simulations use AdjustedMoistAdiabat
-# Reference temperature profile correspondends to a moist adiabat
-# Reference moisture profile corresponds to a fixed relative humidity given the reference temperature profile
-cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
-    def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
-
-        self.L_fp = LH.L_fp
-        self.Lambda_fp = LH.Lambda_fp
-        self.CC = ClausiusClapeyron()
-        self.CC.initialize(namelist, LH, Pa)
-
-        return
-    cpdef get_pv_star(self, t):
-        return self.CC.LT.fast_lookup(t)
-
-    cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
-        cdef:
-            double qv = qt - ql - qi
-            double qd = 1.0 - qt
-            double pd = pd_c(p0, qt, qv)
-            double pv = pv_c(p0, qt, qv)
-            double Lambda = self.Lambda_fp(T)
-            double L = self.L_fp(T, Lambda)
-
-        return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
-
-    cpdef eos(self, double p0, double s, double qt):
-        cdef:
-            double T, qv, qc, ql, qi, lam
-        eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
-        return T, ql, qi
-
-
-
-    cpdef initialize(self, ParallelMPI.ParallelMPI Pa,
-                   double [:] pressure_array, Py_ssize_t n_levels, double Pg, double Tg, double RH):
-        '''
-        Initialize the forcing reference profiles. These profiles use the temperature corresponding to a moist adiabat,
-        but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
-        '''
-        ForcingReferenceBase.initialize(self,Pa, pressure_array, n_levels, Pg, Tg, RH)
-
-        cdef double pvg = self.get_pv_star(Tg)
-        cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
-        cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
-
-
-        cdef double temperature, ql, qi, pv
-
-        # Compute reference state thermodynamic profiles
-        for k in xrange(n_levels):
-            temperature, ql, qi = self.eos(pressure_array[k], sg, qtg)
-            pv = self.get_pv_star(temperature) * RH
-            self.qt[k] = eps_v * pv / (pressure_array[k] + (eps_v-1.0)*pv)
-            self.s[k] = self.entropy(pressure_array[k],temperature, self.qt[k] , 0.0, 0.0)
-            self.temperature[k] = temperature
-            self.rv[k] = self.qt[k]/(1.0-self.qt[k])
-            self.u[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
-
-        return
 
 
 
