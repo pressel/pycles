@@ -24,7 +24,6 @@ cdef extern from "grid.h":
         double [3] dx
         double [3] dxi
 
-
         double zp_half_0
         double zp_0
 
@@ -38,7 +37,11 @@ cdef extern from "grid.h":
         double * imetl;
         double * imetl_half
 
+        double * dzpl_half
+        double * dzpl
 
+        double * zpl_half
+        double * zpl
 
 
 cdef class Grid:
@@ -66,6 +69,9 @@ cdef class Grid:
 
         double [:] dzp
         double [:] dzp_half
+
+        double [:] dzpl
+        double [:] dzpl_half
 
         double [:] met;
         double [:] met_half;

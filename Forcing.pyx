@@ -110,20 +110,20 @@ cdef class ForcingBomex:
                 if Gr.zp_half[k] <= 1500.0:
                     self.dtdt[k] = (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_half[k])     #K/s
                 if Gr.zp_half[k] > 1500.0:
-                    self.dtdt[k] = (-2.0/(3600 * 24.0) + (Gr.zl_half[k] - 1500.0)
+                    self.dtdt[k] = (-2.0/(3600 * 24.0) + (Gr.zp_half[k] - 1500.0)
                                     * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0_half[k])
 
                 #Set large scale drying
                 if Gr.zp_half[k] <= 300.0:
                     self.dqtdt[k] = -1.2e-8   #kg/(kg * s)
-                if Gr.zp_half[k] > 300.0 and Gr.zl_half[k] <= 500.0:
-                    self.dqtdt[k] = -1.2e-8 + (Gr.zl_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
+                if Gr.zp_half[k] > 300.0 and Gr.zp_half[k] <= 500.0:
+                    self.dqtdt[k] = -1.2e-8 + (Gr.zp_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
 
                 #Set large scale subsidence
                 if Gr.zp_half[k] <= 1500.0:
-                    self.subsidence[k] = 0.0 + Gr.zl_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
-                if Gr.zp_half[k] > 1500.0 and Gr.zl_half[k] <= 2100.0:
-                    self.subsidence[k] = -0.65/100 + (Gr.zl_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
+                    self.subsidence[k] = 0.0 + Gr.zp_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
+                if Gr.zp_half[k] > 1500.0 and Gr.zp_half[k] <= 2100.0:
+                    self.subsidence[k] = -0.65/100 + (Gr.zp_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
 
 
         #Initialize Statistical Output
@@ -1279,7 +1279,7 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    tendencies[ijk] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k]
+                    tendencies[ijk] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
 
     return
 

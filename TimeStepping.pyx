@@ -250,7 +250,7 @@ cdef class TimeStepping:
                         for isedv in xrange(DV.nsedv):
                             w = fmax(fabs( DV.values[DV.sedv_index[isedv]*Gr.dims.npg + ijk ] + PV.values[w_shift+ijk]), w)
 
-                        cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2]))
+                        cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*(1.0/Gr.dzpl[k])))
 
         mpi.MPI_Allreduce(&cfl_max_local,&self.cfl_max,1,
                           mpi.MPI_DOUBLE,mpi.MPI_MAX,Pa.comm_world)

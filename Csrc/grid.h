@@ -34,4 +34,10 @@ struct DimStruct {
         double *imetl;
         double *metl_half;
         double *imetl_half;
+
+        double *zpl;
+        double *zpl_half;
+
+        double *dzpl_half;
+        double *dzpl;
         };

@@ -322,8 +322,6 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.v0 = 0.0
     RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
 
-
-
     #Now loop and set the initial condition
     #First set the velocities
     count = 0
