@@ -19,7 +19,7 @@ void scalar_flux_divergence(struct DimStruct *dims, double *alpha0, double *alph
     const ssize_t stencil[3] = {istride,jstride,1};
     const ssize_t sm1 = -stencil[d];
 
-    double * ijacl_half = dims-> ijacl_half;
+    double * imetl_half = dims-> imetl_half;
 
     if(d == 2){
         for(ssize_t i=imin; i<imax; i++){
@@ -28,7 +28,7 @@ void scalar_flux_divergence(struct DimStruct *dims, double *alpha0, double *alph
                 const ssize_t jshift = j * jstride;
                 for(ssize_t k=kmin; k<kmax; k++){
                     const ssize_t ijk = ishift + jshift + k;
-                    tendency[ijk] -= alpha0_half[k] * (flux[ijk] - flux[ijk + sm1])*dxi * ijacl_half[k];
+                    tendency[ijk] -= alpha0_half[k] * (flux[ijk] - flux[ijk + sm1])*dxi * imetl_half[k];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -65,8 +65,8 @@ void momentum_flux_divergence(struct DimStruct *dims, double *alpha0, double *al
     const ssize_t stencil[3] = {istride,jstride,1};
     const ssize_t sm1 = -stencil[d_advecting];
 
-    double * ijacl = dims -> ijacl;
-    double * ijacl_half = dims -> ijacl_half;
+    double * imetl = dims -> imetl;
+    double * imetl_half = dims -> imetl_half;
 
     if(d_advecting == 2){
         if(d_advected != 2){
@@ -76,7 +76,7 @@ void momentum_flux_divergence(struct DimStruct *dims, double *alpha0, double *al
                     const ssize_t jshift = j * jstride;
                     for(ssize_t k=kmin; k<kmax; k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        tendency[ijk] -= alpha0_half[k] * (flux[ijk] - flux[ijk + sm1])*dxi * ijacl_half[k];
+                        tendency[ijk] -= alpha0_half[k] * (flux[ijk] - flux[ijk + sm1])*dxi * imetl_half[k];
                     } // End k loop
                 } // End j loop
             } // End i loop
@@ -89,7 +89,7 @@ void momentum_flux_divergence(struct DimStruct *dims, double *alpha0, double *al
                     const ssize_t jshift = j * jstride;
                     for(ssize_t k=kmin; k<kmax; k++){
                         const ssize_t ijk = ishift + jshift + k;
-                        tendency[ijk] -= alpha0[k] * (flux[ijk] - flux[ijk + sm1])*dxi * ijacl[k];
+                        tendency[ijk] -= alpha0[k] * (flux[ijk] - flux[ijk + sm1])*dxi * imetl[k];
                     } // End k loop
                 } // End j loop
             } // End i loop

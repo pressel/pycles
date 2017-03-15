@@ -141,7 +141,7 @@ cdef class Grid:
 
 
         cdef double zp_max = self.dims.n[2] * self.dims.dx[2]
-        beta =  1.0/ 100000.0 #8000.0
+        beta =  1.0/ 8000.0
         self.dims.dx[2] = (1.0/beta) * np.log(zp_max * (np.exp(beta)-1) + 1)/self.dims.n[2]
         self.dims.dxi[2] = 1.0/self.dims.dx[2]
 
@@ -190,30 +190,30 @@ cdef class Grid:
             self.dzp_half[k] = self.zp[k] - self.zp[k-1]
             self.dzp[k] = self.zp_half[k+1] - self.zp_half[k]
 
-        self.jac = beta * np.exp(beta * np.array(self.z))/(np.exp(beta) - 1)
-        self.jac_half = beta * np.exp(beta * np.array(self.z_half))/(np.exp(beta) - 1)
+        self.met = beta * np.exp(beta * np.array(self.z))/(np.exp(beta) - 1)
+        self.met_half = beta * np.exp(beta * np.array(self.z_half))/(np.exp(beta) - 1)
 
 
-        self.ijac = 1.0/np.array(self.jac)
-        self.ijac_half = 1.0/np.array(self.jac_half)
+        self.imet = 1.0/np.array(self.met)
+        self.imet_half = 1.0/np.array(self.met_half)
 
-        self.jacl = self.extract_local_ghosted(np.array(self.jac),2)
-        self.jacl_half = self.extract_local_ghosted(np.array(self.jac_half),2)
+        self.metl = self.extract_local_ghosted(np.array(self.met),2)
+        self.metl_half = self.extract_local_ghosted(np.array(self.met_half),2)
 
-        self.ijacl = self.extract_local_ghosted(np.array(self.ijac),2)
-        self.ijacl_half = self.extract_local_ghosted(np.array(self.ijac_half),2)
+        self.imetl = self.extract_local_ghosted(np.array(self.imet),2)
+        self.imetl_half = self.extract_local_ghosted(np.array(self.imet_half),2)
 
-        self.dims.jac = &self.jac[0]
-        self.dims.jac_half = &self.jac_half[0]
+        self.dims.met = &self.met[0]
+        self.dims.met_half = &self.met_half[0]
 
-        self.dims.ijac = &self.ijac[0]
-        self.dims.ijac_half = &self.ijac_half[0]
+        self.dims.imet = &self.imet[0]
+        self.dims.imet_half = &self.imet_half[0]
 
-        self.dims.jacl = &self.jacl[0]
-        self.dims.jacl_half = &self.jacl_half[0]
+        self.dims.metl = &self.metl[0]
+        self.dims.metl_half = &self.metl_half[0]
 
-        self.dims.ijacl = &self.ijacl[0]
-        self.dims.ijacl_half = &self.ijacl_half[0]
+        self.dims.imetl = &self.imetl[0]
+        self.dims.imetl_half = &self.imetl_half[0]
 
         return
 
