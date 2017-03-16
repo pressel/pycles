@@ -104,7 +104,7 @@ void bvf_dry(struct DimStruct* dims,  double* restrict p0, double* restrict T,do
             const ssize_t jshift = j * jstride;
             for (k=kmin+1;k<kmax-1;k++){
                 const ssize_t ijk = ishift + jshift + k;
-                bvf[ijk] = g/theta[ijk]*(interp_2(theta[ijk],theta[ijk+1])-interp_2(theta[ijk-1],theta[ijk]))*dzi;
+                bvf[ijk] = g/theta[ijk]*(interp_2(theta[ijk],theta[ijk+1])-interp_2(theta[ijk-1],theta[ijk]))*dzi*dims->imetl_half[k];
             } // End k loop
         } // End j loop
     } // End i loop
