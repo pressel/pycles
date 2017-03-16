@@ -128,8 +128,6 @@ cdef class Grid:
         :return:
         '''
 
-
-
         self.x_half = np.empty((self.dims.n[0]+2*self.dims.gw),dtype=np.double,order='c')
         self.x = np.empty((self.dims.n[0]+2*self.dims.gw),dtype=np.double,order='c')
 
