@@ -103,27 +103,27 @@ cdef class ForcingBomex:
 
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
-                self.ug[k] = -10.0 + (1.8e-3)*Gr.zl_half[k]
+                self.ug[k] = -10.0 + (1.8e-3)*Gr.zpl_half[k]
 
                 #Set large scale cooling
                 # Convert given form of tendencies (theta) to temperature tendency
-                if Gr.zp_half[k] <= 1500.0:
+                if Gr.zpl_half[k] <= 1500.0:
                     self.dtdt[k] = (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_half[k])     #K/s
-                if Gr.zp_half[k] > 1500.0:
-                    self.dtdt[k] = (-2.0/(3600 * 24.0) + (Gr.zp_half[k] - 1500.0)
+                if Gr.zpl_half[k] > 1500.0:
+                    self.dtdt[k] = (-2.0/(3600 * 24.0) + (Gr.zpl_half[k] - 1500.0)
                                     * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0_half[k])
 
                 #Set large scale drying
-                if Gr.zp_half[k] <= 300.0:
+                if Gr.zpl_half[k] <= 300.0:
                     self.dqtdt[k] = -1.2e-8   #kg/(kg * s)
-                if Gr.zp_half[k] > 300.0 and Gr.zp_half[k] <= 500.0:
-                    self.dqtdt[k] = -1.2e-8 + (Gr.zp_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
+                if Gr.zpl_half[k] > 300.0 and Gr.zpl_half[k] <= 500.0:
+                    self.dqtdt[k] = -1.2e-8 + (Gr.zpl_half[k] - 300.0)*(0.0 - -1.2e-8)/(500.0 - 300.0) #kg/(kg * s)
 
                 #Set large scale subsidence
-                if Gr.zp_half[k] <= 1500.0:
-                    self.subsidence[k] = 0.0 + Gr.zp_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
-                if Gr.zp_half[k] > 1500.0 and Gr.zp_half[k] <= 2100.0:
-                    self.subsidence[k] = -0.65/100 + (Gr.zp_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
+                if Gr.zpl_half[k] <= 1500.0:
+                    self.subsidence[k] = 0.0 + Gr.zpl_half[k]*(-0.65/100.0 - 0.0)/(1500.0 - 0.0)
+                if Gr.zpl_half[k] > 1500.0 and Gr.zpl_half[k] <= 2100.0:
+                    self.subsidence[k] = -0.65/100 + (Gr.zpl_half[k] - 1500.0)* (0.0 - -0.65/100.0)/(2100.0 - 1500.0)
 
 
         #Initialize Statistical Output
@@ -353,13 +353,13 @@ cdef class ForcingDyCOMS_RF01:
         if self.rf02_flag:
             with nogil:
                 for k in range(Gr.dims.nlg[2]):
-                    self.subsidence[k] = -Gr.zl_half[k] * self.divergence
-                    self.ug[k] = 3.0 + 4.3*Gr.zl_half[k]/1000.0
-                    self.vg[k] = -9.0 + 5.6 * Gr.zl_half[k]/1000.0
+                    self.subsidence[k] = -Gr.zpl_half[k] * self.divergence
+                    self.ug[k] = 3.0 + 4.3*Gr.zpl_half[k]/1000.0
+                    self.vg[k] = -9.0 + 5.6 * Gr.zpl_half[k]/1000.0
         else:
             with nogil:
                 for k in range(Gr.dims.nlg[2]):
-                    self.subsidence[k] = -Gr.zl_half[k] * self.divergence
+                    self.subsidence[k] = -Gr.zpl_half[k] * self.divergence
                     self.ug[k] = 7.0
                     self.vg[k] = -5.5
 
@@ -466,15 +466,15 @@ cdef class ForcingRico:
         with nogil:
             for k in range(Gr.dims.nlg[2]):
                 self.dtdt[k] = self.dtdt[k] * exner_c(Ref.p0_half[k])
-                if Gr.zl_half[k] <= 2260.0:
-                    self.subsidence[k] = -(0.005/2260.0) * Gr.zl_half[k]
+                if Gr.zpl_half[k] <= 2260.0:
+                    self.subsidence[k] = -(0.005/2260.0) * Gr.zpl_half[k]
                 else:
                     self.subsidence[k] = -0.005
-                if Gr.zl_half[k]<=2980.0:
-                    self.dqtdt[k] = (-1.0 + 1.3456/2980.0 * Gr.zl_half[k])/86400.0/1000.0
+                if Gr.zpl_half[k]<=2980.0:
+                    self.dqtdt[k] = (-1.0 + 1.3456/2980.0 * Gr.zpl_half[k])/86400.0/1000.0
                 else:
                     self.dqtdt[k] = 0.3456/86400.0/1000.0
-                self.ug[k] = -9.9 + 2.0e-3 * Gr.zl_half[k]
+                self.ug[k] = -9.9 + 2.0e-3 * Gr.zpl_half[k]
                 self.vg[k] = -3.8
 
 
@@ -669,9 +669,9 @@ cdef class ForcingCGILS:
 
         # Obtain the moisture floor and find the max index corresponding to z <= 1300 m
 
-        self.qt_floor = np.interp(1300.0, Gr.zl_half, self.nudge_qt)
+        self.qt_floor = np.interp(1300.0, Gr.zpl_half, self.nudge_qt)
         for k in range(Gr.dims.gw, Gr.dims.nlg[2]-Gr.dims.gw):
-            if Gr.zl_half[k] > 1300.0:
+            if Gr.zpl_half[k] > 1300.0:
                 break
             self.floor_index = k
 
@@ -682,19 +682,19 @@ cdef class ForcingCGILS:
 
         with nogil:
             for k in range(Gr.dims.nlg[2]):
-                if Gr.zl_half[k] < self.z_relax:
+                if Gr.zpl_half[k] < self.z_relax:
                     self.gamma_zhalf[k] = 0.0
-                elif Gr.zl_half[k] > self.z_relax_plus:
+                elif Gr.zpl_half[k] > self.z_relax_plus:
                     self.gamma_zhalf[k] = self.tau_inverse
                 else:
-                    self.gamma_zhalf[k] = 0.5*self.tau_inverse * (1.0 - cos(pi* (Gr.zl_half[k]-self.z_relax)/(self.z_relax_plus-self.z_relax)))
+                    self.gamma_zhalf[k] = 0.5*self.tau_inverse * (1.0 - cos(pi* (Gr.zpl_half[k]-self.z_relax)/(self.z_relax_plus-self.z_relax)))
 
-                if Gr.zl[k] < self.z_relax:
+                if Gr.zpl[k] < self.z_relax:
                     self.gamma_z[k] = 0.0
-                elif Gr.zl[k] > self.z_relax_plus:
+                elif Gr.zpl[k] > self.z_relax_plus:
                     self.gamma_z[k] = self.tau_inverse
                 else:
-                    self.gamma_z[k] = 0.5*self.tau_inverse * (1.0 - cos(pi* (Gr.zl[k]-self.z_relax)/(self.z_relax_plus-self.z_relax)))
+                    self.gamma_z[k] = 0.5*self.tau_inverse * (1.0 - cos(pi* (Gr.zpl[k]-self.z_relax)/(self.z_relax_plus-self.z_relax)))
 
         #Initialize Statistical Output
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
@@ -1012,7 +1012,7 @@ cdef class ForcingZGILS:
         with nogil:
             for k in xrange(kmax, gw-1, -1):
                 if qtmean[k] <= self.alpha_h * self.forcing_ref.qt[k]:
-                    self.h_BL = Gr.zl_half[k]
+                    self.h_BL = Gr.zpl_half[k]
 
         # Now set the relaxation coefficient (depends on time-varying BL height diagnosed above)
         # Find the source term profiles for temperature, moisture nudging (2 components: free tropo and BL)
@@ -1021,7 +1021,7 @@ cdef class ForcingZGILS:
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
                 self.source_rh_nudge[k] = 0.0
-                z_h = Gr.zl_half[k]/self.h_BL
+                z_h = Gr.zpl_half[k]/self.h_BL
                 if z_h < 1.2:
                     xi_relax[k] = 0.0
                 elif z_h > 1.5:
@@ -1029,7 +1029,7 @@ cdef class ForcingZGILS:
                 else:
                     xi_relax[k] = 0.5*self.tau_relax_inverse*(1.0 -   cos(pi*(z_h-1.2)/(1.5-1.2)))
                 # here we also set the nudging to 20% rh in the BL
-                if Gr.zl_half[k] < 2000.0:
+                if Gr.zpl_half[k] < 2000.0:
                     pv_star = self.CC.LT.fast_lookup(tmean[k])
                     qv_star = eps_v * pv_star/(Ref.p0_half[k] + (eps_v-1.0)*pv_star)
                     if qtmean[k] < 0.2 * qv_star:
