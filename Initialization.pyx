@@ -20,7 +20,7 @@ from Forcing cimport AdjustedMoistAdiabat
 from Thermodynamics cimport LatentHeat
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
-
+import cPickle
 
 
 def InitializationFactory(namelist):
@@ -46,10 +46,12 @@ def InitializationFactory(namelist):
             return InitRico
         elif casename == 'CGILS':
             return  InitCGILS
-
         elif casename == 'ZGILS':
             return  InitZGILS
-
+        elif casename == 'GCMFixed':
+            return InitGCMFixed
+        elif casename == 'GCMVarying':
+            return InitGCMVarying
         else:
             pass
 
@@ -1258,7 +1260,145 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     return
 
+def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
 
+
+
+    #Generate the reference profiles
+    data_path = './forcing/f_data_tv.pkl'
+    fh = open(data_path, 'r')
+    input_data_tv = cPickle.load(fh)
+    fh.close()
+
+    RS.Pg = input_data_tv['surf_dict']['pfull'][0]
+    RS.Tg = np.mean(input_data_tv['surf_dict']['temp'][:,0], axis=0)
+    RS.qtg = np.mean(input_data_tv['surf_dict']['sphum'][:,0], axis=0)
+    RS.u0 = 0.0
+    RS.v0 = 0.0
+
+    RS.initialize(Gr, Th, NS, Pa)
+
+
+
+
+    np.random.seed(Pa.rank)
+
+
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr, 'qt')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift, e_varshift
+        Py_ssize_t ijk
+
+
+    #First build the initial profiles
+    p_gcm = input_data_tv['surf_dict']['pfull'][::-1]
+    t_gcm = np.mean(input_data_tv['surf_dict']['temp'][:,::-1],axis=0)
+    qt_gcm = np.mean(input_data_tv['surf_dict']['sphum'][:,::-1], axis=0)
+    u_gcm = np.mean(input_data_tv['surf_dict']['ucomp'][:,::-1], axis=0)
+    v_gcm = np.mean(input_data_tv['surf_dict']['vcomp'][:,::-1], axis=0)
+
+    cdef double [:] t = np.interp(RS.p0_half, p_gcm, t_gcm)
+    cdef double [:] qt = np.interp(RS.p0_half, p_gcm, qt_gcm)
+    cdef double [:] u = np.interp(RS.p0_half, p_gcm, u_gcm)
+    cdef double [:] v = np.interp(RS.p0_half, p_gcm, v_gcm)
+
+    #Generate initial perturbations (here we are generating more than we need)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+
+    #Now set the initial condition
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = u[k]
+                PV.values[v_varshift + ijk] = v[k]
+                PV.values[w_varshift + ijk] = 0.0
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t[k],qt[k],0.0,0.0)
+                PV.values[qt_varshift + ijk] = qt[k]
+                if Gr.zpl_half[k] < 200.0:
+                    PV.values[s_varshift + ijk] = PV.values[s_varshift + ijk]  + (theta_pert[ijk] - 0.5)*0.1
+
+
+    return
+
+
+def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
+
+
+
+    #Generate the reference profiles
+    data_path = './forcing/f_data_tv.pkl'
+    fh = open(data_path, 'r')
+    input_data_tv = cPickle.load(fh)
+    fh.close()
+
+    RS.Pg = input_data_tv['surf_dict']['pfull'][0]
+    RS.Tg = input_data_tv['surf_dict']['temp'][0,0]
+    RS.qtg = input_data_tv['surf_dict']['sphum'][0,0]
+    RS.u0 = 0.0
+    RS.v0 = 0.0
+
+    RS.initialize(Gr, Th, NS, Pa)
+
+
+
+
+    np.random.seed(Pa.rank)
+
+
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr, 'qt')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift, e_varshift
+        Py_ssize_t ijk
+
+
+    #First build the initial profiles
+    p_gcm = input_data_tv['surf_dict']['pfull'][::-1]
+    t_gcm = input_data_tv['surf_dict']['temp'][0,::-1]
+    qt_gcm = input_data_tv['surf_dict']['sphum'][0,::-1]
+    u_gcm = input_data_tv['surf_dict']['ucomp'][0,::-1]
+    v_gcm = input_data_tv['surf_dict']['vcomp'][0,::-1]
+
+    cdef double [:] t = np.interp(RS.p0_half, p_gcm, t_gcm)
+    cdef double [:] qt = np.interp(RS.p0_half, p_gcm, qt_gcm)
+    cdef double [:] u = np.interp(RS.p0_half, p_gcm, u_gcm)
+    cdef double [:] v = np.interp(RS.p0_half, p_gcm, v_gcm)
+
+    #Generate initial perturbations (here we are generating more than we need)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+
+    #Now set the initial condition
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = u[k]
+                PV.values[v_varshift + ijk] = v[k]
+                PV.values[w_varshift + ijk] = 0.0
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t[k],qt[k],0.0,0.0)
+                PV.values[qt_varshift + ijk] = qt[k]
+                if Gr.zpl_half[k] < 200.0:
+                    PV.values[s_varshift + ijk] = PV.values[s_varshift + ijk]  + (theta_pert[ijk] - 0.5)*0.1
+
+
+
+    return
 
 
 
