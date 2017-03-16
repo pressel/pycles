@@ -1456,7 +1456,7 @@ cdef class ForcingGCMVarying:
             with nogil:
                 for k in xrange(0,Gr.dims.nlg[2]):
 
-                    zmax = Gr.z[kmax]
+                    zmax = Gr.zp[kmax]
                     if Gr.z[k] >= zmax - 1500.0:
                          weight = 1.0/exp((Gr.z[k] - zmax + 1500.0)/300.0 )
                     else:
