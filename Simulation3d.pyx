@@ -233,7 +233,7 @@ class Simulation3d:
                 self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
 
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
-                self.Fo.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+                self.Fo.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.TS, self.Pa)
                 self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
 
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
@@ -281,11 +281,6 @@ class Simulation3d:
 
                 self.Restart.write(self.Pa)
                 self.Pa.root_print('Finished Dumping Restart Files!')
-
-
-
-
-
 
         return
 
