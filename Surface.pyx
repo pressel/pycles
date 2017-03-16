@@ -125,8 +125,9 @@ cdef class SurfaceBase:
             Py_ssize_t ql_shift, qt_shift
             double [:] t_mean =  Pa.HorizontalMean(Gr, &DV.values[t_shift])
             double cp_, lam, lv, pv, pd, sv, sd
-            double dzi = 1.0/Gr.dims.dx[2]
+            double dzi = 1.0/Gr.dims.zp_0
             double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
+
 
         if self.dry_case:
             with nogil:
@@ -425,7 +426,7 @@ cdef class SurfaceGabls(SurfaceBase):
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
 
             double theta_rho_b, Nb2, Ri
-            double zb = Gr.dims.dx[2] * 0.5
+            double zb = Gr.dims.zp_half_0
             double [:] cm= np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
             double ch=0.0
 
@@ -674,9 +675,9 @@ cdef class SurfaceRico(SurfaceBase):
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
 
-        self.cm = self.cm*(log(20.0/self.z0)/log(Gr.zl_half[Gr.dims.gw]/self.z0))**2
-        self.ch = self.ch*(log(20.0/self.z0)/log(Gr.zl_half[Gr.dims.gw]/self.z0))**2
-        self.cq = self.cq*(log(20.0/self.z0)/log(Gr.zl_half[Gr.dims.gw]/self.z0))**2
+        self.cm = self.cm*(log(20.0/self.z0)/log(Gr.zpl_half[Gr.dims.gw]/self.z0))**2
+        self.ch = self.ch*(log(20.0/self.z0)/log(Gr.zpl_half[Gr.dims.gw]/self.z0))**2
+        self.cq = self.cq*(log(20.0/self.z0)/log(Gr.zpl_half[Gr.dims.gw]/self.z0))**2
 
 
         cdef double pv_star = pv_c(Ref.Pg, Ref.qtg, Ref.qtg)
@@ -776,7 +777,7 @@ cdef class SurfaceCGILS(SurfaceBase):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
 
         # Find the scalar transfer coefficient consistent with the vertical grid spacing
-        cdef double z1 = Gr.dims.dx[2] * 0.5
+        cdef double z1 = Gr.dims.zp_half_0
         cdef double cq = 1.2e-3
         cdef double u10m=0.0, ct_ic=0.0, z1_ic=0.0
         if self.loc == 12:
@@ -821,7 +822,7 @@ cdef class SurfaceCGILS(SurfaceBase):
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
-            double zb = Gr.dims.dx[2] * 0.5
+            double zb = Gr.dims.zp_half_0
             double [:] cm = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
             double pv_star = self.CC.LT.fast_lookup(self.T_surface)
             double qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
@@ -951,7 +952,7 @@ cdef class SurfaceZGILS(SurfaceBase):
 
             double ustar, t_flux, b_flux
             double theta_rho_b, Nb2, Ri
-            double zb = Gr.dims.dx[2] * 0.5
+            double zb = Gr.dims.zp_half_0
             double [:] cm = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
             double ch=0.0
 
