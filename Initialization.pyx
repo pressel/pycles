@@ -1278,12 +1278,7 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
     RS.v0 = 0.0
 
     RS.initialize(Gr, Th, NS, Pa)
-
-
-
-
     np.random.seed(Pa.rank)
-
 
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
@@ -1326,7 +1321,6 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
                 if Gr.zpl_half[k] < 200.0:
                     PV.values[s_varshift + ijk] = PV.values[s_varshift + ijk]  + (theta_pert[ijk] - 0.5)*0.1
 
-
     return
 
 
@@ -1349,11 +1343,7 @@ def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
     RS.initialize(Gr, Th, NS, Pa)
 
-
-
-
     np.random.seed(Pa.rank)
-
 
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
@@ -1395,8 +1385,6 @@ def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
                 PV.values[qt_varshift + ijk] = qt[k]
                 if Gr.zpl_half[k] < 200.0:
                     PV.values[s_varshift + ijk] = PV.values[s_varshift + ijk]  + (theta_pert[ijk] - 0.5)*0.1
-
-
 
     return
 
