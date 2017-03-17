@@ -17,7 +17,6 @@ cdef class SurfaceBudgetNone:
 
 cdef class SurfaceBudget:
     cdef:
-        bint constant_sst
         double ocean_heat_flux
         double water_depth_initial
         double water_depth_final
