@@ -118,11 +118,6 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
-        # Surface budget parameters
-        try:
-            self.ocean_heat_flux = namelist['surface_budget']['ocean_heat_flux']
-        except:
-            self.ocean_heat_flux = 0.0
 
         # Radiation parameters
         #--Namelist options related to gas concentrations
@@ -162,12 +157,23 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
     cpdef get_pv_star(self, double t):
         return self.CC.LT.fast_lookup(t)
-    cpdef entropy_fixedRH(self, double p0, double T, double rh):
+    cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
         cdef:
-            double pv = self.get_pv_star(T) * rh
-            double pd = p0 - pv
-            double qt = pv/(pd * eps_vi + pv) #should double check this
-        return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt
+            double qv = qt - ql - qi
+            double qd = 1.0 - qt
+            double pd = pd_c(p0, qt, qv)
+            double pv = pv_c(p0, qt, qv)
+            double Lambda = self.Lambda_fp(T)
+            double L = self.L_fp(T, Lambda)
+
+        return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
+
+    cpdef eos(self, double p0, double s, double qt):
+        cdef:
+            double T, qv, qc, ql, qi, lam
+        eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
+        return T, ql, qi
+
 
     cpdef initialize_radiation(self):
         #Initialize rrtmg_lw and rrtmg_sw
@@ -176,6 +182,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         c_rrtmg_sw_init(&cpdair)
 
         cdef:
+            Py_ssize_t k
             Py_ssize_t nlevels = np.shape(self.p_levels)[0]
             Py_ssize_t nlayers = np.shape(self.p_layers)[0]
 
@@ -234,7 +241,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         tmpTrace = np.zeros((nlayers, 9),dtype=np.double,order='F')
         for i in xrange(9):
             for k in xrange(nlayers):
-                tmpTrace[k,i] = g*100.0/(self.p_levels[k] - self.p_levels[k+1])*(trpath[k+1,i]-trpath[k,i])
+                tmpTrace[k,i] = g/(self.p_levels[k] - self.p_levels[k+1])*(trpath[k+1,i]-trpath[k,i])
 
         self.o3vmr  = np.array(tmpTrace[:,0],dtype=np.double, order='F')
         self.co2vmr = np.array(tmpTrace[:,1],dtype=np.double, order='F')
@@ -245,38 +252,38 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.cfc12vmr =  np.array(tmpTrace[:,6],dtype=np.double, order='F')
         self.cfc22vmr = np.array( tmpTrace[:,7],dtype=np.double, order='F')
         self.ccl4vmr  =  np.array(tmpTrace[:,8],dtype=np.double, order='F')
-        return
 
 
 
     cpdef compute_radiation(self):
+
         cdef:
             Py_ssize_t k
             Py_ssize_t ncols = 1
             Py_ssize_t nlayers = self.nlayers
             Py_ssize_t nlevels = self.nlevels
-            double [:,:] play_in = np.array(np.expand_dims(self.p_layers,axis=0), dtype=np.double, order='F')
-            double [:,:] plev_in = np.array(np.expand_dims(self.p_levels,axis=0), dtype=np.double, order='F')
+            double [:,:] play_in = np.array(np.expand_dims(self.p_layers,axis=0), dtype=np.double, order='F')/100.0
+            double [:,:] plev_in = np.array(np.expand_dims(self.p_levels,axis=0), dtype=np.double, order='F')/100.0
             double [:,:] tlay_in = np.array(np.expand_dims(self.t_layers,axis=0), dtype=np.double, order='F')
 
             double [:,:] tlev_in = np.zeros((ncols,nlevels), dtype=np.double, order='F')
             double [:] tsfc_in = np.ones((ncols),dtype=np.double,order='F') * self.sst
             double [:,:] h2ovmr_in = np.zeros((ncols, nlayers),dtype=np.double,order='F')
             double [:,:] o3vmr_in  = np.array(np.expand_dims(self.o3vmr,axis=0),dtype=np.double,order='F')
-            double [:,:] co2vmr_in = np.zeros(np.expand_dims(self.co2vmr,axis=0),dtype=np.double,order='F')
-            double [:,:] ch4vmr_in = np.zeros(np.expand_dims(self.ch4vmr,axis=0),dtype=np.double,order='F')
-            double [:,:] n2ovmr_in = np.zeros(np.expand_dims(self.n2ovmr,axis=0),dtype=np.double,order='F')
-            double [:,:] o2vmr_in  = np.zeros(np.expand_dims(self.o2vmr,axis=0),dtype=np.double,order='F')
-            double [:,:] cfc11vmr_in = np.zeros(np.expand_dims(self.cfc11vmr,axis=0),dtype=np.double,order='F')
-            double [:,:] cfc12vmr_in = np.zeros(np.expand_dims(self.cfc12vmr,axis=0),dtype=np.double,order='F')
-            double [:,:] cfc22vmr_in = np.zeros(np.expand_dims(self.cfc22vmr,axis=0),dtype=np.double,order='F')
-            double [:,:] ccl4vmr_in = np.zeros(np.expand_dims(self.ccl4vmr,axis=0),dtype=np.double,order='F')
+            double [:,:] co2vmr_in = np.array(np.expand_dims(self.co2vmr,axis=0),dtype=np.double,order='F')
+            double [:,:] ch4vmr_in = np.array(np.expand_dims(self.ch4vmr,axis=0),dtype=np.double,order='F')
+            double [:,:] n2ovmr_in = np.array(np.expand_dims(self.n2ovmr,axis=0),dtype=np.double,order='F')
+            double [:,:] o2vmr_in  = np.array(np.expand_dims(self.o2vmr,axis=0),dtype=np.double,order='F')
+            double [:,:] cfc11vmr_in = np.array(np.expand_dims(self.cfc11vmr,axis=0),dtype=np.double,order='F')
+            double [:,:] cfc12vmr_in = np.array(np.expand_dims(self.cfc12vmr,axis=0),dtype=np.double,order='F')
+            double [:,:] cfc22vmr_in = np.array(np.expand_dims(self.cfc22vmr,axis=0),dtype=np.double,order='F')
+            double [:,:] ccl4vmr_in = np.array(np.expand_dims(self.ccl4vmr,axis=0),dtype=np.double,order='F')
             double [:,:] emis_in = np.ones((ncols, 16),dtype=np.double,order='F') * 0.95
             double [:,:] cldfr_in  = np.zeros((ncols,nlayers), dtype=np.double,order='F')
             double [:,:] cicewp_in = np.zeros((ncols,nlayers),dtype=np.double,order='F')
             double [:,:] cliqwp_in = np.zeros((ncols,nlayers),dtype=np.double,order='F')
             double [:,:] reice_in  = np.zeros((ncols,nlayers),dtype=np.double,order='F')
-            double [:,:] reliq_in  = np.zeros((ncols,nlayers),dtype=np.double,order='F')
+            double [:,:] reliq_in  = np.ones((ncols,nlayers),dtype=np.double,order='F') * 2.5
             double [:] coszen_in = np.ones(ncols,dtype=np.double,order='F') *self.coszen
             double [:] asdir_in = np.ones(ncols,dtype=np.double,order='F') * self.adir
             double [:] asdif_in = np.ones(ncols,dtype=np.double,order='F') * self.adif
@@ -314,7 +321,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         with nogil:
             tlev_in[0,0] = self.sst
             for k in xrange(1,nlayers):
-                tlev_in[0,0] = 0.5 * (tlay_in[0,k-1]+tlay_in[0,k])
+                tlev_in[0,k] = 0.5 * (tlay_in[0,k-1]+tlay_in[0,k])
             tlev_in[0, nlayers] = 2.0 * tlay_in[0,nlayers-1] - tlev_in[0,nlayers-1]
             for k in xrange(nlayers):
                 h2ovmr_in[0,k] = self.qv_layers[k]/(1.0 - self.qv_layers[k]) * Rv/Rd
@@ -350,61 +357,206 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             &tauaer_sw_in[0,0,0], &ssaaer_sw_in[0,0,0], &asmaer_sw_in[0,0,0], &ecaer_sw_in[0,0,0], &uflx_sw_out[0,0],
             &dflx_sw_out[0,0], &hr_sw_out[0,0], &uflxc_sw_out[0,0], &dflxc_sw_out[0,0], &hrc_sw_out[0,0])
 
+
         with nogil:
-            self.lw_up_srf = uflx_lw_out[0,0]
-            self.lw_down_srf = dflx_lw_out[0,0]
-            self.sw_up_srf  =  uflx_sw_out[0,0]
-            self.sw_down_srf = dflx_sw_out[0,0]
+            # self.lw_up_srf = uflx_lw_out[0,0]
+            # self.lw_down_srf = dflx_lw_out[0,0]
+            # self.sw_up_srf  =  uflx_sw_out[0,0]
+            # self.sw_down_srf = dflx_sw_out[0,0]
             for k in xrange(nlayers):
                 self.t_tend_rad[k] = (hr_lw_out[0,k] + hr_sw_out[0,k])/86400.0
 
-        return
-
-    cpdef compute_rce(self):
-        self.compute_radiation()
-        with nogil:
-            for k in xrange(self.index_tropopause, self.nlayers):
-                self.t_layers[k] += self.t_tend_rad[k] * self.dt_rce
-
-
-        # compute entropy at tropopause
-
 
         return
+
 
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH):
-        ForcingReferenceBase.initialize(self,Pa, pressure_array,  Pg, Tg, RH)
-        self.dt_rce  = 3600.0 #1 hr?
 
-        self.RH_tropo = RH
+        ForcingReferenceBase.initialize(self,Pa, pressure_array,  Pg, Tg, RH)
+        self.sst = Tg
+        print('ForcingReference.initialize', self.sst, Tg)
+        self.dt_rce  =3600.0 #1 hr?
+
         # pressure coordinates
-        self.nlayers = 205
+        self.nlayers = 100
         self.nlevels = self.nlayers + 1
         self.p_levels = np.linspace(Pg, 0.0, num=self.nlevels, endpoint=True)
         self.p_layers = 0.5 * np.add(self.p_levels[1:],self.p_levels[:-1])
+
         self.initialize_radiation()
 
-        # make the initial guess, here we try using the 1xC02 RCE profile
-        data = nc.Dataset('./CGILSdata/RCE_1xCO2.nc', 'r')
-        # Arrays must be flipped (low to high pressure) to use numpy interp function
-        pressure_ref = data.variables['p_full'][::-1]
-        temperature_ref = data.variables['temp_rc'][::-1]
-        qt_ref = data.variables['yv_rc'][::-1]
-        self.t_layers = np.array(np.interp(self.p_layers, pressure_ref, temperature_ref), dtype=np.double, order='c')
-        self.qv_layers = np.array(np.interp(self.p_layers, pressure_ref, qt_ref), dtype=np.double, order='c')
-        cdef double qv_sat
-        with nogil:
-            for k in xrange(self.nlayers):
-                qv_sat = self.CC.LT.fast_lookup(self.t_layers[k]) #self.get_pv_star(self.t_layers[k])
-                if self.qv_layers[k]/qv_sat > 0.01:
-                    self.index_tropopause = k #self.p_layers[k]
-                else:
-                    break
+
+        self.t_layers = np.zeros(np.shape(self.p_layers), dtype=np.double, order='c')
+        self.qv_layers =np.zeros(np.shape(self.p_layers), dtype=np.double, order='c')
+        cdef double pvg = self.get_pv_star(Tg) * RH
+        cdef double qtg =  eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
+        cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
+        RH = 0.3
+
+
+
+        for k in xrange(self.nlayers):
+            temperature, ql, qi = self.eos(self.p_layers[k], sg, qtg)
+            if np.isnan(temperature):
+                temperature = self.t_layers[k-1]
+            pv = self.get_pv_star(temperature) * RH
+            self.qv_layers[k] = fmax(eps_v * pv / (pressure_array[k] + (eps_v-1.0)*pv),0.0)
+            self.t_layers[k] = temperature
+            # print(self.t_layers[k])
+
+
+        self.delta_t = np.ones(np.shape(self.t_layers),dtype =np.double, order='c')
+        self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
+
+
+
+
+        cdef Py_ssize_t count = -1
+        while np.max(self.delta_t) > 0.01 and count < 10000:
+            # print('RCE iteration ', count)
+            self.rce_step()
+            count += 1
+            # print(count,np.max(self.delta_t) )
+
+        # plt.figure(count)
+        # plt.plot(self.t_layers, self.p_layers[:])
+        # plt.gca().invert_yaxis()
+        # plt.show()
+
+
+
+        self.temperature = np.array(np.interp(pressure_array, self.p_layers, self.t_layers), dtype=np.double, order='c')
+        self.qt = np.array(np.interp(pressure_array, self.p_layers, self.qv_layers), dtype=np.double, order='c')
+        cdef Py_ssize_t nz = np.shape(pressure_array)[0]
+        for k in xrange(nz):
+            self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
+            self.rv[k] = self.qt[k]/(1.0-self.qt[k])
+            self.u[k] = min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
 
 
         return
 
+    cpdef update_qv(self, double p, double t, double rh):
+        cdef double pv, pd, qv
+        pv = self.get_pv_star(t) * rh
+        pd = p - pv
+        qv = pv/(pd * eps_vi + pv)
+        return  qv
 
+
+    cpdef rce_step(self):
+        # update temperatures due to radiation
+
+        self.compute_radiation()
+
+        cdef:
+            Py_ssize_t k
+            double [:] t_0 = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
+            double [:] t_1 = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
+            double [:] t_2 = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
+
+        with nogil:
+            for k in xrange(self.nlayers):
+                t_0[k] = self.t_layers[k] + self.t_tend_rad[k] * self.dt_rce
+
+        # plt.figure('T0')
+        # plt.plot(t_0, self.p_layers)
+        # plt.gca().invert_yaxis()
+        # plt.show()
+
+        # update first temperature above surface
+        cdef:
+            double dp = self.p_levels[0] - self.p_levels[1]
+            double [:] coeff = np.zeros(5)
+        coeff[0] = 1.0
+        coeff[3] = cpd*dp/g/sigma_sb/self.dt_rce
+        coeff[4] = -cpd*dp/g/sigma_sb/self.dt_rce * t_0[0] - self.sst*self.sst*self.sst*self.sst
+
+        cdef:
+            complex [:] all_roots = np.roots(coeff)
+            double [:] real_roots = np.real(all_roots)
+            double new_temp =  0.0 #np.max(real_roots[np.iscomplex(all_roots)==False])
+
+        for k in xrange(4):
+            if not np.iscomplex(all_roots[k]):
+                new_temp = np.maximum(new_temp, real_roots[k])
+
+
+        t_1[0] = new_temp
+        # Update qv of the first layer to match the updated temperature
+        cdef:
+            double t_half, qv_half, lrc
+            double factor = cpd / (g * sigma_sb * self.dt_rce)
+
+        self.qv_layers[0] = self.update_qv(self.p_layers[0], t_1[0], 0.3)
+
+        # Now take the  two lowest layers (k=0,1) and update according to critical lapse rate
+        # again have to solve a quartic equation
+        dp = self.p_layers[0] - self.p_layers[1]
+        t_half = 0.5 * (t_1[0] + t_0[1])
+        qv_half = 0.5 * (self.qv_layers[0] + self.qv_layers[1])
+        lrc = 6.5e-3/g * (qv_half * Rv + (1.0-qv_half) * Rd) * t_half/self.p_levels[1] * dp
+
+        if t_1[0] - t_0[1] > lrc:
+            coeff[0] = 1.0
+            coeff[1] = 0.0
+            coeff[2] = 0.0
+            coeff[3] = factor * (self.p_levels[0] - self.p_levels[2])
+            coeff[4] = (-factor * (self.p_levels[0] - self.p_levels[1]) * t_1[0]
+                        - factor * (self.p_levels[1]-self.p_levels[2]) *  (lrc + t_0[1])
+                        - t_1[0] * t_1[0] * t_1[0] * t_1[0])
+            all_roots = np.roots(coeff)
+            real_roots = np.real(all_roots)
+            for k in xrange(4):
+                if not np.iscomplex(all_roots[k]):
+                    new_temp = np.maximum(new_temp, real_roots[k])
+
+            t_2[0] = new_temp
+            t_1[1] =t_2[0] - lrc
+        else:
+            t_2[0] = t_1[0]
+            t_1[1] = t_0[1]
+        self.qv_layers[0] = self.update_qv(self.p_layers[0], t_2[0], 0.3)
+        self.qv_layers[1] = self.update_qv(self.p_layers[1], t_1[1], 0.3)
+
+        cdef double p_tropo, rh
+
+
+        for k in xrange(2,self.nlayers):
+            dp = self.p_layers[k-1] - self.p_layers[k]
+            t_half = 0.5 * (t_1[k-1] + t_0[k])
+            qv_half = 0.5 * (self.qv_layers[k-1] + self.qv_layers[k])
+            lrc = 6.5e-3/g * (qv_half * Rv + (1.0-qv_half) * Rd) * t_half/self.p_levels[k] * dp
+            if t_1[k-1] - t_0[k] > lrc:
+                t_2[k-1] =( (self.p_levels[k-1] - self.p_levels[k]) * t_1[k-1]
+                            + (self.p_levels[k]-self.p_levels[k+1]) * (lrc + t_0[k]))/(self.p_levels[k-1]-self.p_levels[k+1])
+                t_1[k] = t_2[k-1] - lrc
+                self.qv_layers[k-1] = self.update_qv(self.p_layers[k-1], t_2[k-1], 0.3)
+                self.qv_layers[k] = self.update_qv(self.p_layers[k], t_1[k], 0.3)
+                p_tropo = self.p_layers[k]
+            else:
+                t_2[k-1] = t_1[k-1]
+                t_1[k] = t_0[k]
+                rh = 0.01 / p_tropo * (self.p_layers[k-1] - p_tropo) + 0.01
+                self.qv_layers[k-1] = self.update_qv(self.p_layers[k-1], t_2[k-1], rh)
+                rh = 0.01 / p_tropo * (self.p_layers[k] - p_tropo) + 0.01
+
+                self.qv_layers[k] = self.update_qv(self.p_layers[k], t_1[k], rh)
+        t_2[self.nlayers-1] = t_1[self.nlayers-1]
+        # print('p_tropo', p_tropo)
+
+        # plt.figure('T1')
+        # plt.plot(t_1, self.p_layers,'-b')
+        # plt.plot(t_2, self.p_layers,'-r')
+        # plt.gca().invert_yaxis()
+        # plt.show()
+
+        with nogil:
+            for k in xrange(self.nlayers):
+                self.delta_t[k] = fabs(t_2[k] - self.t_layers[k])
+                self.t_layers[k] = t_2[k]
+
+        return
 
 # Control simulations use AdjustedMoistAdiabat
 # Reference temperature profile correspondends to a moist adiabat

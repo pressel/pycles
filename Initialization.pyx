@@ -15,7 +15,9 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
 cimport ReferenceState
-from Forcing cimport ForcingReferenceBase, ReferenceRCE, AdjustedMoistAdiabat
+cimport Surface
+# from Forcing cimport ForcingReferenceBase, ReferenceRCE, AdjustedMoistAdiabat
+from ForcingReference cimport ForcingReferenceBase, ReferenceRCE, AdjustedMoistAdiabat, InteractiveReferenceRCE
 from Thermodynamics cimport LatentHeat
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
@@ -53,7 +55,8 @@ def InitializationFactory(namelist):
             pass
 
 def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH):
+                     ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur, NetCDFIO_Stats NS,
+                     ParallelMPI.ParallelMPI Pa, LatentHeat LH):
 
     #Generate reference profiles
     RS.Pg = 1.0e5
@@ -96,7 +99,7 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
     return
 
 def InitSaturatedBubble(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+                       ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
     #Generate reference profiles
     RS.Pg = 1.0e5
@@ -180,7 +183,8 @@ def InitSaturatedBubble(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVari
     return
 
 def InitSullivanPatton(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+                       ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur, NetCDFIO_Stats NS,
+                       ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
     #Generate the reference profiles
     RS.Pg = 1.0e5  #Pressure at ground
@@ -249,7 +253,8 @@ def InitSullivanPatton(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVaria
     return
 
 def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+              ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur,
+              NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
     #First generate the reference profiles
     RS.Pg = 1.015e5  #Pressure at ground
@@ -359,7 +364,8 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     return
 
 def InitGabls(namelist,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+              ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur,
+              NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
     #Generate the reference profiles
     RS.Pg = 1.0e5  #Pressure at ground
@@ -436,7 +442,8 @@ def InitGabls(namelist,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
     return
 
 def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
+                    ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur,
+                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
 
     '''
     Initialize the DYCOMS_RF01 case described in
@@ -574,7 +581,8 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
 
 def InitDYCOMS_RF02(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+                    ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur,
+                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
 
     # Generate Reference Profiles
@@ -688,7 +696,8 @@ def InitDYCOMS_RF02(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
     return
 
 def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+              ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur,
+              NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
     '''
     Initialization for the smoke cloud case
     Bretherton, C. S., and coauthors, 1999:
@@ -782,7 +791,8 @@ def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
 def InitRico(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+             ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur,
+             NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
 
     #First generate the reference profiles
     RS.Pg = 1.0154e5  #Pressure at ground
@@ -884,7 +894,8 @@ def InitRico(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
 def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
+              ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur,
+              NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
     #
     try:
         loc = namelist['meta']['CGILS']['location']
@@ -1148,7 +1159,8 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
 def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
+              ReferenceState.ReferenceState RS, Th, Surface.SurfaceBase Sur,
+              NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
 
 
     cdef:
@@ -1161,12 +1173,14 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     n_double_co2 = int(np.log2(co2_factor))
 
     try:
-        reference_type = namelist['forcing']['reference_profile']
+        reference_type = str(namelist['forcing']['reference_profile'])
     except:
         reference_type = 'AdjustedAdiabat'
 
     if n_double_co2 == 0 and reference_type == 'AdjustedAdiabat':
         reference_profiles = AdjustedMoistAdiabat(namelist, LH, Pa)
+    elif reference_type == 'InteractiveRCE':
+        reference_profiles = InteractiveReferenceRCE(namelist, LH, Pa)
     else:
         filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
         reference_profiles = ReferenceRCE(filename)
@@ -1196,7 +1210,12 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     cdef double Pg_parcel = 1000.0e2
     cdef double Tg_parcel = 295.0
     cdef double RH_ref = 0.3
-    reference_profiles.initialize(Pa, RS.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)
+    if reference_type == 'InteractiveRCE':
+        reference_profiles.initialize(Pa, RS.p0_half[:], RS.Pg, Sur.T_surface, RH_ref)
+    else:
+        reference_profiles.initialize(Pa, RS.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)
+
+
 
     cdef:
         Py_ssize_t i, j, k, ijk, ishift, jshift

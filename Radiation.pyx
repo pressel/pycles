@@ -12,7 +12,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 cimport Surface
-from Forcing cimport ForcingReferenceBase, ReferenceRCE, AdjustedMoistAdiabat
+from ForcingReference cimport *
 from Thermodynamics cimport LatentHeat
 # import pylab as plt
 
@@ -74,7 +74,7 @@ cdef class RadiationBase:
         return
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -132,7 +132,7 @@ cdef class RadiationNone(RadiationBase):
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
@@ -159,7 +159,7 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
         return
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur,  ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -287,7 +287,7 @@ cdef class RadiationSmoke(RadiationBase):
         RadiationBase.initialize(self, Gr, NS, Pa)
         return
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
         return
 
@@ -424,15 +424,15 @@ cdef class RadiationRRTM(RadiationBase):
             except:
                 co2_factor = 1.0
             try:
-                reference_type = namelist['forcing']['reference_profile']
+                self.reference_type = str(namelist['forcing']['reference_profile'])
             except:
                 reference_type = 'AdjustedAdiabat'
-            if int(np.log2(co2_factor)) == 0 and reference_type == 'AdjustedAdiabat':
+            if int(np.log2(co2_factor)) == 0 and self.reference_type == 'AdjustedAdiabat':
                 self.profile_name = 'cgils_ctl_s'+str(loc)
                 self.reference_profile = AdjustedMoistAdiabat(namelist, LH, Pa)
-                self.Tg_adiabat = 295.0
-                self.Pg_adiabat = 1000.0e2
-                self.RH_adiabat = 0.3
+
+            elif self.reference_type == 'InteractiveRCE':
+                self.reference_profile = InteractiveReferenceRCE(namelist, LH, Pa)
             else:
                 self.profile_name = 'cgils_ctl_s'+str(loc)
                 filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
@@ -535,7 +535,7 @@ cdef class RadiationRRTM(RadiationBase):
 
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
 
         cdef:
@@ -556,7 +556,15 @@ cdef class RadiationRRTM(RadiationBase):
             pressures = np.arange(25*100, 1015*100, 10*100)
             pressures = np.array(pressures[::-1], dtype=np.double)
             n_adiabat = np.shape(pressures)[0]
-            self.reference_profile.initialize(Pa, pressures, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
+            if self.reference_type == 'InteractiveRCE':
+                print('Rad.initialize_profiles', Sur.T_surface)
+                self.RH_adiabat = 0.3
+                self.reference_profile.initialize(Pa, pressures, Ref.Pg, Sur.T_surface, self.RH_adiabat)
+            else:
+                self.Tg_adiabat = 295.0
+                self.Pg_adiabat = 1000.0e2
+                self.RH_adiabat = 0.3
+                self.reference_profile.initialize(Pa, pressures, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
             temperatures =np.array( self.reference_profile.temperature)
             vapor_mixing_ratios = np.array(self.reference_profile.rv)
 
@@ -775,8 +783,13 @@ cdef class RadiationRRTM(RadiationBase):
                  Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,
                  ParallelMPI.ParallelMPI Pa):
 
-
         if TS.rk_step == 0:
+            if self.reference_type == 'InteractiveRCE':
+                print(self.reference_profile.sst, Sur.T_surface)
+                if np.abs(self.reference_profile.sst - Sur.T_surface) > 1.0:
+                    self.initialize_profiles(Gr, Ref, DV, Sur, Pa)
+
+
             if self.radiation_frequency <= 0.0:
                 self.update_RRTM(Gr, Ref, PV, DV,Sur, Pa)
             elif TS.t >= self.next_radiation_calculate:

@@ -4,6 +4,7 @@ cimport Thermodynamics
 
 cdef class ForcingReferenceBase:
     cdef:
+        double sst
         double [:] s
         double [:] qt
         double [:] temperature
@@ -35,21 +36,13 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
         Thermodynamics.ClausiusClapeyron CC
-        double sst
-        double RH_tropo
         double dt_rce
-        Py_ssize_t index_tropopause
-        double h_tropopause
-        double ocean_heat_flux
-        double sw_down_srf
-        double sw_up_srf
-        double lw_down_srf
-        double lw_up_srf
         Py_ssize_t nlayers
         Py_ssize_t nlevels
         double [:] p_levels
         double [:] p_layers
         double [:] t_layers
+        double [:] delta_t
         double [:] qv_layers
         double [:] t_tend_rad
         double [:] o3vmr
@@ -70,8 +63,10 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         double adif
         double adir
     cpdef get_pv_star(self, double t)
-    cpdef entropy_fixedRH(self, double p0, double T, double rh)
+    cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
+    cpdef eos(self, double p0, double s, double qt)
     cpdef initialize_radiation(self)
     cpdef compute_radiation(self)
-    cpdef compute_rce(self)
+    cpdef update_qv(self, double p, double t, double rh)
+    cpdef rce_step(self)
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
