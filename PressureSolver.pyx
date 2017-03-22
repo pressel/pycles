@@ -50,7 +50,7 @@ cdef class PressureSolver:
 
 
         #Remove mean u3
-        u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
+        cdef double [:] u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
         remove_mean_u3(&Gr.dims,&u3_mean[0],&PV.values[w_shift])
 
         #Zero the divergence array [Perhaps we can replace this with a C-Call to Memset]
