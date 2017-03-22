@@ -158,7 +158,7 @@ class Simulation3d:
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
-                #self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
+                self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 #self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
