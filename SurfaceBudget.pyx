@@ -45,11 +45,16 @@ cdef class SurfaceBudget:
         try:
             self.ocean_heat_flux = namelist['surface_budget']['ocean_heat_flux']
         except:
-            tv_data_path = './forcing/f_data_tv.pkl'
+            tv_data_path = self.file
             fh = open(tv_data_path, 'r')
             tv_input_data = cPickle.load(fh)
             fh.close()
-            self.ocean_heat_flux = np.mean(tv_input_data['surf_dict']['flux_oceanq_ts'])
+
+            lat_in = tv_input_data['lat']
+            lat_idx = (np.abs(lat_in - self.lat)).argmin()
+
+            self.ocean_heat_flux = tv_input_data['q_flux'][lat_idx]
+
         try:
             self.water_depth_initial = namelist['surface_budget']['water_depth_initial']
         except:

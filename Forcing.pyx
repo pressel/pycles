@@ -1135,7 +1135,8 @@ cdef class ForcingZGILS:
 
 cdef class ForcingGCMFixed:
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
-
+        self.lat = namelist['gcm']['latitude']
+        self.file = str(namelist['gcm']['file'])
         return
 
     @cython.wraparound(True)
@@ -1144,42 +1145,62 @@ cdef class ForcingGCMFixed:
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
 
-        tv_data_path = './forcing/f_data_tv.pkl'
-        fh = open(tv_data_path, 'r')
-        tv_input_data = cPickle.load(fh)
+        #Generate the reference profiles
+        lat = self.lat
+        fh = open(self.file, 'r')
+        input_data_tv = cPickle.load(fh)
         fh.close()
 
-        lat_idx = tv_input_data['surf_dict']['lat_idx']
-        lat = tv_input_data['surf_dict']['lat'][lat_idx]
-        p_gcm = tv_input_data['surf_dict']['pfull'][::-1]
-        u_geos = np.mean(tv_input_data['surf_dict']['u_geos'][:,::-1], axis=0)
-        v_geos = np.mean(tv_input_data['surf_dict']['v_geos'][:,::-1], axis=0)
-        temp_hadv = tv_input_data['surf_dict']['dt_tg_hadv'][0,::-1]
-        temp_fino = tv_input_data['surf_dict']['dt_tg_fino'][0,::-1]
-        shum_hadv = tv_input_data['surf_dict']['dt_qg_hadv'][0,::-1]
+        print input_data_tv.keys()
+
+        lat_in = input_data_tv['lat']
+        lat_idx = (np.abs(lat_in - lat)).argmin()
+        print np.array(lat_in[lat_idx])
+        self.lat = lat_in[lat_idx]
+        p_in = input_data_tv['p'][:,lat_idx]
+        u_geos_in = input_data_tv['u_geos'][:,lat_idx]
+        v_geos_in = input_data_tv['v_geos'][:,lat_idx]
+        shum_hadv_in = input_data_tv['shum_hadv'][:,lat_idx]
+        temp_hadv_in = input_data_tv['temp_hadv'][:,lat_idx]
+        omega_in = input_data_tv['omega'][:,lat_idx]
 
 
-        self.p_gcm = p_gcm
 
+        # lat_idx = tv_input_data['surf_dict']['lat_idx']
+        # lat = tv_input_data['surf_dict']['lat'][lat_idx]
+        # p_gcm = tv_input_data['surf_dict']['pfull'][::-1]
+        # u_geos = np.mean(tv_input_data['surf_dict']['u_geos'][:,::-1], axis=0)
+        # v_geos = np.mean(tv_input_data['surf_dict']['v_geos'][:,::-1], axis=0)
+        # temp_hadv = tv_input_data['surf_dict']['dt_tg_hadv'][0,::-1]
+        # temp_fino = tv_input_data['surf_dict']['dt_tg_fino'][0,::-1]
+        # shum_hadv = tv_input_data['surf_dict']['dt_qg_hadv'][0,::-1]
+        #
+        self.p_gcm = p_in
         self.coriolis_param = 2.0 * omega * sin(lat * pi / 180.0 )
+        #
+        #
+
+        self.ug = np.interp(Ref.p0_half, p_in, u_geos_in)
+        self.vg = np.interp(Ref.p0_half, p_in, v_geos_in)
+        self.temp_dt_hadv = np.interp(Ref.p0_half, p_in, temp_hadv_in)
+        self.shum_dt = np.interp(Ref.p0_half, p_in, shum_hadv_in)
+        self.subsidence = -np.interp(Ref.p0_half, p_in, omega_in)* (np.array(Ref.alpha0_half))/g
 
 
-        self.ug = np.interp(Ref.p0_half, p_gcm, u_geos)
-        self.vg = np.interp(Ref.p0_half, p_gcm, v_geos)
-
-        temp_hadv = np.mean(tv_input_data['surf_dict']['dt_tg_hadv'][:,::-1], axis=0)
-        temp_fino = np.mean(tv_input_data['surf_dict']['dt_tg_fino'][:,::-1], axis=0)
-
-        self.temp_dt_hadv = np.interp(Ref.p0_half, p_gcm, temp_hadv)
-        self.temp_dt_fino = np.interp(Ref.p0_half, p_gcm, temp_fino)
-
-        shum_hadv = np.mean(tv_input_data['surf_dict']['dt_qg_hadv'][:,::-1], axis=0)
-        self.shum_dt = np.interp(Ref.p0_half, p_gcm, shum_hadv)
-
-        self.subsidence = -np.interp(Ref.p0_half, p_gcm, np.mean(tv_input_data['surf_dict']['omega'][:,::-1],axis=0))* (np.array(Ref.alpha0_half))/g
-
+        #
+        # temp_hadv = np.mean(tv_input_data['surf_dict']['dt_tg_hadv'][:,::-1], axis=0)
+        # temp_fino = np.mean(tv_input_data['surf_dict']['dt_tg_fino'][:,::-1], axis=0)
+        #
+        # self.temp_dt_hadv = np.interp(Ref.p0_half, p_gcm, temp_hadv)
+        # self.temp_dt_fino = np.interp(Ref.p0_half, p_gcm, temp_fino)
+        #
+        # shum_hadv = np.mean(tv_input_data['surf_dict']['dt_qg_hadv'][:,::-1], axis=0)
+        # self.shum_dt = np.interp(Ref.p0_half, p_gcm, shum_hadv)
+        #
+        # self.subsidence = -np.interp(Ref.p0_half, p_gcm, np.mean(tv_input_data['surf_dict']['omega'][:,::-1],axis=0))* (np.array(Ref.alpha0_half))/g
+        #
         NS.add_profile('ls_subsidence', Gr, Pa)
-        NS.add_profile('ls_dtdt_fino', Gr, Pa)
+        #NS.add_profile('ls_dtdt_fino', Gr, Pa)
         NS.add_profile('ls_dtdt_hadv', Gr, Pa)
         NS.add_profile('ls_dqtdt', Gr, Pa)
         NS.add_profile('ls_subs_dtdt', Gr, Pa)
@@ -1267,7 +1288,7 @@ cdef class ForcingGCMFixed:
 
 
         NS.write_profile('ls_subsidence',self.subsidence[Gr.dims.gw:-Gr.dims.gw],Pa)
-        NS.write_profile('ls_dtdt_fino',self.temp_dt_fino[Gr.dims.gw:-Gr.dims.gw],Pa)
+        #NS.write_profile('ls_dtdt_fino',self.temp_dt_fino[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('ls_dtdt_hadv',self.temp_dt_hadv[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('ls_dqtdt',self.shum_dt[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('ls_subs_dtdt', mean_tendency[Gr.dims.gw:-Gr.dims.gw], Pa)

@@ -152,7 +152,6 @@ class Simulation3d:
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
             self.force_io()
-
         while (self.TS.t < self.TS.t_max):
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
@@ -168,7 +167,6 @@ class Simulation3d:
 
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
-
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.TS, self.Pa)
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)

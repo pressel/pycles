@@ -170,6 +170,8 @@ cdef class SurfaceGCMFixed(SurfaceBase):
         double gustiness
         double z0
         double ct
+        str file
+        double lat
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,

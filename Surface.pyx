@@ -1009,7 +1009,8 @@ cdef class SurfaceGCMFixed(SurfaceBase):
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
-
+        self.file = str(namelist['gcm']['file'])
+        self.lat = namelist['gcm']['latitude']
 
         return
 
@@ -1017,12 +1018,15 @@ cdef class SurfaceGCMFixed(SurfaceBase):
 
         SurfaceBase.initialize(self, Gr, Ref, NS, Pa)
 
-        tv_data_path = './forcing/f_data_tv.pkl'
+        tv_data_path = self.file
         fh = open(tv_data_path, 'r')
         tv_input_data = cPickle.load(fh)
         fh.close()
 
-        self.T_surface = tv_input_data['surf_dict']['t_surf_ts_mean']
+        lat_in = tv_input_data['lat']
+        lat_idx = (np.abs(lat_in - self.lat)).argmin()
+
+        self.T_surface = tv_input_data['ts'][lat_idx]
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,

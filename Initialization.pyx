@@ -1266,16 +1266,29 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
 
 
     #Generate the reference profiles
-    data_path = './forcing/f_data_tv.pkl'
+    data_path = namelist['gcm']['file']
+    lat = namelist['gcm']['latitude']
     fh = open(data_path, 'r')
     input_data_tv = cPickle.load(fh)
     fh.close()
 
-    RS.Pg = input_data_tv['surf_dict']['pfull'][0]
-    RS.Tg = np.mean(input_data_tv['surf_dict']['temp'][:,0], axis=0)
-    RS.qtg = np.mean(input_data_tv['surf_dict']['sphum'][:,0], axis=0)
+    lat_in = input_data_tv['lat']
+    lat_idx = (np.abs(lat_in - lat)).argmin()
+    p_in = input_data_tv['p'][::-1,lat_idx]
+    t_in = input_data_tv['t'][::-1,lat_idx]
+    shum_in = input_data_tv['shum'][::-1,lat_idx]
+    u_in = input_data_tv['u'][::-1,lat_idx]
+    v_in = input_data_tv['v'][::-1, lat_idx]
+
+
+
+    RS.Pg = p_in[0]
+    RS.Tg = t_in[0]
+    RS.qtg = shum_in[0]
     RS.u0 = 0.0
     RS.v0 = 0.0
+
+
 
     RS.initialize(Gr, Th, NS, Pa)
     np.random.seed(Pa.rank)
@@ -1291,17 +1304,14 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
         Py_ssize_t ijk
 
 
-    #First build the initial profiles
-    p_gcm = input_data_tv['surf_dict']['pfull'][::-1]
-    t_gcm = np.mean(input_data_tv['surf_dict']['temp'][:,::-1],axis=0)
-    qt_gcm = np.mean(input_data_tv['surf_dict']['sphum'][:,::-1], axis=0)
-    u_gcm = np.mean(input_data_tv['surf_dict']['ucomp'][:,::-1], axis=0)
-    v_gcm = np.mean(input_data_tv['surf_dict']['vcomp'][:,::-1], axis=0)
 
-    cdef double [:] t = np.interp(RS.p0_half, p_gcm, t_gcm)
-    cdef double [:] qt = np.interp(RS.p0_half, p_gcm, qt_gcm)
-    cdef double [:] u = np.interp(RS.p0_half, p_gcm, u_gcm)
-    cdef double [:] v = np.interp(RS.p0_half, p_gcm, v_gcm)
+    cdef double [:] t = np.interp(RS.p0_half, p_in[::-1], t_in[::-1])
+    cdef double [:] qt = np.interp(RS.p0_half, p_in[::-1], shum_in[::-1])
+    cdef double [:] u = np.interp(RS.p0_half, p_in[::-1], u_in[::-1])
+    cdef double [:] v = np.interp(RS.p0_half, p_in[::-1], v_in[::-1])
+
+
+
 
     #Generate initial perturbations (here we are generating more than we need)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)

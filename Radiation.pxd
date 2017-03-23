@@ -145,6 +145,7 @@ cdef class RadiationGCMGrey(RadiationBase):
         double sw_tau_exponent
         double del_sol
         double lat
+        str file
 
         double lw_tau0
         double sw_tau0

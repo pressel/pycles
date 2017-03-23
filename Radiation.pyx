@@ -1018,6 +1018,8 @@ cdef class RadiationGCMGrey(RadiationBase):
         self.srf_lw_up = 0.0
         self.srf_sw_up = 0.0
 
+        self.lat = namelist['gcm']['latitude']
+        self.file = str(namelist['gcm']['file'])
 
         return
 
@@ -1030,20 +1032,19 @@ cdef class RadiationGCMGrey(RadiationBase):
         NS.add_profile('sw_flux_down', Gr, Pa)
         NS.add_profile('grey_rad_heating', Gr, Pa)
         import cPickle
-        tv_data_path = './forcing/f_data_tv.pkl'
+        tv_data_path = './forcing/f_data.pkl'
         fh = open(tv_data_path, 'r')
         tv_input_data = cPickle.load(fh)
         fh.close()
 
-        lat_idx = tv_input_data['surf_dict']['lat_idx']
-        lat = tv_input_data['surf_dict']['lat'][lat_idx]
+        lat_in = tv_input_data['lat']
+        lat_idx = (np.abs(lat_in - self.lat)).argmin()
 
 
 
-        self.lat = lat * pi/180.0
-        self.p_gcm = tv_input_data['surf_dict']['pfull'][::-1]
-        self.t_gcm = tv_input_data['surf_dict']['temp'][0,::-1]
-
+        self.lat *= pi/180.0
+        self.p_gcm = tv_input_data['p'][::-1, lat_idx]
+        self.t_gcm = tv_input_data['t'][::-1,lat_idx]
 
         RadiationBase.initialize(self, Gr, NS, Pa)
 
@@ -1051,8 +1052,8 @@ cdef class RadiationGCMGrey(RadiationBase):
         self.del_sol = 1.2
         self.insolation = 0.25 * self.solar_constant * (1.0 + self.del_sol * (1.0 - 3.0 * sin(self.lat)**2.0)/4.0)
 
-        self.lw_tau0_pole = 0.72
-        self.lw_tau0_eqtr = 2.88
+        self.lw_tau0_pole = 1.8
+        self.lw_tau0_eqtr = 7.2
 
         self.lw_tau_exponent = 4.0
         self.sw_tau_exponent = 2.0
