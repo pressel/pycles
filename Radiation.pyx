@@ -557,7 +557,6 @@ cdef class RadiationRRTM(RadiationBase):
             pressures = np.array(pressures[::-1], dtype=np.double)
             n_adiabat = np.shape(pressures)[0]
             if self.reference_type == 'InteractiveRCE':
-                print('Rad.initialize_profiles', Sur.T_surface)
                 self.RH_adiabat = 0.3
                 self.reference_profile.initialize(Pa, pressures, Ref.Pg, Sur.T_surface, self.RH_adiabat)
             else:

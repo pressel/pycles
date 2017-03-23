@@ -374,7 +374,6 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
         ForcingReferenceBase.initialize(self,Pa, pressure_array,  Pg, Tg, RH)
         self.sst = Tg
-        print('ForcingReference.initialize', self.sst, Tg)
         self.dt_rce  =3600.0 #1 hr?
 
         # pressure coordinates
@@ -417,6 +416,8 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             self.rce_step()
             count += 1
             # print(count,np.max(self.delta_t) )
+
+        print("interactive RCE ", count, np.max(self.delta_t))
 
         # plt.figure(count)
         # plt.plot(self.t_layers, self.p_layers[:])
