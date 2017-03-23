@@ -784,7 +784,6 @@ cdef class RadiationRRTM(RadiationBase):
 
         if TS.rk_step == 0:
             if self.reference_type == 'InteractiveRCE':
-                print(self.reference_profile.sst, Sur.T_surface)
                 if np.abs(self.reference_profile.sst - Sur.T_surface) > 1.0:
                     self.initialize_profiles(Gr, Ref, DV, Sur, Pa)
 

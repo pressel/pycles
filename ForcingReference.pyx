@@ -392,7 +392,9 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
         RH = 0.3
 
-
+        cdef:
+            Py_ssize_t k
+            double temperature, ql, qi, pv
 
         for k in xrange(self.nlayers):
             temperature, ql, qi = self.eos(self.p_layers[k], sg, qtg)
