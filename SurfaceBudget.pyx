@@ -42,18 +42,19 @@ cdef class SurfaceBudgetNone:
 cdef class SurfaceBudget:
     def __init__(self, namelist):
 
+
         try:
             self.ocean_heat_flux = namelist['surface_budget']['ocean_heat_flux']
         except:
-            tv_data_path = self.file
-            fh = open(tv_data_path, 'r')
+            file=namelist['gcm']['file']
+            fh = open(file, 'r')
             tv_input_data = cPickle.load(fh)
             fh.close()
 
             lat_in = tv_input_data['lat']
-            lat_idx = (np.abs(lat_in - self.lat)).argmin()
+            lat_idx = (np.abs(lat_in - namelist['gcm']['latitude'])).argmin()
 
-            self.ocean_heat_flux = tv_input_data['q_flux'][lat_idx]
+            self.ocean_heat_flux = tv_input_data['qflux'][lat_idx]
 
         try:
             self.water_depth_initial = namelist['surface_budget']['water_depth_initial']
