@@ -170,8 +170,8 @@ class Simulation3d:
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
-                #self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
-                #self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
+                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
+                self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 #self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
