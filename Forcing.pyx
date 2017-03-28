@@ -1155,7 +1155,6 @@ cdef class ForcingGCMFixed:
 
         lat_in = input_data_tv['lat']
         lat_idx = (np.abs(lat_in - lat)).argmin()
-        print np.array(lat_in[lat_idx])
         self.lat = lat_in[lat_idx]
         p_in = input_data_tv['p'][:,lat_idx]
         u_geos_in = input_data_tv['u_geos'][:,lat_idx]
@@ -1163,6 +1162,7 @@ cdef class ForcingGCMFixed:
         shum_hadv_in = input_data_tv['shum_hadv'][:,lat_idx]
         temp_hadv_in = input_data_tv['temp_hadv'][:,lat_idx]
         omega_in = input_data_tv['omega'][:,lat_idx]
+
 
 
 
@@ -1186,6 +1186,11 @@ cdef class ForcingGCMFixed:
         self.shum_dt = np.interp(Ref.p0_half, p_in, shum_hadv_in)
         self.subsidence = -np.interp(Ref.p0_half, p_in, omega_in)* (np.array(Ref.alpha0_half))/g
 
+
+        import pylab as plt
+        plt.figure(1)
+        plt.plot( self.subsidence, Gr.zp_half)
+        plt.show()
 
         #
         # temp_hadv = np.mean(tv_input_data['surf_dict']['dt_tg_hadv'][:,::-1], axis=0)
