@@ -1187,12 +1187,6 @@ cdef class ForcingGCMFixed:
         self.subsidence = -np.interp(Ref.p0_half, p_in, omega_in)* (np.array(Ref.alpha0_half))/g
 
 
-        import pylab as plt
-        plt.figure(1)
-        plt.plot( self.subsidence, Gr.zp_half)
-        plt.show()
-
-        #
         # temp_hadv = np.mean(tv_input_data['surf_dict']['dt_tg_hadv'][:,::-1], axis=0)
         # temp_fino = np.mean(tv_input_data['surf_dict']['dt_tg_fino'][:,::-1], axis=0)
         #
