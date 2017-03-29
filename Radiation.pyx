@@ -1085,9 +1085,10 @@ cdef class RadiationGCMGrey(RadiationBase):
 
         self.dp = abs(Ref.p0_half_global[kmax-1] - Ref.p0_half_global[kmax-2])
         self.p0_les_min = np.min(Ref.p0_half_global)
-        self.p_ext = np.arange(self.p0_les_min - self.dp, 1000.0, -self.dp)
-        self.t_ext = np.interp(np.array(self.p_ext), np.array(self.p_gcm)[:], np.array(self.t_gcm)[:])
+        self.p_ext = np.arange(self.p0_les_min - self.dp, 10.0, -self.dp)
+        self.t_ext = np.interp(np.array(self.p_ext), np.array(self.p_gcm)[::-1], np.array(self.t_gcm)[::-1])
         self.t_ref = np.interp(Ref.p0_half_global[kmax-1],np.array(self.p_gcm)[:], np.array(self.t_gcm)[:] )
+
 
         self.p_ext = np.append(Ref.p0_half_global[Gr.dims.gw:-Gr.dims.gw], self.p_ext)
         self.n_ext_profile = self.p_ext.shape[0]
@@ -1150,8 +1151,8 @@ cdef class RadiationGCMGrey(RadiationBase):
 
         self.t_ext = np.array(self.t_ext) + (temperature_profile[kmax] - self.t_ref  )
 
-
         t_extended = np.append(temperature_profile[Gr.dims.gw:Gr.dims.nlg[2]-Gr.dims.gw], self.t_ext)
+
 
 
         self.t_ext = np.array(self.t_ext) - (temperature_profile[kmax] - self.t_ref)
