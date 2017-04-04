@@ -153,8 +153,10 @@ cdef class RadiationGCMGrey(RadiationBase):
         double odp
         double [:] p_gcm
         double [:] t_gcm
+        double [:] z_gcm
         double [:] p_ext
         double [:] t_ext
+        double [:] z_ext
 
         Py_ssize_t n_ext_profile
 
@@ -168,6 +170,7 @@ cdef class RadiationGCMGrey(RadiationBase):
         double [:] sw_up
         double [:] net_flux
         double [:] h_profile
+        double [:] dsdt_profile
 
         double t_ref
 

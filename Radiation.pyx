@@ -255,8 +255,8 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
                         PV.tendencies[
-                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] 
-                        self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift]) 
+                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
+                        self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift])
 
         return
 
@@ -1031,6 +1031,7 @@ cdef class RadiationGCMGrey(RadiationBase):
         NS.add_profile('sw_flux_up', Gr, Pa)
         NS.add_profile('sw_flux_down', Gr, Pa)
         NS.add_profile('grey_rad_heating', Gr, Pa)
+        NS.add_profile('grey_rad_dsdt', Gr, Pa)
         import cPickle
         tv_data_path = './forcing/f_data.pkl'
         fh = open(tv_data_path, 'r')
@@ -1045,6 +1046,7 @@ cdef class RadiationGCMGrey(RadiationBase):
         self.lat *= pi/180.0
         self.p_gcm = tv_input_data['p'][::-1, lat_idx]
         self.t_gcm = tv_input_data['t'][::-1,lat_idx]
+        self.z_gcm = tv_input_data['z'][::-1,lat_idx]
 
         RadiationBase.initialize(self, Gr, NS, Pa)
 
@@ -1085,10 +1087,9 @@ cdef class RadiationGCMGrey(RadiationBase):
 
         self.dp = abs(Ref.p0_half_global[kmax-1] - Ref.p0_half_global[kmax-2])
         self.p0_les_min = np.min(Ref.p0_half_global)
-        self.p_ext = np.arange(self.p0_les_min - self.dp, 10.0, -self.dp)
+        #self.p_ext = np.arange(self.p0_les_min - self.dp, 10.0, -self.dp)
         self.t_ext = np.interp(np.array(self.p_ext), np.array(self.p_gcm)[::-1], np.array(self.t_gcm)[::-1])
-        self.t_ref = np.interp(Ref.p0_half_global[kmax-1],np.array(self.p_gcm)[:], np.array(self.t_gcm)[:] )
-
+        #self.t_ref = np.interp(Ref.p0_half_global[kmax-1],np.array(self.p_gcm)[::-1], np.array(self.t_gcm)[::-1] )
 
         self.p_ext = np.append(Ref.p0_half_global[Gr.dims.gw:-Gr.dims.gw], self.p_ext)
         self.n_ext_profile = self.p_ext.shape[0]
@@ -1104,6 +1105,7 @@ cdef class RadiationGCMGrey(RadiationBase):
         self.lw_up = np.zeros((self.n_ext_profile), dtype=np.double)
         self.net_flux = np.zeros((self.n_ext_profile), dtype=np.double)
         self.h_profile = np.zeros((self.n_ext_profile), dtype=np.double)
+        self.dsdt_profile = np.zeros((self.n_ext_profile), dtype=np.double)
 
 
         return
@@ -1146,16 +1148,20 @@ cdef class RadiationGCMGrey(RadiationBase):
         temperature_profile = Pa.HorizontalMean(Gr, &DV.values[t_shift])
         qt_profile = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
 
-        #if self.t_ref == 0.0:
-        #    self.t_ref = self.t_ext[0]
+        if self.t_ref == 0.0:
+            self.t_ref = temperature_profile[kmax]
+
+
 
         self.t_ext = np.array(self.t_ext) + (temperature_profile[kmax] - self.t_ref  )
 
+        #print self.t_ref, temperature_profile[kmax], temperature_profile[kmax] - self.t_ref
         t_extended = np.append(temperature_profile[Gr.dims.gw:Gr.dims.nlg[2]-Gr.dims.gw], self.t_ext)
 
 
 
         self.t_ext = np.array(self.t_ext) - (temperature_profile[kmax] - self.t_ref)
+
 
         with nogil:
             for k in xrange(self.n_ext_profile -1):
@@ -1196,6 +1202,12 @@ cdef class RadiationGCMGrey(RadiationBase):
                         ijk = ishift + jshift + k
                         PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/DV.values[t_shift+ijk]/ rho_half[k]
 
+        cdef double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
+        with nogil:
+            for k in xrange(kmin, kmax):
+                self.dsdt_profile[k] = -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/t_mean[k]/ rho_half[k]
+
+
         self.srf_lw_up = self.lw_up[0]
         self.srf_lw_down = self.lw_down[0]
         self.srf_sw_up= self.sw_up[0]
@@ -1220,6 +1232,7 @@ cdef class RadiationGCMGrey(RadiationBase):
         NS.write_profile('sw_flux_up', self.sw_up[0:npts], Pa)
         NS.write_profile('sw_flux_down', self.sw_down[0:npts], Pa)
         NS.write_profile('grey_rad_heating', self.h_profile[0:npts], Pa)
+        NS.write_profile('grey_rad_dsdt', self.dsdt_profile[0:npts], Pa)
 
         return
 

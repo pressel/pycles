@@ -1279,6 +1279,7 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
     shum_in = input_data_tv['shum'][::-1,lat_idx]
     u_in = input_data_tv['u'][::-1,lat_idx]
     v_in = input_data_tv['v'][::-1, lat_idx]
+    z_in = input_data_tv['z'][::-1, lat_idx]
 
 
 
@@ -1305,12 +1306,10 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
 
 
 
-    cdef double [:] t = np.interp(RS.p0_half, p_in[::-1], t_in[::-1])
-    cdef double [:] qt = np.interp(RS.p0_half, p_in[::-1], shum_in[::-1])
-    cdef double [:] u = np.interp(RS.p0_half, p_in[::-1], u_in[::-1])
-    cdef double [:] v = np.interp(RS.p0_half, p_in[::-1], v_in[::-1])
-
-
+    cdef double [:] t = np.interp(Gr.zp_half, z_in, t_in)
+    cdef double [:] qt = np.interp(Gr.zp_half, z_in, shum_in)
+    cdef double [:] u = np.interp(Gr.zp_half, z_in, u_in)
+    cdef double [:] v = np.interp(Gr.zp_half, z_in, v_in)
 
 
     #Generate initial perturbations (here we are generating more than we need)
