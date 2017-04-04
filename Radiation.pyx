@@ -1085,14 +1085,17 @@ cdef class RadiationGCMGrey(RadiationBase):
         cdef Py_ssize_t kmax = npg - gw
 
 
+
+
         self.dp = abs(Ref.p0_half_global[kmax-1] - Ref.p0_half_global[kmax-2])
         self.p0_les_min = np.min(Ref.p0_half_global)
         #self.p_ext = np.arange(self.p0_les_min - self.dp, 10.0, -self.dp)
-        self.t_ext = np.interp(np.array(self.p_ext), np.array(self.p_gcm)[::-1], np.array(self.t_gcm)[::-1])
+        self.t_ext = np.interp(np.array(Gr.zp_half), np.array(self.z_gcm)[:], np.array(self.t_gcm)[:])
         #self.t_ref = np.interp(Ref.p0_half_global[kmax-1],np.array(self.p_gcm)[::-1], np.array(self.t_gcm)[::-1] )
 
-        self.p_ext = np.append(Ref.p0_half_global[Gr.dims.gw:-Gr.dims.gw], self.p_ext)
+        self.p_ext = np.interp(np.array(Gr.zp_half), np.array(self.z_gcm)[:], np.array(self.p_gcm)[:])
         self.n_ext_profile = self.p_ext.shape[0]
+
 
         self.sw_tau = self.sw_tau0 * (np.array(self.p_ext)/101325.0)**self.sw_tau_exponent
         self.lw_tau = self.lw_tau0 * (self.lw_linear_frac *  np.array(self.p_ext)/101325.0 +

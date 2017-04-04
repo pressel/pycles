@@ -1728,7 +1728,7 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
                     tendencies[ijk] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
-                tendencies[ijk+1] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
+                #tendencies[ijk+1] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
 
     return
 
