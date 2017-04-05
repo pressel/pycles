@@ -24,6 +24,7 @@ from libc.math cimport pow, cbrt, exp, fmin, fmax, sin
 from thermodynamic_functions cimport cpm_c
 include 'parameters.pxi'
 from profiles import profile_data
+from scipy.interpolate import pchip
 
 import cython
 def RadiationFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
@@ -1087,14 +1088,19 @@ cdef class RadiationGCMGrey(RadiationBase):
 
 
 
+
+
+
+
         self.dp = abs(Ref.p0_half_global[kmax-1] - Ref.p0_half_global[kmax-2])
         self.p0_les_min = np.min(Ref.p0_half_global)
         #self.p_ext = np.arange(self.p0_les_min - self.dp, 10.0, -self.dp)
-        self.t_ext = np.interp(np.array(Gr.zp_half), np.array(self.z_gcm)[:], np.array(self.t_gcm)[:])
+        self.t_ext = interp_pchip(np.array(Gr.zp_half), np.array(self.z_gcm)[:], np.array(self.t_gcm)[:])
         #self.t_ref = np.interp(Ref.p0_half_global[kmax-1],np.array(self.p_gcm)[::-1], np.array(self.t_gcm)[::-1] )
 
-        self.p_ext = np.interp(np.array(Gr.zp_half), np.array(self.z_gcm)[:], np.array(self.p_gcm)[:])
+        self.p_ext = interp_pchip(np.array(Gr.zp_half), np.array(self.z_gcm)[:], np.log(np.array(self.p_gcm)[:]))
         self.n_ext_profile = self.p_ext.shape[0]
+        self.p_ext = np.exp(np.array(self.p_ext))
 
 
         self.sw_tau = self.sw_tau0 * (np.array(self.p_ext)/101325.0)**self.sw_tau_exponent
@@ -1156,14 +1162,14 @@ cdef class RadiationGCMGrey(RadiationBase):
 
 
 
-        self.t_ext = np.array(self.t_ext) + (temperature_profile[kmax] - self.t_ref  )
+        #self.t_ext = np.array(self.t_ext) + (temperature_profile[kmax] - self.t_ref  )
 
-        #print self.t_ref, temperature_profile[kmax], temperature_profile[kmax] - self.t_ref
-        t_extended = np.append(temperature_profile[Gr.dims.gw:Gr.dims.nlg[2]-Gr.dims.gw], self.t_ext)
+        #print self.t_ref, temperature_profile[kmax], temperature_profile[kmax] - self.t_ref, np.array(self.t_ext)
+        t_extended = self.t_ext #np.append(temperature_profile[Gr.dims.gw:Gr.dims.nlg[2]-Gr.dims.gw], self.t_ext)
 
 
 
-        self.t_ext = np.array(self.t_ext) - (temperature_profile[kmax] - self.t_ref)
+        #self.t_ext = np.array(self.t_ext) - (temperature_profile[kmax] - self.t_ref)
 
 
         with nogil:
@@ -1239,3 +1245,7 @@ cdef class RadiationGCMGrey(RadiationBase):
 
         return
 
+def interp_pchip(z_out, z_in, v_in):
+
+    p = pchip(z_in, v_in, extrapolate=True)
+    return p(z_out)

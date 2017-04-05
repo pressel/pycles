@@ -20,6 +20,7 @@ cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 import cPickle
+from scipy.interpolate import pchip
 
 # import pylab as plt
 include 'parameters.pxi'
@@ -1179,11 +1180,11 @@ cdef class ForcingGCMFixed:
         #
         #
 
-        self.ug = np.interp(Gr.zp_half, z_in[::-1], u_geos_in[::-1])
-        self.vg = np.interp(Gr.zp_half, z_in[::-1], v_geos_in[::-1])
-        self.temp_dt_hadv = np.interp(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
-        self.shum_dt = np.interp(Gr.zp_half, z_in[::-1], shum_hadv_in[::-1])
-        self.subsidence = -np.interp(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1])/g
+        self.ug = interp_pchip(Gr.zp_half, z_in[::-1], u_geos_in[::-1])
+        self.vg = interp_pchip(Gr.zp_half, z_in[::-1], v_geos_in[::-1])
+        self.temp_dt_hadv = interp_pchip(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
+        self.shum_dt = interp_pchip(Gr.zp_half, z_in[::-1], shum_hadv_in[::-1])
+        self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1])/g
 
         print np.array(self.shum_dt)
 
@@ -1715,11 +1716,12 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
         Py_ssize_t kmin = dims.gw
         Py_ssize_t imax = dims.nlg[0] -dims.gw
         Py_ssize_t jmax = dims.nlg[1] -dims.gw
-        Py_ssize_t kmax = dims.nlg[2] -dims.gw-1
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw -1
         Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
         Py_ssize_t jstride = dims.nlg[2]
         Py_ssize_t ishift, jshift, ijk, i,j,k
         double dxi = dims.dxi[2]
+        double tend
     with nogil:
         for i in xrange(imin,imax):
             ishift = i*istride
@@ -1727,8 +1729,15 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    tendencies[ijk] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
-                #tendencies[ijk+1] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
+                    tend = (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
+                    tendencies[ijk] -= tend
+                for k in xrange(kmax, dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    tendencies[ijk] -= tend
 
     return
 
+def interp_pchip(z_out, z_in, v_in):
+
+    p = pchip(z_in, v_in, extrapolate=True)
+    return p(z_out)

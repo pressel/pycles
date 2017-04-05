@@ -1313,13 +1313,13 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
 
 
 
-    cdef double [:] t = np.interp(Gr.zp_half, z_in, t_in)
-    cdef double [:] qt = np.interp(Gr.zp_half, z_in, shum_in)
-    cdef double [:] u = np.interp(Gr.zp_half, z_in, u_in)
-    cdef double [:] v = np.interp(Gr.zp_half, z_in, v_in)
+    cdef double [:] t = interp_pchip(Gr.zp_half, z_in, t_in) #np.interp(Gr.zp_half, z_in, t_in)
+    cdef double [:] qt = interp_pchip(Gr.zp_half, z_in, shum_in) #np.interp(Gr.zp_half, z_in, shum_in)
+    cdef double [:] u = interp_pchip(Gr.zp_half, z_in, u_in)#np.interp(Gr.zp_half, z_in, u_in)
+    cdef double [:] v = interp_pchip(Gr.zp_half, z_in, v_in)#np.interp(Gr.zp_half, z_in, v_in)
 
-    t_test = interp_pchip(Gr.zp_half, z_in, t_in)
-    print t_test
+    #t_test = interp_pchip(Gr.zp_half, z_in, t_in)
+   # print t_test
 
     #Generate initial perturbations (here we are generating more than we need)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
