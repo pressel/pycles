@@ -1264,6 +1264,13 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
 
 
+    from scipy.interpolate import pchip
+
+    def interp_pchip(z_out, z_in, v_in):
+        p = pchip(z_in, v_in, extrapolate=True)
+        return p(z_out)
+
+
 
     #Generate the reference profiles
     data_path = namelist['gcm']['file']
@@ -1311,6 +1318,8 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
     cdef double [:] u = np.interp(Gr.zp_half, z_in, u_in)
     cdef double [:] v = np.interp(Gr.zp_half, z_in, v_in)
 
+    t_test = interp_pchip(Gr.zp_half, z_in, t_in)
+    print t_test
 
     #Generate initial perturbations (here we are generating more than we need)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
