@@ -62,6 +62,8 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         double coszen
         double adif
         double adir
+        LookupProfiles t_table
+        LookupProfiles qv_table
     cpdef get_pv_star(self, double t)
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
@@ -70,3 +72,12 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
     cpdef update_qv(self, double p, double t, double rh)
     cpdef rce_step(self)
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
+
+
+
+cdef class LookupProfiles:
+    cdef:
+        Py_ssize_t nprofiles
+        Py_ssize_t nz
+        double [:,:] table_vals
+        double [:] access_vals

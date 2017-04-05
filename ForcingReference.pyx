@@ -8,13 +8,13 @@ from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c, s_tendency_c
 import numpy as np
 import cython
-from libc.math cimport fabs, sin, cos, fmax, fmin
+from libc.math cimport fabs, sin, cos, fmax, fmin, log
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 
-# import pylab as plt
+import pylab as plt
 include 'parameters.pxi'
 
 
@@ -377,7 +377,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.dt_rce  =3600.0 #1 hr?
 
         # pressure coordinates
-        self.nlayers = 100
+        self.nlayers = 205
         self.nlevels = self.nlayers + 1
         self.p_levels = np.linspace(Pg, 0.0, num=self.nlevels, endpoint=True)
         self.p_layers = 0.5 * np.add(self.p_levels[1:],self.p_levels[:-1])
@@ -385,46 +385,55 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.initialize_radiation()
 
 
-        self.t_layers = np.zeros(np.shape(self.p_layers), dtype=np.double, order='c')
+        self.t_layers = np.linspace(290.0, 260.0, self.nlayers)
         self.qv_layers =np.zeros(np.shape(self.p_layers), dtype=np.double, order='c')
-        cdef double pvg = self.get_pv_star(Tg) * RH
-        cdef double qtg =  eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
-        cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
-        RH = 0.3
 
         cdef:
             Py_ssize_t k
-            double temperature, ql, qi, pv
+            double  pv
 
         for k in xrange(self.nlayers):
-            temperature, ql, qi = self.eos(self.p_layers[k], sg, qtg)
-            if np.isnan(temperature):
-                temperature = self.t_layers[k-1]
-            pv = self.get_pv_star(temperature) * RH
+            pv = self.get_pv_star(self.t_layers[k]) * RH
             self.qv_layers[k] = fmax(eps_v * pv / (pressure_array[k] + (eps_v-1.0)*pv),0.0)
-            self.t_layers[k] = temperature
+
             # print(self.t_layers[k])
 
 
         self.delta_t = np.ones(np.shape(self.t_layers),dtype =np.double, order='c')
         self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
 
+        #initialize the lookup table
+        t_table = LookupProfiles(75,self.nlayers)
+        qv_table = LookupProfiles(75, self.nlayers)
 
 
+        cdef:
+            Py_ssize_t iter_count = -1
+            Py_ssize_t p_index_count = -1
 
-        cdef Py_ssize_t count = -1
-        while np.max(self.delta_t) > 0.01 and count < 10000:
-            # print('RCE iteration ', count)
-            self.rce_step()
-            count += 1
-            # print(count,np.max(self.delta_t) )
+        for tropo_p_index in xrange(5,80):
+            p_index_count +=1
+            iter_count = 0
+            while np.max(self.delta_t) > 0.01 and iter_count < 10000:
+                # print('RCE iteration ', count)
+                self.rce_step()
+                iter_count += 1
+                # print(count,np.max(self.delta_t) )
+            t_table.table_vals[p_index_count,:] = self.t_layers[:]
 
-        print("interactive RCE ", count, np.max(self.delta_t))
+        print("interactive RCE ", iter_count, np.max(self.delta_t))
 
-        # plt.figure(count)
-        # plt.plot(self.t_layers, self.p_layers[:])
-        # plt.gca().invert_yaxis()
-        # plt.show()
+        data = nc.Dataset('./CGILSdata/RCE_1xCO2.nc', 'r')
+        # Arrays must be flipped (low to high pressure) to use numpy interp function
+        pressure_ref = data.variables['p_full'][:]
+        temperature_ref = data.variables['temp_rc'][:]
+
+
+        plt.figure(iter_count)
+        plt.plot(self.t_layers, self.p_layers[:],'-b')
+        plt.plot(temperature_ref, pressure_ref,'-r')
+        plt.gca().invert_yaxis()
+        plt.show()
 
 
 
@@ -446,6 +455,14 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         qv = pv/(pd * eps_vi + pv)
         return  qv
 
+# Tropical temperature is fixed deltaT over LES domain SST
+# set a trial tropopause
+# set temperatures as moist adiabat below tropopause
+# compute radiative equilibrium above tropopause
+# move tropopause height until the radiative equilibrium temperature at H = moist adiabat temperature at H
+# I think this means that if Trad < Tmoist, H should increase
+# if Tmoist > Trad, H should decrease
+
 
     cpdef rce_step(self):
         # update temperatures due to radiation
@@ -462,97 +479,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             for k in xrange(self.nlayers):
                 t_0[k] = self.t_layers[k] + self.t_tend_rad[k] * self.dt_rce
 
-        # plt.figure('T0')
-        # plt.plot(t_0, self.p_layers)
-        # plt.gca().invert_yaxis()
-        # plt.show()
 
-        # update first temperature above surface
-        cdef:
-            double dp = self.p_levels[0] - self.p_levels[1]
-            double [:] coeff = np.zeros(5)
-        coeff[0] = 1.0
-        coeff[3] = cpd*dp/g/sigma_sb/self.dt_rce
-        coeff[4] = -cpd*dp/g/sigma_sb/self.dt_rce * t_0[0] - self.sst*self.sst*self.sst*self.sst
-
-        cdef:
-            complex [:] all_roots = np.roots(coeff)
-            double [:] real_roots = np.real(all_roots)
-            double new_temp =  0.0 #np.max(real_roots[np.iscomplex(all_roots)==False])
-
-        for k in xrange(4):
-            if not np.iscomplex(all_roots[k]):
-                new_temp = np.maximum(new_temp, real_roots[k])
-
-
-        t_1[0] = new_temp
-        # Update qv of the first layer to match the updated temperature
-        cdef:
-            double t_half, qv_half, lrc
-            double factor = cpd / (g * sigma_sb * self.dt_rce)
-
-        self.qv_layers[0] = self.update_qv(self.p_layers[0], t_1[0], 0.3)
-
-        # Now take the  two lowest layers (k=0,1) and update according to critical lapse rate
-        # again have to solve a quartic equation
-        dp = self.p_layers[0] - self.p_layers[1]
-        t_half = 0.5 * (t_1[0] + t_0[1])
-        qv_half = 0.5 * (self.qv_layers[0] + self.qv_layers[1])
-        lrc = 6.5e-3/g * (qv_half * Rv + (1.0-qv_half) * Rd) * t_half/self.p_levels[1] * dp
-
-        if t_1[0] - t_0[1] > lrc:
-            coeff[0] = 1.0
-            coeff[1] = 0.0
-            coeff[2] = 0.0
-            coeff[3] = factor * (self.p_levels[0] - self.p_levels[2])
-            coeff[4] = (-factor * (self.p_levels[0] - self.p_levels[1]) * t_1[0]
-                        - factor * (self.p_levels[1]-self.p_levels[2]) *  (lrc + t_0[1])
-                        - t_1[0] * t_1[0] * t_1[0] * t_1[0])
-            all_roots = np.roots(coeff)
-            real_roots = np.real(all_roots)
-            for k in xrange(4):
-                if not np.iscomplex(all_roots[k]):
-                    new_temp = np.maximum(new_temp, real_roots[k])
-
-            t_2[0] = new_temp
-            t_1[1] =t_2[0] - lrc
-        else:
-            t_2[0] = t_1[0]
-            t_1[1] = t_0[1]
-        self.qv_layers[0] = self.update_qv(self.p_layers[0], t_2[0], 0.3)
-        self.qv_layers[1] = self.update_qv(self.p_layers[1], t_1[1], 0.3)
-
-        cdef double p_tropo, rh
-
-
-        for k in xrange(2,self.nlayers):
-            dp = self.p_layers[k-1] - self.p_layers[k]
-            t_half = 0.5 * (t_1[k-1] + t_0[k])
-            qv_half = 0.5 * (self.qv_layers[k-1] + self.qv_layers[k])
-            lrc = 6.5e-3/g * (qv_half * Rv + (1.0-qv_half) * Rd) * t_half/self.p_levels[k] * dp
-            if t_1[k-1] - t_0[k] > lrc:
-                t_2[k-1] =( (self.p_levels[k-1] - self.p_levels[k]) * t_1[k-1]
-                            + (self.p_levels[k]-self.p_levels[k+1]) * (lrc + t_0[k]))/(self.p_levels[k-1]-self.p_levels[k+1])
-                t_1[k] = t_2[k-1] - lrc
-                self.qv_layers[k-1] = self.update_qv(self.p_layers[k-1], t_2[k-1], 0.3)
-                self.qv_layers[k] = self.update_qv(self.p_layers[k], t_1[k], 0.3)
-                p_tropo = self.p_layers[k]
-            else:
-                t_2[k-1] = t_1[k-1]
-                t_1[k] = t_0[k]
-                rh = 0.01 / p_tropo * (self.p_layers[k-1] - p_tropo) + 0.01
-                self.qv_layers[k-1] = self.update_qv(self.p_layers[k-1], t_2[k-1], rh)
-                rh = 0.01 / p_tropo * (self.p_layers[k] - p_tropo) + 0.01
-
-                self.qv_layers[k] = self.update_qv(self.p_layers[k], t_1[k], rh)
-        t_2[self.nlayers-1] = t_1[self.nlayers-1]
-        # print('p_tropo', p_tropo)
-
-        # plt.figure('T1')
-        # plt.plot(t_1, self.p_layers,'-b')
-        # plt.plot(t_2, self.p_layers,'-r')
-        # plt.gca().invert_yaxis()
-        # plt.show()
 
         with nogil:
             for k in xrange(self.nlayers):
@@ -621,4 +548,14 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
             self.u[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
 
         return
+
+cdef class LookupProfiles:
+    def __init__(self, Py_ssize_t nprofiles, Py_ssize_t nz):
+        self.nprofiles = nprofiles
+        self.nz = nz
+        self.table_vals = np.zeros((nprofiles,nz),dtype=np.double, order='c')
+        self.access_vals = np.zeros(nprofiles, dtype=np.double, order='c')
+        return
+
+
 
