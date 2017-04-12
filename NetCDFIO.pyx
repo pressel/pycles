@@ -112,7 +112,7 @@ cdef class NetCDFIO_Stats:
 
         ts_grp = root_grp.createGroup('timeseries')
         ts_grp.createDimension('t', None)
-        ts_grp.createVariable('t', 'f8', ('t'))
+        ts_grp.createVariable('t', 'f8', ('t'), chunksizes=(60,))
 
         root_grp.close()
         return
@@ -122,7 +122,7 @@ cdef class NetCDFIO_Stats:
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             profile_grp = root_grp.groups['profiles']
-            new_var = profile_grp.createVariable(var_name, 'f8', ('t', 'z'))
+            new_var = profile_grp.createVariable(var_name, 'f8', ('t', 'z'), chunksizes=(60,Gr.dims.n[2]))
 
             root_grp.close()
 

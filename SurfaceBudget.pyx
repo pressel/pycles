@@ -55,6 +55,7 @@ cdef class SurfaceBudget:
             lat_idx = (np.abs(lat_in - namelist['gcm']['latitude'])).argmin()
 
             self.ocean_heat_flux = tv_input_data['qflux'][lat_idx]
+            print 'Ocean heat flux set to: ', self.ocean_heat_flux
 
         try:
             self.water_depth_initial = namelist['surface_budget']['water_depth_initial']
