@@ -37,10 +37,10 @@ def RadiationFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
     else:
         casename = namelist['meta']['casename']
         if casename == 'DYCOMS_RF01':
-            return RadiationDyCOMS_RF01()
+            return RadiationDyCOMS_RF01(namelist)
         elif casename == 'DYCOMS_RF02':
             #Dycoms RF01 and RF02 use the same radiation
-            return RadiationDyCOMS_RF01()
+            return RadiationDyCOMS_RF01(namelist)
         elif casename == 'SMOKE':
             return RadiationSmoke()
         elif casename == 'CGILS':
@@ -144,10 +144,13 @@ cdef class RadiationNone(RadiationBase):
 
 
 cdef class RadiationDyCOMS_RF01(RadiationBase):
-    def __init__(self):
+    def __init__(self, namelist):
         self.alpha_z = 1.0
         self.kap = 85.0
-        self.f0 = 70.0
+        try:
+            self.f0 = namelist['radiation']['dycoms_f0']
+        except:
+            self.f0 = 70.0
         self.f1 = 22.0
         self.divergence = 3.75e-6
 
