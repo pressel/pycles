@@ -1102,8 +1102,6 @@ cdef class RadiationGCMGrey(RadiationBase):
         self.n_ext_profile = self.p_ext.shape[0]
         self.p_ext = np.exp(np.array(self.p_ext))
 
-        print np.array(self.p_ext) 
-
         self.sw_tau = self.sw_tau0 * (np.array(self.p_ext)/101325.0)**self.sw_tau_exponent
         self.lw_tau = self.lw_tau0 * (self.lw_linear_frac *  np.array(self.p_ext)/101325.0 +
                                       (1.0 - self.lw_linear_frac)*(np.array(self.p_ext)/101325.0)**self.lw_tau_exponent)
@@ -1170,6 +1168,8 @@ cdef class RadiationGCMGrey(RadiationBase):
 
 
 
+
+
         #self.t_ext = np.array(self.t_ext) - (temperature_profile[kmax] - self.t_ref)
 
 
@@ -1210,12 +1210,12 @@ cdef class RadiationGCMGrey(RadiationBase):
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
-                        PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/DV.values[t_shift+ijk]/ rho_half[k]
+                        PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/DV.values[t_shift+ijk]
 
         cdef double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
         with nogil:
             for k in xrange(kmin, kmax):
-                self.dsdt_profile[k] = -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/t_mean[k]/ rho_half[k]
+                self.dsdt_profile[k] = -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/t_mean[k]
 
 
         self.srf_lw_up = self.lw_up[0]
