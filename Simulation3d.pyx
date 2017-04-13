@@ -122,7 +122,9 @@ class Simulation3d:
         else:
             self.Pa.root_print('This is not a restart run!')
             SetInitialConditions = InitializationFactory(namelist)
+            print('going to SetInitialConditions')
             SetInitialConditions(namelist,self.Gr, self.PV, self.Ref, self.Th,  self.Sur, self.StatsIO, self.Pa, self.LH)
+            print('leaving SetInitialConditions')
             del SetInitialConditions
 
 

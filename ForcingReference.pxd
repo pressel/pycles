@@ -37,6 +37,8 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         double (*Lambda_fp)(double T) nogil
         Thermodynamics.ClausiusClapeyron CC
         double dt_rce
+        double RH_surf
+        Py_ssize_t index_h
         Py_ssize_t nlayers
         Py_ssize_t nlevels
         double [:] p_levels
@@ -70,7 +72,8 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
     cpdef initialize_radiation(self)
     cpdef compute_radiation(self)
     cpdef update_qv(self, double p, double t, double rh)
-    cpdef rce_step(self)
+    cpdef compute_adiabat(self, double Tg, double Pg, double RH_surf)
+    cpdef rce_step(self, double Tg)
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
 
 

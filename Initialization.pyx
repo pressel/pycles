@@ -1211,6 +1211,7 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     cdef double Tg_parcel = 295.0
     cdef double RH_ref = 0.3
     if reference_type == 'InteractiveRCE':
+        print('InitZGILS, calling reference profile initialization')
         reference_profiles.initialize(Pa, RS.p0_half[:], RS.Pg, Sur.T_surface, RH_ref)
     else:
         reference_profiles.initialize(Pa, RS.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)

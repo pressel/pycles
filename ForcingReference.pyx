@@ -375,19 +375,21 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         ForcingReferenceBase.initialize(self,Pa, pressure_array,  Pg, Tg, RH)
         self.sst = Tg
         self.dt_rce  =3600.0 #1 hr?
+        self.RH_surf = 0.8 # check this
 
         # pressure coordinates
         self.nlayers = 205
         self.nlevels = self.nlayers + 1
         self.p_levels = np.linspace(Pg, 0.0, num=self.nlevels, endpoint=True)
         self.p_layers = 0.5 * np.add(self.p_levels[1:],self.p_levels[:-1])
+        print('check 1')
 
         self.initialize_radiation()
 
 
         self.t_layers = np.linspace(290.0, 260.0, self.nlayers)
         self.qv_layers =np.zeros(np.shape(self.p_layers), dtype=np.double, order='c')
-
+        print('check 2')
         cdef:
             Py_ssize_t k
             double  pv
@@ -401,25 +403,34 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
         self.delta_t = np.ones(np.shape(self.t_layers),dtype =np.double, order='c')
         self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
-
+        print('check 3')
         #initialize the lookup table
-        t_table = LookupProfiles(75,self.nlayers)
-        qv_table = LookupProfiles(75, self.nlayers)
+        self.t_table = LookupProfiles(21,self.nlayers)
+        self.qv_table = LookupProfiles(21, self.nlayers)
+        self.t_table.access_vals = np.linspace(290,310,21)
+        self.qv_table.access_vals = np.linspace(290,310,21)
+        print('check 4')
 
 
         cdef:
             Py_ssize_t iter_count = -1
-            Py_ssize_t p_index_count = -1
+            Py_ssize_t sst_index
 
-        for tropo_p_index in xrange(5,80):
-            p_index_count +=1
+        # Set the initial tropopause height guess
+        k = 0
+        while self.p_layers[k] > 100.0e2:
+            self.index_h = k
+            k += 1
+        print('check 5', self.index_h)
+
+        for sst_index in xrange(21):
             iter_count = 0
-            while np.max(self.delta_t) > 0.01 and iter_count < 10000:
+            while iter_count < 10000:
                 # print('RCE iteration ', count)
-                self.rce_step()
+                self.rce_step(self.t_table.access_vals[sst_index])
                 iter_count += 1
                 # print(count,np.max(self.delta_t) )
-            t_table.table_vals[p_index_count,:] = self.t_layers[:]
+            self.t_table.table_vals[sst_index,:] = self.t_layers[:]
 
         print("interactive RCE ", iter_count, np.max(self.delta_t))
 
@@ -455,6 +466,23 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         qv = pv/(pd * eps_vi + pv)
         return  qv
 
+    cpdef compute_adiabat(self, double Tg, double Pg, double RH_surf):
+        cdef:
+            double pvg = self.get_pv_star(Tg) * RH_surf
+            double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
+            double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
+
+
+        cdef double temperature, ql, qi, pv
+
+
+        # Compute reference state thermodynamic profiles
+        for k in xrange(self.nlayers):
+            temperature, ql, qi = self.eos(self.p_layers[k], sg, qtg)
+            self.t_layers[k] = temperature
+        return
+
+
 # Tropical temperature is fixed deltaT over LES domain SST
 # set a trial tropopause
 # set temperatures as moist adiabat below tropopause
@@ -464,27 +492,25 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 # if Tmoist > Trad, H should decrease
 
 
-    cpdef rce_step(self):
-        # update temperatures due to radiation
+    cpdef rce_step(self, double Tg ):
 
-        self.compute_radiation()
-
+        self.compute_adiabat(Tg,self.p_levels[0], self.RH_surf)
         cdef:
-            Py_ssize_t k
-            double [:] t_0 = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
-            double [:] t_1 = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
-            double [:] t_2 = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
+            Py_ssize_t k, sub
+            double [:] t_adi = np.array(self.t_layers, dtype=np.double, copy=True, order='c')
 
-        with nogil:
-            for k in xrange(self.nlayers):
-                t_0[k] = self.t_layers[k] + self.t_tend_rad[k] * self.dt_rce
+        for sub in xrange(100):
+            # update temperatures due to radiation
+            self.compute_radiation()
+            with nogil:
+                for k in xrange(self.index_h+1, self.nlayers):
+                    self.t_layers[k] = self.t_layers[k] + self.t_tend_rad[k] * self.dt_rce
+            plt.figure(sub)
+            plt.plot(self.t_layers, self.p_layers,'-r')
+            plt.plot(t_adi,self.p_layers,'-b')
+            plt.gca().invert_yaxis()
+            plt.show()
 
-
-
-        with nogil:
-            for k in xrange(self.nlayers):
-                self.delta_t[k] = fabs(t_2[k] - self.t_layers[k])
-                self.t_layers[k] = t_2[k]
 
         return
 
