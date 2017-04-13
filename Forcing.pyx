@@ -1184,9 +1184,9 @@ cdef class ForcingGCMFixed:
         self.vg = interp_pchip(Gr.zp_half, z_in[::-1], v_geos_in[::-1])
         self.temp_dt_hadv = interp_pchip(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
         self.shum_dt = interp_pchip(Gr.zp_half, z_in[::-1], shum_hadv_in[::-1])
-        self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g *alpha_in[::-1] )*np.array(Ref.rho0_half)
+        #self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g *alpha_in[::-1] )*np.array(Ref.rho0_half)
+        self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g  )
 
-        print np.array(self.shum_dt)
 
         # temp_hadv = np.mean(tv_input_data['surf_dict']['dt_tg_hadv'][:,::-1], axis=0)
         # temp_fino = np.mean(tv_input_data['surf_dict']['dt_tg_fino'][:,::-1], axis=0)
