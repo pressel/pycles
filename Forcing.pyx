@@ -902,15 +902,11 @@ cdef class ForcingZGILS:
             self.reference_type = str(namelist['forcing']['reference_profile'])
         except:
             self.reference_type = 'AdjustedAdiabat'
-        print('forcing, reference type', self.reference_type)
 
         try:
             self.varsub = namelist['forcing']['VarSub']
         except:
             self.varsub = False
-
-        print('VarSub', self.varsub)
-
 
 
         # Current climate/control advection forcing values (modified below for climate change)

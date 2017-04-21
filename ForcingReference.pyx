@@ -483,7 +483,6 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
         for sst_index in xrange(n_sst):
             self.sst = self.t_table.access_vals[sst_index]
-            print('doing RCE for ',self.sst)
             self.rce_step(self.sst)
             self.t_table.table_vals[sst_index,:] = self.t_layers[:]
             self.p_tropo_store[sst_index] = self.p_layers[self.index_h]
@@ -615,7 +614,6 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
 
         while abs(self.index_h-index_h_old) > 0:
-            # print('index_h',self.index_h)
             for k in xrange(self.nlayers):
                 self.t_layers[k] = t_adi[k]
                 self.qv_layers[k] = qv_adi[k]
