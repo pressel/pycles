@@ -1051,6 +1051,7 @@ cdef class RadiationGCMGrey(RadiationBase):
         self.p_gcm = tv_input_data['p'][::-1, lat_idx]
         self.t_gcm = tv_input_data['t'][::-1,lat_idx]
         self.z_gcm = tv_input_data['z'][::-1,lat_idx]
+        self.alpha_gcm = tv_input_data['alpha'][::-1,lat_idx]
 
         RadiationBase.initialize(self, Gr, NS, Pa)
 
@@ -1067,7 +1068,7 @@ cdef class RadiationGCMGrey(RadiationBase):
         self.lw_linear_frac = 0.2
         self.albedo_value = 0.38
         self.atm_abs = 0.22
-        self.sw_diff = 0.20
+        self.sw_diff = 0.0
 
         self.odp = 1.0
 
@@ -1094,7 +1095,7 @@ cdef class RadiationGCMGrey(RadiationBase):
 
 
 
-
+        self.alpha_gcm = interp_pchip(np.array(Gr.zp_half), np.array(self.z_gcm)[:], np.array(self.alpha_gcm)[:])
         self.dp = abs(Ref.p0_half_global[kmax-1] - Ref.p0_half_global[kmax-2])
         self.p0_les_min = np.min(Ref.p0_half_global)
         #self.p_ext = np.arange(self.p0_les_min - self.dp, 10.0, -self.dp)
@@ -1205,7 +1206,7 @@ cdef class RadiationGCMGrey(RadiationBase):
         with nogil:
             for k in xrange(0, kmax):
                 self.h_profile[k] =  - \
-                       (self.net_flux[k+1] - self.net_flux[k]) * dzi / rho_half[k] / cpm_c(qt_profile[k])
+                       (self.net_flux[k+1] - self.net_flux[k]) * dzi * self.alpha_gcm[k]  / cpm_c(qt_profile[k])*Gr.dims.imet_half[k]
         with nogil:
             for i in xrange(imin, imax):
                 ishift = i * istride
@@ -1213,12 +1214,13 @@ cdef class RadiationGCMGrey(RadiationBase):
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
-                        PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/DV.values[t_shift+ijk]
+                        #PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/DV.values[t_shift+ijk]*Gr.dims.imet_half[k]
+                        PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1] - self.net_flux[k])*dzi/DV.values[t_shift+ijk]*Gr.dims.imet_half[k]
 
         cdef double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
         with nogil:
             for k in xrange(kmin, kmax):
-                self.dsdt_profile[k] = -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/t_mean[k]
+                self.dsdt_profile[k] = -(self.net_flux[k+1] - self.net_flux[k])*dzi/t_mean[k]*Gr.dims.imet_half[k]
 
 
         self.srf_lw_up = self.lw_up[0]

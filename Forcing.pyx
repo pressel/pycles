@@ -1152,7 +1152,6 @@ cdef class ForcingGCMFixed:
         input_data_tv = cPickle.load(fh)
         fh.close()
 
-        print input_data_tv.keys()
 
         lat_in = input_data_tv['lat']
         lat_idx = (np.abs(lat_in - lat)).argmin()
@@ -1161,10 +1160,18 @@ cdef class ForcingGCMFixed:
         u_geos_in = input_data_tv['u_geos'][:,lat_idx]
         v_geos_in = input_data_tv['v_geos'][:,lat_idx]
         shum_hadv_in = input_data_tv['shum_hadv'][:,lat_idx]
+        shum_vadv_in = input_data_tv['shum_vadv'][:,lat_idx]
         temp_hadv_in = input_data_tv['temp_hadv'][:,lat_idx]
         omega_in = input_data_tv['omega'][:,lat_idx]
         z_in = input_data_tv['z'][:,lat_idx]
         alpha_in = input_data_tv['alpha'][:,lat_idx]
+        temp_vadv_in = input_data_tv['temp_vadv'][:,lat_idx]
+        temp_fino_in = input_data_tv['temp_fino'][:,lat_idx]
+        temp_rad_in = input_data_tv['temp_rad'][:,lat_idx]
+        div_in = input_data_tv['div'][:,lat_idx]
+
+
+        #print temp_fino_in, temp_vadv_in
 
         # lat_idx = tv_input_data['surf_dict']['lat_idx']
         # lat = tv_input_data['surf_dict']['lat'][lat_idx]
@@ -1182,12 +1189,12 @@ cdef class ForcingGCMFixed:
 
         self.ug = interp_pchip(Gr.zp_half, z_in[::-1], u_geos_in[::-1])
         self.vg = interp_pchip(Gr.zp_half, z_in[::-1], v_geos_in[::-1])
-        self.temp_dt_hadv = interp_pchip(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
-        self.shum_dt = interp_pchip(Gr.zp_half, z_in[::-1], shum_hadv_in[::-1])
+        self.temp_dt_hadv =  interp_pchip(Gr.zp_half, z_in[::-1], temp_fino_in[::-1]) +  interp_pchip(Gr.zp_half, z_in[::-1], temp_vadv_in[::-1]) + interp_pchip(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
+        self.shum_dt = interp_pchip(Gr.zp_half, z_in[::-1], shum_hadv_in[::-1] + shum_vadv_in[::-1])
         #self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g *alpha_in[::-1] )*np.array(Ref.rho0_half)
-        self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g  )
-
-
+        self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g  ) * 0.0
+        print np.array(self.subsidence), np.array(alpha_in)
+        #self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], div_in[::-1]   )*np.array(Gr.zpl_half)
         # temp_hadv = np.mean(tv_input_data['surf_dict']['dt_tg_hadv'][:,::-1], axis=0)
         # temp_fino = np.mean(tv_input_data['surf_dict']['dt_tg_fino'][:,::-1], axis=0)
         #
@@ -1205,6 +1212,8 @@ cdef class ForcingGCMFixed:
         NS.add_profile('ls_dsdt_hadv', Gr, Pa)
         NS.add_profile('ls_dqtdt', Gr, Pa)
         NS.add_profile('ls_subs_dtdt', Gr, Pa)
+        NS.add_profile('ls_subs_dsdt', Gr, Pa)
+        NS.add_profile('ls_fino_dsdt', Gr, Pa)
 
         return
 
@@ -1236,7 +1245,7 @@ cdef class ForcingGCMFixed:
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
 
         # Apply Subsidence
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
+        apply_subsidence_temperature(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &DV.values[t_shift], &PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
 
         with nogil:
@@ -1254,7 +1263,7 @@ cdef class ForcingGCMFixed:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
 
-                        PV.tendencies[s_shift + ijk] += (cpm_c(qt) * (self.temp_dt_hadv[k]) )/t
+                        PV.tendencies[s_shift + ijk] += (cpm_c(qt) * (self.temp_dt_hadv[k]))/t
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * self.shum_dt[k]
                         PV.tendencies[qt_shift + ijk] += self.shum_dt[k]
 
@@ -1290,12 +1299,19 @@ cdef class ForcingGCMFixed:
 
 
 
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
+        apply_subsidence_temperature(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift], &DV.values[t_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('ls_subs_dsdt', mean_tendency[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0], &DV.values[t_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('ls_subs_dtdt', mean_tendency[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
+
 
         with nogil:
             for k in xrange(kmin, kmax):
@@ -1718,7 +1734,7 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
         Py_ssize_t jmax = dims.nlg[1] -dims.gw
         Py_ssize_t kmax = dims.nlg[2] -dims.gw -1
         Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
-        Py_ssize_t jstride = dims.nlg[2]
+        size_t jstride = dims.nlg[2]
         Py_ssize_t ishift, jshift, ijk, i,j,k
         double dxi = dims.dxi[2]
         double tend
@@ -1730,6 +1746,36 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
                     tend = (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
+                    tendencies[ijk] -= tend
+                for k in xrange(kmax, dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    tendencies[ijk] -= tend
+
+    return
+
+
+cdef apply_subsidence_temperature(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double *qt, double* values,  double *tendencies):
+
+    cdef:
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] -dims.gw
+        Py_ssize_t jmax = dims.nlg[1] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw -1
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k
+        double dxi = dims.dxi[2]
+        double tend
+    with nogil:
+        for i in xrange(imin,imax):
+            ishift = i*istride
+            for j in xrange(jmin,jmax):
+                jshift = j*jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    tend = cpm_c(qt[ijk])/values[ijk] *(values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k] #+ g / values[ijk] * subsidence[k]
                     tendencies[ijk] -= tend
                 for k in xrange(kmax, dims.nlg[2]):
                     ijk = ishift + jshift + k
