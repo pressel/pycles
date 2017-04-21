@@ -8,13 +8,13 @@ from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c, s_tendency_c
 import numpy as np
 import cython
-from libc.math cimport fabs, sin, cos, fmax, fmin, log
+from libc.math cimport fabs, sin, cos, fmax, fmin, log, abs
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 
-import pylab as plt
+# import pylab as plt
 include 'parameters.pxi'
 
 
@@ -42,6 +42,70 @@ cdef class ForcingReferenceBase:
         self.rv = np.zeros(nz, dtype=np.double, order='c')
         self.u = np.zeros(nz, dtype=np.double, order='c')
         self.v = np.zeros(nz, dtype=np.double, order='c')
+        return
+    cpdef update(self, double [:] pressure_array, double Tg):
+        return
+# Control simulations use AdjustedMoistAdiabat
+# Reference temperature profile correspondends to a moist adiabat
+# Reference moisture profile corresponds to a fixed relative humidity given the reference temperature profile
+cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
+    def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
+
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+        self.CC = ClausiusClapeyron()
+        self.CC.initialize(namelist, LH, Pa)
+
+        return
+    cpdef get_pv_star(self, t):
+        return self.CC.LT.fast_lookup(t)
+
+    cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
+        cdef:
+            double qv = qt - ql - qi
+            double qd = 1.0 - qt
+            double pd = pd_c(p0, qt, qv)
+            double pv = pv_c(p0, qt, qv)
+            double Lambda = self.Lambda_fp(T)
+            double L = self.L_fp(T, Lambda)
+
+        return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
+
+    cpdef eos(self, double p0, double s, double qt):
+        cdef:
+            double T, qv, qc, ql, qi, lam
+        eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
+        return T, ql, qi
+
+
+
+    cpdef initialize(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array,  double Pg, double Tg, double RH):
+        '''
+        Initialize the forcing reference profiles. These profiles use the temperature corresponding to a moist adiabat,
+        but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
+        '''
+        ForcingReferenceBase.initialize(self,Pa, pressure_array, Pg, Tg, RH)
+
+        cdef double pvg = self.get_pv_star(Tg)
+        cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
+        cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
+
+
+        cdef double temperature, ql, qi, pv
+        cdef Py_ssize_t n_levels = np.shape(pressure_array)[0]
+
+        # Compute reference state thermodynamic profiles
+        for k in xrange(n_levels):
+            temperature, ql, qi = self.eos(pressure_array[k], sg, qtg)
+            pv = self.get_pv_star(temperature) * RH
+            self.qt[k] = eps_v * pv / (pressure_array[k] + (eps_v-1.0)*pv)
+            self.s[k] = self.entropy(pressure_array[k],temperature, self.qt[k] , 0.0, 0.0)
+            self.temperature[k] = temperature
+            self.rv[k] = self.qt[k]/(1.0-self.qt[k])
+            self.u[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
+
+        return
+    cpdef update(self, double [:] pressure_array, double Tg):
         return
 
 # Climate change simulations use profiles based on radiative--convective equilibrium solutions obtained as described in
@@ -85,6 +149,9 @@ cdef class ReferenceRCE(ForcingReferenceBase):
             self.u[k] = self.u[k]*0.5 - 5.0
 
         return
+    cpdef update(self, double [:] pressure_array, double Tg):
+        return
+
 
 # Here we implement the RCE solution algorithm described in Section 2.6 of Zhihong Tan's thesis to allow updates
 # of the Reference profiles as the SST changes
@@ -114,6 +181,9 @@ cdef extern:
 
 cdef class InteractiveReferenceRCE(ForcingReferenceBase):
     def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
+        self.is_init = False
+        self.sst_increment = 10.0 # K, assumed difference between LES domain SST and tropical SST
+
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
@@ -137,7 +207,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         try:
             self.scon = namelist['radiation']['RRTM']['solar_constant']
         except:
-            self.scon = 1360.0
+            self.scon = 1367.0 #1360.0
         try:
             self.coszen =namelist['radiation']['RRTM']['coszen']
         except:
@@ -145,14 +215,15 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         try:
             self.adif = namelist['radiation']['RRTM']['adif']
         except:
-            self.adif = 0.06
+            self.adif = 0.3 #0.07 #0.06
         try:
             self.adir = namelist['radiation']['RRTM']['adir']
         except:
-            if (self.coszen > 0.0):
-                self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
-            else:
-                self.adir = 0.0
+            self.adir = 0.3 #0.07
+            # if (self.coszen > 0.0):
+            #     self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
+            # else:
+            #     self.adir = 0.0
         return
 
     cpdef get_pv_star(self, double t):
@@ -237,11 +308,10 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
                     trpath[i,:] = trpath[i,:] + (plow-pupp)/g*(wgtlow*trace[:,m-1]  + wgtupp*trace[:,m])
             if plev[i] < lw_pressure[lw_np-1]:
                 trpath[i,:] = trpath[i,:] + (np.min((plev[i-1],lw_pressure[lw_np-1]))-plev[i])/g*trace[:,lw_np-1]
-
         tmpTrace = np.zeros((nlayers, 9),dtype=np.double,order='F')
         for i in xrange(9):
             for k in xrange(nlayers):
-                tmpTrace[k,i] = g/(self.p_levels[k] - self.p_levels[k+1])*(trpath[k+1,i]-trpath[k,i])
+                tmpTrace[k,i] = g/(plev[k] - plev[k+1])*(trpath[k+1,i]-trpath[k,i])
 
         self.o3vmr  = np.array(tmpTrace[:,0],dtype=np.double, order='F')
         self.co2vmr = np.array(tmpTrace[:,1],dtype=np.double, order='F')
@@ -327,6 +397,8 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
                 h2ovmr_in[0,k] = self.qv_layers[k]/(1.0 - self.qv_layers[k]) * Rv/Rd
 
 
+
+
         cdef:
             int ncol = ncols
             int nlay = nlayers
@@ -359,10 +431,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
 
         with nogil:
-            # self.lw_up_srf = uflx_lw_out[0,0]
-            # self.lw_down_srf = dflx_lw_out[0,0]
-            # self.sw_up_srf  =  uflx_sw_out[0,0]
-            # self.sw_down_srf = dflx_sw_out[0,0]
+            self.toa_flux = -uflx_lw_out[0,nlayers] + dflx_lw_out[0,nlayers] - uflx_sw_out[0,nlayers] + dflx_sw_out[0,nlayers]
             for k in xrange(nlayers):
                 self.t_tend_rad[k] = (hr_lw_out[0,k] + hr_sw_out[0,k])/86400.0
 
@@ -374,87 +443,133 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
         ForcingReferenceBase.initialize(self,Pa, pressure_array,  Pg, Tg, RH)
         self.sst = Tg
-        self.dt_rce  =3600.0 #1 hr?
-        self.RH_surf = 0.8 # check this
+        self.dt_rce  =3600.0  #1 hr?
+        self.RH_surf = 0.7 # check this
+        self.RH_tropical = 0.7
+        self.RH_subtrop = 0.3
 
         # pressure coordinates
-        self.nlayers = 205
+        self.nlayers = 100
         self.nlevels = self.nlayers + 1
         self.p_levels = np.linspace(Pg, 0.0, num=self.nlevels, endpoint=True)
         self.p_layers = 0.5 * np.add(self.p_levels[1:],self.p_levels[:-1])
-        print('check 1')
+
 
         self.initialize_radiation()
 
 
-        self.t_layers = np.linspace(290.0, 260.0, self.nlayers)
-        self.qv_layers =np.zeros(np.shape(self.p_layers), dtype=np.double, order='c')
-        print('check 2')
-        cdef:
-            Py_ssize_t k
-            double  pv
-
-        for k in xrange(self.nlayers):
-            pv = self.get_pv_star(self.t_layers[k]) * RH
-            self.qv_layers[k] = fmax(eps_v * pv / (pressure_array[k] + (eps_v-1.0)*pv),0.0)
-
-            # print(self.t_layers[k])
-
-
-        self.delta_t = np.ones(np.shape(self.t_layers),dtype =np.double, order='c')
+        self.t_layers = np.zeros(self.nlayers, dtype=np.double, order='c')
+        self.qv_layers =np.zeros(self.nlayers, dtype=np.double, order='c')
         self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
-        print('check 3')
+
         #initialize the lookup table
-        self.t_table = LookupProfiles(21,self.nlayers)
-        self.qv_table = LookupProfiles(21, self.nlayers)
-        self.t_table.access_vals = np.linspace(290,310,21)
-        self.qv_table.access_vals = np.linspace(290,310,21)
-        print('check 4')
+        cdef Py_ssize_t n_sst = 11
+        self.t_table = LookupProfiles(n_sst,self.nlayers)
+        self.t_table.access_vals = np.linspace(Tg+self.sst_increment-10.0,
+                                               Tg+self.sst_increment+10.0,n_sst)
+
+        self.p_tropo_store = np.zeros(n_sst, dtype=np.double, order='c')
+        self.toa_store = np.zeros(n_sst, dtype=np.double, order='c')
 
 
         cdef:
-            Py_ssize_t iter_count = -1
-            Py_ssize_t sst_index
+            Py_ssize_t sst_index, k
 
         # Set the initial tropopause height guess
         k = 0
-        while self.p_layers[k] > 100.0e2:
+        while self.p_layers[k] > 400.0e2:
             self.index_h = k
             k += 1
-        print('check 5', self.index_h)
 
-        for sst_index in xrange(21):
-            iter_count = 0
-            while iter_count < 10000:
-                # print('RCE iteration ', count)
-                self.rce_step(self.t_table.access_vals[sst_index])
-                iter_count += 1
-                # print(count,np.max(self.delta_t) )
+        for sst_index in xrange(n_sst):
+            self.sst = self.t_table.access_vals[sst_index]
+            print('doing RCE for ',self.sst)
+            self.rce_step(self.sst)
             self.t_table.table_vals[sst_index,:] = self.t_layers[:]
+            self.p_tropo_store[sst_index] = self.p_layers[self.index_h]
+            self.toa_store[sst_index] = self.toa_flux
 
-        print("interactive RCE ", iter_count, np.max(self.delta_t))
+        ###---Commment out below when running on cluster
+        # This is just for checking the results
 
+        ###############################################################
         data = nc.Dataset('./CGILSdata/RCE_1xCO2.nc', 'r')
         # Arrays must be flipped (low to high pressure) to use numpy interp function
         pressure_ref = data.variables['p_full'][:]
         temperature_ref = data.variables['temp_rc'][:]
 
+        self.t_table.lookup(Tg+self.sst_increment-1.5)
 
-        plt.figure(iter_count)
-        plt.plot(self.t_layers, self.p_layers[:],'-b')
-        plt.plot(temperature_ref, pressure_ref,'-r')
-        plt.gca().invert_yaxis()
-        plt.show()
+        # plt.figure(1)
+        # try:
+        #     for k in xrange(n_sst):
+        #         plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-b')
+        #     plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
+        #     plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
+        #     plt.xlabel('Temperature, K')
+        #     plt.ylabel('Pressure, hPa')
+        #     plt.gca().invert_yaxis()
+        # except:
+        #     pass
+        #
+        # plt.figure(2)
+        # try:
+        #     plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0))
+        #     plt.xlabel('SST, K')
+        #     plt.ylabel('Pressure at Tropopause, hPa')
+        # except:
+        #     pass
+        #
+        # plt.figure(3)
+        # try:
+        #     plt.plot(self.t_table.access_vals[:], self.toa_store[:])
+        #     plt.xlabel('SST, K')
+        #     plt.ylabel('TOA flux, W/m^2')
+        # except:
+        #     pass
+        # plt.show()
+        ###################################################################
 
+        # Now set the current reference profile (assuming we want it at domain SST+sst_increment...)
 
+        self.t_table.lookup(Tg+self.sst_increment)
+        cdef double pv, pd
+        with nogil:
+            for k in xrange(self.nlayers):
+                self.t_layers[k] = self.t_table.profile_interp[k]
+                pv = self.CC.LT.fast_lookup(self.t_layers[k]) * self.RH_subtrop
+                pd = self.p_layers[k] - pv
+                self.qv_layers[k] = pv/(pd * eps_vi + pv)
+            for k in xrange(1,self.nlayers):
+                self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
+        # plt.figure('t_layers')
+        # plt.plot(self.t_layers, self.p_layers)
+        # plt.gca().invert_yaxis()
+        # plt.figure('qv_layers')
+        # plt.plot(self.qv_layers, self.p_layers)
+        # plt.gca().invert_yaxis()
+        # plt.show()
 
-        self.temperature = np.array(np.interp(pressure_array, self.p_layers, self.t_layers), dtype=np.double, order='c')
-        self.qt = np.array(np.interp(pressure_array, self.p_layers, self.qv_layers), dtype=np.double, order='c')
-        cdef Py_ssize_t nz = np.shape(pressure_array)[0]
+        self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
+        self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
+        cdef:
+            Py_ssize_t nz = np.shape(pressure_array)[0]
+
         for k in xrange(nz):
             self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
-            self.u[k] = min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
+            self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
+
+        self.is_init=True
+
+        # plt.figure('ref T in ref init')
+        # plt.plot(self.temperature,pressure_array)
+        # plt.gca().invert_yaxis()
+        # plt.figure('ref rv in ref init')
+        # plt.plot(self.rv,pressure_array)
+        # plt.gca().invert_yaxis()
+        # plt.show()
+
 
 
         return
@@ -473,107 +588,110 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
 
 
-        cdef double temperature, ql, qi, pv
+        cdef:
+            double temperature, ql, qi, pv
+            Py_ssize_t k
 
 
         # Compute reference state thermodynamic profiles
         for k in xrange(self.nlayers):
             temperature, ql, qi = self.eos(self.p_layers[k], sg, qtg)
-            self.t_layers[k] = temperature
+            if np.isnan(temperature):
+                self.t_layers[k] = self.t_layers[k-1]
+            else:
+                self.t_layers[k] = temperature
+            self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical)
+
         return
 
-
-# Tropical temperature is fixed deltaT over LES domain SST
-# set a trial tropopause
-# set temperatures as moist adiabat below tropopause
-# compute radiative equilibrium above tropopause
-# move tropopause height until the radiative equilibrium temperature at H = moist adiabat temperature at H
-# I think this means that if Trad < Tmoist, H should increase
-# if Tmoist > Trad, H should decrease
-
-
     cpdef rce_step(self, double Tg ):
-
         self.compute_adiabat(Tg,self.p_levels[0], self.RH_surf)
         cdef:
             Py_ssize_t k, sub
             double [:] t_adi = np.array(self.t_layers, dtype=np.double, copy=True, order='c')
+            double [:] qv_adi = np.array(self.qv_layers, dtype=np.double, copy=True, order='c')
+            Py_ssize_t index_h_old = 0
+            double delta_t, rhval, pv, pd
 
-        for sub in xrange(100):
-            # update temperatures due to radiation
-            self.compute_radiation()
-            with nogil:
-                for k in xrange(self.index_h+1, self.nlayers):
-                    self.t_layers[k] = self.t_layers[k] + self.t_tend_rad[k] * self.dt_rce
-            plt.figure(sub)
-            plt.plot(self.t_layers, self.p_layers,'-r')
-            plt.plot(t_adi,self.p_layers,'-b')
-            plt.gca().invert_yaxis()
-            plt.show()
+
+        while abs(self.index_h-index_h_old) > 0:
+            # print('index_h',self.index_h)
+            for k in xrange(self.nlayers):
+                self.t_layers[k] = t_adi[k]
+                self.qv_layers[k] = qv_adi[k]
+
+
+            delta_t = 100.0
+            while delta_t > 0.0001:
+                # update temperatures due to radiation
+                self.compute_radiation()
+
+                delta_t = 0.0
+                with nogil:
+                    for k in xrange(self.index_h,self.nlayers):
+                        self.t_layers[k] = self.t_layers[k] + self.t_tend_rad[k] * self.dt_rce
+                        delta_t = fmax(delta_t, fabs(self.t_tend_rad[k] * self.dt_rce))
+                        rhval = self.RH_tropical
+                        pv = self.CC.LT.fast_lookup(self.t_layers[k]) * rhval
+                        pd = self.p_layers[k] - pv
+                        self.qv_layers[k] = pv/(pd * eps_vi + pv)
+                        self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
+
+
+            if self.t_layers[self.index_h] < t_adi[self.index_h]:
+                index_h_old = self.index_h
+                k=self.index_h
+                while self.t_layers[k] < t_adi[k]:
+                    self.index_h = k
+                    k+=1
+            elif self.t_layers[self.index_h] > t_adi[self.index_h]:
+                index_h_old = self.index_h
+                k=self.index_h
+                while self.t_layers[k] > t_adi[k]:
+                    self.index_h = k
+                    k-=1
+            else:
+                index_h_old = self.index_h
 
 
         return
-
-# Control simulations use AdjustedMoistAdiabat
-# Reference temperature profile correspondends to a moist adiabat
-# Reference moisture profile corresponds to a fixed relative humidity given the reference temperature profile
-cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
-    def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
-
-        self.L_fp = LH.L_fp
-        self.Lambda_fp = LH.Lambda_fp
-        self.CC = ClausiusClapeyron()
-        self.CC.initialize(namelist, LH, Pa)
-
-        return
-    cpdef get_pv_star(self, t):
-        return self.CC.LT.fast_lookup(t)
-
-    cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
+    cpdef update(self, double [:] pressure_array, double Tg):
+        # Now set the current reference profile
+        self.t_table.lookup(Tg+self.sst_increment)
         cdef:
-            double qv = qt - ql - qi
-            double qd = 1.0 - qt
-            double pd = pd_c(p0, qt, qv)
-            double pv = pv_c(p0, qt, qv)
-            double Lambda = self.Lambda_fp(T)
-            double L = self.L_fp(T, Lambda)
+            double pv, pd
+            Py_ssize_t k
+        with nogil:
+            for k in xrange(self.nlayers):
+                self.t_layers[k] = self.t_table.profile_interp[k]
+                pv = self.CC.LT.fast_lookup(self.t_layers[k]) * self.RH_subtrop
+                pd = self.p_layers[k] - pv
+                self.qv_layers[k] = pv/(pd * eps_vi + pv)
+            for k in xrange(1,self.nlayers):
+                self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
 
-        return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
-
-    cpdef eos(self, double p0, double s, double qt):
         cdef:
-            double T, qv, qc, ql, qi, lam
-        eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
-        return T, ql, qi
+            double [:] temperature_ = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
+            double [:] qt_ = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
 
-
-
-    cpdef initialize(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array,  double Pg, double Tg, double RH):
-        '''
-        Initialize the forcing reference profiles. These profiles use the temperature corresponding to a moist adiabat,
-        but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
-        '''
-        ForcingReferenceBase.initialize(self,Pa, pressure_array, Pg, Tg, RH)
-
-        cdef double pvg = self.get_pv_star(Tg)
-        cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
-        cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
-
-
-        cdef double temperature, ql, qi, pv
-        cdef Py_ssize_t n_levels = np.shape(pressure_array)[0]
-
-        # Compute reference state thermodynamic profiles
-        for k in xrange(n_levels):
-            temperature, ql, qi = self.eos(pressure_array[k], sg, qtg)
-            pv = self.get_pv_star(temperature) * RH
-            self.qt[k] = eps_v * pv / (pressure_array[k] + (eps_v-1.0)*pv)
-            self.s[k] = self.entropy(pressure_array[k],temperature, self.qt[k] , 0.0, 0.0)
-            self.temperature[k] = temperature
+        cdef Py_ssize_t nz = np.shape(pressure_array)[0]
+        for k in xrange(nz):
+            self.temperature[k] = temperature_[k]
+            self.qt[k] = qt_[k]
+            self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
-            self.u[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
+        # plt.figure('ref T in ref update')
+        # plt.plot(self.temperature,pressure_array)
+        # plt.gca().invert_yaxis()
+        # plt.figure('ref rv in ref update')
+        # plt.plot(self.rv,pressure_array)
+        # plt.gca().invert_yaxis()
+        # plt.show()
 
         return
+
+
+
 
 cdef class LookupProfiles:
     def __init__(self, Py_ssize_t nprofiles, Py_ssize_t nz):
@@ -581,7 +699,28 @@ cdef class LookupProfiles:
         self.nz = nz
         self.table_vals = np.zeros((nprofiles,nz),dtype=np.double, order='c')
         self.access_vals = np.zeros(nprofiles, dtype=np.double, order='c')
+        self.profile_interp = np.zeros(nz, dtype=np.double, order='c')
         return
+
+    cpdef lookup(self, double val):
+        cdef:
+            double min_ = self.access_vals[0]
+            double max_ = self.access_vals[self.nprofiles-1]
+            double del_ = self.access_vals[1] - self.access_vals[0]
+            Py_ssize_t indx = int(np.floor((val - min_)/del_))
+            double x1 = self.access_vals[indx]
+            double y1, y2
+            Py_ssize_t k
+
+        with nogil:
+            for k in xrange(self.nz):
+                y1 = self.table_vals[indx,k]
+                y2 = self.table_vals[indx+1, k]
+                self.profile_interp[k] = y1 + (val - x1) * (y2 - y1)/del_
+        return
+
+
+
 
 
 

@@ -11,7 +11,9 @@ cdef class ForcingReferenceBase:
         double [:] rv
         double [:] u
         double [:] v
+        bint is_init
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
+    cpdef update(self, double [:] pressure_array, double Tg)
 
 
 
@@ -24,27 +26,34 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
+    cpdef update(self, double [:] pressure_array, double Tg)
 
 
 cdef class ReferenceRCE(ForcingReferenceBase):
     cdef:
         str filename
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
+    cpdef update(self, double [:] pressure_array, double Tg)
 
 cdef class InteractiveReferenceRCE(ForcingReferenceBase):
     cdef:
+        double sst_increment
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
         Thermodynamics.ClausiusClapeyron CC
         double dt_rce
+        double [:] p_tropo_store
+        double [:] toa_store
         double RH_surf
+        double RH_tropical
+        double RH_subtrop
         Py_ssize_t index_h
+        double toa_flux
         Py_ssize_t nlayers
         Py_ssize_t nlevels
         double [:] p_levels
         double [:] p_layers
         double [:] t_layers
-        double [:] delta_t
         double [:] qv_layers
         double [:] t_tend_rad
         double [:] o3vmr
@@ -65,7 +74,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         double adif
         double adir
         LookupProfiles t_table
-        LookupProfiles qv_table
+
     cpdef get_pv_star(self, double t)
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
@@ -75,6 +84,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
     cpdef compute_adiabat(self, double Tg, double Pg, double RH_surf)
     cpdef rce_step(self, double Tg)
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
+    cpdef update(self, double [:] pressure_array, double Tg)
 
 
 
@@ -84,3 +94,5 @@ cdef class LookupProfiles:
         Py_ssize_t nz
         double [:,:] table_vals
         double [:] access_vals
+        double [:] profile_interp
+    cpdef lookup(self, double val)

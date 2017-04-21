@@ -76,6 +76,10 @@ cdef class RadiationBase:
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
+    cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+        return
+
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
@@ -134,6 +138,9 @@ cdef class RadiationNone(RadiationBase):
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
+    cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+        return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
@@ -163,6 +170,9 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur,  ParallelMPI.ParallelMPI Pa):
+        return
+    cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -292,6 +302,9 @@ cdef class RadiationSmoke(RadiationBase):
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
+        return
+    cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -533,6 +546,10 @@ cdef class RadiationRRTM(RadiationBase):
     cpdef initialize(self, Grid.Grid Gr,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         RadiationBase.initialize(self, Gr, NS, Pa)
+        #Initialize rrtmg_lw and rrtmg_sw
+        cdef double cpdair = np.float64(cpd)
+        c_rrtmg_lw_init(&cpdair)
+        c_rrtmg_sw_init(&cpdair)
         return
 
 
@@ -681,11 +698,6 @@ cdef class RadiationRRTM(RadiationBase):
                 Pa.root_print('O3 profile not set so default RRTM profile will be used.')
                 use_o3in = False
 
-        #Initialize rrtmg_lw and rrtmg_sw
-        cdef double cpdair = np.float64(cpd)
-        c_rrtmg_lw_init(&cpdair)
-        c_rrtmg_sw_init(&cpdair)
-
         # Read in trace gas data
         lw_input_file = './RRTMG/lw/data/rrtmg_lw.nc'
         lw_gas = nc.Dataset(lw_input_file,  "r")
@@ -743,6 +755,7 @@ cdef class RadiationRRTM(RadiationBase):
             for k in xrange(nz + self.n_ext):
                 tmpTrace[k,i] = g*100.0/(self.pi_full[k]-self.pi_full[k+1])*(trpath[k+1,i]-trpath[k,i])
 
+
         if use_o3in == False:
             self.o3vmr  = np.array(tmpTrace[:,0],dtype=np.double, order='F')
         else:
@@ -769,6 +782,7 @@ cdef class RadiationRRTM(RadiationBase):
                 tmpTrace_o3[k] = g *100.0/(self.pi_full[k]-self.pi_full[k+1])*(trpath_o3[k+1]-trpath_o3[k])
             self.o3vmr = np.array(tmpTrace_o3[:],dtype=np.double, order='F')
 
+
         self.co2vmr = np.array(tmpTrace[:,1],dtype=np.double, order='F')
         self.ch4vmr =  np.array(tmpTrace[:,2],dtype=np.double, order='F')
         self.n2ovmr =  np.array(tmpTrace[:,3],dtype=np.double, order='F')
@@ -780,22 +794,108 @@ cdef class RadiationRRTM(RadiationBase):
 
 
         return
+
+    cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+
+        if not self.use_reference_class:
+            return
+        if self.reference_type != 'InteractiveRCE':
+            return
+
+        cdef:
+            Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            double [:] qv_mean = Pa.HorizontalMean(Gr, &DV.values[qv_shift])
+            double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
+
+            Py_ssize_t nz = Gr.dims.n[2]
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t i,k
+            Py_ssize_t n_adiabat
+            double [:] pressures_adiabat
+
+
+        # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
+        cdef double [:] pressures = np.arange(25, 1015, 10) * 100.0
+        pressures = np.array(pressures[::-1], dtype=np.double)
+        n_adiabat = np.shape(pressures)[0]
+        self.reference_profile.update(pressures, Sur.T_surface)
+
+        cdef:
+            Py_ssize_t n_profile = self.n_ext - self.n_buffer
+            Py_ssize_t count = 0
+
+        for k in xrange(len(pressures)-n_profile, len(pressures)):
+            self.p_ext[self.n_buffer+count] = pressures[k]
+            self.t_ext[self.n_buffer+count] = self.reference_profile.temperature[k]
+            self.rv_ext[self.n_buffer+count] = self.reference_profile.rv[k]
+            count += 1
+
+        # Now  create the buffer zone
+        if self.n_buffer > 0:
+            # Pressures of "data" points for interpolation, must be INCREASING pressure
+            xi = np.array([self.p_ext[self.n_buffer+1],self.p_ext[self.n_buffer],Ref.p0_half_global[nz + gw -1],Ref.p0_half_global[nz + gw -2] ],dtype=np.double)
+
+            # interpolation for temperature
+            ti = np.array([self.t_ext[self.n_buffer+1],self.t_ext[self.n_buffer], t_mean[nz-1],t_mean[nz-2] ], dtype = np.double)
+            # interpolation for vapor mixing ratio
+            rv_m2 = qv_mean[nz-2]/ (1.0 - qv_mean[nz-2])
+            rv_m1 = qv_mean[nz-1]/(1.0-qv_mean[nz-1])
+            ri = np.array([self.rv_ext[self.n_buffer+1],self.rv_ext[self.n_buffer], rv_m1, rv_m2 ], dtype = np.double)
+
+            for i in xrange(self.n_buffer):
+                self.rv_ext[i] = pchip_interpolate(xi, ri, self.p_ext[i] )
+                self.t_ext[i] = pchip_interpolate(xi,ti, self.p_ext[i])
+
+        #--- Plotting to evaluate implementation of buffer zone
+        #--- Comment out when not running locally
+        # for i in xrange(Gr.dims.nlg[2]):
+        #     qv_mean[i] = qv_mean[i]/ (1.0 - qv_mean[i])
+        # #
+        # # Plotting to evaluate implementation of buffer zone
+        # try:
+        #     plt.figure(1)
+        #     plt.plot(self.rv_ext,self.p_ext,'or')
+        #     plt.plot(self.reference_profile.rv, pressures)
+        #     plt.plot(qv_mean[gw:-gw], Ref.p0_half_global[gw:-gw],'ob')
+        #     plt.gca().invert_yaxis()
+        #     plt.figure(2)
+        #     plt.plot(self.t_ext,self.p_ext,'-or')
+        #     plt.plot(self.reference_profile.temperature,pressures)
+        #     plt.plot(t_mean[gw:-gw], Ref.p0_half_global[gw:-gw],'-ob')
+        #     plt.gca().invert_yaxis()
+        #     plt.show()
+        # except:
+        #     print('error in making plots')
+        #     pass
+        #---END Plotting to evaluate implementation of buffer zone
+
+
+        return
+
+
+
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,
                  ParallelMPI.ParallelMPI Pa):
 
-        if TS.rk_step == 0:
-            if self.reference_type == 'InteractiveRCE':
-                if np.abs(self.reference_profile.sst - Sur.T_surface) > 1.0:
-                    self.initialize_profiles(Gr, Ref, DV, Sur, Pa)
+        cdef double [:] pressures = np.arange(25, 1015, 10) * 100.0
+        pressures = np.array(pressures[::-1], dtype=np.double)
 
+        if self.radiation_frequency <= 0.0:
+            if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
+                self.reference_profile.update(pressures, Sur.T_surface)
+                self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
+            self.update_RRTM(Gr, Ref, PV, DV,Sur, Pa)
 
-            if self.radiation_frequency <= 0.0:
-                self.update_RRTM(Gr, Ref, PV, DV,Sur, Pa)
-            elif TS.t >= self.next_radiation_calculate:
-                self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
-                self.next_radiation_calculate = (TS.t//self.radiation_frequency + 1.0) * self.radiation_frequency
+        elif TS.t >= self.next_radiation_calculate:
+            if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
+                self.reference_profile.update(pressures, Sur.T_surface)
+                self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
+            self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
+            self.next_radiation_calculate = (TS.t//self.radiation_frequency + 1.0) * self.radiation_frequency
 
 
         cdef:
@@ -828,8 +928,6 @@ cdef class RadiationRRTM(RadiationBase):
 
                         PV.tendencies[s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] * Ref.alpha0_half[k]
                         self.dTdt_rad[ijk] = self.heating_rate[ijk] * Ref.alpha0_half[k]/cpm_c(PV.values[ijk + qt_shift])
-
-
 
         return
 

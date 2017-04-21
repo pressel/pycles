@@ -1066,8 +1066,7 @@ cdef class ForcingZGILS:
 
         # update reference profiles if necessary
         if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
-            if np.abs(self.forcing_ref.sst - Sur.T_surface) > 1.0:
-                self.forcing_ref.initialize(Pa, Ref.p0_half[:], Ref.Pg, Sur.T_surface, RH)
+           self.forcing_ref.update(Ref.p0_half[:], Sur.T_surface)
 
 
 
