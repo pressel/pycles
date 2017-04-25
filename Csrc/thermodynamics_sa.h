@@ -45,7 +45,8 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
             double pv_2 = pv_c(p0,qt,qv_star_2);
-            double pd_2 = p0 - pv_2;
+            double pd_2 = fmax(p0 - pv_2,1.0e-8);
+            pv_2 = p0 - pd_2;
             sigma_2 = qt - qv_star_2;
             lam_2 = lam_fp(T_2);
             double L_2 = L_fp(T_2,lam_2);

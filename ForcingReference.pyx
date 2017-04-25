@@ -4,6 +4,7 @@
 #cython: cdivision=True
 
 import netCDF4 as nc
+cimport mpi4py.libmpi as mpi
 from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c, s_tendency_c
 import numpy as np
@@ -13,8 +14,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
-
-# import pylab as plt
+import pylab as plt
 include 'parameters.pxi'
 
 
@@ -207,7 +207,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         try:
             self.scon = namelist['radiation']['RRTM']['solar_constant']
         except:
-            self.scon = 1367.0 #1360.0
+            self.scon = 1360.0
         try:
             self.coszen =namelist['radiation']['RRTM']['coszen']
         except:
@@ -215,15 +215,14 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         try:
             self.adif = namelist['radiation']['RRTM']['adif']
         except:
-            self.adif = 0.3 #0.07 #0.06
+            self.adif = 0.06
         try:
             self.adir = namelist['radiation']['RRTM']['adir']
         except:
-            self.adir = 0.3 #0.07
-            # if (self.coszen > 0.0):
-            #     self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
-            # else:
-            #     self.adir = 0.0
+            if (self.coszen > 0.0):
+                self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
+            else:
+                self.adir = 0.0
         return
 
     cpdef get_pv_star(self, double t):
@@ -463,7 +462,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
 
         #initialize the lookup table
-        cdef Py_ssize_t n_sst = 11
+        cdef Py_ssize_t n_sst = 3
         self.t_table = LookupProfiles(n_sst,self.nlayers)
         self.t_table.access_vals = np.linspace(Tg+self.sst_increment-10.0,
                                                Tg+self.sst_increment+10.0,n_sst)
@@ -475,6 +474,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         cdef:
             Py_ssize_t sst_index, k
 
+
         # Set the initial tropopause height guess
         k = 0
         while self.p_layers[k] > 400.0e2:
@@ -483,6 +483,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
         for sst_index in xrange(n_sst):
             self.sst = self.t_table.access_vals[sst_index]
+            print('doing rce for '+str(self.sst))
             self.rce_step(self.sst)
             self.t_table.table_vals[sst_index,:] = self.t_layers[:]
             self.p_tropo_store[sst_index] = self.p_layers[self.index_h]
@@ -492,13 +493,13 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         # This is just for checking the results
 
         ###############################################################
-        data = nc.Dataset('./CGILSdata/RCE_1xCO2.nc', 'r')
-        # Arrays must be flipped (low to high pressure) to use numpy interp function
-        pressure_ref = data.variables['p_full'][:]
-        temperature_ref = data.variables['temp_rc'][:]
-
-        self.t_table.lookup(Tg+self.sst_increment-1.5)
-
+        # data = nc.Dataset('./CGILSdata/RCE_8xCO2.nc', 'r')
+        # # Arrays must be flipped (low to high pressure) to use numpy interp function
+        # pressure_ref = data.variables['p_full'][:]
+        # temperature_ref = data.variables['temp_rc'][:]
+        #
+        # self.t_table.lookup(Tg+self.sst_increment-1.5)
+        #
         # plt.figure(1)
         # try:
         #     for k in xrange(n_sst):
@@ -541,13 +542,6 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
                 self.qv_layers[k] = pv/(pd * eps_vi + pv)
             for k in xrange(1,self.nlayers):
                 self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
-        # plt.figure('t_layers')
-        # plt.plot(self.t_layers, self.p_layers)
-        # plt.gca().invert_yaxis()
-        # plt.figure('qv_layers')
-        # plt.plot(self.qv_layers, self.p_layers)
-        # plt.gca().invert_yaxis()
-        # plt.show()
 
         self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
         self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
@@ -560,16 +554,6 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
 
         self.is_init=True
-
-        # plt.figure('ref T in ref init')
-        # plt.plot(self.temperature,pressure_array)
-        # plt.gca().invert_yaxis()
-        # plt.figure('ref rv in ref init')
-        # plt.plot(self.rv,pressure_array)
-        # plt.gca().invert_yaxis()
-        # plt.show()
-
-
 
         return
 
@@ -612,15 +596,16 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             Py_ssize_t index_h_old = 0
             double delta_t, rhval, pv, pd
 
-
         while abs(self.index_h-index_h_old) > 0:
+            print(self.index_h)
             for k in xrange(self.nlayers):
                 self.t_layers[k] = t_adi[k]
                 self.qv_layers[k] = qv_adi[k]
 
 
             delta_t = 100.0
-            while delta_t > 0.0001:
+            while delta_t > 0.001:
+
                 # update temperatures due to radiation
                 self.compute_radiation()
 
@@ -678,13 +663,6 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             self.qt[k] = qt_[k]
             self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
-        # plt.figure('ref T in ref update')
-        # plt.plot(self.temperature,pressure_array)
-        # plt.gca().invert_yaxis()
-        # plt.figure('ref rv in ref update')
-        # plt.plot(self.rv,pressure_array)
-        # plt.gca().invert_yaxis()
-        # plt.show()
 
         return
 
