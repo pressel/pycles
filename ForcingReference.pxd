@@ -96,3 +96,4 @@ cdef class LookupProfiles:
         double [:] access_vals
         double [:] profile_interp
     cpdef lookup(self, double val)
+    cpdef communicate(self,  ParallelMPI.ParallelMPI Pa)

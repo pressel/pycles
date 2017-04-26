@@ -4,7 +4,6 @@
 #cython: cdivision=True
 
 import netCDF4 as nc
-cimport mpi4py.libmpi as mpi
 from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c, s_tendency_c
 import numpy as np
@@ -462,7 +461,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
 
         #initialize the lookup table
-        cdef Py_ssize_t n_sst = 3
+        cdef Py_ssize_t n_sst = 11
         self.t_table = LookupProfiles(n_sst,self.nlayers)
         self.t_table.access_vals = np.linspace(Tg+self.sst_increment-10.0,
                                                Tg+self.sst_increment+10.0,n_sst)
@@ -476,18 +475,21 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
 
         # Set the initial tropopause height guess
-        k = 0
-        while self.p_layers[k] > 400.0e2:
-            self.index_h = k
-            k += 1
+        if Pa.rank == 0:
+            k = 0
+            while self.p_layers[k] > 400.0e2:
+                self.index_h = k
+                k += 1
 
-        for sst_index in xrange(n_sst):
-            self.sst = self.t_table.access_vals[sst_index]
-            print('doing rce for '+str(self.sst))
-            self.rce_step(self.sst)
-            self.t_table.table_vals[sst_index,:] = self.t_layers[:]
-            self.p_tropo_store[sst_index] = self.p_layers[self.index_h]
-            self.toa_store[sst_index] = self.toa_flux
+            for sst_index in xrange(n_sst):
+                self.sst = self.t_table.access_vals[sst_index]
+                print('doing rce for '+str(self.sst))
+                self.rce_step(self.sst)
+                self.t_table.table_vals[sst_index,:] = self.t_layers[:]
+                self.p_tropo_store[sst_index] = self.p_layers[self.index_h]
+                self.toa_store[sst_index] = self.toa_flux
+
+        self.t_table.communicate(Pa)
 
         ###---Commment out below when running on cluster
         # This is just for checking the results
@@ -498,20 +500,21 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         # pressure_ref = data.variables['p_full'][:]
         # temperature_ref = data.variables['temp_rc'][:]
         #
-        # self.t_table.lookup(Tg+self.sst_increment-1.5)
-        #
-        # plt.figure(1)
-        # try:
-        #     for k in xrange(n_sst):
-        #         plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-b')
-        #     plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
-        #     plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
-        #     plt.xlabel('Temperature, K')
-        #     plt.ylabel('Pressure, hPa')
-        #     plt.gca().invert_yaxis()
-        # except:
-        #     pass
-        #
+        self.t_table.lookup(Tg+self.sst_increment-1.5)
+        if Pa.rank==1:
+            plt.figure(1)
+            try:
+                for k in xrange(n_sst):
+                    plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-b')
+                # plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
+                plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
+                plt.xlabel('Temperature, K')
+                plt.ylabel('Pressure, hPa')
+                plt.gca().invert_yaxis()
+            except:
+                pass
+            plt.show()
+
         # plt.figure(2)
         # try:
         #     plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0))
@@ -695,6 +698,17 @@ cdef class LookupProfiles:
                 self.profile_interp[k] = y1 + (val - x1) * (y2 - y1)/del_
         return
 
+    cpdef communicate(self,  ParallelMPI.ParallelMPI Pa):
+        cdef:
+            double [:] global_vals
+            Py_ssize_t iprof, k
+
+        for iprof in xrange(self.nprofiles):
+           global_vals = Pa.domain_vector_sum(self.table_vals[iprof,:], self.nz)
+           with nogil:
+            for k in xrange(self.nz):
+                self.table_vals[iprof,k] = global_vals[k]
+        return
 
 
 
