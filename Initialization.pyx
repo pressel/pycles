@@ -1266,10 +1266,12 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
 
     from scipy.interpolate import pchip
 
-    def interp_pchip(z_out, z_in, v_in):
-        p = pchip(z_in, v_in, extrapolate=True)
-        return p(z_out)
-
+    def interp_pchip(z_out, z_in, v_in, pchip_type=True):
+        if pchip_type:
+            p = pchip(z_in, v_in, extrapolate=True)
+            return p(z_out)
+        else:
+            return np.interp(z_out, z_in, v_in)
 
 
     #Generate the reference profiles

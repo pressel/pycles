@@ -1103,6 +1103,8 @@ cdef class RadiationGCMGrey(RadiationBase):
         #self.t_ref = np.interp(Ref.p0_half_global[kmax-1],np.array(self.p_gcm)[::-1], np.array(self.t_gcm)[::-1] )
 
         self.p_ext = interp_pchip(np.array(Gr.zp_half), np.array(self.z_gcm)[:], np.log(np.array(self.p_gcm)[:]))
+
+
         self.n_ext_profile = self.p_ext.shape[0]
         self.p_ext = np.exp(np.array(self.p_ext))
 
@@ -1171,9 +1173,6 @@ cdef class RadiationGCMGrey(RadiationBase):
         t_extended = temperature_profile #np.append(temperature_profile[Gr.dims.gw:Gr.dims.nlg[2]-Gr.dims.gw], self.t_ext)
 
 
-
-
-
         #self.t_ext = np.array(self.t_ext) - (temperature_profile[kmax] - self.t_ref)
 
 
@@ -1181,22 +1180,23 @@ cdef class RadiationGCMGrey(RadiationBase):
             for k in xrange(self.n_ext_profile -1):
                 self.lw_dtrans[k] = exp(self.lw_tau[k+1] - self.lw_tau[k])
 
+
         with nogil:
             for k in xrange(self.n_ext_profile):
                self.sw_down[k] = self.insolation * exp(-self.sw_tau[k])
         with nogil:
             for k in xrange(self.n_ext_profile):
-               self.sw_up[k]  = self.sw_down[0] * self.albedo_value
+               self.sw_up[k]  = self.sw_down[kmin-1] * self.albedo_value
 
         self.lw_down[self.n_ext_profile-1] = 0.0
         self.lw_dtrans[self.n_ext_profile-1] = 1.0
         with nogil:
             for k in xrange(self.n_ext_profile-1, 0, -1):
-                self.lw_down[k-1] = self.lw_down[k] * self.lw_dtrans[k] +  stefan * t_extended[k] **4.0 * (1.0 - self.lw_dtrans[k])
+                self.lw_down[k-1] = self.lw_down[k] * self.lw_dtrans[k] +  (stefan * t_extended[k] **4.0) * (1.0 - self.lw_dtrans[k])
 
-        self.lw_up[0] = stefan * Sur.T_surface**4.0
+        self.lw_up[kmin-1] = stefan * Sur.T_surface**4.0
         with nogil:
-            for k in xrange(1,self.n_ext_profile):
+            for k in xrange(kmin,kmax+1):
                 self.lw_up[k] = self.lw_up[k-1] * self.lw_dtrans[k] + (stefan * t_extended[k] ** 4.0)*(1.0 - self.lw_dtrans[k])
 
         with nogil:
@@ -1223,10 +1223,10 @@ cdef class RadiationGCMGrey(RadiationBase):
                 self.dsdt_profile[k] = -(self.net_flux[k+1] - self.net_flux[k])*dzi/t_mean[k]*Gr.dims.imet_half[k]
 
 
-        self.srf_lw_up = self.lw_up[0]
-        self.srf_lw_down = self.lw_down[0]
-        self.srf_sw_up= self.sw_up[0]
-        self.srf_sw_down= self.sw_down[0]
+        self.srf_lw_up = self.lw_up[kmin-1]
+        self.srf_lw_down = self.lw_down[kmin-1]
+        self.srf_sw_up= self.sw_up[kmin-1]
+        self.srf_sw_down= self.sw_down[kmin-1]
 
         return
 
@@ -1241,17 +1241,19 @@ cdef class RadiationGCMGrey(RadiationBase):
 
 
 
-        cdef Py_ssize_t npts = Gr.dims.nlg[2] - 2*Gr.dims.gw
-        NS.write_profile('lw_flux_up', self.lw_up[0:npts], Pa)
-        NS.write_profile('lw_flux_down', self.lw_down[0:npts], Pa)
-        NS.write_profile('sw_flux_up', self.sw_up[0:npts], Pa)
-        NS.write_profile('sw_flux_down', self.sw_down[0:npts], Pa)
-        NS.write_profile('grey_rad_heating', self.h_profile[0:npts], Pa)
-        NS.write_profile('grey_rad_dsdt', self.dsdt_profile[0:npts], Pa)
+        cdef Py_ssize_t npts = Gr.dims.nlg[2] - Gr.dims.gw
+        NS.write_profile('lw_flux_up', self.lw_up[Gr.dims.gw-1:npts-1], Pa)
+        NS.write_profile('lw_flux_down', self.lw_down[Gr.dims.gw-1:npts-1], Pa)
+        NS.write_profile('sw_flux_up', self.sw_up[Gr.dims.gw-1:npts-1], Pa)
+        NS.write_profile('sw_flux_down', self.sw_down[Gr.dims.gw-1:npts-1], Pa)
+        NS.write_profile('grey_rad_heating', self.h_profile[Gr.dims.gw:npts], Pa)
+        NS.write_profile('grey_rad_dsdt', self.dsdt_profile[Gr.dims.gw:npts], Pa)
 
         return
 
-def interp_pchip(z_out, z_in, v_in):
-
-    p = pchip(z_in, v_in, extrapolate=True)
-    return p(z_out)
+def interp_pchip(z_out, z_in, v_in, pchip_type=True):
+    if pchip_type:
+        p = pchip(z_in, v_in, extrapolate=True)
+        return p(z_out)
+    else:
+        return np.interp(z_out, z_in, v_in)

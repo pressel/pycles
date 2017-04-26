@@ -16,6 +16,7 @@ cimport DiagnosticVariables
 cimport numpy as np
 from thermodynamic_functions cimport pd_c, pv_c
 from entropies cimport sv_c, sd_c
+from scipy.special import erf
 
 
 include 'parameters.pxi'
@@ -82,7 +83,6 @@ cdef class Rayleigh:
         self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.double, order='c')
         z_top = Gr.zpl[Gr.dims.nlg[2] - Gr.dims.gw]
 
-        print z_top
         with nogil:
             for k in range(Gr.dims.nlg[2]):
                 if Gr.zpl_half[k] >= z_top - self.z_d:
@@ -92,6 +92,21 @@ cdef class Rayleigh:
                     self.gamma_z[
                         k] = self.gamma_r * sin((pi / 2.0) * (1.0 - (z_top - Gr.zpl[k]) / self.z_d))**2.0
 
+
+
+        #Set up tendency damping using error function
+        z_damp = z_top - self.z_d
+        z = (np.array(Gr.zp) - z_damp)/( self.z_d*0.5)
+        z_half = (np.array(Gr.zp_half) - z_damp)/( self.z_d*0.5)
+
+        tend_flat = erf(z)
+        tend_flat[tend_flat < 0.0] = 0.0
+        tend_flat = 1.0 - tend_flat
+        self.tend_flat = tend_flat
+        tend_flat = erf(z_half)
+        tend_flat[tend_flat < 0.0] = 0.0
+        tend_flat = 1.0 - tend_flat
+        self.tend_flat_half = tend_flat
 
         return
 
@@ -110,6 +125,7 @@ cdef class Rayleigh:
             Py_ssize_t i, j, k, ishift, jshift, ijk
             double[:] domain_mean
 
+
         for var_name in PV.name_index:
             var_shift = PV.get_varshift(Gr, var_name)
             domain_mean = Pa.HorizontalMean(Gr, & PV.values[var_shift])
@@ -121,7 +137,16 @@ cdef class Rayleigh:
                             jshift = j * jstride
                             for k in xrange(kmin, kmax):
                                 ijk = ishift + jshift + k
-                                PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_zhalf[k]
+                                PV.tendencies[var_shift + ijk] *= self.tend_flat_half[k]
+            elif var_name == 'u' or var_name == 'v':
+                with nogil:
+                    for i in xrange(imin, imax):
+                        ishift = i * istride
+                        for j in xrange(jmin, jmax):
+                            jshift = j * jstride
+                            for k in xrange(kmin, kmax):
+                                ijk = ishift + jshift + k
+                                PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_z[k]
             else:
                 with nogil:
                     for i in xrange(imin, imax):
@@ -130,6 +155,7 @@ cdef class Rayleigh:
                             jshift = j * jstride
                             for k in xrange(kmin, kmax):
                                 ijk = ishift + jshift + k
+                                PV.tendencies[var_shift + ijk] *= self.tend_flat[k]
                                 PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_z[k]
         return
 

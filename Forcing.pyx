@@ -1169,6 +1169,8 @@ cdef class ForcingGCMFixed:
         temp_fino_in = input_data_tv['temp_fino'][:,lat_idx]
         temp_rad_in = input_data_tv['temp_rad'][:,lat_idx]
         div_in = input_data_tv['div'][:,lat_idx]
+        temp_in = input_data_tv['t'][:,lat_idx]
+        qt_in = input_data_tv['shum'][:,lat_idx]
 
 
         #print temp_fino_in, temp_vadv_in
@@ -1189,11 +1191,47 @@ cdef class ForcingGCMFixed:
 
         self.ug = interp_pchip(Gr.zp_half, z_in[::-1], u_geos_in[::-1])
         self.vg = interp_pchip(Gr.zp_half, z_in[::-1], v_geos_in[::-1])
-        self.temp_dt_hadv =  interp_pchip(Gr.zp_half, z_in[::-1], temp_fino_in[::-1]) +  interp_pchip(Gr.zp_half, z_in[::-1], temp_vadv_in[::-1]) + interp_pchip(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
-        self.shum_dt = interp_pchip(Gr.zp_half, z_in[::-1], shum_hadv_in[::-1] + shum_vadv_in[::-1])
+        #self.temp_dt_hadv =  interp_pchip(Gr.zp_half, z_in[::-1], temp_fino_in[::-1]) +  interp_pchip(Gr.zp_half, z_in[::-1], temp_vadv_in[::-1]) + interp_pchip(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
+        self.temp_dt_hadv =  interp_pchip(Gr.zp_half, z_in[::-1], temp_fino_in[::-1])+ interp_pchip(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
+        #self.shum_dt = interp_pchip(Gr.zp_half, z_in[::-1], shum_hadv_in[::-1] + shum_vadv_in[::-1])
+        self.shum_dt = interp_pchip(Gr.zp_half, z_in[::-1], shum_hadv_in[::-1] )
         #self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g *alpha_in[::-1] )*np.array(Ref.rho0_half)
-        self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g  ) * 0.0
-        print np.array(self.subsidence), np.array(alpha_in)
+        self.subsidence = -interp_pchip(Gr.zp, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g  )
+
+        w_gcm = -interp_pchip(Gr.zp, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g  )
+        rho_gcm = 1.0/interp_pchip(Gr.zp, z_in[::-1], alpha_in[::-1])
+        rho_gcm_half = 1.0/interp_pchip(Gr.zp_half, z_in[::-1], alpha_in[::-1])
+        t_les = interp_pchip(Gr.zp, z_in[::-1], temp_in[::-1])
+        qt_les = interp_pchip(Gr.zp, z_in[::-1], qt_in[::-1])
+        temp_vadv = interp_pchip(Gr.zp_half, z_in[::-1], temp_vadv_in[::-1])
+        shum_vadv = interp_pchip(Gr.zp_half, z_in[::-1], shum_vadv_in[::-1])
+        subs_eff = np.zeros(temp_vadv.shape[0])
+
+        self.rho_gcm = rho_gcm
+        self.rho_half_gcm = rho_gcm_half
+
+        t_flux = rho_gcm * t_les * w_gcm
+        qt_flux = rho_gcm * qt_les * w_gcm
+        dt_vadv_eddy = np.zeros(t_flux.shape[0])
+        dqt_vadv_eddy = np.zeros(qt_flux.shape[0])
+        temp_dt = 0.0
+        qt_hadv = 0.0
+        kmax = Gr.dims.nlg[2] - Gr.dims.gw -1
+        for i in range(Gr.dims.gw,kmax):
+            dt_vadv_eddy[i] = -(1.0/rho_gcm_half[i]) * (t_flux[i] - t_flux[i-1]) * Gr.dims.dxi[2] * Gr.dims.imetl_half[i]
+            temp_dt = temp_vadv[i] - dt_vadv_eddy[i]
+            self.temp_dt_hadv[i] +=  temp_dt
+
+            dqt_vadv_eddy[i] = -(1.0/rho_gcm_half[i]) * (qt_flux[i] - qt_flux[i-1]) * Gr.dims.dxi[2] * Gr.dims.imetl_half[i]
+            shum_dt = shum_vadv[i] - dqt_vadv_eddy[i]
+            self.shum_dt[i] += shum_dt
+        for i in xrange(kmax, Gr.dims.nlg[2]-1):
+            self.temp_dt_hadv[i] +=  temp_dt
+            self.shum_dt[i] += shum_dt
+
+
+
+        #print np.array(self.subsidence), np.array(alpha_in)
         #self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], div_in[::-1]   )*np.array(Gr.zpl_half)
         # temp_hadv = np.mean(tv_input_data['surf_dict']['dt_tg_hadv'][:,::-1], axis=0)
         # temp_fino = np.mean(tv_input_data['surf_dict']['dt_tg_fino'][:,::-1], axis=0)
@@ -1245,8 +1283,8 @@ cdef class ForcingGCMFixed:
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
 
         # Apply Subsidence
-        apply_subsidence_temperature(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &DV.values[t_shift], &PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+        apply_subsidence_flux_form_temperature(&Gr.dims, &self.rho_gcm[0], &self.rho_half_gcm[0], &self.subsidence[0], &PV.values[qt_shift], &DV.values[t_shift], &PV.tendencies[s_shift])
+        apply_subsidence_flux_form(&Gr.dims, &self.rho_gcm[0], &self.rho_half_gcm[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
 
         with nogil:
             for i in xrange(gw,imax):
@@ -1299,13 +1337,13 @@ cdef class ForcingGCMFixed:
 
 
 
-        apply_subsidence_temperature(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift], &DV.values[t_shift],
+        apply_subsidence_flux_form_temperature(&Gr.dims,&self.rho_gcm[0],&self.rho_half_gcm[0],&self.subsidence[0],&PV.values[qt_shift], &DV.values[t_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('ls_subs_dsdt', mean_tendency[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0], &DV.values[t_shift],
+        apply_subsidence_flux_form(&Gr.dims,&self.rho_gcm[0],&self.rho_half_gcm[0],&self.subsidence[0], &DV.values[t_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('ls_subs_dtdt', mean_tendency[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -1753,6 +1791,74 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
 
     return
 
+
+cdef apply_subsidence_flux_form(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double* values,  double *tendencies):
+
+    cdef:
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] -dims.gw
+        Py_ssize_t jmax = dims.nlg[1] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw -1
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k
+        double dxi = dims.dxi[2]
+        double flux_hi, flux_lo, tend
+
+    with nogil:
+        for i in xrange(imin,imax):
+            ishift = i*istride
+            for j in xrange(jmin,jmax):
+                jshift = j*jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    flux_hi = rho0[k] * subsidence[k] * (values[ijk+1] + values[ijk])*0.5
+                    flux_lo = rho0[k-1] * subsidence[k-1]*(values[ijk] + values[ijk-1])*0.5
+                    tend = -(1.0/rho0_half[k]) * (flux_hi - flux_lo) * dxi * dims.imetl_half[k]
+                    tendencies[ijk] +=  tend
+                for k in xrange(kmax, dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    tendencies[ijk] += tend
+
+    return
+
+
+
+cdef apply_subsidence_flux_form_temperature(Grid.DimStruct *dims, double *rho0, double *rho0_half,
+                                            double *subsidence, double *qt, double* values,  double *tendencies):
+
+    cdef:
+        Py_ssize_t imin = dims.gw
+        Py_ssize_t jmin = dims.gw
+        Py_ssize_t kmin = dims.gw
+        Py_ssize_t imax = dims.nlg[0] -dims.gw
+        Py_ssize_t jmax = dims.nlg[1] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw -1
+        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
+        Py_ssize_t jstride = dims.nlg[2]
+        Py_ssize_t ishift, jshift, ijk, i,j,k
+        double dxi = dims.dxi[2]
+        double flux_hi, flux_lo
+        double tend
+
+    with nogil:
+        for i in xrange(imin,imax):
+            ishift = i*istride
+            for j in xrange(jmin,jmax):
+                jshift = j*jstride
+                for k in xrange(kmin,kmax):
+                    ijk = ishift + jshift + k
+                    flux_hi = rho0[k] * subsidence[k] * (values[ijk+1] + values[ijk])*0.5
+                    flux_lo = rho0[k-1] * subsidence[k-1]*(values[ijk] + values[ijk-1])*0.5
+                    tend = -cpm_c(qt[ijk])/values[ijk] *(1.0/rho0_half[k]) * (flux_hi - flux_lo) * dxi * dims.imetl_half[k]
+                    tendencies[ijk] += tend
+                for k in xrange(kmax, dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    tendencies[ijk] += tend
+
+    return
 
 cdef apply_subsidence_temperature(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double *qt, double* values,  double *tendencies):
 

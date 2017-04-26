@@ -185,6 +185,8 @@ cdef class ForcingGCMFixed:
         double [:] temp_dt_fino
         double [:] shum_dt
         double [:] p_gcm
+        double [:] rho_gcm
+        double [:] rho_half_gcm
         double coriolis_param
         str file
         double lat
