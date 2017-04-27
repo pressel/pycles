@@ -1192,7 +1192,8 @@ cdef class ForcingGCMFixed:
         self.ug = interp_pchip(Gr.zp_half, z_in[::-1], u_geos_in[::-1])
         self.vg = interp_pchip(Gr.zp_half, z_in[::-1], v_geos_in[::-1])
         #self.temp_dt_hadv =  interp_pchip(Gr.zp_half, z_in[::-1], temp_fino_in[::-1]) +  interp_pchip(Gr.zp_half, z_in[::-1], temp_vadv_in[::-1]) + interp_pchip(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
-        self.temp_dt_hadv =  interp_pchip(Gr.zp_half, z_in[::-1], temp_fino_in[::-1])+ interp_pchip(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
+        self.temp_dt_hadv =  interp_pchip(Gr.zp_half, z_in[::-1], temp_fino_in[::-1])
+        self.temp_dt_fino =  interp_pchip(Gr.zp_half, z_in[::-1], temp_hadv_in[::-1])
         #self.shum_dt = interp_pchip(Gr.zp_half, z_in[::-1], shum_hadv_in[::-1] + shum_vadv_in[::-1])
         self.shum_dt_hadv = interp_pchip(Gr.zp_half, z_in[::-1], shum_hadv_in[::-1] )
         #self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], omega_in[::-1] * alpha_in[::-1]/g *alpha_in[::-1] )*np.array(Ref.rho0_half)
@@ -1215,43 +1216,26 @@ cdef class ForcingGCMFixed:
         dt_vadv_eddy = np.zeros(t_flux.shape[0])
         dqt_vadv_eddy = np.zeros(qt_flux.shape[0])
         self.shum_dt_eddy = np.zeros(qt_flux.shape[0])
+        self.temp_dt_eddy = np.zeros(qt_flux.shape[0])
         temp_dt = 0.0
         qt_hadv = 0.0
         kmax = Gr.dims.nlg[2] - Gr.dims.gw -1
         for i in range(Gr.dims.gw,kmax):
             dt_vadv_eddy[i] = -(1.0/rho_gcm_half[i]) * (t_flux[i] - t_flux[i-1]) * Gr.dims.dxi[2] * Gr.dims.imetl_half[i]
             temp_dt = temp_vadv[i] - dt_vadv_eddy[i]
-            self.temp_dt_hadv[i] +=  temp_dt
-
+            self.temp_dt_eddy[i] +=  temp_dt
             dqt_vadv_eddy[i] = -(1.0/rho_gcm_half[i]) * (qt_flux[i] - qt_flux[i-1]) * Gr.dims.dxi[2] * Gr.dims.imetl_half[i]
             shum_dt = shum_vadv[i] - dqt_vadv_eddy[i]
             self.shum_dt_eddy[i] += shum_dt
         for i in xrange(kmax, Gr.dims.nlg[2]-1):
-            self.temp_dt_hadv[i] +=  temp_dt
+            self.temp_dt_eddy[i] +=  temp_dt
             self.shum_dt_eddy[i] += shum_dt
 
 
-        import pylab as plt
-        plt.figure(1)
-        plt.plot(self.shum_dt_eddy, Gr.zp_half)
-        plt.show()
-
-        #print np.array(self.subsidence), np.array(alpha_in)
-        #self.subsidence = -interp_pchip(Gr.zp_half, z_in[::-1], div_in[::-1]   )*np.array(Gr.zpl_half)
-        # temp_hadv = np.mean(tv_input_data['surf_dict']['dt_tg_hadv'][:,::-1], axis=0)
-        # temp_fino = np.mean(tv_input_data['surf_dict']['dt_tg_fino'][:,::-1], axis=0)
-        #
-        # self.temp_dt_hadv = np.interp(Ref.p0_half, p_gcm, temp_hadv)
-        # self.temp_dt_fino = np.interp(Ref.p0_half, p_gcm, temp_fino)
-        #
-        # shum_hadv = np.mean(tv_input_data['surf_dict']['dt_qg_hadv'][:,::-1], axis=0)
-        # self.shum_dt = np.interp(Ref.p0_half, p_gcm, shum_hadv)
-        #
-        # self.subsidence = -np.interp(Ref.p0_half, p_gcm, np.mean(tv_input_data['surf_dict']['omega'][:,::-1],axis=0))* (np.array(Ref.alpha0_half))/g
-        #
         NS.add_profile('ls_subsidence', Gr, Pa)
-        #NS.add_profile('ls_dtdt_fino', Gr, Pa)
         NS.add_profile('ls_dtdt_hadv', Gr, Pa)
+        NS.add_profile('ls_dtdt_eddy', Gr, Pa)
+        NS.add_profile('ls_dtdt_fino', Gr, Pa)
         NS.add_profile('ls_dsdt_hadv', Gr, Pa)
         NS.add_profile('ls_dqtdt_hadv', Gr, Pa)
         NS.add_profile('ls_dqtdt_eddy', Gr, Pa)
@@ -1291,7 +1275,9 @@ cdef class ForcingGCMFixed:
 
         # Apply Subsidence
         apply_subsidence_flux_form_temperature(&Gr.dims, &self.rho_gcm[0], &self.rho_half_gcm[0], &self.subsidence[0], &PV.values[qt_shift], &DV.values[t_shift], &PV.tendencies[s_shift])
-        apply_subsidence_flux_form(&Gr.dims, &self.rho_gcm[0], &self.rho_half_gcm[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+        
+        cdef double [:] qt_tend_tmp = np.zeros(Gr.dims.npg, dtype=np.double) 
+        apply_subsidence_flux_form(&Gr.dims, &self.rho_gcm[0], &self.rho_half_gcm[0], &self.subsidence[0], &PV.values[qt_shift], &qt_tend_tmp[0])
 
         with nogil:
             for i in xrange(gw,imax):
@@ -1308,9 +1294,9 @@ cdef class ForcingGCMFixed:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
 
-                        PV.tendencies[s_shift + ijk] += (cpm_c(qt) * (self.temp_dt_hadv[k]))/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.shum_dt_eddy[k] +  self.shum_dt_hadv[k])
-                        PV.tendencies[qt_shift + ijk] += (self.shum_dt_eddy[k] +  self.shum_dt_hadv[k])
+                        PV.tendencies[s_shift + ijk] += (cpm_c(qt) * (self.temp_dt_hadv[k] + self.temp_dt_eddy[k] + self.temp_dt_fino[k]))/t
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * ( self.shum_dt_hadv[k] + self.shum_dt_hadv[k] + qt_tend_tmp[ijk] )
+                        PV.tendencies[qt_shift + ijk] += (self.shum_dt_eddy[k] +  self.shum_dt_hadv[k] + qt_tend_tmp[ijk])
 
         return
 
@@ -1386,12 +1372,13 @@ cdef class ForcingGCMFixed:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
                         tmp_tendency[ijk] += (cpm_c(qt) * (self.temp_dt_hadv[k]) )/t
-                        tmp_tendency[ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.shum_dt_eddy[k] +  self.shum_dt_hadv[k])
+                        tmp_tendency[ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.shum_dt_eddy[k] +  self.shum_dt_hadv[k] )
 
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
 
         NS.write_profile('ls_subsidence', self.subsidence[Gr.dims.gw:-Gr.dims.gw],Pa)
-        #NS.write_profile('ls_dtdt_fino',self.temp_dt_fino[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_profile('ls_dtdt_fino',self.temp_dt_fino[Gr.dims.gw:-Gr.dims.gw],Pa)
+        NS.write_profile('ls_dtdt_eddy',self.temp_dt_eddy[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('ls_dsdt_hadv', mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('ls_dtdt_hadv', self.temp_dt_hadv[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('ls_dqtdt_hadv', self.shum_dt_hadv[Gr.dims.gw:-Gr.dims.gw],Pa)
