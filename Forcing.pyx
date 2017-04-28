@@ -1295,7 +1295,7 @@ cdef class ForcingGCMFixed:
                         t  = DV.values[t_shift + ijk]
 
                         PV.tendencies[s_shift + ijk] += (cpm_c(qt) * (self.temp_dt_hadv[k] + self.temp_dt_eddy[k] + self.temp_dt_fino[k]))/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * ( self.shum_dt_hadv[k] + self.shum_dt_hadv[k] + qt_tend_tmp[ijk] )
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * ( self.shum_dt_hadv[k] + self.shum_dt_eddy[k] + qt_tend_tmp[ijk] )
                         PV.tendencies[qt_shift + ijk] += (self.shum_dt_eddy[k] +  self.shum_dt_hadv[k] + qt_tend_tmp[ijk])
 
         return
