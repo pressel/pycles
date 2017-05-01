@@ -1170,19 +1170,19 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         co2_factor =  namelist['radiation']['RRTM']['co2_factor']
     except:
         co2_factor = 1.0
-    n_double_co2 = int(np.log2(co2_factor))
+    n_double_co2 = np.log2(co2_factor)
 
     try:
         reference_type = str(namelist['forcing']['reference_profile'])
     except:
         reference_type = 'AdjustedAdiabat'
 
-    if n_double_co2 == 0 and reference_type == 'AdjustedAdiabat':
+    if int(n_double_co2) == 0 and reference_type == 'AdjustedAdiabat':
         reference_profiles = AdjustedMoistAdiabat(namelist, LH, Pa)
     elif reference_type == 'InteractiveRCE':
         reference_profiles = InteractiveReferenceRCE(namelist, LH, Pa)
     else:
-        filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
+        filename = './CGILSdata/RCE_'+ str(co2_factor)+'xCO2.nc'
         reference_profiles = ReferenceRCE(filename)
 
     try:

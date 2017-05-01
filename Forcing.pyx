@@ -896,7 +896,7 @@ cdef class ForcingZGILS:
             co2_factor =  namelist['radiation']['RRTM']['co2_factor']
         except:
             co2_factor = 1.0
-        self.n_double_co2 = int(np.log2(co2_factor))
+        self.n_double_co2 = np.log2(co2_factor)
 
         try:
             self.reference_type = str(namelist['forcing']['reference_profile'])
@@ -917,7 +917,7 @@ cdef class ForcingZGILS:
         # way he formulates the relaxation coefficient formula, effective timescale in FT is about 24 hr
         self.alpha_h = 1.2 # ad hoc qt/qt_ref threshold ratio for determining BL height
         # Initialize the reference profiles class
-        if self.n_double_co2 == 0 and self.reference_type == 'AdjustedAdiabat':
+        if int(self.n_double_co2) == 0 and self.reference_type == 'AdjustedAdiabat':
             self.forcing_ref = AdjustedMoistAdiabat(namelist, LH, Pa)
         elif self.reference_type == 'InteractiveRCE':
             self.forcing_ref = InteractiveReferenceRCE(namelist, LH, Pa)

@@ -158,7 +158,7 @@ cdef class ForcingZGILS:
     cdef:
         Py_ssize_t loc
         bint varsub
-        Py_ssize_t n_double_co2
+        double n_double_co2
         str reference_type
         double [:] dtdt
         double [:] dqtdt
