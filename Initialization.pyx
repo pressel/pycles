@@ -1264,16 +1264,6 @@ def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
 
 
-    from scipy.interpolate import pchip
-
-    def interp_pchip(z_out, z_in, v_in, pchip_type=True):
-        if pchip_type:
-            p = pchip(z_in, v_in, extrapolate=True)
-            return p(z_out)
-        else:
-            return np.interp(z_out, z_in, v_in)
-
-
     #Generate the reference profiles
     data_path = namelist['gcm']['file']
     lat = namelist['gcm']['latitude']
@@ -1349,15 +1339,17 @@ def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
 
 
+
     #Generate the reference profiles
     data_path = './forcing/f_data_tv.pkl'
     fh = open(data_path, 'r')
     input_data_tv = cPickle.load(fh)
     fh.close()
 
-    RS.Pg = input_data_tv['surf_dict']['pfull'][0]
-    RS.Tg = input_data_tv['surf_dict']['temp'][0,0]
-    RS.qtg = input_data_tv['surf_dict']['sphum'][0,0]
+
+    RS.Pg = np.mean(input_data_tv['ps'][:])
+    RS.Tg = np.mean(input_data_tv['ts'][:])
+    RS.qtg = np.mean(input_data_tv['shum'][:,-1])
     RS.u0 = 0.0
     RS.v0 = 0.0
 
@@ -1376,17 +1368,18 @@ def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
         Py_ssize_t ijk
 
 
-    #First build the initial profiles
-    p_gcm = input_data_tv['surf_dict']['pfull'][::-1]
-    t_gcm = input_data_tv['surf_dict']['temp'][0,::-1]
-    qt_gcm = input_data_tv['surf_dict']['sphum'][0,::-1]
-    u_gcm = input_data_tv['surf_dict']['ucomp'][0,::-1]
-    v_gcm = input_data_tv['surf_dict']['vcomp'][0,::-1]
+    t_in = input_data_tv['temp'][0,::-1]
+    shum_in = input_data_tv['shum'][0,::-1]
+    u_in = input_data_tv['u'][0,::-1]
+    v_in = input_data_tv['v'][0,::-1]
+    z_in = input_data_tv['zfull'][0, ::-1]
 
-    cdef double [:] t = np.interp(RS.p0_half, p_gcm, t_gcm)
-    cdef double [:] qt = np.interp(RS.p0_half, p_gcm, qt_gcm)
-    cdef double [:] u = np.interp(RS.p0_half, p_gcm, u_gcm)
-    cdef double [:] v = np.interp(RS.p0_half, p_gcm, v_gcm)
+
+    cdef double [:] t = interp_pchip(Gr.zp_half, z_in, t_in)
+    cdef double [:] qt = interp_pchip(Gr.zp_half, z_in, shum_in)
+    cdef double [:] u = interp_pchip(Gr.zp_half, z_in, u_in)
+    cdef double [:] v = interp_pchip(Gr.zp_half, z_in, v_in)
+
 
     #Generate initial perturbations (here we are generating more than we need)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
@@ -1410,6 +1403,7 @@ def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
 
 
+
 def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
                        DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
@@ -1418,3 +1412,11 @@ def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
         PV.add_variable('smoke', 'm/s', "sym", "scalar", Pa)
         return
     return
+
+from scipy.interpolate import pchip
+def interp_pchip(z_out, z_in, v_in, pchip_type=True):
+    if pchip_type:
+        p = pchip(z_in, v_in, extrapolate=True)
+        return p(z_out)
+    else:
+        return np.interp(z_out, z_in, v_in)
