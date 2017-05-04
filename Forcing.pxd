@@ -213,6 +213,20 @@ cdef class ForcingGCMVarying:
         double [:] temp_dt_fino
         double [:] shum_dt_vadv
         double [:] shum_dt_hadv
+
+
+        double [:] u_dt_hadv
+        double [:] u_dt_vadv
+        double [:] u_dt_cof
+        double [:] u_dt_pres
+        double [:] u_dt_tot
+
+        double [:] v_dt_hadv
+        double [:] v_dt_vadv
+        double [:] v_dt_cof
+        double [:] v_dt_pres
+        double [:] v_dt_tot
+
         double [:] p_gcm
         double [:] rho_gcm
         double [:] rho_half_gcm

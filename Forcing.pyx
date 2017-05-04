@@ -1422,8 +1422,9 @@ cdef class ForcingGCMVarying:
 
 
 
-        if not self.gcm_profiles_initialized or int(TS.t // (3600.0 * 6.0)) > self.t_indx:
 
+        if not self.gcm_profiles_initialized or int(TS.t // (3600.0 * 6.0)) > self.t_indx:
+            self.t_indx = int(TS.t // (3600.0 * 6.0)) 
             self.gcm_profiles_initialized = True
             Pa.root_print('Updating Time Varying Forcing')
 
@@ -1438,16 +1439,15 @@ cdef class ForcingGCMVarying:
             temp_dt_hadv = input_data_tv['temp_hadv'][self.t_indx,::-1]
             temp_dt_fino = input_data_tv['temp_fino'][self.t_indx,::-1]
             shum_dt_hadv = input_data_tv['dt_qg_hadv'][self.t_indx,::-1]
+            v_dt_tot = input_data_tv['dt_ug_real1'][self.t_indx,::-1]
+            u_dt_tot = input_data_tv['dt_vg_real1'][self.t_indx,::-1]
             omega = input_data_tv['omega'][self.t_indx,::-1]
 
             temp = input_data_tv['temp'][self.t_indx,::-1]
 
-
-
-
             self.ug = interp_pchip(Gr.zp_half, zfull, ug)
             self.vg = interp_pchip(Gr.zp_half, zfull, vg)
-            self.subsidence = interp_pchip(Gr.zp, zfull, -omega * alpha / g)
+            self.subsidence = interp_pchip(Gr.zp_half, zfull, -omega * alpha / g)
 
             self.temp_dt_hadv = interp_pchip(Gr.zp_half, zfull, temp_dt_hadv)
             self.temp_dt_fino = interp_pchip(Gr.zp_half, zfull, temp_dt_fino)
@@ -1455,9 +1455,9 @@ cdef class ForcingGCMVarying:
 
             self.rho_gcm = interp_pchip(Gr.zp, zfull, 1.0/alpha)
             self.rho_half_gcm = interp_pchip(Gr.zp_half, zfull, 1.0/alpha)
+            self.v_dt_tot = interp_pchip(Gr.zp_half, zfull, v_dt_tot)
+            self.u_dt_tot = interp_pchip(Gr.zp_half, zfull, u_dt_tot)
 
-
-            self.t_indx = int(TS.t // (3600.0 * 6.0))
             Pa.root_print('Finished updating time varying forcing')
 
             temp = interp_pchip(Gr.zp, zfull, temp)
@@ -1492,8 +1492,8 @@ cdef class ForcingGCMVarying:
 
 
         #Apply Coriolis Forcing
-        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+       #coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
+        #               &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
 
         # Apply Subsidence
         apply_subsidence_temperature(&Gr.dims, &self.rho_gcm[0], &self.rho_half_gcm[0], &self.subsidence[0], &PV.values[qt_shift], &DV.values[t_shift], &PV.tendencies[s_shift])
@@ -1520,6 +1520,8 @@ cdef class ForcingGCMVarying:
                         PV.tendencies[s_shift + ijk] += (cpm_c(qt) * (self.temp_dt_hadv[k] + self.temp_dt_fino[k]))/t
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * ( self.shum_dt_hadv[k]  + qt_tend_tmp[ijk] )
                         PV.tendencies[qt_shift + ijk] += (self.shum_dt_hadv[k] + qt_tend_tmp[ijk])
+                        PV.tendencies[u_shift + ijk] += self.u_dt_tot[k]
+                        PV.tendencies[v_shift + ijk] += self.v_dt_tot[k]
 
         return
 
@@ -1764,7 +1766,10 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    tend = (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
+                    if(subsidence[k] < 0):
+                        tend = (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
+                    else:
+                        tend = (values[ijk] - values[ijk-1]) * dxi * subsidence[k] * dims.imetl[k-1]
                     tendencies[ijk] -= tend
                 for k in xrange(kmax, dims.nlg[2]):
                     ijk = ishift + jshift + k
@@ -1862,7 +1867,11 @@ cdef apply_subsidence_temperature(Grid.DimStruct *dims, double *rho0, double *rh
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    tend = cpm_c(qt[ijk])/values[ijk] *(values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k] #+ g / values[ijk] * subsidence[k]
+                    if(subsidence[k] < 0):
+                        tend = cpm_c(qt[ijk])/values[ijk] *(values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
+                    else:
+                        tend = cpm_c(qt[ijk])/values[ijk] *(values[ijk] - values[ijk-1]) * dxi * subsidence[k] * dims.imetl[k-1]
+                    #+ g / values[ijk] * subsidence[k]
                     tendencies[ijk] -= tend
                 for k in xrange(kmax, dims.nlg[2]):
                     ijk = ishift + jshift + k
