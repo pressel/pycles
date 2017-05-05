@@ -17,7 +17,10 @@ cdef class RadiationBase:
         double srf_lw_up
         double srf_sw_down
         double srf_sw_up
-
+        double toa_lw_down
+        double toa_lw_up
+        double toa_sw_down
+        double toa_sw_up
 
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

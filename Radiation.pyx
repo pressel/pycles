@@ -69,7 +69,10 @@ cdef class RadiationBase:
         NS.add_ts('srf_lw_flux_down', Gr, Pa)
         NS.add_ts('srf_sw_flux_up', Gr, Pa)
         NS.add_ts('srf_sw_flux_down', Gr, Pa)
-
+        NS.add_ts('toa_lw_flux_up', Gr, Pa)
+        NS.add_ts('toa_lw_flux_down', Gr, Pa)
+        NS.add_ts('toa_sw_flux_up', Gr, Pa)
+        NS.add_ts('toa_sw_flux_down', Gr, Pa)
 
         return
 
@@ -127,6 +130,12 @@ cdef class RadiationBase:
         NS.write_ts('srf_lw_flux_down', self.srf_lw_down, Pa)
         NS.write_ts('srf_sw_flux_up', self.srf_sw_up, Pa)
         NS.write_ts('srf_sw_flux_down', self.srf_sw_down, Pa)
+
+        NS.write_ts('toa_lw_flux_up',self.toa_lw_up, Pa ) # Units are W/m^2
+        NS.write_ts('toa_lw_flux_down', self.toa_lw_down, Pa)
+        NS.write_ts('toa_sw_flux_up', self.toa_sw_up, Pa)
+        NS.write_ts('toa_sw_flux_down', self.toa_sw_down, Pa)
+
         return
 
 
@@ -418,7 +427,10 @@ cdef class RadiationRRTM(RadiationBase):
         self.srf_lw_up = 0.0
         self.srf_sw_up = 0.0
 
-
+        self.toa_lw_down = 0.0
+        self.toa_sw_down = 0.0
+        self.toa_lw_up = 0.0
+        self.toa_sw_up = 0.0
         casename = namelist['meta']['casename']
         self.use_reference_class = False
         if casename == 'SHEBA':
@@ -1103,6 +1115,8 @@ cdef class RadiationRRTM(RadiationBase):
 
         cdef double [:,:] heating_rate_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
         cdef double srf_lw_up_local =0.0, srf_lw_down_local=0.0, srf_sw_up_local=0.0, srf_sw_down_local=0.0
+        cdef double toa_lw_up_local =0.0, toa_lw_down_local=0.0, toa_sw_up_local=0.0, toa_sw_down_local=0.0
+
         cdef double nxny_i = 1.0/(Gr.dims.n[0]*Gr.dims.n[1])
         with nogil:
            for ip in xrange(n_pencils):
@@ -1110,6 +1124,11 @@ cdef class RadiationRRTM(RadiationBase):
                srf_lw_down_local += dflx_lw_out[ip,0] * nxny_i
                srf_sw_up_local   +=  uflx_sw_out[ip,0] * nxny_i
                srf_sw_down_local += dflx_sw_out[ip,0] * nxny_i
+
+               toa_lw_up_local   += uflx_lw_out[ip,nz_full] * nxny_i
+               toa_lw_down_local += dflx_lw_out[ip,nz_full] * nxny_i
+               toa_sw_up_local   +=  uflx_sw_out[ip,nz_full] * nxny_i
+               toa_sw_down_local += dflx_sw_out[ip,nz_full] * nxny_i
                for k in xrange(nz):
                    heating_rate_pencil[ip, k] = (hr_lw_out[ip,k] + hr_sw_out[ip,k]) * Ref.rho0_half_global[k+gw] * cpm_c(qv_pencil[ip,k])/86400.0
 
@@ -1117,6 +1136,12 @@ cdef class RadiationRRTM(RadiationBase):
         self.srf_lw_down = Pa.domain_scalar_sum(srf_lw_down_local)
         self.srf_sw_up= Pa.domain_scalar_sum(srf_sw_up_local)
         self.srf_sw_down= Pa.domain_scalar_sum(srf_sw_down_local)
+
+        self.toa_lw_up = Pa.domain_scalar_sum(toa_lw_up_local)
+        self.toa_lw_down = Pa.domain_scalar_sum(toa_lw_down_local)
+        self.toa_sw_up= Pa.domain_scalar_sum(toa_sw_up_local)
+        self.toa_sw_down= Pa.domain_scalar_sum(toa_sw_down_local)
+
 
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
