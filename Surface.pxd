@@ -186,7 +186,12 @@ cdef class SurfaceGCMVarying(SurfaceBase):
         double gustiness
         double z0
         double ct
+        double fq
+        double ft
+        double rho0
+        int t_indx
         str file
+        bint gcm_profiles_initialized
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,

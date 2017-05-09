@@ -147,6 +147,7 @@ class Simulation3d:
         cdef int rk_step
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
+        self.Sur.update(self.Gr, self.Ref,self.PV, self.DV,self.Pa,self.TS)
         self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.TS, self.Pa)
         self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.StatsIO,self.Pa)
         self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)

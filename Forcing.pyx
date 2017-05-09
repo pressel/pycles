@@ -1420,11 +1420,26 @@ cdef class ForcingGCMVarying:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS,
                  ParallelMPI.ParallelMPI Pa):
 
-
-
+        cdef:
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - gw
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i,j,k,ishift,jshift,ijk
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
+            double pd, pv, qt, qv, p0, rho0, t
+            double zmax, weight, weight_half
+            double u0_new, v0_new
 
         if not self.gcm_profiles_initialized or int(TS.t // (3600.0 * 6.0)) > self.t_indx:
-            self.t_indx = int(TS.t // (3600.0 * 6.0)) 
+            self.t_indx = int(TS.t // (3600.0 * 6.0))
             self.gcm_profiles_initialized = True
             Pa.root_print('Updating Time Varying Forcing')
 
@@ -1462,33 +1477,30 @@ cdef class ForcingGCMVarying:
 
             temp = interp_pchip(Gr.zp, zfull, temp)
 
-            #import pylab as plt
-            #plt.figure(1)
-            #plt.plot(Gr.zp, temp * np.array(self.subsidence) * np.array(self.rho_gcm))
 
-            #plt.figure(2)
-            #plt.plot(Gr.zp, temp)
+            #Now preform Galelian transformation
+            umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
-            #plt.figure(3)
-            #plt.plot(Gr.zp, np.array(self.rho_gcm))
-            #plt.show()
+            u0_new = 0.0 #(np.max(umean) - np.min(umean))/2.0
+            v0_new = 0.0 #(np.max(vmean) - np.min(vmean))/2.0
 
-        cdef:
-            Py_ssize_t gw = Gr.dims.gw
-            Py_ssize_t imax = Gr.dims.nlg[0] - gw
-            Py_ssize_t jmax = Gr.dims.nlg[1] - gw
-            Py_ssize_t kmax = Gr.dims.nlg[2] - gw
-            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            Py_ssize_t jstride = Gr.dims.nlg[2]
-            Py_ssize_t i,j,k,ishift,jshift,ijk
-            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
-            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
-            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-            Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            double pd, pv, qt, qv, p0, rho0, t
-            double zmax, weight, weight_half
+            with nogil:
+                for i in xrange(0,Gr.dims.nlg[0]):
+                    ishift = i * istride
+                    for j in xrange(0,Gr.dims.nlg[1]):
+                        jshift = j * jstride
+                        for k in xrange(0,Gr.dims.nlg[2]):
+                            ijk = ishift + jshift + k
+                            PV.values[u_shift + ijk] -= (u0_new - Ref.u0)
+                            PV.values[v_shift + ijk] -= (v0_new - Ref.v0)
+
+            Ref.u0 = u0_new
+            Ref.v0 = v0_new
+
+            print "\t Ref.u0 = ", Ref.u0
+            print "\t Ref.v0 = ", Ref.v0
+
 
 
         #Apply Coriolis Forcing

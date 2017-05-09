@@ -1118,7 +1118,7 @@ cdef class SurfaceGCMVarying(SurfaceBase):
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
 
         self.gustiness = 0.001
-        self.z0 = 1.0e-3
+        self.z0 = 5.0e-3
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
         self.CC = ClausiusClapeyron()
@@ -1155,6 +1155,7 @@ cdef class SurfaceGCMVarying(SurfaceBase):
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t th_shift = DV.get_varshift(Gr, 'theta_rho')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
             double [:] windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
 
         compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0], Ref.u0, Ref.v0, self.gustiness)
@@ -1180,6 +1181,7 @@ cdef class SurfaceGCMVarying(SurfaceBase):
             double qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
 
 
+
             # Find the surface entropy
             double pd_star = Ref.Pg - pv_star
 
@@ -1188,6 +1190,7 @@ cdef class SurfaceGCMVarying(SurfaceBase):
 
             double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
             double [:] qt_mean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
+
 
         with nogil:
             for i in xrange(gw-1, imax-gw+1):
@@ -1210,6 +1213,32 @@ cdef class SurfaceGCMVarying(SurfaceBase):
                     ij = i * istride_2d + j
                     self.u_flux[ij] = -interp_2(cm[ij], cm[ij+istride_2d])*interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
                     self.v_flux[ij] = -interp_2(cm[ij], cm[ij+1])*interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+
+
+        if TS.t < 3600.0 * -24.0:
+            if not self.gcm_profiles_initialized or int(TS.t // (3600.0 * 6.0)) > self.t_indx:
+                self.t_indx = int(TS.t // (3600.0 * 6.0))
+                self.gcm_profiles_initialized = True
+                fh = open(self.file, 'r')
+                input_data_tv = cPickle.load(fh)
+                fh.close()
+
+                self.rho0 = 1.0/input_data_tv['alpha'][self.t_indx,-1]
+                self.fq = input_data_tv['lhf_flux'][self.t_indx]
+                self.ft = input_data_tv['shf_flux'][self.t_indx]
+
+            for i in xrange(gw-1, imax-gw+1):
+                for j in xrange(gw-1,jmax-gw+1):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    lam = self.Lambda_fp(DV.values[t_shift+ijk])
+                    lv = self.L_fp(DV.values[t_shift+ijk],lam)
+                    pv = pv_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                    pd = pd_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                    sv = sv_c(pv,DV.values[t_shift+ijk])
+                    sd = sd_c(pd,DV.values[t_shift+ijk])
+                    self.qt_flux[ij] = self.fq / lv / 1.22
+                    self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ijk] + self.fq*(sv - sd)/lv)
 
         SurfaceBase.update(self, Gr, Ref, PV, DV, Pa, TS)
 

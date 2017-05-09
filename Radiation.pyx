@@ -1282,6 +1282,8 @@ cdef class RadiationGCMGreyVarying(RadiationBase):
         tv_input_data = cPickle.load(fh)
         fh.close()
 
+
+        self.lat = tv_input_data['lat']
         self.lat *= pi/180.0
         self.p_gcm = np.array(tv_input_data['pfull'][0,::-1], dtype=np.double)
         self.t_gcm = np.array(tv_input_data['temp'][0,::-1], dtype=np.double)
