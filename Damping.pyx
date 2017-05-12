@@ -17,7 +17,10 @@ cimport numpy as np
 from thermodynamic_functions cimport pd_c, pv_c
 from entropies cimport sv_c, sd_c
 from scipy.special import erf
-
+import cPickle
+cimport TimeStepping
+from scipy.interpolate import pchip
+from thermodynamic_functions cimport cpm_c
 
 include 'parameters.pxi'
 
@@ -37,8 +40,8 @@ cdef class Damping:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
-        self.scheme.update(Gr, RS, PV, DV, Pa)
+                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+        self.scheme.update(Gr, RS, PV, DV, Pa, TS)
         return
 
 cdef class Dummy:
@@ -46,7 +49,7 @@ cdef class Dummy:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
@@ -69,6 +72,200 @@ cdef class Rayleigh:
             Pa.root_print('Killing simulation now!')
             Pa.kill()
 
+        self.file = str(namelist['gcm']['file'])
+        self.gcm_profiles_initialized = False
+        self.t_indx = 0
+
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
+        cdef:
+            int k
+            double z_top
+
+        self.gamma_zhalf = np.zeros(
+            (Gr.dims.nlg[2]),
+            dtype=np.double,
+            order='c')
+        self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.double, order='c')
+        z_top = Gr.zpl[Gr.dims.nlg[2] - Gr.dims.gw]
+
+        with nogil:
+            for k in range(Gr.dims.nlg[2]):
+                if Gr.zpl_half[k] >= z_top - self.z_d:
+                    self.gamma_zhalf[
+                        k] = self.gamma_r * sin((pi / 2.0) * (1.0 - (z_top - Gr.zpl_half[k]) / self.z_d))**2.0
+                if Gr.zpl[k] >= z_top - self.z_d:
+                    self.gamma_z[
+                        k] = self.gamma_r * sin((pi / 2.0) * (1.0 - (z_top - Gr.zpl[k]) / self.z_d))**2.0
+
+
+
+        #Set up tendency damping using error function
+
+
+        fh = open(self.file, 'r')
+        input_data_tv = cPickle.load(fh)
+        fh.close()
+
+
+        #Compute height for daimping profiles
+        dt_qg_conv = np.mean(input_data_tv['dt_qg_param'][:,::-1],axis=0)
+        zfull = np.mean(input_data_tv['zfull'][:,::-1], axis=0)
+        cutoff = np.max(np.abs(dt_qg_conv))*0.001
+        print cutoff
+        import pylab as plt
+        plt.plot(np.abs(dt_qg_conv))
+        for i in range(dt_qg_conv.shape[0]-1, -1, -1):
+            if np.abs(dt_qg_conv[i]) > cutoff:
+                self.tend_flat_z_d = z_top - zfull[i+1]
+                break
+
+
+        print 'Convective top', self.tend_flat_z_d
+
+
+        z_damp = z_top - self.tend_flat_z_d
+        z = (np.array(Gr.zp) - z_damp)/( self.tend_flat_z_d*0.15)
+        z_half = (np.array(Gr.zp_half) - z_damp)/( self.tend_flat_z_d*0.15)
+
+        tend_flat = erf(z)
+        tend_flat[tend_flat < 0.0] = 0.0
+        tend_flat = 1.0 - tend_flat
+        self.tend_flat = tend_flat
+        tend_flat = erf(z_half)
+        tend_flat[tend_flat < 0.0] = 0.0
+        tend_flat = 1.0 - tend_flat
+        self.tend_flat_half = tend_flat
+
+
+      #  import pylab as plt
+      #  plt.plot(self.tend_flat_half, Gr.zpl_half,'-ok')
+      #  plt.show()
+      #  import sys; sys.exit()
+
+
+
+        return
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+        cdef:
+            Py_ssize_t var_shift
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i, j, k, ishift, jshift, ijk
+            double[:] domain_mean
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            double pd, pv, qt, qv, p0, rho0, t
+            double weight
+
+
+        if not self.gcm_profiles_initialized or int(TS.t // (3600.0 * 6.0)) > self.t_indx:
+            self.t_indx = int(TS.t // (3600.0 * 6.0))
+            self.gcm_profiles_initialized = True
+            Pa.root_print('Updating Total Tendencies in damping!')
+
+            fh = open(self.file, 'r')
+            input_data_tv = cPickle.load(fh)
+            fh.close()
+
+            zfull = input_data_tv['zfull'][self.t_indx,::-1]
+            temp_dt_total = input_data_tv['temp_total'][self.t_indx,::-1]
+            shum_dt_total = input_data_tv['dt_qg_total'][self.t_indx,::-1]
+
+
+            self.dt_tg_total = interp_pchip(Gr.zp_half, zfull, temp_dt_total)
+            self.dt_qg_total =  interp_pchip(Gr.zp_half, zfull, shum_dt_total)
+
+
+
+
+        for var_name in PV.name_index:
+            var_shift = PV.get_varshift(Gr, var_name)
+            domain_mean = Pa.HorizontalMean(Gr, & PV.values[var_shift])
+            if var_name == 'w':
+                with nogil:
+                    for i in xrange(imin, imax):
+                        ishift = i * istride
+                        for j in xrange(jmin, jmax):
+                            jshift = j * jstride
+                            for k in xrange(kmin, kmax):
+                                ijk = ishift + jshift + k
+                                #PV.tendencies[var_shift + ijk] *= self.tend_flat_half[k]
+
+            elif var_name == 'u' or var_name == 'v':
+                with nogil:
+                    for i in xrange(imin, imax):
+                        ishift = i * istride
+                        for j in xrange(jmin, jmax):
+                            jshift = j * jstride
+                            for k in xrange(kmin, kmax):
+                                ijk = ishift + jshift + k
+                                PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_z[k]
+            else:
+                with nogil:
+                    for i in xrange(imin, imax):
+                        ishift = i * istride
+                        for j in xrange(jmin, jmax):
+                            jshift = j * jstride
+                            for k in xrange(kmin, kmax):
+                                ijk = ishift + jshift + k
+                                #PV.tendencies[var_shift + ijk] *= self.tend_flat[k]
+                                PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_z[k]
+
+
+        with nogil:
+            for i in xrange(gw,imax):
+                ishift = i * istride
+                for j in xrange(gw,jmax):
+                    jshift = j * jstride
+                    for k in xrange(gw,kmax):
+
+                        weight = self.tend_flat_half[k]
+
+                        ijk = ishift + jshift + k
+                        p0 = RS.p0_half[k]
+                        rho0 = RS.rho0_half[k]
+                        qt = PV.values[qt_shift + ijk]
+                        qv = qt - DV.values[ql_shift + ijk]
+                        pd = pd_c(p0,qt,qv)
+                        pv = pv_c(p0,qt,qv)
+                        t  = DV.values[t_shift + ijk]
+                        PV.tendencies[s_shift + ijk] =   (weight)*PV.tendencies[s_shift + ijk]
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.dt_qg_total[k]* (1.0 -weight) ) + (1.0 - weight) * (cpm_c(qt) * (self.dt_tg_total[k]))/t
+                        PV.tendencies[qt_shift + ijk] = self.dt_qg_total[k]* (1.0 - weight) + PV.tendencies[qt_shift + ijk] *(weight)
+
+        return
+
+
+cdef class RayleighOld:
+    def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
+
+
+        try:
+            self.z_d = namelist['damping']['Rayleigh']['z_d']
+        except:
+            Pa.root_print('Rayleigh damping z_d not given in namelist')
+            Pa.root_print('Killing simulation now!')
+            Pa.kill()
+
+        try:
+            self.gamma_r = namelist['damping']['Rayleigh']['gamma_r']
+        except:
+            Pa.root_print('Rayleigh damping gamm_r not given in namelist')
+            Pa.root_print('Killing simulation now!')
+            Pa.kill()
         return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
@@ -108,10 +305,11 @@ cdef class Rayleigh:
         tend_flat = 1.0 - tend_flat
         self.tend_flat_half = tend_flat
 
+
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         cdef:
             Py_ssize_t var_shift
             Py_ssize_t imin = Gr.dims.gw
@@ -138,6 +336,7 @@ cdef class Rayleigh:
                             for k in xrange(kmin, kmax):
                                 ijk = ishift + jshift + k
                                 PV.tendencies[var_shift + ijk] *= self.tend_flat_half[k]
+
             elif var_name == 'u' or var_name == 'v':
                 with nogil:
                     for i in xrange(imin, imax):
@@ -160,4 +359,7 @@ cdef class Rayleigh:
         return
 
 
+def interp_pchip(z_out, z_in, v_in):
 
+    p = pchip(z_in, v_in, extrapolate=True)
+    return p(z_out)

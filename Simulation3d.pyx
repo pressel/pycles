@@ -151,6 +151,7 @@ class Simulation3d:
         self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.TS, self.Pa)
         self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.StatsIO,self.Pa)
         self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
+        self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa, self.TS)
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
             self.force_io()
@@ -171,7 +172,7 @@ class Simulation3d:
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 #self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
-                self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
+                self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa, self.TS)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
