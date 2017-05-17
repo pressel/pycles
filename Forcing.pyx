@@ -958,10 +958,17 @@ cdef class ForcingZGILS:
         cdef:
             Py_ssize_t k
             double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g
-            double pv_star, qv_star
+            double pv_star, qv_star, SST_1xCO2
 
         if self.reference_type == 'InteractiveRCE':
-            pv_star = self.CC.LT.fast_lookup(Sur.T_surface)
+            if self.loc == 12:
+                SST_1xCO2  = 289.8
+            elif self.loc == 11:
+                SST_1xCO2 = 292.2
+            elif self.loc == 6:
+                SST_1xCO2 = 298.9
+
+            pv_star = self.CC.LT.fast_lookup(SST_1xCO2)
             qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
             self.qt_adv_max = self.qt_adv_max/qv_star
         else:
