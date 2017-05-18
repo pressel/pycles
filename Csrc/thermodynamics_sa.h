@@ -66,6 +66,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
     }
 }
 
+
 void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
     double* restrict p0, double* restrict s, double* restrict qt, double* restrict T,
     double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){

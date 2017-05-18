@@ -14,6 +14,10 @@ cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 import pylab as plt
+try:
+    import cPickle as pickle
+except:
+    import pickle as pickle # for Python 3 users
 include 'parameters.pxi'
 
 
@@ -430,9 +434,9 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
         with nogil:
             self.toa_flux = -uflx_lw_out[0,nlayers] + dflx_lw_out[0,nlayers] - uflx_sw_out[0,nlayers] + dflx_sw_out[0,nlayers]
+            self.total_column_influx = self.toa_flux +uflx_lw_out[0,0] - dflx_lw_out[0,0] + uflx_sw_out[0,0] - dflx_sw_out[0,0]
             for k in xrange(nlayers):
                 self.t_tend_rad[k] = (hr_lw_out[0,k] + hr_sw_out[0,k])/86400.0
-
 
         return
 
@@ -461,10 +465,9 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
 
         #initialize the lookup table
-        cdef Py_ssize_t n_sst = 11
+        cdef Py_ssize_t n_sst = 15
         self.t_table = LookupProfiles(n_sst,self.nlayers)
-        self.t_table.access_vals = np.linspace(Tg+self.sst_increment-10.0,
-                                               Tg+self.sst_increment+10.0,n_sst)
+        self.t_table.access_vals =  np.linspace(Tg+self.sst_increment-10.0, Tg+self.sst_increment+10.0,n_sst)
 
         self.p_tropo_store = np.zeros(n_sst, dtype=np.double, order='c')
         self.toa_store = np.zeros(n_sst, dtype=np.double, order='c')
@@ -478,7 +481,8 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         if Pa.rank == 0:
             k = 0
             while self.p_layers[k] > 400.0e2:
-                self.index_h = k
+                self.index_h_min = k
+                self.index_h = self.index_h_min
                 k += 1
 
             for sst_index in xrange(n_sst):
@@ -487,7 +491,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
                 self.rce_step(self.sst)
                 self.t_table.table_vals[sst_index,:] = self.t_layers[:]
                 self.p_tropo_store[sst_index] = self.p_layers[self.index_h]
-                self.toa_store[sst_index] = self.toa_flux
+                self.toa_store[sst_index] = self.total_column_influx #self.toa_flux
 
         self.t_table.communicate(Pa)
 
@@ -501,37 +505,45 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         # temperature_ref = data.variables['temp_rc'][:]
         #
         self.t_table.lookup(Tg+self.sst_increment-1.5)
-        if Pa.rank==1:
-            plt.figure(1)
-            try:
-                for k in xrange(n_sst):
-                    plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-b')
-                # plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
-                plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
-                plt.xlabel('Temperature, K')
-                plt.ylabel('Pressure, hPa')
-                plt.gca().invert_yaxis()
-            except:
-                pass
-            plt.show()
+        if Pa.rank==0:
+            dict = {}
+            dict['t_table'] = np.asarray(self.t_table.table_vals)
+            dict['sst'] = np.asarray(self.t_table.access_vals)
+            dict['net_rad_in'] = np.asarray(self.toa_store)
+            dict['p_tropo'] = np.asarray(self.p_tropo_store)
+            pickle.dump(dict, open('IRCE_SST_'+str(int(Tg)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
 
-        # plt.figure(2)
-        # try:
-        #     plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0))
-        #     plt.xlabel('SST, K')
-        #     plt.ylabel('Pressure at Tropopause, hPa')
-        # except:
-        #     pass
-        #
-        # plt.figure(3)
-        # try:
-        #     plt.plot(self.t_table.access_vals[:], self.toa_store[:])
-        #     plt.xlabel('SST, K')
-        #     plt.ylabel('TOA flux, W/m^2')
-        # except:
-        #     pass
-        # plt.show()
-        ###################################################################
+
+            # plt.figure(1)
+            # try:
+            #     for k in xrange(n_sst):
+            #         plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-b')
+            #     # plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
+            #     plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
+            #     plt.xlabel('Temperature, K')
+            #     plt.ylabel('Pressure, hPa')
+            #     plt.gca().invert_yaxis()
+            # except:
+            #     pass
+            #
+            #
+            # plt.figure(2)
+            # try:
+            #     plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0))
+            #     plt.xlabel('SST, K')
+            #     plt.ylabel('Pressure at Tropopause, hPa')
+            # except:
+            #     pass
+            #
+            # plt.figure(3)
+            # try:
+            #     plt.plot(self.t_table.access_vals[:], self.toa_store[:])
+            #     plt.xlabel('SST, K')
+            #     plt.ylabel('TOA flux, W/m^2')
+            # except:
+            #     pass
+            # plt.show()
+            ##################################################################
 
         # Now set the current reference profile (assuming we want it at domain SST+sst_increment...)
 
@@ -578,15 +590,17 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             double temperature, ql, qi, pv
             Py_ssize_t k
 
-
         # Compute reference state thermodynamic profiles
         for k in xrange(self.nlayers):
             temperature, ql, qi = self.eos(self.p_layers[k], sg, qtg)
+            qtg = fmax(qtg-ql, 1e-10)
+
             if np.isnan(temperature):
                 self.t_layers[k] = self.t_layers[k-1]
             else:
                 self.t_layers[k] = temperature
             self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical)
+
 
         return
 
@@ -598,8 +612,10 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             double [:] qv_adi = np.array(self.qv_layers, dtype=np.double, copy=True, order='c')
             Py_ssize_t index_h_old = 0
             double delta_t, rhval, pv, pd
+        self.tropo_converged = False
+        self.index_h = self.index_h - 2
 
-        while abs(self.index_h-index_h_old) > 0:
+        while not self.tropo_converged:
             print(self.index_h)
             for k in xrange(self.nlayers):
                 self.t_layers[k] = t_adi[k]
@@ -612,6 +628,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
                 # update temperatures due to radiation
                 self.compute_radiation()
 
+
                 delta_t = 0.0
                 with nogil:
                     for k in xrange(self.index_h,self.nlayers):
@@ -623,21 +640,43 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
                         self.qv_layers[k] = pv/(pd * eps_vi + pv)
                         self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
 
-
+            print('t_layers ', self.t_layers[self.index_h], 't_adi ', t_adi[self.index_h])
             if self.t_layers[self.index_h] < t_adi[self.index_h]:
-                index_h_old = self.index_h
-                k=self.index_h
-                while self.t_layers[k] < t_adi[k]:
-                    self.index_h = k
-                    k+=1
-            elif self.t_layers[self.index_h] > t_adi[self.index_h]:
-                index_h_old = self.index_h
-                k=self.index_h
-                while self.t_layers[k] > t_adi[k]:
-                    self.index_h = k
-                    k-=1
+                self.index_h +=1
+                self.tropo_converged = False
             else:
-                index_h_old = self.index_h
+                self.tropo_converged = True
+                print('Tropo is converged')
+            #     print('if option 1')
+            #     index_h_old = self.index_h
+            #     k=self.index_h
+            #     while self.t_layers[k] <= t_adi[k]:
+            #         print(k, self.t_layers[k], t_adi[k])
+            #         self.index_h = k
+            #         k+=1
+            # elif self.t_layers[self.index_h] > t_adi[self.index_h]:
+            #     print('if option 2')
+            #     index_h_old = self.index_h
+            #     k=self.index_h
+            #     while self.t_layers[k] >= t_adi[k]:
+            #         print(k, self.t_layers[k], t_adi[k])
+            #         self.index_h = k
+            #         k-=1
+            # else:
+            #     print('if option 4')
+            #     index_h_old = self.index_h
+            print('old, new index', index_h_old, self.index_h)
+
+            print('total column influx', self.total_column_influx)
+            plt.figure('T_profiles')
+            plt.plot(self.t_layers, np.divide(self.p_layers[:],100.0), '-sr')
+            plt.plot(t_adi, np.divide(self.p_layers[:],100.0), '-sb')
+            plt.plot(t_adi[self.index_h], self.p_layers[self.index_h]/100.0,'om')
+            plt.plot(self.t_layers[self.index_h], self.p_layers[self.index_h]/100.0,'oc')
+            plt.gca().invert_yaxis()
+            plt.savefig('SST_'+str(Tg)+'_index_'+str(self.index_h)+'.png')
+            plt.close()
+
 
 
         return

@@ -48,7 +48,10 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         double RH_tropical
         double RH_subtrop
         Py_ssize_t index_h
+        Py_ssize_t index_h_min
+        bint tropo_converged
         double toa_flux
+        double total_column_influx
         Py_ssize_t nlayers
         Py_ssize_t nlevels
         double [:] p_levels

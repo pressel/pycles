@@ -914,6 +914,12 @@ cdef class SurfaceZGILS(SurfaceBase):
         except:
             constant_sst = False
 
+        try:
+            hot_init = namelist['surface_budget']['initialize_hot']
+        except:
+            hot_init = False
+
+
         # Set the initial sst value to the Fixed-SST case value (Tan et al 2016a, Table 1)
         if self.loc == 12:
             self.T_surface  = 289.8
@@ -924,6 +930,9 @@ cdef class SurfaceZGILS(SurfaceBase):
 
         # adjust surface temperature for climate change experiments
         self.T_surface = self.T_surface + 3.0 * n_double_co2
+        if hot_init:
+            self.T_surface = 305.0
+
 
 
         return
