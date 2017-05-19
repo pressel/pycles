@@ -17,3 +17,4 @@ _templates/
 *.mod
 parameters_micro.pxi
 Csrc/parameters_micro.h
+forcing/

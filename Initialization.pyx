@@ -1341,7 +1341,7 @@ def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
 
     #Generate the reference profiles
-    data_path = './forcing/f_data_tv.pkl'
+    data_path = namelist['gcm']['file']
     fh = open(data_path, 'r')
     input_data_tv = cPickle.load(fh)
     fh.close()

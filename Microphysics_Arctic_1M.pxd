@@ -4,7 +4,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ParallelMPI
 cimport TimeStepping
-from libc.math cimport pow
+from libc.math cimport pow, fmax, fmin
 
 from Thermodynamics cimport ClausiusClapeyron
 from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
@@ -26,10 +26,10 @@ cdef inline double lambda_Arctic(double T) nogil:
     cdef:
         double Twarm = 273.0
         double Tcold = 235.0
-        double pow_n = 0.1
+        double pow_n = 0.5
         double Lambda = 0.0
 
-    if T >= Tcold and T <= Twarm:
+    if T > Tcold and T <= Twarm:
         Lambda = pow((T - Tcold)/(Twarm - Tcold), pow_n)
     elif T > Twarm:
         Lambda = 1.0

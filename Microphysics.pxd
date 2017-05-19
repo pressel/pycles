@@ -12,7 +12,7 @@ from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 cdef:
     double lambda_constant(double T) nogil
 
-    double latent_heat_constant(double T, double T) nogil
+    double latent_heat_constant(double T, double Lambda) nogil
 
 cdef class No_Microphysics_Dry:
     # Make the thermodynamics_type member available from Python-Space
