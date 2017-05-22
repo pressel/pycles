@@ -1341,7 +1341,7 @@ def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
 
     #Generate the reference profiles
-    data_path = './forcing/f_data_tv.pkl'
+    data_path = namelist['gcm']['file']
     fh = open(data_path, 'r')
     input_data_tv = cPickle.load(fh)
     fh.close()
@@ -1396,8 +1396,8 @@ def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
                 PV.values[w_varshift + ijk] = 0.0
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t[k],qt[k],0.0,0.0)
                 PV.values[qt_varshift + ijk] = qt[k]
-                if Gr.zpl_half[k] < 200.0:
-                    PV.values[s_varshift + ijk] = PV.values[s_varshift + ijk]  + (theta_pert[ijk] - 0.5)*0.1
+                if Gr.zpl_half[k] < 5000.0:
+                    PV.values[s_varshift + ijk] = PV.values[s_varshift + ijk]  + (theta_pert[ijk] - 0.5)*0.3
 
     return
 

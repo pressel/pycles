@@ -1454,8 +1454,8 @@ cdef class ForcingGCMVarying:
             temp_dt_hadv = input_data_tv['temp_hadv'][self.t_indx,::-1]
             temp_dt_fino = input_data_tv['temp_fino'][self.t_indx,::-1]
             shum_dt_hadv = input_data_tv['dt_qg_hadv'][self.t_indx,::-1]
-            v_dt_tot = input_data_tv['dt_ug_real1'][self.t_indx,::-1]
-            u_dt_tot = input_data_tv['dt_vg_real1'][self.t_indx,::-1]
+            v_dt_tot = input_data_tv['dt_vg_real1'][self.t_indx,::-1]
+            u_dt_tot = input_data_tv['dt_ug_real1'][self.t_indx,::-1]
             omega = input_data_tv['omega'][self.t_indx,::-1]
 
             temp = input_data_tv['temp'][self.t_indx,::-1]

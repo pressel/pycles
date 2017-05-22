@@ -114,8 +114,8 @@ cdef class Rayleigh:
         zfull = np.mean(input_data_tv['zfull'][:,::-1], axis=0)
         cutoff = np.max(np.abs(dt_qg_conv))*0.001
         print cutoff
-        import pylab as plt
-        plt.plot(np.abs(dt_qg_conv))
+        #import pylab as plt
+        #plt.plot(np.abs(dt_qg_conv))
         for i in range(dt_qg_conv.shape[0]-1, -1, -1):
             if np.abs(dt_qg_conv[i]) > cutoff:
                 self.tend_flat_z_d = z_top - zfull[i+1]
@@ -138,11 +138,12 @@ cdef class Rayleigh:
         tend_flat = 1.0 - tend_flat
         self.tend_flat_half = tend_flat
 
-
-      #  import pylab as plt
-      #  plt.plot(self.tend_flat_half, Gr.zpl_half,'-ok')
-      #  plt.show()
-      #  import sys; sys.exit()
+        #plt.close()
+        #import pylab as plt
+        #plt.plot(self.tend_flat_half, np.array(Gr.zpl_half)/1000.0,'-ok')
+        #plt.savefig('sigmoid.pdf')
+       # plt.show()
+        #import sys; sys.exit()
 
 
 
