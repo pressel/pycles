@@ -1158,6 +1158,31 @@ cdef class SurfaceGCMVarying(SurfaceBase):
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
             double [:] windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
 
+
+
+
+        #Compute time varying profiles
+        if not self.gcm_profiles_initialized or int(TS.t // (3600.0 * 6.0)) > self.t_indx:
+
+            self.gcm_profiles_initialized = True
+            Pa.root_print('Updating Time Varying Radiation Parameters')
+
+            fh = open(self.file, 'r')
+            input_data_tv = cPickle.load(fh)
+            fh.close()
+
+
+            u = input_data_tv['u'][self.t_indx,-1]
+            v = input_data_tv['v'][self.t_indx,-1]
+
+            self.gustiness = np.sqrt(u*u + v*v)
+
+            self.t_indx = int(TS.t // (3600.0 * 6.0))
+            Pa.root_print('Finished updating time varying Gustiness: ' + str(self.gustiness))
+
+
+
+
         compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0], Ref.u0, Ref.v0, self.gustiness)
 
 
@@ -1179,8 +1204,6 @@ cdef class SurfaceGCMVarying(SurfaceBase):
 
             double pv_star = self.CC.LT.fast_lookup(self.T_surface)
             double qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
-
-
 
             # Find the surface entropy
             double pd_star = Ref.Pg - pv_star
