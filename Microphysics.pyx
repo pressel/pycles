@@ -623,7 +623,7 @@ cdef class Microphysics_T_Liquid:
                             lam = self.Lambda_fp(t)
                             lv = self.L_fp(t, lam)
 
-                            DV.values[dqtdt_shift + ijk] = -fmax(0.0, DV.values[ql_shift + ijk] -  0.10 * DV.values[qv_shift+ijk])/TS.dt
+                            DV.values[dqtdt_shift + ijk] = -fmax(0.0, DV.values[ql_shift + ijk] -  0.02 * DV.values[qv_shift+ijk])/TS.dt
                             DV.values[dsdt_shift + ijk] = (sv_c(pv,t) - sd_c(pd,t) - lv/t ) * DV.values[dqtdt_shift + ijk]
                             PV.tendencies[qt_shift + ijk] += DV.values[dqtdt_shift + ijk]
                             PV.tendencies[s_shift + ijk] += DV.values[dsdt_shift + ijk]

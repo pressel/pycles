@@ -112,7 +112,7 @@ cdef class NetCDFIO_Stats:
 
         ts_grp = root_grp.createGroup('timeseries')
         ts_grp.createDimension('t', None)
-        ts_grp.createVariable('t', 'f8', ('t'), chunksizes=(60,))
+        ts_grp.createVariable('t', 'f8', ('t'), chunksizes=(24*60,))
 
         root_grp.close()
         return
