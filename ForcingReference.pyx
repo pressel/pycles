@@ -13,7 +13,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
-import pylab as plt
+# import pylab as plt
 try:
     import cPickle as pickle
 except:
@@ -465,7 +465,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
 
         #initialize the lookup table
-        cdef Py_ssize_t n_sst = 15
+        cdef Py_ssize_t n_sst = 5
         self.t_table = LookupProfiles(n_sst,self.nlayers)
         self.t_table.access_vals =  np.linspace(Tg+self.sst_increment-10.0, Tg+self.sst_increment+10.0,n_sst)
 
@@ -531,7 +531,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             # try:
             #     plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0))
             #     plt.xlabel('SST, K')
-            #     plt.ylabel('Pressure at Tropopause, hPa')
+            #     plt.ylabel('Pressure at tropopause, hPa')
             # except:
             #     pass
             #
@@ -539,7 +539,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             # try:
             #     plt.plot(self.t_table.access_vals[:], self.toa_store[:])
             #     plt.xlabel('SST, K')
-            #     plt.ylabel('TOA flux, W/m^2')
+            #     plt.ylabel('Net column influx, W/m^2')
             # except:
             #     pass
             # plt.show()
@@ -668,14 +668,14 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             print('old, new index', index_h_old, self.index_h)
 
             print('total column influx', self.total_column_influx)
-            plt.figure('T_profiles')
-            plt.plot(self.t_layers, np.divide(self.p_layers[:],100.0), '-sr')
-            plt.plot(t_adi, np.divide(self.p_layers[:],100.0), '-sb')
-            plt.plot(t_adi[self.index_h], self.p_layers[self.index_h]/100.0,'om')
-            plt.plot(self.t_layers[self.index_h], self.p_layers[self.index_h]/100.0,'oc')
-            plt.gca().invert_yaxis()
-            plt.savefig('SST_'+str(Tg)+'_index_'+str(self.index_h)+'.png')
-            plt.close()
+            # plt.figure('T_profiles')
+            # plt.plot(self.t_layers, np.divide(self.p_layers[:],100.0), '-sr')
+            # plt.plot(t_adi, np.divide(self.p_layers[:],100.0), '-sb')
+            # plt.plot(t_adi[self.index_h], self.p_layers[self.index_h]/100.0,'om')
+            # plt.plot(self.t_layers[self.index_h], self.p_layers[self.index_h]/100.0,'oc')
+            # plt.gca().invert_yaxis()
+            # plt.savefig('SST_'+str(Tg)+'_index_'+str(self.index_h)+'.png')
+            # plt.close()
 
 
 
