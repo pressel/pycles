@@ -895,6 +895,11 @@ cdef class SurfaceZGILS(SurfaceBase):
         except:
             self.z0 = 1.0e-3
 
+        try:
+            self.direct_shf = namelist['surface_budget']['direct_shf']
+        except:
+            self.direct_shf = False
+
         return
 
     cpdef initialize(self, dict namelist, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -978,7 +983,7 @@ cdef class SurfaceZGILS(SurfaceBase):
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
 
 
-            double ustar, t_flux, b_flux
+            double ustar, t_flux, b_flux, th_flux
             double theta_rho_b, Nb2, Ri
             double zb = Gr.dims.dx[2] * 0.5
             double [:] cm = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
@@ -1006,8 +1011,15 @@ cdef class SurfaceZGILS(SurfaceBase):
                     Nb2 = g/theta_rho_g*(theta_rho_b-theta_rho_g)/zb
                     Ri = Nb2 * zb * zb/(windspeed[ij] * windspeed[ij])
                     exchange_coefficients_byun(Ri, zb, self.z0, &cm[ij], &ch, &self.obukhov_length[ij])
-                    self.s_flux[ij] = -ch *windspeed[ij] * (PV.values[s_shift + ijk] - s_star)
                     self.qt_flux[ij] = -ch *windspeed[ij] *  (PV.values[qt_shift + ijk] - qv_star)
+                    if self.direct_shf:
+                        th_flux = -ch *windspeed[ij] *  (DV.values[t_shift + ijk]/exner_c(Ref.p0_half[gw]) - self.T_surface/exner_c(Ref.Pg))
+                        self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(th_flux, self.qt_flux[ij],
+                                                                        Ref.p0_half[gw], DV.values[t_shift + ijk],
+                                                                        PV.values[qt_shift + ijk], PV.values[qt_shift + ijk])
+                    else:
+                        self.s_flux[ij] = -ch *windspeed[ij] * (PV.values[s_shift + ijk] - s_star)
+
                     ustar = sqrt(cm[ij]) * windspeed[ij]
                     self.friction_velocity[ij] = ustar
 

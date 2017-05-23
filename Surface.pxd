@@ -155,6 +155,7 @@ cdef class SurfaceZGILS(SurfaceBase):
         double gustiness
         double z0
         bint interactive_roughness
+        bint direct_shf
 
 
     cpdef initialize(self, dict namelist, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
