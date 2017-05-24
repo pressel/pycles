@@ -138,12 +138,13 @@ cdef class Rayleigh:
         tend_flat = 1.0 - tend_flat
         self.tend_flat_half = tend_flat
 
-        #plt.close()
-        #import pylab as plt
-        #plt.plot(self.tend_flat_half, np.array(Gr.zpl_half)/1000.0,'-ok')
-        #plt.savefig('sigmoid.pdf')
-       # plt.show()
-        #import sys; sys.exit()
+
+        # import pylab as plt
+        # plt.plot(self.tend_flat_half, np.array(Gr.zpl_half)/1000.0,'-ok')
+        # plt.grid()
+        # plt.savefig('sigmoid.pdf')
+        # plt.show()
+        # import sys; sys.exit()
 
 
 
@@ -181,10 +182,13 @@ cdef class Rayleigh:
             input_data_tv = cPickle.load(fh)
             fh.close()
 
-            zfull = input_data_tv['zfull'][self.t_indx,::-1]
-            temp_dt_total = input_data_tv['temp_total'][self.t_indx,::-1]
-            shum_dt_total = input_data_tv['dt_qg_total'][self.t_indx,::-1]
+            #zfull = input_data_tv['zfull'][self.t_indx,::-1]
+            #temp_dt_total = input_data_tv['temp_total'][self.t_indx,::-1]
+            #shum_dt_total = input_data_tv['dt_qg_total'][self.t_indx,::-1]
 
+            zfull = np.mean(input_data_tv['zfull'][:,::-1], axis=0)
+            temp_dt_total = np.mean(input_data_tv['temp_total'][:,::-1], axis=0)
+            shum_dt_total = np.mean(input_data_tv['dt_qg_total'][:,::-1], axis=0)
 
             self.dt_tg_total = interp_pchip(Gr.zp_half, zfull, temp_dt_total)
             self.dt_qg_total =  interp_pchip(Gr.zp_half, zfull, shum_dt_total)
