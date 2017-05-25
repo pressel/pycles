@@ -122,7 +122,7 @@ cdef class Rayleigh:
                 break
 
 
-        print 'Convective top', self.tend_flat_z_d
+        print 'Convective top', z_top - self.tend_flat_z_d
 
 
         z_damp = z_top - self.tend_flat_z_d

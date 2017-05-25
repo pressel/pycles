@@ -1533,6 +1533,21 @@ cdef class RadiationGCMGreyMean(RadiationBase):
         self.lat = namelist['gcm']['latitude']
         self.file = str(namelist['gcm']['file'])
 
+
+        try:
+            self.lw_tau0_eqtr = namelist['gcm']['lw_tau0_eqtr']
+            Pa.root_print('lw_tau0_eqtr = ' +  str(self.lw_tau0_eqtr))
+        except:
+            Pa.root_print('lw_tau0_eqtr not given in namelist')
+            Pa.kill()
+
+        try:
+            self.lw_tau0_pole = namelist['gcm']['lw_tau0_eqtr']
+            Pa.root_print('lw_tau0_pole = ' +  str(self.lw_tau0_pole))
+        except:
+            Pa.root_print('lw_tau0_eqtr not given in namelist')
+            Pa.kill()
+
         return
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -1562,9 +1577,6 @@ cdef class RadiationGCMGreyMean(RadiationBase):
         self.solar_constant = 1360.0
         self.del_sol = 1.2
         self.insolation = 0.25 * self.solar_constant * (1.0 + self.del_sol * (1.0 - 3.0 * sin(self.lat)**2.0)/4.0)
-
-        self.lw_tau0_pole = 1.2
-        self.lw_tau0_eqtr = 4.8
 
         self.lw_tau_exponent = 4.0
         self.sw_tau_exponent = 2.0
