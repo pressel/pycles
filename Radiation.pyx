@@ -1542,7 +1542,7 @@ cdef class RadiationGCMGreyMean(RadiationBase):
             Pa.kill()
 
         try:
-            self.lw_tau0_pole = namelist['gcm']['lw_tau0_eqtr']
+            self.lw_tau0_pole = namelist['gcm']['lw_tau0_pole']
             Pa.root_print('lw_tau0_pole = ' +  str(self.lw_tau0_pole))
         except:
             Pa.root_print('lw_tau0_eqtr not given in namelist')
