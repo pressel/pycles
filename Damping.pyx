@@ -207,7 +207,7 @@ cdef class Rayleigh:
                             jshift = j * jstride
                             for k in xrange(kmin, kmax):
                                 ijk = ishift + jshift + k
-                                #PV.tendencies[var_shift + ijk] *= self.tend_flat_half[k]
+                                PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - 0.0) * self.gamma_zhalf[k] 
 
             elif var_name == 'u' or var_name == 'v':
                 with nogil:
