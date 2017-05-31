@@ -192,6 +192,7 @@ cdef class SurfaceGCMVarying(SurfaceBase):
         int t_indx
         str file
         bint gcm_profiles_initialized
+        double [:] windspeed
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,

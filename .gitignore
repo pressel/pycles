@@ -15,3 +15,6 @@ _static/
 _templates/
 *.png
 *.mod
+parameters_micro.pxi
+Csrc/parameters_micro.h
+forcing/
