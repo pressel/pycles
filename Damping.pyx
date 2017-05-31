@@ -169,6 +169,8 @@ cdef class Rayleigh:
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             double pd, pv, qt, qv, p0, rho0, t
             double weight
 
@@ -248,8 +250,11 @@ cdef class Rayleigh:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
                         PV.tendencies[s_shift + ijk] =   (weight)*PV.tendencies[s_shift + ijk]
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.dt_qg_total[k]* (1.0 -weight) ) + (1.0 - weight) * (cpm_c(qt) * (self.dt_tg_total[k]))/t
-                        PV.tendencies[qt_shift + ijk] = self.dt_qg_total[k]* (1.0 - weight) + PV.tendencies[qt_shift + ijk] *(weight)
+                        #PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.dt_qg_total[k]* (1.0 -weight) ) + (1.0 - weight) * (cpm_c(qt) * (self.dt_tg_total[k]))/t
+                        #PV.tendencies[qt_shift + ijk] = self.dt_qg_total[k]* (1.0 - weight) + PV.tendencies[qt_shift + ijk] *(weight)
+                        PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] *(weight)
+                        PV.tendencies[u_shift + ijk] = (weight) * PV.tendencies[u_shift + ijk]
+                        PV.tendencies[v_shift + ijk] = (weight) * PV.tendencies[v_shift + ijk] 
 
         return
 
