@@ -24,7 +24,7 @@ def SurfaceBudgetFactory(namelist):
         return SurfaceBudget(namelist)
     elif namelist['meta']['casename'] == 'GCMFixed':
         return SurfaceBudget(namelist)
-    elif namelist['meta']['casename'] == 'GCMVarying':
+    elif namelist['meta']['casename'] == 'GCMVarying' or namelist['meta']['casename'] == 'GCMMean':
         return SurfaceBudgetVarying(namelist)
     else:
         return SurfaceBudgetNone()

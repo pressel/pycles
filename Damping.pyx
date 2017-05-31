@@ -122,7 +122,7 @@ cdef class Rayleigh:
                 break
 
 
-        print 'Convective top', self.tend_flat_z_d
+        print 'Convective top', z_top - self.tend_flat_z_d
 
 
         z_damp = z_top - self.tend_flat_z_d
@@ -138,12 +138,13 @@ cdef class Rayleigh:
         tend_flat = 1.0 - tend_flat
         self.tend_flat_half = tend_flat
 
-        #plt.close()
-        #import pylab as plt
-        #plt.plot(self.tend_flat_half, np.array(Gr.zpl_half)/1000.0,'-ok')
-        #plt.savefig('sigmoid.pdf')
-       # plt.show()
-        #import sys; sys.exit()
+
+        # import pylab as plt
+        # plt.plot(self.tend_flat_half, np.array(Gr.zpl_half)/1000.0,'-ok')
+        # plt.grid()
+        # plt.savefig('sigmoid.pdf')
+        # plt.show()
+        # import sys; sys.exit()
 
 
 
@@ -168,6 +169,8 @@ cdef class Rayleigh:
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             double pd, pv, qt, qv, p0, rho0, t
             double weight
 
@@ -181,10 +184,13 @@ cdef class Rayleigh:
             input_data_tv = cPickle.load(fh)
             fh.close()
 
-            zfull = input_data_tv['zfull'][self.t_indx,::-1]
-            temp_dt_total = input_data_tv['temp_total'][self.t_indx,::-1]
-            shum_dt_total = input_data_tv['dt_qg_total'][self.t_indx,::-1]
+            #zfull = input_data_tv['zfull'][self.t_indx,::-1]
+            #temp_dt_total = input_data_tv['temp_total'][self.t_indx,::-1]
+            #shum_dt_total = input_data_tv['dt_qg_total'][self.t_indx,::-1]
 
+            zfull = np.mean(input_data_tv['zfull'][:,::-1], axis=0)
+            temp_dt_total = np.mean(input_data_tv['temp_total'][:,::-1], axis=0)
+            shum_dt_total = np.mean(input_data_tv['dt_qg_total'][:,::-1], axis=0)
 
             self.dt_tg_total = interp_pchip(Gr.zp_half, zfull, temp_dt_total)
             self.dt_qg_total =  interp_pchip(Gr.zp_half, zfull, shum_dt_total)
@@ -203,7 +209,7 @@ cdef class Rayleigh:
                             jshift = j * jstride
                             for k in xrange(kmin, kmax):
                                 ijk = ishift + jshift + k
-                                #PV.tendencies[var_shift + ijk] *= self.tend_flat_half[k]
+                                PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - 0.0) * self.gamma_zhalf[k] 
 
             elif var_name == 'u' or var_name == 'v':
                 with nogil:
@@ -244,8 +250,11 @@ cdef class Rayleigh:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
                         PV.tendencies[s_shift + ijk] =   (weight)*PV.tendencies[s_shift + ijk]
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.dt_qg_total[k]* (1.0 -weight) ) + (1.0 - weight) * (cpm_c(qt) * (self.dt_tg_total[k]))/t
-                        PV.tendencies[qt_shift + ijk] = self.dt_qg_total[k]* (1.0 - weight) + PV.tendencies[qt_shift + ijk] *(weight)
+                        #PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.dt_qg_total[k]* (1.0 -weight) ) + (1.0 - weight) * (cpm_c(qt) * (self.dt_tg_total[k]))/t
+                        #PV.tendencies[qt_shift + ijk] = self.dt_qg_total[k]* (1.0 - weight) + PV.tendencies[qt_shift + ijk] *(weight)
+                        PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] *(weight)
+                        PV.tendencies[u_shift + ijk] = (weight) * PV.tendencies[u_shift + ijk]
+                        PV.tendencies[v_shift + ijk] = (weight) * PV.tendencies[v_shift + ijk] 
 
         return
 
