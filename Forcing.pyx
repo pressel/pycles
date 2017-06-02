@@ -1456,8 +1456,8 @@ cdef class ForcingGCMVarying:
             temp_dt_hadv = input_data_tv['temp_hadv'][self.t_indx,::-1]
             temp_dt_fino = input_data_tv['temp_fino'][self.t_indx,::-1]
             shum_dt_hadv = input_data_tv['dt_qg_hadv'][self.t_indx,::-1]
-            v_dt_tot = input_data_tv['dt_vg_real1'][self.t_indx,::-1]
-            u_dt_tot = input_data_tv['dt_ug_real1'][self.t_indx,::-1]
+            v_dt_tot = input_data_tv['dt_vg_real1'][self.t_indx,::-1] * 0.0
+            u_dt_tot = input_data_tv['dt_ug_real1'][self.t_indx,::-1] * 0.0
             omega = input_data_tv['omega'][self.t_indx,::-1]
 
             temp = input_data_tv['temp'][self.t_indx,::-1]
@@ -1506,8 +1506,8 @@ cdef class ForcingGCMVarying:
 
 
         #Apply Coriolis Forcing
-       #coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-        #               &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
+                      &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
 
         # Apply Subsidence
         apply_subsidence_temperature(&Gr.dims, &self.rho_gcm[0], &self.rho_half_gcm[0], &self.subsidence[0], &PV.values[qt_shift], &DV.values[t_shift], &PV.tendencies[s_shift])
