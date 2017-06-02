@@ -1181,7 +1181,7 @@ cdef class SurfaceGCMVarying(SurfaceBase):
             u = input_data_tv['u'][self.t_indx,-1]
             v = input_data_tv['v'][self.t_indx,-1]
 
-            self.gustiness = np.sqrt(u*u + v*v)
+            self.gustiness = 0.0000001#np.sqrt(u*u + v*v)
 
             self.t_indx = int(TS.t // (3600.0 * 6.0))
             Pa.root_print('Finished updating time varying Gustiness: ' + str(self.gustiness))
