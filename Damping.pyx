@@ -112,11 +112,11 @@ cdef class Rayleigh:
         #Compute height for daimping profiles
         #dt_qg_conv = np.mean(input_data_tv['dt_qg_param'][:,::-1],axis=0)
         zfull = np.mean(input_data_tv['zfull'][:,::-1], axis=0)
-        dt_tg_param = np.mean(input_data_tv['temp_param'][:,::-1],axis=0)
+        dt_tg_rad = np.mean(input_data_tv['temp_rad'][:,::-1],axis=0)
         #import pylab as plt
         #plt.plot(np.abs(dt_qg_conv))
-        for i in range(dt_tg_param.shape[0]-1, -1, -1):
-            if dt_tg_param[i] < 0.0:
+        for i in range(dt_tg_rad.shape[0]-1, -1, -1):
+            if dt_tg_rad[i] < 0.0:
             #if np.abs(dt_qg_conv[i]) > cutoff:
                 self.tend_flat_z_d = z_top - zfull[i+1]
                 break
