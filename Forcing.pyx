@@ -1693,7 +1693,9 @@ cdef class ForcingGCMMean:
             temp_dt_fino = np.mean(input_data_tv['temp_fino'][:,::-1],axis=0)
             shum_dt_hadv = np.mean(input_data_tv['dt_qg_hadv'][:,::-1],axis=0)
             v_dt_tot = np.mean(input_data_tv['dt_vg_real1'][:,::-1],axis=0)
+            v_dt_cof = np.mean(input_data_tv['dt_vg_cori'][:,::-1],axis=0)
             u_dt_tot = np.mean(input_data_tv['dt_ug_real1'][:,::-1],axis=0)
+            u_dt_cof = np.mean(input_data_tv['dt_ug_cori'][:,::-1],axis=0)
             omega = np.mean(input_data_tv['omega'][:,::-1],axis=0)
             temp = np.mean(input_data_tv['temp'][:,::-1],axis=0)
 
@@ -1707,8 +1709,8 @@ cdef class ForcingGCMMean:
 
             self.rho_gcm = interp_pchip(Gr.zp, zfull, 1.0/alpha)
             self.rho_half_gcm = interp_pchip(Gr.zp_half, zfull, 1.0/alpha)
-            self.v_dt_tot = interp_pchip(Gr.zp_half, zfull, v_dt_tot)
-            self.u_dt_tot = interp_pchip(Gr.zp_half, zfull, u_dt_tot)
+            self.v_dt_tot = interp_pchip(Gr.zp_half, zfull, v_dt_tot - v_dt_cof) * 0.0
+            self.u_dt_tot = interp_pchip(Gr.zp_half, zfull, u_dt_tot - u_dt_cof) * 0.0
 
             Pa.root_print('Finished updating time varying forcing')
 
@@ -1741,8 +1743,8 @@ cdef class ForcingGCMMean:
 
 
         #Apply Coriolis Forcing
-       #coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-        #               &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
 
         # Apply Subsidence
         apply_subsidence_temperature(&Gr.dims, &self.rho_gcm[0], &self.rho_half_gcm[0], &self.subsidence[0], &PV.values[qt_shift], &DV.values[t_shift], &PV.tendencies[s_shift])

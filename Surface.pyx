@@ -1346,7 +1346,7 @@ cdef class SurfaceGCMMean(SurfaceBase):
             u = input_data_tv['u'][:,-1]
             v = input_data_tv['v'][:,-1]
 
-            self.gustiness = np.mean(np.sqrt(u*u + v*v))
+            self.gustiness = 0.00001 #np.mean(np.sqrt(u*u + v*v))
 
             self.t_indx = int(TS.t // (3600.0 * 6.0))
             Pa.root_print('Finished updating time varying Gustiness: ' + str(self.gustiness))
@@ -1355,6 +1355,7 @@ cdef class SurfaceGCMMean(SurfaceBase):
 
 
         compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0], Ref.u0, Ref.v0, self.gustiness)
+
 
 
         cdef:

@@ -110,17 +110,16 @@ cdef class Rayleigh:
 
 
         #Compute height for daimping profiles
-        dt_qg_conv = np.mean(input_data_tv['dt_qg_param'][:,::-1],axis=0)
+        #dt_qg_conv = np.mean(input_data_tv['dt_qg_param'][:,::-1],axis=0)
         zfull = np.mean(input_data_tv['zfull'][:,::-1], axis=0)
-        cutoff = np.max(np.abs(dt_qg_conv))*0.001
-        print cutoff
+        dt_tg_param = np.mean(input_data_tv['temp_param'][:,::-1],axis=0)
         #import pylab as plt
         #plt.plot(np.abs(dt_qg_conv))
-        for i in range(dt_qg_conv.shape[0]-1, -1, -1):
-            if np.abs(dt_qg_conv[i]) > cutoff:
+        for i in range(dt_tg_param.shape[0]-1, -1, -1):
+            if dt_tg_param[i] < 0.0:
+            #if np.abs(dt_qg_conv[i]) > cutoff:
                 self.tend_flat_z_d = z_top - zfull[i+1]
                 break
-
 
         print 'Convective top', z_top - self.tend_flat_z_d
 
@@ -139,12 +138,13 @@ cdef class Rayleigh:
         self.tend_flat_half = tend_flat
 
 
-        # import pylab as plt
-        # plt.plot(self.tend_flat_half, np.array(Gr.zpl_half)/1000.0,'-ok')
-        # plt.grid()
-        # plt.savefig('sigmoid.pdf')
-        # plt.show()
-        # import sys; sys.exit()
+        #import pylab as plt
+        #plt.plot(self.tend_flat_half, np.array(Gr.zpl_half)/1000.0,'-ok')
+        #plt.plot(dt_tg_rad, zfull,'-ok')
+        #plt.grid()
+        #plt.savefig('sigmoid.pdf')
+        #plt.show()
+        #import sys; sys.exit()
 
 
 
