@@ -399,9 +399,9 @@ cdef class RayleighGCMVarying:
             fh.close()
 
 
-            zfull = np.mean(input_data_tv['zfull'][:,::-1], axis=0)
-            temp_dt_total = np.mean(input_data_tv['temp_total'][:,::-1], axis=0)
-            shum_dt_total = np.mean(input_data_tv['dt_qg_total'][:,::-1], axis=0)
+            zfull = input_data_tv['zfull'][self.t_indx ,::-1]
+            temp_dt_total = input_data_tv['temp_total'][self.t_indx ,::-1]
+            shum_dt_total = input_data_tv['dt_qg_total'][self.t_indx ,::-1]
 
             self.dt_tg_total = interp_pchip(Gr.zp_half, zfull, temp_dt_total)
             self.dt_qg_total =  interp_pchip(Gr.zp_half, zfull, shum_dt_total)
