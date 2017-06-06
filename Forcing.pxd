@@ -176,32 +176,6 @@ cdef class ForcingZGILS:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
-cdef class ForcingGCMFixed:
-    cdef:
-        double [:] ug
-        double [:] vg
-        double [:] subsidence
-        double [:] temp_dt_hadv
-        double [:] temp_dt_fino
-        double [:] temp_dt_eddy
-        double [:] shum_dt_eddy
-        double [:] shum_dt_vadv
-        double [:] shum_dt_hadv
-        double [:] p_gcm
-        double [:] rho_gcm
-        double [:] rho_half_gcm
-        double coriolis_param
-        str file
-        double lat
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,  TimeStepping.TimeStepping TS,
-                 ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
-
 cdef class ForcingGCMVarying:
     cdef:
         bint gcm_profiles_initialized
