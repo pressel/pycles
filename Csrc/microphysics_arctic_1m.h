@@ -648,7 +648,7 @@ double entropy_src_precipitation_c(const double p0, const double temperature, co
     double sv = sv_c(pv, temperature);
     double sc = sc_c(L, temperature);
 
-    return (sd - sv + sc) * precip_rate;
+    return -(sd - sv - sc) * precip_rate;
 };
 
 double entropy_src_evaporation_c(const double p0, const double temperature, double Tw, const double qt, const double qv, const double L, const double evap_rate){
@@ -658,7 +658,7 @@ double entropy_src_evaporation_c(const double p0, const double temperature, doub
     double sv = sv_c(pv, Tw);
     double sc = sc_c(L, Tw);
 
-    return (sv - sc - sd) * evap_rate;
+    return -(sv + sc - sd) * evap_rate;
 };
 
 void entropy_source_formation(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double),

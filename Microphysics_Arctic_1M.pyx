@@ -146,6 +146,8 @@ cdef class Microphysics_Arctic_1M:
         # add wet bulb temperature
         DV.add_variables('temperature_wb', 'K', 'sym', Pa)
 
+        NS.add_profile('evap_rate', Gr, Pa)
+        NS.add_profile('precip_rate', Gr, Pa)
         NS.add_profile('rain_auto_mass', Gr, Pa)
         NS.add_profile('snow_auto_mass', Gr, Pa)
         NS.add_profile('rain_accr_mass', Gr, Pa)
@@ -267,6 +269,12 @@ cdef class Microphysics_Arctic_1M:
             double [:] dummy3 =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double [:] dummy4 =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
+
+        tmp = Pa.HorizontalMean(Gr, &self.precip_rate[0])
+        NS.write_profile('precip_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.evap_rate[0])
+        NS.write_profile('evap_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         autoconversion_rain_wrapper(&Gr.dims, &RS.rho0_half[0], self.ccn, &DV.values[ql_shift], &PV.values[qrain_shift],
                                      &DV.values[nrain_shift], &dummy[0])
