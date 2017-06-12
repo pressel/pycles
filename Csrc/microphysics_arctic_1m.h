@@ -129,7 +129,7 @@ void get_rain_n0(const struct DimStruct *dims, double* restrict density, double*
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin-1; k<kmax+1; k++){
+            for(ssize_t k=kmin; k<kmax+1; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
                 double rwc = fmax(qrain[ijk]*density[k], SMALL);
@@ -166,7 +166,7 @@ void get_snow_n0(const struct DimStruct *dims, double* restrict density, double*
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin-1; k<kmax+1; k++){
+            for(ssize_t k=kmin; k<kmax+1; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
                 double swc = fmax(qsnow[ijk]*density[k], SMALL);
@@ -392,7 +392,7 @@ void melt_snow(double density, double temperature, double qsnow, double nsnow, d
     double fvent = 0.65 + 0.39*sqrt(snow_vel*snow_diam/VISC_AIR);
 
     if( temperature > 273.16 && qsnow > small ){
-        *qsnow_tendency = 2.0*pi*nsnow*ka/lhf*(temperature - 273.16)*fvent/(snow_lam*snow_lam)/density;
+        *qsnow_tendency = -2.0*pi*nsnow*ka/lhf*(temperature - 273.16)*fvent/(snow_lam*snow_lam)/density;
     }
     return;
 };
@@ -543,7 +543,7 @@ void sedimentation_velocity_rain(const struct DimStruct *dims, double* restrict 
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin-1; k<kmax+1; k++){
+            for(ssize_t k=kmin; k<kmax+1; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
                 double rain_lam = rain_lambda(density[k], qrain[ijk], nrain[ijk]);
@@ -588,7 +588,7 @@ void sedimentation_velocity_snow(const struct DimStruct *dims, double* restrict 
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin-1; k<kmax+1; k++){
+            for(ssize_t k=kmin; k<kmax+1; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
                 double snow_lam = snow_lambda(density[k], qsnow[ijk], nsnow[ijk]);
@@ -649,7 +649,7 @@ double entropy_src_precipitation_c(const double p0, const double temperature, co
     double sv = sv_c(pv, temperature);
     double sc = sc_c(L, temperature);
 
-    return (sd - sv + sc) * precip_rate;
+    return -(sd - sv - sc) * precip_rate;
 };
 
 double entropy_src_evaporation_c(const double p0, const double temperature, double Tw, const double qt, const double qv, const double L, const double evap_rate){
@@ -659,7 +659,7 @@ double entropy_src_evaporation_c(const double p0, const double temperature, doub
     double sv = sv_c(pv, Tw);
     double sc = sc_c(L, Tw);
 
-    return (sv - sc - sd) * evap_rate;
+    return -(sv + sc - sd) * evap_rate;
 };
 
 void entropy_source_formation(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double),

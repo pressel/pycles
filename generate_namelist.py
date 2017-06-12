@@ -867,7 +867,7 @@ def Isdac():
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 5
-    namelist['scalar_transport']['order_sedimentation'] = 1
+    namelist['scalar_transport']['order_sedimentation'] = 5
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
@@ -947,7 +947,7 @@ def IsdacCC():
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 5
-    namelist['scalar_transport']['order_sedimentation'] = 1
+    namelist['scalar_transport']['order_sedimentation'] = 5
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
@@ -1063,7 +1063,7 @@ def Mpace():
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 5
-    namelist['scalar_transport']['order_sedimentation'] = 1
+    namelist['scalar_transport']['order_sedimentation'] = 5
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
