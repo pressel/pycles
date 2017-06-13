@@ -1439,8 +1439,8 @@ def InitGCMMean(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
 
     t_in = np.mean(input_data_tv['temp'][:,::-1], axis=0)
     shum_in = np.mean(input_data_tv['shum'][:,::-1], axis=0)
-    u_in = np.mean(input_data_tv['u'][:,::-1], axis=0)
-    v_in = np.mean(input_data_tv['v'][:,::-1], axis=0)
+    u_in = np.mean(input_data_tv['u_geos'][:,::-1], axis=0)
+    v_in = np.mean(input_data_tv['v_geos'][:,::-1], axis=0)
     z_in = np.mean(input_data_tv['zfull'][:, ::-1], axis=0)
 
 

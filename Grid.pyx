@@ -139,7 +139,7 @@ cdef class Grid:
 
 
         cdef double zp_max = self.dims.n[2] * self.dims.dx[2]
-        beta =  1.0/ 4000.0
+        beta =  1.0/ 8000.0
         self.dims.dx[2] = (1.0/beta) * np.log(zp_max * (np.exp(beta)-1) + 1)/self.dims.n[2]
         self.dims.dxi[2] = 1.0/self.dims.dx[2]
 

@@ -102,6 +102,7 @@ cdef class ScalarAdvection:
                             #First get the tendency associated with the sedimentation velocity
                             compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
                                                    &PV.values[scalar_shift],&self.flux[flux_shift],d,self.order_sedimentation)
+
                             scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
                                                &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
 

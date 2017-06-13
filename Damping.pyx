@@ -109,8 +109,6 @@ cdef class RayleighGCMMean:
 
 
         #Set up tendency damping using error function
-
-
         fh = open(self.file, 'r')
         input_data_tv = cPickle.load(fh)
         fh.close()
@@ -119,14 +117,16 @@ cdef class RayleighGCMMean:
         #Compute height for daimping profiles
         #dt_qg_conv = np.mean(input_data_tv['dt_qg_param'][:,::-1],axis=0)
         zfull = np.mean(input_data_tv['zfull'][:,::-1], axis=0)
-        dt_tg_rad = np.mean(input_data_tv['temp_rad'][:,::-1],axis=0)
+        temp = np.mean(input_data_tv['temp'][:,::-1],axis=0)
+        temp = interp_pchip(Gr.zp_half, zfull, temp)
         #import pylab as plt
         #plt.plot(np.abs(dt_qg_conv))
-        for i in range(dt_tg_rad.shape[0]-1, -1, -1):
-            print i
-            if dt_tg_rad[i] < 0.0:
+
+        print temp
+        for i in range(temp.shape[0]-1, -1, -1):
+            if temp[i]  >  230.0:
             #if np.abs(dt_qg_conv[i]) > cutoff:
-                self.tend_flat_z_d = z_top - zfull[i+1]
+                self.tend_flat_z_d = z_top - Gr.zp_half[i]
                 break
 
         print 'Convective top', z_top - self.tend_flat_z_d
@@ -325,14 +325,16 @@ cdef class RayleighGCMVarying:
         #Compute height for daimping profiles
         #dt_qg_conv = np.mean(input_data_tv['dt_qg_param'][:,::-1],axis=0)
         zfull = np.mean(input_data_tv['zfull'][:,::-1], axis=0)
-        dt_tg_rad = np.mean(input_data_tv['temp_rad'][:,::-1],axis=0)
+        temp = np.mean(input_data_tv['temp'][:,::-1],axis=0)
+        temp = interp_pchip(Gr.zp_half, zfull, temp)
         #import pylab as plt
         #plt.plot(np.abs(dt_qg_conv))
-        for i in range(dt_tg_rad.shape[0]-1, -1, -1):
-            print i
-            if dt_tg_rad[i] < 0.0:
+
+        print temp
+        for i in range(temp.shape[0]-1, -1, -1):
+            if temp[i]  >  230.0:
             #if np.abs(dt_qg_conv[i]) > cutoff:
-                self.tend_flat_z_d = z_top - zfull[i+1]
+                self.tend_flat_z_d = z_top - Gr.zp_half[i]
                 break
 
         print 'Convective top', z_top - self.tend_flat_z_d
