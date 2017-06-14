@@ -80,7 +80,8 @@ cdef class Rayleigh:
             dtype=np.double,
             order='c')
         self.gamma_z = np.zeros((Gr.dims.nlg[2]), dtype=np.double, order='c')
-        z_top = Gr.dims.dx[2] * Gr.dims.n[2]
+        z_top = Gr.zpl[Gr.dims.nlg[2] - Gr.dims.gw]
+
         with nogil:
             for k in range(Gr.dims.nlg[2]):
                 if Gr.zl_half[k] >= z_top - self.z_d:
