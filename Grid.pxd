@@ -44,9 +44,14 @@ cdef extern from "grid.h":
         double * zpl
 
 
+
+
 cdef class Grid:
     cdef:
         DimStruct dims
+
+        bint stretch
+        double stretch_scale
 
         double [:] x
         double [:] x_half

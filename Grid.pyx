@@ -40,6 +40,22 @@ cdef class Grid:
         self.dims.n[1] = namelist['grid']['ny']
         self.dims.n[2] = namelist['grid']['nz']
 
+
+        #Determine if grid stretching is to be used
+        try:
+            self.stretch = namelist['grid']['stretch']
+        except:
+            pass
+
+        if self.stretch:
+            try:
+                self.stretch_scale = namelist['grid']['stretch_scale']
+            except:
+                self.stretch_scale = 8000.0 #[m]
+        else:
+            self.stretch_scale = 0.0
+
+
         #Compute the global and local dims
         self.compute_global_dims()
         self.compute_local_dims(Parallel)
@@ -139,9 +155,13 @@ cdef class Grid:
 
 
         cdef double zp_max = self.dims.n[2] * self.dims.dx[2]
-        beta =  1.0/ 8000.0
-        self.dims.dx[2] = (1.0/beta) * np.log(zp_max * (np.exp(beta)-1) + 1)/self.dims.n[2]
-        self.dims.dxi[2] = 1.0/self.dims.dx[2]
+
+        if self.stretch:
+            beta =  1.0/ self.stretch_scale
+            self.dims.dx[2] = (1.0/beta) * np.log(zp_max * (np.exp(beta)-1) + 1)/self.dims.n[2]
+            self.dims.dxi[2] = 1.0/self.dims.dx[2]
+        else:
+            pass
 
         cdef int i, count = 0
         for i in xrange(-self.dims.gw,self.dims.n[2]+self.dims.gw,1):
@@ -174,17 +194,33 @@ cdef class Grid:
         self.yl_half = self.extract_local_ghosted(self.yl,1)
 
         #Now set up the tranformation arrays
-        self.zp = (np.exp(beta * np.array(self.z)) - 1.0)/(np.exp(beta) - 1.0)
-        self.zp_half =(np.exp(beta * np.array(self.z_half)) - 1.0)/(np.exp(beta) - 1.0)
 
-        self.zpl = self.extract_local_ghosted(np.array(self.zp),2)
-        self.zpl_half = self.extract_local_ghosted(np.array(self.zp_half),2)
+        if self.stretch:
+            self.zp = (np.exp(beta * np.array(self.z)) - 1.0)/(np.exp(beta) - 1.0)
+            self.zp_half =(np.exp(beta * np.array(self.z_half)) - 1.0)/(np.exp(beta) - 1.0)
 
-        self.dims.zp_half_0 = self.zp_half[self.dims.gw]
-        self.dims.zp_0 = self.zp[self.dims.gw]
+            self.zpl = self.extract_local_ghosted(np.array(self.zp),2)
+            self.zpl_half = self.extract_local_ghosted(np.array(self.zp_half),2)
 
-        self.dzp = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
-        self.dzp_half = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
+            self.dims.zp_half_0 = self.zp_half[self.dims.gw]
+            self.dims.zp_0 = self.zp[self.dims.gw]
+
+            self.dzp = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
+            self.dzp_half = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
+        else:
+
+
+            self.zp = np.array(self.z)
+            self.zp_half = np.array(self.z_half)
+
+            self.zpl = self.extract_local_ghosted(np.array(self.zp),2)
+            self.zpl_half = self.extract_local_ghosted(np.array(self.zp_half),2)
+
+            self.dims.zp_half_0 = self.zp_half[self.dims.gw]
+            self.dims.zp_0 = self.zp[self.dims.gw]
+
+            self.dzp = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
+            self.dzp_half = np.empty((self.dims.n[2]+2*self.dims.gw),dtype=np.double,order='c')
 
         cdef int k
         for k in xrange(1,self.dims.n[2]+2*self.dims.gw-1):
