@@ -231,8 +231,13 @@ cdef class Grid:
         self.dzpl = self.extract_local_ghosted(np.array(self.dzp),2)
         self.dzpl_half = self.extract_local_ghosted(np.array(self.dzp_half),2)
 
-        self.met = beta * np.exp(beta * np.array(self.z))/(np.exp(beta) - 1)
-        self.met_half = beta * np.exp(beta * np.array(self.z_half))/(np.exp(beta) - 1)
+
+        if self.stretch:
+            self.met = beta * np.exp(beta * np.array(self.z))/(np.exp(beta) - 1.0)
+            self.met_half = beta * np.exp(beta * np.array(self.z_half))/(np.exp(beta) - 1.0)
+        else:
+            self.met = np.ones((self.dims.n[2]+2*self.dims.gw), dtype=np.double, order='c')
+            self.met_half = np.ones((self.dims.n[2]+2*self.dims.gw), dtype=np.double, order='c')
 
         self.imet = 1.0/np.array(self.met)
         self.imet_half = 1.0/np.array(self.met_half)
