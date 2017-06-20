@@ -277,7 +277,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             if 'O3' in gas_name:
                 trace[0,:] = lw_absorber[:,i].reshape(1,lw_np)
             elif 'CO2' in gas_name:
-                trace[1,:] = lw_absorber[:,i].reshape(1,lw_np) * self.co2_factor
+                trace[1,:] = lw_absorber[:,i].reshape(1,lw_np) * self.co2_factor * 400.0/355.0
             elif 'CH4' in gas_name:
                 trace[2,:] = lw_absorber[:,i].reshape(1,lw_np)
             elif 'N2O' in gas_name:
@@ -292,6 +292,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
                 trace[7,:] = lw_absorber[:,i].reshape(1,lw_np)
             elif 'CCL4' in gas_name:
                 trace[8,:] = lw_absorber[:,i].reshape(1,lw_np)
+
 
         # From rad_driver.f90, lines 585 to 620
         trpath = np.zeros((nlevels, 9),dtype=np.double,order='F')
@@ -487,7 +488,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
 
             for sst_index in xrange(n_sst):
                 self.sst = self.t_table.access_vals[sst_index]
-                print('doing rce for '+str(self.sst))
+                # print('doing rce for '+str(self.sst))
                 self.rce_step(self.sst)
                 self.t_table.table_vals[sst_index,:] = self.t_layers[:]
                 self.p_tropo_store[sst_index] = self.p_layers[self.index_h]
@@ -616,7 +617,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.index_h = self.index_h - 2
 
         while not self.tropo_converged:
-            print(self.index_h)
+            # print(self.index_h)
             for k in xrange(self.nlayers):
                 self.t_layers[k] = t_adi[k]
                 self.qv_layers[k] = qv_adi[k]
@@ -640,13 +641,13 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
                         self.qv_layers[k] = pv/(pd * eps_vi + pv)
                         self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
 
-            print('t_layers ', self.t_layers[self.index_h], 't_adi ', t_adi[self.index_h])
+            # print('t_layers ', self.t_layers[self.index_h], 't_adi ', t_adi[self.index_h])
             if self.t_layers[self.index_h] < t_adi[self.index_h]:
                 self.index_h +=1
                 self.tropo_converged = False
             else:
                 self.tropo_converged = True
-                print('Tropo is converged')
+                # print('Tropo is converged')
             #     print('if option 1')
             #     index_h_old = self.index_h
             #     k=self.index_h
@@ -665,9 +666,9 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             # else:
             #     print('if option 4')
             #     index_h_old = self.index_h
-            print('old, new index', index_h_old, self.index_h)
-
-            print('total column influx', self.total_column_influx)
+            # print('old, new index', index_h_old, self.index_h)
+            #
+            # print('total column influx', self.total_column_influx)
             # plt.figure('T_profiles')
             # plt.plot(self.t_layers, np.divide(self.p_layers[:],100.0), '-sr')
             # plt.plot(t_adi, np.divide(self.p_layers[:],100.0), '-sb')
