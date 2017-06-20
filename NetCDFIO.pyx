@@ -113,18 +113,34 @@ cdef class NetCDFIO_Stats:
         root_grp.close()
         return
 
-    cpdef add_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+    cpdef add_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
 
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             profile_grp = root_grp.groups['profiles']
             new_var = profile_grp.createVariable(var_name, 'f8', ('t', 'z'))
 
+            #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
+            if units is not None:
+                new_var.setncattr_string('units', str(units))
+            else:
+                new_var.setncattr_string('units', 'None')
+
+            if nice_name is not None:
+                new_var.setncattr_string('nice_name', str(nice_name))
+            else:
+                new_var.setncattr_string('nice_name', 'None')
+
+            if desc is not None:
+                new_var.setncattr_string('description', str(desc))
+            else:
+                new_var.setncattr_string('description', 'None')
+
             root_grp.close()
 
         return
 
-    cpdef add_reference_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+    cpdef add_reference_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
         '''
         Adds a profile to the reference group NetCDF Stats file.
         :param var_name: name of variable
@@ -137,15 +153,48 @@ cdef class NetCDFIO_Stats:
             reference_grp = root_grp.groups['reference']
             new_var = reference_grp.createVariable(var_name, 'f8', ('z',))
 
+            #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
+            if units is not None:
+                new_var.setncattr_string('units', str(units))
+            else:
+                new_var.setncattr_string('units', 'None')
+
+            if nice_name is not None:
+                new_var.setncattr_string('nice_name', str(nice_name))
+            else:
+                new_var.setncattr_string('nice_name', 'None')
+
+            if desc is not None:
+                new_var.setncattr_string('description', str(desc))
+            else:
+                new_var.setncattr_string('description', 'None')
+
             root_grp.close()
 
         return
 
-    cpdef add_ts(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+    cpdef add_ts(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             ts_grp = root_grp.groups['timeseries']
             new_var = ts_grp.createVariable(var_name, 'f8', ('t',))
+
+            #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
+            if units is not None:
+                new_var.setncattr_string('units', str(units))
+            else:
+                new_var.setncattr_string('units', 'None')
+
+            if nice_name is not None:
+                new_var.setncattr_string('nice_name', str(nice_name))
+            else:
+                new_var.setncattr_string('nice_name', 'None')
+
+            if desc is not None:
+                new_var.setncattr_string('description', str(desc))
+            else:
+                new_var.setncattr_string('description', 'None')
+
 
             root_grp.close()
         return

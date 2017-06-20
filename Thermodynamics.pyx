@@ -70,7 +70,7 @@ cdef class ClausiusClapeyron:
             n_lookup = namelist['ClausiusClapeyron']['n_lookup']
         except:
             Par.root_print('Clasius-Clayperon lookup table n_lookup not '
-                           'given in name list taking default of 128')
+                           'given in name list taking default of 512')
             n_lookup = 512
 
         #Generate array of equally space temperatures
