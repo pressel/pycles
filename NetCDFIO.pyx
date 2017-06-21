@@ -122,19 +122,19 @@ cdef class NetCDFIO_Stats:
 
             #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
             if units is not None:
-                new_var.setncattr_string('units', str(units))
+                new_var.setncattr('units', str(units))
             else:
-                new_var.setncattr_string('units', 'None')
+                new_var.setncattr('units', 'None')
 
             if nice_name is not None:
-                new_var.setncattr_string('nice_name', str(nice_name))
+                new_var.setncattr('nice_name', str(nice_name))
             else:
-                new_var.setncattr_string('nice_name', 'None')
+                new_var.setncattr('nice_name', 'None')
 
             if desc is not None:
-                new_var.setncattr_string('description', str(desc))
+                new_var.setncattr('description', str(desc))
             else:
-                new_var.setncattr_string('description', 'None')
+                new_var.setncattr('description', 'None')
 
             root_grp.close()
 
@@ -155,19 +155,19 @@ cdef class NetCDFIO_Stats:
 
             #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
             if units is not None:
-                new_var.setncattr_string('units', str(units))
+                new_var.setncattr('units', str(units))
             else:
-                new_var.setncattr_string('units', 'None')
+                new_var.setncattr('units', 'None')
 
             if nice_name is not None:
-                new_var.setncattr_string('nice_name', str(nice_name))
+                new_var.setncattr('nice_name', str(nice_name))
             else:
-                new_var.setncattr_string('nice_name', 'None')
+                new_var.setncattr('nice_name', 'None')
 
             if desc is not None:
-                new_var.setncattr_string('description', str(desc))
+                new_var.setncattr('description', str(desc))
             else:
-                new_var.setncattr_string('description', 'None')
+                new_var.setncattr('description', 'None')
 
             root_grp.close()
 
@@ -181,19 +181,19 @@ cdef class NetCDFIO_Stats:
 
             #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
             if units is not None:
-                new_var.setncattr_string('units', str(units))
+                new_var.setncattr('units', str(units))
             else:
-                new_var.setncattr_string('units', 'None')
+                new_var.setncattr('units', 'None')
 
             if nice_name is not None:
-                new_var.setncattr_string('nice_name', str(nice_name))
+                new_var.setncattr('nice_name', str(nice_name))
             else:
-                new_var.setncattr_string('nice_name', 'None')
+                new_var.setncattr('nice_name', 'None')
 
             if desc is not None:
-                new_var.setncattr_string('description', str(desc))
+                new_var.setncattr('description', str(desc))
             else:
-                new_var.setncattr_string('description', 'None')
+                new_var.setncattr('description', 'None')
 
 
             root_grp.close()
