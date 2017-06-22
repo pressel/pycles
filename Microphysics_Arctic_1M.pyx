@@ -430,7 +430,8 @@ cdef class Microphysics_Arctic_1M:
 
         return
 
-cdef get_s_source_precip(Grid.DimStruct *dims, Th, double *p0_half, double *t, double *qt, double *qv, double *precip_rate, double *s_tendency):
+cdef get_s_source_precip(Grid.DimStruct *dims, Th, double *p0_half, double *t, double *qt, double *qv,
+                         double *precip_rate, double *s_tendency):
     cdef:
         Py_ssize_t imin = dims.gw
         Py_ssize_t jmin = dims.gw
