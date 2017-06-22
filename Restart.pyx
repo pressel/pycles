@@ -52,14 +52,13 @@ cdef class Restart:
         except:
             self.delete_old = False
         try:
-            times_retained_raw = namelist['restart']['times_retained']
-            if not type(times_retained_raw) == list:
-                times_retained_raw = [times_retained_raw]
+            retain_frequency = namelist['restart']['retain_frequency']
+            times_retained_raw = np.arange(0,namelist['time_stepping']['t_max']+retain_frequency, retain_frequency)
 
             # Make sure the times are strings, ie '3600' not 3600
             self.times_retained = []
             for time in times_retained_raw:
-                self.times_retained.append(str(time))
+                self.times_retained.append(str(int(time)))
         except:
             self.times_retained = []
 
