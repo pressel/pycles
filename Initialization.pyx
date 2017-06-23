@@ -48,8 +48,6 @@ def InitializationFactory(namelist):
             return  InitCGILS
         elif casename == 'ZGILS':
             return  InitZGILS
-        elif casename == 'GCMFixed':
-            return InitGCMFixed
         elif casename == 'GCMVarying':
             return InitGCMVarying
         elif casename == 'GCMMean':
@@ -1259,79 +1257,6 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                     PV.values[ijk + qt_varshift]  = reference_profiles.qt[k]
                     PV.values[ijk + s_varshift] = reference_profiles.s[k]
 
-
-    return
-
-def InitGCMFixed(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
-
-
-    #Generate the reference profiles
-    data_path = namelist['gcm']['file']
-    lat = namelist['gcm']['latitude']
-    fh = open(data_path, 'r')
-    input_data_tv = cPickle.load(fh)
-    fh.close()
-
-    lat_in = input_data_tv['lat']
-    lat_idx = (np.abs(lat_in - lat)).argmin()
-    p_in = input_data_tv['p'][::-1,lat_idx]
-    t_in = input_data_tv['t'][::-1,lat_idx]
-    shum_in = input_data_tv['shum'][::-1,lat_idx]
-    u_in = input_data_tv['u'][::-1,lat_idx]
-    v_in = input_data_tv['v'][::-1, lat_idx]
-    z_in = input_data_tv['z'][::-1, lat_idx]
-
-
-
-    RS.Pg = p_in[0]
-    RS.Tg = t_in[0]
-    RS.qtg = shum_in[0]
-    RS.u0 = 0.0
-    RS.v0 = 0.0
-
-
-
-    RS.initialize(Gr, Th, NS, Pa)
-    np.random.seed(Pa.rank)
-
-    cdef:
-        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
-        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
-        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
-        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
-        Py_ssize_t qt_varshift = PV.get_varshift(Gr, 'qt')
-        Py_ssize_t i,j,k
-        Py_ssize_t ishift, jshift, e_varshift
-        Py_ssize_t ijk
-
-
-
-    cdef double [:] t = interp_pchip(Gr.zp_half, z_in, t_in) #np.interp(Gr.zp_half, z_in, t_in)
-    cdef double [:] qt = interp_pchip(Gr.zp_half, z_in, shum_in) #np.interp(Gr.zp_half, z_in, shum_in)
-    cdef double [:] u = interp_pchip(Gr.zp_half, z_in, u_in)#np.interp(Gr.zp_half, z_in, u_in)
-    cdef double [:] v = interp_pchip(Gr.zp_half, z_in, v_in)#np.interp(Gr.zp_half, z_in, v_in)
-
-    #t_test = interp_pchip(Gr.zp_half, z_in, t_in)
-   # print t_test
-
-    #Generate initial perturbations (here we are generating more than we need)
-    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
-
-    #Now set the initial condition
-    for i in xrange(Gr.dims.nlg[0]):
-        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        for j in xrange(Gr.dims.nlg[1]):
-            jshift = j * Gr.dims.nlg[2]
-            for k in xrange(Gr.dims.nlg[2]):
-                ijk = ishift + jshift + k
-                PV.values[u_varshift + ijk] = u[k]
-                PV.values[v_varshift + ijk] = v[k]
-                PV.values[w_varshift + ijk] = 0.0
-                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t[k],qt[k],0.0,0.0)
-                PV.values[qt_varshift + ijk] = qt[k]
-                if Gr.zpl_half[k] < 200.0:
-                    PV.values[s_varshift + ijk] = PV.values[s_varshift + ijk]  + (theta_pert[ijk] - 0.5)*0.1
 
     return
 
