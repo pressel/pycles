@@ -1372,8 +1372,8 @@ def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
     t_in = input_data_tv['temp'][0,::-1]
     shum_in = input_data_tv['shum'][0,::-1]
-    u_in = input_data_tv['u'][0,::-1]
-    v_in = input_data_tv['v'][0,::-1]
+    u_in = input_data_tv['u_geos'][0,::-1]
+    v_in = input_data_tv['v_geos'][0,::-1]
     z_in = input_data_tv['zfull'][0, ::-1]
 
 

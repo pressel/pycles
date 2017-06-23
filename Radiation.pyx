@@ -1265,7 +1265,6 @@ cdef class RadiationGCMGreyVarying(RadiationBase):
         self.srf_lw_up = 0.0
         self.srf_sw_up = 0.0
 
-        self.lat = namelist['gcm']['latitude']
         self.file = str(namelist['gcm']['file'])
 
         return

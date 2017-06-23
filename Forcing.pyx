@@ -1221,8 +1221,8 @@ cdef class ForcingGCMVarying:
 
             self.rho_gcm = interp_pchip(Gr.zp, zfull, 1.0/alpha)
             self.rho_half_gcm = interp_pchip(Gr.zp_half, zfull, 1.0/alpha)
-            self.v_dt_tot = interp_pchip(Gr.zp_half, zfull, v_dt_tot)
-            self.u_dt_tot = interp_pchip(Gr.zp_half, zfull, u_dt_tot)
+            self.v_dt_tot = interp_pchip(Gr.zp_half, zfull, v_dt_tot) * 0.0
+            self.u_dt_tot = interp_pchip(Gr.zp_half, zfull, u_dt_tot) * 0.0
 
             Pa.root_print('Finished updating time varying forcing')
 
@@ -1255,8 +1255,8 @@ cdef class ForcingGCMVarying:
 
 
         #Apply Coriolis Forcing
-        #coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-        #              &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+        coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
+                      &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
 
         # Apply Subsidence
         apply_subsidence_temperature(&Gr.dims, &self.rho_gcm[0], &self.rho_half_gcm[0], &self.subsidence[0], &PV.values[qt_shift], &DV.values[t_shift], &PV.tendencies[s_shift])
