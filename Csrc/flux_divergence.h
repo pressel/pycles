@@ -19,7 +19,7 @@ void scalar_flux_divergence(struct DimStruct *dims, double *alpha0, double *alph
     const ssize_t stencil[3] = {istride,jstride,1};
     const ssize_t sm1 = -stencil[d];
 
-    double * imetl_half = dims-> imetl_half;
+    const double * imetl_half = dims-> imetl_half;
 
     if(d == 2){
         for(ssize_t i=imin; i<imax; i++){
@@ -65,8 +65,8 @@ void momentum_flux_divergence(struct DimStruct *dims, double *alpha0, double *al
     const ssize_t stencil[3] = {istride,jstride,1};
     const ssize_t sm1 = -stencil[d_advecting];
 
-    double * imetl = dims -> imetl;
-    double * imetl_half = dims -> imetl_half;
+    const double * imetl = dims -> imetl;
+    const double * imetl_half = dims -> imetl_half;
 
     if(d_advecting == 2){
         if(d_advected != 2){
