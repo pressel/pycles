@@ -661,3 +661,7 @@ def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         return Microphysics_T_Liquid(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'Arctic_1M'):
         return Microphysics_Arctic_1M(Par, LH, namelist)
+    else:
+        Par.root_print('Invalid micro scheme: ' + str(namelist['microphysics']['scheme']))
+        Par.root_print('Killing simulation now')
+        Par.kill()
