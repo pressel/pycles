@@ -463,8 +463,8 @@ cdef class RayleighGCMVarying:
                         PV.tendencies[s_shift + ijk] =   (weight)*PV.tendencies[s_shift + ijk]
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.dt_qg_total[k]* (1.0 -weight) ) + (1.0 - weight) * (cpm_c(qt) * (self.dt_tg_total[k]))/t
                         PV.tendencies[qt_shift + ijk] = self.dt_qg_total[k]* (1.0 - weight) + PV.tendencies[qt_shift + ijk] *(weight)
-                        PV.tendencies[u_shift + ijk] = (weight) * PV.tendencies[u_shift + ijk]
-                        PV.tendencies[v_shift + ijk] = (weight) * PV.tendencies[v_shift + ijk]
+                        #PV.tendencies[u_shift + ijk] = (weight) * PV.tendencies[u_shift + ijk]
+                        #PV.tendencies[v_shift + ijk] = (weight) * PV.tendencies[v_shift + ijk]
 
         return
 
