@@ -1390,7 +1390,7 @@ def InitGCMMean(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
                 PV.values[w_varshift + ijk] = 0.0
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t[k],qt[k],0.0,0.0)
                 PV.values[qt_varshift + ijk] = qt[k]
-                if Gr.zpl_half[k] < 5000.0:
+                if Gr.zpl_half[k] < 500.0:
                     PV.values[s_varshift + ijk] = PV.values[s_varshift + ijk]  + (theta_pert[ijk] - 0.5)*0.3
 
     return
@@ -1406,7 +1406,7 @@ def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
     return
 
 from scipy.interpolate import pchip
-def interp_pchip(z_out, z_in, v_in, pchip_type=True):
+def interp_pchip(z_out, z_in, v_in, pchip_type=False):
     if pchip_type:
         p = pchip(z_in, v_in, extrapolate=True)
         return p(z_out)

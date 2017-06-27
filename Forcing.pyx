@@ -1393,12 +1393,15 @@ cdef class ForcingGCMMean:
         NS.add_profile('ls_subsidence', Gr, Pa)
         NS.add_profile('ls_dtdt_hadv', Gr, Pa)
         NS.add_profile('ls_dtdt_fino', Gr, Pa)
+        NS.add_profile('ls_dtdt_resid', Gr, Pa)
         NS.add_profile('ls_dsdt_hadv', Gr, Pa)
         NS.add_profile('ls_dqtdt_hadv', Gr, Pa)
+        NS.add_profile('ls_dqtdt_resid', Gr, Pa)
         NS.add_profile('ls_subs_dtdt', Gr, Pa)
         NS.add_profile('ls_subs_dsdt', Gr, Pa)
         NS.add_profile('ls_fino_dsdt', Gr, Pa)
         NS.add_profile('ls_subs_dqtdt', Gr, Pa)
+
 
         return
 
@@ -1440,7 +1443,9 @@ cdef class ForcingGCMMean:
             vg = np.mean(input_data_tv['v_geos'][:,::-1],axis=0)
             temp_dt_hadv = np.mean(input_data_tv['temp_hadv'][:,::-1],axis=0)
             temp_dt_fino = np.mean(input_data_tv['temp_fino'][:,::-1],axis=0)
+            temp_dt_resid = np.mean(input_data_tv['temp_real1'][:,::-1],axis=0) - np.mean(input_data_tv['temp_total'][:,::-1],axis=0)
             shum_dt_hadv = np.mean(input_data_tv['dt_qg_hadv'][:,::-1],axis=0)
+            shum_dt_resid = np.mean(input_data_tv['dt_qg_real1'][:,::-1],axis=0) - np.mean(input_data_tv['dt_qg_total'][:,::-1],axis=0)
             v_dt_tot = np.mean(input_data_tv['dt_vg_real1'][:,::-1],axis=0)
             v_dt_cof = np.mean(input_data_tv['dt_vg_cori'][:,::-1],axis=0)
             u_dt_tot = np.mean(input_data_tv['dt_ug_real1'][:,::-1],axis=0)
@@ -1454,7 +1459,10 @@ cdef class ForcingGCMMean:
 
             self.temp_dt_hadv = interp_pchip(Gr.zp_half, zfull, temp_dt_hadv)
             self.temp_dt_fino = interp_pchip(Gr.zp_half, zfull, temp_dt_fino)
+            self.temp_dt_resid = interp_pchip(Gr.zp_half, zfull, temp_dt_resid)
             self.shum_dt_hadv = interp_pchip(Gr.zp_half, zfull, shum_dt_hadv)
+            self.shum_dt_resid = interp_pchip(Gr.zp_half, zfull, shum_dt_resid)
+
 
             self.rho_gcm = interp_pchip(Gr.zp, zfull, 1.0/alpha)
             self.rho_half_gcm = interp_pchip(Gr.zp_half, zfull, 1.0/alpha)
@@ -1517,9 +1525,9 @@ cdef class ForcingGCMMean:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
 
-                        PV.tendencies[s_shift + ijk] += (cpm_c(qt) * (self.temp_dt_hadv[k] + self.temp_dt_fino[k]))/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * ( self.shum_dt_hadv[k]  + qt_tend_tmp[ijk] )
-                        PV.tendencies[qt_shift + ijk] += (self.shum_dt_hadv[k] + qt_tend_tmp[ijk])
+                        PV.tendencies[s_shift + ijk] += (cpm_c(qt) * (self.temp_dt_resid[k] + self.temp_dt_hadv[k] + self.temp_dt_fino[k]))/t
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * ( self.shum_dt_resid[k] + self.shum_dt_hadv[k]  + qt_tend_tmp[ijk]  )
+                        PV.tendencies[qt_shift + ijk] += (self.shum_dt_resid[k] + self.shum_dt_hadv[k] + qt_tend_tmp[ijk])
                         PV.tendencies[u_shift + ijk] += self.u_dt_tot[k]
                         PV.tendencies[v_shift + ijk] += self.v_dt_tot[k]
 
@@ -1606,6 +1614,10 @@ cdef class ForcingGCMMean:
         NS.write_profile('ls_dsdt_hadv', mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('ls_dtdt_hadv', self.temp_dt_hadv[Gr.dims.gw:-Gr.dims.gw],Pa)
         NS.write_profile('ls_dqtdt_hadv', self.shum_dt_hadv[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        NS.write_profile('ls_dqtdt_resid', self.shum_dt_resid[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('ls_dtdt_resid', self.temp_dt_resid[Gr.dims.gw:-Gr.dims.gw], Pa)
+
 
         return
 
@@ -1878,7 +1890,10 @@ cdef apply_subsidence_temperature(Grid.DimStruct *dims, double *rho0, double *rh
 
     return
 
-def interp_pchip(z_out, z_in, v_in):
-
-    p = pchip(z_in, v_in, extrapolate=True)
-    return p(z_out)
+from scipy.interpolate import pchip
+def interp_pchip(z_out, z_in, v_in, pchip_type=False):
+    if pchip_type:
+        p = pchip(z_in, v_in, extrapolate=True)
+        return p(z_out)
+    else:
+        return np.interp(z_out, z_in, v_in)

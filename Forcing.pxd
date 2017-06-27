@@ -226,8 +226,10 @@ cdef class ForcingGCMMean:
         double [:] subsidence
         double [:] temp_dt_hadv
         double [:] temp_dt_fino
+        double [:] temp_dt_resid
         double [:] shum_dt_vadv
         double [:] shum_dt_hadv
+        double [:] shum_dt_resid
 
 
         double [:] u_dt_hadv
