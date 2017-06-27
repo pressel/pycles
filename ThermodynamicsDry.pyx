@@ -27,6 +27,8 @@ cdef extern from "thermodynamics_dry.h":
     inline double alpha_c(double p0, double T, double qt, double qv) nogil
     void eos_update(Grid.DimStruct *dims, double *pd, double *s, double *T,
                     double *alpha)
+    void eos_update_thli(Grid.DimStruct *dims, double *pd, double *thli, double *T, double *s,
+                    double *alpha)
     void buoyancy_update(Grid.DimStruct *dims, double *alpha0, double *alpha,double *buoyancy,
                          double *wt)
     void bvf_dry(Grid.DimStruct* dims,  double* p0, double* T, double* theta, double* bvf)
@@ -39,11 +41,21 @@ cdef class ThermodynamicsDry:
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist,LH,Pa)
 
+        try:
+            self.entropy_prognostic = namelist['thermodynamics']['s_prognostic']
+        except:
+            self.entropy_prognostic = True
+
         return
 
     cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        PV.add_variable('s','m/s',"sym","scalar",Pa)
+        if self.entropy_prognostic:
+            PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
+        else:
+            print 'Using thli'
+            PV.add_variable('thli','K', "sym", "scalar", Pa)
+            DV.add_variables('s', 'K', 'sym', Pa)
 
         #Initialize class member arrays
         DV.add_variables('buoyancy','--','sym',Pa)
@@ -88,14 +100,24 @@ cdef class ThermodynamicsDry:
         cdef Py_ssize_t buoyancy_shift = DV.get_varshift(Gr,'buoyancy')
         cdef Py_ssize_t alpha_shift = DV.get_varshift(Gr,'alpha')
         cdef Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
-        cdef Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+        cdef Py_ssize_t s_shift
+        cdef Py_ssize_t thli_shift
         cdef Py_ssize_t w_shift  = PV.get_varshift(Gr,'w')
         cdef Py_ssize_t theta_shift = DV.get_varshift(Gr,'theta')
         cdef Py_ssize_t bvf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
 
-        eos_update(&Gr.dims,&RS.p0_half[0],&PV.values[s_shift],&DV.values[t_shift],&DV.values[alpha_shift])
-        buoyancy_update(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
-        bvf_dry(&Gr.dims,&RS.p0_half[0],&DV.values[t_shift],&DV.values[theta_shift],&DV.values[bvf_shift])
+        if self.entropy_prognostic:
+            s_shift = PV.get_varshift(Gr,'s')
+            eos_update(&Gr.dims,&RS.p0_half[0],&PV.values[s_shift],&DV.values[t_shift],&DV.values[alpha_shift])
+            buoyancy_update(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
+            bvf_dry(&Gr.dims,&RS.p0_half[0],&DV.values[t_shift],&DV.values[theta_shift],&DV.values[bvf_shift])
+        else:
+            thli_shift = PV.get_varshift(Gr,'thli')
+            s_shift = DV.get_varshift(Gr,'s')
+            eos_update_thli(&Gr.dims,&RS.p0_half[0],&PV.values[thli_shift],&DV.values[t_shift], &DV.values[s_shift], &DV.values[alpha_shift])
+            buoyancy_update(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
+            bvf_dry(&Gr.dims,&RS.p0_half[0],&DV.values[t_shift],&DV.values[thli_shift],&DV.values[bvf_shift])
+
 
         return
 
@@ -121,20 +143,35 @@ cdef class ThermodynamicsDry:
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
             Py_ssize_t count
-            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t s_shift
             double [:] data = np.empty((Gr.dims.npl,),dtype=np.double,order='c')
 
         #Add entropy potential temperature to 3d fields
-        with nogil:
-            count = 0
-            for i in xrange(imin,imax):
-                ishift = i * istride
-                for j in xrange(jmin,jmax):
-                    jshift = j * jstride
-                    for k in xrange(kmin,kmax):
-                        ijk = ishift + jshift + k
-                        data[count] = thetas_c(PV.values[s_shift+ijk],0.0)
-                        count += 1
+        if self.entropy_prognostic:
+            s_shift = PV.get_varshift(Gr,'s')
+            with nogil:
+                count = 0
+                for i in xrange(imin,imax):
+                    ishift = i * istride
+                    for j in xrange(jmin,jmax):
+                        jshift = j * jstride
+                        for k in xrange(kmin,kmax):
+                            ijk = ishift + jshift + k
+                            data[count] = thetas_c(PV.values[s_shift+ijk],0.0)
+                            count += 1
+
+        else:
+            s_shift = DV.get_varshift(Gr,'s')
+            with nogil:
+                count = 0
+                for i in xrange(imin,imax):
+                    ishift = i * istride
+                    for j in xrange(jmin,jmax):
+                        jshift = j * jstride
+                        for k in xrange(kmin,kmax):
+                            ijk = ishift + jshift + k
+                            data[count] = thetas_c(DV.values[s_shift+ijk],0.0)
+                            count += 1
         NF.add_field('thetas')
         NF.write_field('thetas',data)
         print(np.amax(data),np.amin(data))
@@ -154,21 +191,35 @@ cdef class ThermodynamicsDry:
             Py_ssize_t jmax = Gr.dims.nlg[1]
             Py_ssize_t kmax = Gr.dims.nlg[2]
             Py_ssize_t count
-            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t s_shift
             double [:] data = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
             double [:] tmp
 
         #Add entropy potential temperature to 3d fields
-        with nogil:
-            count = 0
-            for i in xrange(imin,imax):
-                ishift = i * istride
-                for j in xrange(jmin,jmax):
-                    jshift = j * jstride
-                    for k in xrange(kmin,kmax):
-                        ijk = ishift + jshift + k
-                        data[count] = thetas_c(PV.values[s_shift+ijk],0.0)
-                        count += 1
+        if self.entropy_prognostic:
+            s_shift = PV.get_varshift(Gr,'s')
+            with nogil:
+                count = 0
+                for i in xrange(imin,imax):
+                    ishift = i * istride
+                    for j in xrange(jmin,jmax):
+                        jshift = j * jstride
+                        for k in xrange(kmin,kmax):
+                            ijk = ishift + jshift + k
+                            data[count] = thetas_c(PV.values[s_shift+ijk],0.0)
+                            count += 1
+        else:
+            s_shift = DV.get_varshift(Gr,'s')
+            with nogil:
+                count = 0
+                for i in xrange(imin,imax):
+                    ishift = i * istride
+                    for j in xrange(jmin,jmax):
+                        jshift = j * jstride
+                        for k in xrange(kmin,kmax):
+                            ijk = ishift + jshift + k
+                            data[count] = thetas_c(DV.values[s_shift+ijk],0.0)
+                            count += 1
 
         #Compute and write mean
         tmp = Pa.HorizontalMean(Gr,&data[0])

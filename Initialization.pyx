@@ -14,7 +14,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport Grid
 cimport PrognosticVariables
 cimport DiagnosticVariables
-from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
+from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c, thetali_c
 cimport ReferenceState
 from Forcing cimport AdjustedMoistAdiabat
 from Thermodynamics cimport LatentHeat
@@ -71,28 +71,54 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
-        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t s_varshift
+        Py_ssize_t thli_varshit
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift
         Py_ssize_t ijk
         double t
         double dist
 
-    t_min = 9999.9
-    for i in xrange(Gr.dims.nlg[0]):
-        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        for j in xrange(Gr.dims.nlg[1]):
-            jshift = j * Gr.dims.nlg[2]
-            for k in xrange(Gr.dims.nlg[2]):
-                ijk = ishift + jshift + k
-                PV.values[u_varshift + ijk] = 0.0
-                PV.values[v_varshift + ijk] = 0.0
-                PV.values[w_varshift + ijk] = 0.0
-                dist  = np.sqrt(((Gr.x_half[i + Gr.dims.indx_lo[0]]/1000.0 - 25.6)/4.0)**2.0 + ((Gr.z_half[k + Gr.dims.indx_lo[2]]/1000.0 - 3.0)/2.0)**2.0)
-                dist = fmin(dist,1.0)
-                t = (300.0 )*exner_c(RS.p0_half[k]) - 15.0*( cos(np.pi * dist) + 1.0) /2.0
-                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+    try:
+        s_prognostic = namelist['thermodynamics']['s_prognostic']
+    except:
+        s_prognostic = True
 
+
+    if s_prognostic:
+        s_varshift = PV.get_varshift(Gr,'s')
+    else:
+        thli_varshift = PV.get_varshift(Gr, 'thli')
+
+
+    if s_prognostic:
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[u_varshift + ijk] = 0.0
+                    PV.values[v_varshift + ijk] = 0.0
+                    PV.values[w_varshift + ijk] = 0.0
+                    dist  = np.sqrt(((Gr.x_half[i + Gr.dims.indx_lo[0]]/1000.0 - 25.6)/4.0)**2.0 + ((Gr.z_half[k + Gr.dims.indx_lo[2]]/1000.0 - 3.0)/2.0)**2.0)
+                    dist = fmin(dist,1.0)
+                    t = (300.0 )*exner_c(RS.p0_half[k]) - 15.0*( cos(np.pi * dist) + 1.0) /2.0
+                    PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+    else:
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[u_varshift + ijk] = 0.0
+                    PV.values[v_varshift + ijk] = 0.0
+                    PV.values[w_varshift + ijk] = 0.0
+                    dist  = np.sqrt(((Gr.x_half[i + Gr.dims.indx_lo[0]]/1000.0 - 25.6)/4.0)**2.0 + ((Gr.z_half[k + Gr.dims.indx_lo[2]]/1000.0 - 3.0)/2.0)**2.0)
+                    dist = fmin(dist,1.0)
+                    t = (300.0 )*exner_c(RS.p0_half[k]) - 15.0*( cos(np.pi * dist) + 1.0) /2.0
+                    PV.values[thli_varshift + ijk] = thetali_c(RS.p0_half[k], t, 0.0, 0.0, 0.0, Th.get_lh(t))
 
     return
 

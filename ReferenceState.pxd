@@ -8,6 +8,8 @@ cdef class ReferenceState:
         public double [:] alpha0_half
         public double [:] rho0
         public double [:] rho0_half
+        public double [:] thetali0
+        public double [:] thetali0_half
 
         public double [:] p0_global
         public double [:] p0_half_global
@@ -15,6 +17,8 @@ cdef class ReferenceState:
         public double [:] alpha0_half_global
         public double [:] rho0_global
         public double [:] rho0_half_global
+        public double [:] thetali0_global
+        public double [:] thetali0_half_global
 
         double sg
 

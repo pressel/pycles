@@ -9,6 +9,10 @@ inline double eos_c(double pd, double s){
     return T_tilde*(exp( (s - sd_tilde + Rd *log(pd/p_tilde))/cpd));
 };
 
+inline double eos_thli_c(double pd, double thli){
+    return thli * exner_c(pd);
+};
+
 void eos_update(struct DimStruct *dims, double* restrict pd, double* restrict s, double* restrict T,
     double* restrict alpha ){
 
@@ -35,6 +39,36 @@ void eos_update(struct DimStruct *dims, double* restrict pd, double* restrict s,
     } // End i loop
     return;
 };
+
+
+void eos_update_thli(struct DimStruct *dims, double* restrict pd, double* restrict thli, double* restrict T, double* restrict s,
+    double* restrict alpha ){
+
+    ssize_t i,j,k;
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+    for (i=imin; i<imax; i++){
+       const ssize_t ishift = i * istride;
+        for (j=jmin;j<jmax;j++){
+            const ssize_t jshift = j * jstride;
+                for (k=kmin;k<kmax;k++){
+                    const ssize_t ijk = ishift + jshift + k;
+                    T[ijk] = eos_thli_c(pd[k],thli[ijk]);
+                    alpha[ijk] = alpha_c(pd[k],T[ijk],0.0,0.0);
+                    s[ijk] = sd_c(pd[k], T[ijk]);
+                } // End k loop
+        } // End j loop
+    } // End i loop
+    return;
+};
+
 
 void buoyancy_update(struct DimStruct *dims, double* restrict alpha0, double* restrict alpha, double* restrict buoyancy, double* restrict wt){
 
