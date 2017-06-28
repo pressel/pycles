@@ -42,15 +42,15 @@ cdef class ThermodynamicsDry:
         self.CC.initialize(namelist,LH,Pa)
 
         try:
-            self.entropy_prognostic = namelist['thermodynamics']['s_prognostic']
+            self.s_prognostic = namelist['thermodynamics']['s_prognostic']
         except:
-            self.entropy_prognostic = True
+            self.s_prognostic = True
 
         return
 
     cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        if self.entropy_prognostic:
+        if self.s_prognostic:
             PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
         else:
             print 'Using thli'
@@ -106,7 +106,7 @@ cdef class ThermodynamicsDry:
         cdef Py_ssize_t theta_shift = DV.get_varshift(Gr,'theta')
         cdef Py_ssize_t bvf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
 
-        if self.entropy_prognostic:
+        if self.s_prognostic:
             s_shift = PV.get_varshift(Gr,'s')
             eos_update(&Gr.dims,&RS.p0_half[0],&PV.values[s_shift],&DV.values[t_shift],&DV.values[alpha_shift])
             buoyancy_update(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
@@ -116,7 +116,7 @@ cdef class ThermodynamicsDry:
             s_shift = DV.get_varshift(Gr,'s')
             eos_update_thli(&Gr.dims,&RS.p0_half[0],&PV.values[thli_shift],&DV.values[t_shift], &DV.values[s_shift], &DV.values[alpha_shift])
             buoyancy_update(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
-            bvf_dry(&Gr.dims,&RS.p0_half[0],&DV.values[t_shift],&DV.values[thli_shift],&DV.values[bvf_shift])
+            bvf_dry(&Gr.dims,&RS.p0_half[0],&DV.values[t_shift],&DV.values[theta_shift],&DV.values[bvf_shift])
 
 
         return
@@ -147,7 +147,7 @@ cdef class ThermodynamicsDry:
             double [:] data = np.empty((Gr.dims.npl,),dtype=np.double,order='c')
 
         #Add entropy potential temperature to 3d fields
-        if self.entropy_prognostic:
+        if self.s_prognostic:
             s_shift = PV.get_varshift(Gr,'s')
             with nogil:
                 count = 0
@@ -196,7 +196,7 @@ cdef class ThermodynamicsDry:
             double [:] tmp
 
         #Add entropy potential temperature to 3d fields
-        if self.entropy_prognostic:
+        if self.s_prognostic:
             s_shift = PV.get_varshift(Gr,'s')
             with nogil:
                 count = 0

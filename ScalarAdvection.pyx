@@ -66,7 +66,7 @@ cdef class ScalarAdvection:
 
         cdef:
             Py_ssize_t d, i, vel_shift,scalar_shift, scalar_count = 0, flux_shift
-            Py_ssize_t s_shift = PV.get_varshift(Gr,'s')
+            Py_ssize_t s_shift
             Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
             Py_ssize_t ql_shift, qv_shift, qt_shift
 
@@ -87,6 +87,7 @@ cdef class ScalarAdvection:
                             ql_shift = DV.get_varshift(Gr,'ql')
                             qt_shift = PV.get_varshift(Gr,'qt')
                             qv_shift =  DV.get_varshift(Gr,'qv')
+                            s_shift = PV.get_varshift(Gr,'s')
 
                             compute_advective_fluxes_a(&Gr.dims,&Rs.rho0[0],&Rs.rho0_half[0],&DV.values[vel_shift],
                                                    &DV.values[ql_shift],&self.flux[flux_shift],d,self.order_sedimentation)

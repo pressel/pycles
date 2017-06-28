@@ -67,7 +67,6 @@ def SurfaceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
             return SurfaceNone()
 
 
-
 cdef class SurfaceBase:
     def __init__(self):
         return
@@ -113,13 +112,13 @@ cdef class SurfaceBase:
         cdef :
             Py_ssize_t i, j, ijk, ij
             Py_ssize_t gw = Gr.dims.gw
-            Py_ssize_t imax = Gr.dims.nlg[0]-gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - gw
             Py_ssize_t jmax = Gr.dims.nlg[1] - gw
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t istride_2d = Gr.dims.nlg[1]
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t ql_shift, qt_shift
@@ -129,22 +128,27 @@ cdef class SurfaceBase:
             double tendency_factor = Ref.alpha0_half[gw]/Ref.alpha0[gw-1]*dzi
 
         if self.dry_case:
-            with nogil:
-                for i in xrange(gw, imax):
-                    for j in xrange(gw, jmax):
-                        ijk = i * istride + j * jstride + gw
-                        ij = i * istride_2d + j
-                        self.shf[ij] = self.s_flux[ij] * Ref.rho0_half[gw] * DV.values[t_shift+ijk]
-                        self.b_flux[ij] = self.shf[ij] * g * Ref.alpha0_half[gw]/cpd/t_mean[gw]
-                        self.obukhov_length[ij] = -self.friction_velocity[ij] *self.friction_velocity[ij] *self.friction_velocity[ij] /self.b_flux[ij]/vkb
+            if 's' in PV.index_name:
+                s_shift = PV.get_varshift(Gr, 's')
+                with nogil:
+                    for i in xrange(gw, imax):
+                        for j in xrange(gw, jmax):
+                            ijk = i * istride + j * jstride + gw
+                            ij = i * istride_2d + j
+                            self.shf[ij] = self.s_flux[ij] * Ref.rho0_half[gw] * DV.values[t_shift+ijk]
+                            self.b_flux[ij] = self.shf[ij] * g * Ref.alpha0_half[gw]/cpd/t_mean[gw]
+                            self.obukhov_length[ij] = -self.friction_velocity[ij] *self.friction_velocity[ij] *self.friction_velocity[ij] /self.b_flux[ij]/vkb
 
-                        PV.tendencies[u_shift  + ijk] +=  self.u_flux[ij] * tendency_factor
-                        PV.tendencies[v_shift  + ijk] +=  self.v_flux[ij] * tendency_factor
-                        PV.tendencies[s_shift  + ijk] +=  self.s_flux[ij] * tendency_factor
+                            PV.tendencies[u_shift  + ijk] +=  self.u_flux[ij] * tendency_factor
+                            PV.tendencies[v_shift  + ijk] +=  self.v_flux[ij] * tendency_factor
+                            PV.tendencies[s_shift  + ijk] +=  self.s_flux[ij] * tendency_factor
+            else:
+                pass
 
         else:
             ql_shift = DV.get_varshift(Gr,'ql')
             qt_shift = PV.get_varshift(Gr, 'qt')
+            s_shift = PV.get_varshift(Gr, 's')
             with nogil:
                 for i in xrange(gw, imax):
                     for j in xrange(gw, jmax):

@@ -157,20 +157,31 @@ class Simulation3d:
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
+                print 'Th'
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
+                print 'Micro'
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
+                print 'Tr'
                 self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.Pa)
+                print 'SA'
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
+                print 'MA'
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
+                print 'Sur'
                 self.Sur.update(self.Gr, self.Ref,self.PV, self.DV,self.Pa,self.TS)
+                print 'SGS'
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
+                print 'Damping'
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
-
+                print 'SD'
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
+                print'MD'
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
-
+                print 'Fo'
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+                print 'Ra'
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
+                print 'Budg'
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)

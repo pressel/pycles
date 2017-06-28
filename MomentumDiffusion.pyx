@@ -65,7 +65,7 @@ cdef class MomentumDiffusion:
             Py_ssize_t count = 0
             Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
             Py_ssize_t temp_shift = DV.get_varshift(Gr, 'temperature')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
 
         for i1 in xrange(Gr.dims.dims):
             shift_v1 = PV.velocity_directions[i1] * Gr.dims.npg
@@ -78,7 +78,9 @@ cdef class MomentumDiffusion:
 
                 count += 1
 
-        compute_entropy_source(&Gr.dims, &DV.values[visc_shift], &Ke.strain_rate_mag[0], &DV.values[temp_shift], &PV.tendencies[s_shift])
+        if 's' in PV.name_index:
+            s_shift = PV.get_varshift(Gr, 's')
+            compute_entropy_source(&Gr.dims, &DV.values[visc_shift], &Ke.strain_rate_mag[0], &DV.values[temp_shift], &PV.tendencies[s_shift])
         return
 
     cpdef stats_io(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
