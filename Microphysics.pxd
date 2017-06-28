@@ -38,6 +38,7 @@ cdef class No_Microphysics_SA:
         Py_ssize_t order
         bint cloud_sedimentation
         bint stokes_sedimentation
+        double stokes_sigma
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV,
@@ -61,6 +62,7 @@ cdef class Microphysics_SB_Liquid:
         Py_ssize_t order
         bint cloud_sedimentation
         bint stokes_sedimentation
+        double stokes_sigma
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
