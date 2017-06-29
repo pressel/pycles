@@ -14,6 +14,7 @@ cdef class SurfaceBase:
         double T_surface
         double [:] s_flux
         double [:] qt_flux
+        double [:] thli_flux
         double [:] u_flux
         double [:] v_flux
         double [:] friction_velocity

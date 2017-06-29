@@ -23,10 +23,13 @@ cdef extern from "thermodynamics_sa.h":
     void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
     void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
                     double * qv, double * ql, double * qi, double * alpha)
+    void eos_update_thli(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *thli, double *qt, double *T,
+                    double * qv, double * ql, double * qi, double * alpha)
     void buoyancy_update_sa(Grid.DimStruct *dims, double *alpha0, double *alpha, double *buoyancy, double *wt)
     void bvf_sa(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *T, double *qt, double *qv, double *theta_rho, double *bvf)
     void thetali_update(Grid.DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double *p0, double *T, double *qt, double *ql, double *qi, double *thetali)
     void clip_qt(Grid.DimStruct *dims, double  *qt, double clip_value)
+    void compute_s(Grid.DimStruct *dims, Lookup.LookupStruct * LT, double (*lam_fp)(double), double (*L_fp)(double, double), double *p0, double *T, double *qt, double *ql, double *qi, double *s)
 
 cdef extern from "thermodynamic_functions.h":
     # Dry air partial pressure
@@ -66,6 +69,12 @@ cdef class ThermodynamicsSA:
         except:
             self.do_qt_clipping = True
 
+
+        try:
+            self.s_prognostic = namelist['thermodynamics']['s_prognostic']
+        except:
+            self.s_prognostic = True
+
         return
 
 
@@ -82,7 +91,11 @@ cdef class ThermodynamicsSA:
         :return:
         '''
 
-        PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
+        if self.s_prognostic:
+            PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
+        else:
+            PV.add_variable('thli', 'K', "sym", "scalar", Pa)
+            DV.add_variables('s', '--', 'sym', Pa)
         PV.add_variable('qt', 'kg/kg', "sym", "scalar", Pa)
 
         # Initialize class member arrays
@@ -184,7 +197,8 @@ cdef class ThermodynamicsSA:
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
             Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
+            Py_ssize_t thli_shift
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
@@ -200,15 +214,26 @@ cdef class ThermodynamicsSA:
             clip_qt(&Gr.dims, &PV.values[qt_shift], 1e-11)
 
 
-        eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
+
+        if self.s_prognostic:
+            s_shift = PV.get_varshift(Gr, 's')
+            eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                     &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
                     &DV.values[qi_shift], &DV.values[alpha_shift])
-
-        buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
-
-        bvf_sa( &Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[thr_shift], &DV.values[bvf_shift])
-
-        thetali_update(&Gr.dims,self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift],&DV.values[qi_shift],&DV.values[thl_shift])
+            buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
+            bvf_sa(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[thr_shift], &DV.values[bvf_shift])
+            thetali_update(&Gr.dims,self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift],&DV.values[qi_shift],&DV.values[thl_shift])
+        else:
+            thli_shift = PV.get_varshift(Gr, 'thli')
+            s_shift = DV.get_varshift(Gr, 's')
+            eos_update_thli(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
+                    &PV.values[thli_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
+                    &DV.values[qi_shift], &DV.values[alpha_shift])
+            buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
+            bvf_sa(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift],
+                   &DV.values[qv_shift], &DV.values[thr_shift], &DV.values[bvf_shift])
+            compute_s(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift],
+                      &PV.values[qt_shift], &PV.values[ql_shift], &PV.values[qi_shift], &DV.values[s_shift])
 
         return
 

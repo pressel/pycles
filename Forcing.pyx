@@ -42,6 +42,8 @@ cdef class Forcing:
             self.scheme = ForcingRico()
         elif casename == 'StableBubble':
             self.scheme = ForcingNone()
+        elif casename == 'SaturatedBubble':
+            self.scheme = ForcingNone()
         elif casename == 'CGILS':
             self.scheme = ForcingCGILS(namelist, Pa)
         elif casename == 'ZGILS':
@@ -152,7 +154,8 @@ cdef class ForcingBomex:
             Py_ssize_t i,j,k,ishift,jshift,ijk
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
+            Py_ssize_t thli_shift
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
@@ -161,31 +164,50 @@ cdef class ForcingBomex:
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
 
-
-
         #Apply Coriolis Forcing
         large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &PV.tendencies[u_shift],
                        &PV.tendencies[v_shift], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
 
-        #Apply large scale source terms
-        with nogil:
-            for i in xrange(imin,imax):
-                ishift = i * istride
-                for j in xrange(jmin,jmax):
-                    jshift = j * jstride
-                    for k in xrange(kmin,kmax):
-                        ijk = ishift + jshift + k
-                        p0 = Ref.p0_half[k]
-                        qt = PV.values[qt_shift + ijk]
-                        qv = qt - DV.values[ql_shift + ijk]
-                        t  = DV.values[t_shift + ijk]
-                        PV.tendencies[s_shift + ijk] += s_tendency_c(p0,qt,qv,t, self.dqtdt[k], self.dtdt[k])
-                        PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
+        if 's' in PV.name_index:
+            s_shift = PV.get_varshift(Gr, 's')
+            #Apply large scale source terms
+            with nogil:
+                for i in xrange(imin,imax):
+                    ishift = i * istride
+                    for j in xrange(jmin,jmax):
+                        jshift = j * jstride
+                        for k in xrange(kmin,kmax):
+                            ijk = ishift + jshift + k
+                            p0 = Ref.p0_half[k]
+                            qt = PV.values[qt_shift + ijk]
+                            qv = qt - DV.values[ql_shift + ijk]
+                            t  = DV.values[t_shift + ijk]
+                            PV.tendencies[s_shift + ijk] += s_tendency_c(p0,qt,qv,t, self.dqtdt[k], self.dtdt[k])
+                            PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+            apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
+            apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+            apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
+            apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+        else:
+            #Apply large scale source terms
+            thli_shift =  PV.get_varshift(Gr, 'thli')
+            with nogil:
+                for i in xrange(imin,imax):
+                    ishift = i * istride
+                    for j in xrange(jmin,jmax):
+                        jshift = j * jstride
+                        for k in xrange(kmin,kmax):
+                            ijk = ishift + jshift + k
+                            p0 = Ref.p0_half[k]
+                            PV.tendencies[thli_shift  + ijk] += self.dtdt[k]/exner_c(p0)
+                            PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
+
+            apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[thli_shift], &PV.tendencies[thli_shift])
+            apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+            apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
+            apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,

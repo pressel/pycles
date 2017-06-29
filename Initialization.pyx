@@ -170,8 +170,10 @@ def InitSaturatedBubble(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVari
 
             delta = np.abs(T1 - T2)
          return T2, ql2
-
-    RS.Tg, ql = theta_to_T(RS.Pg,thetas_sfc,qt_sfc)
+    if 's' in PV.name_index:
+        RS.Tg, ql = theta_to_T(RS.Pg,thetas_sfc,qt_sfc)
+    else:
+        RS.Tg = 307.616824335
     RS.initialize(Gr, Th, NS, Pa)
 
     #Get the variable number for each of the velocity components
@@ -179,7 +181,8 @@ def InitSaturatedBubble(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVari
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
-        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t s_varshift
+        Py_ssize_t thli_varshit
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift
@@ -188,21 +191,43 @@ def InitSaturatedBubble(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVari
         double dist
         double thetas
 
-    for i in xrange(Gr.dims.nlg[0]):
-        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        for j in xrange(Gr.dims.nlg[1]):
-            jshift = j * Gr.dims.nlg[2]
-            for k in xrange(Gr.dims.nlg[2]):
-                ijk = ishift + jshift + k
-                dist = np.sqrt(((Gr.x_half[i + Gr.dims.indx_lo[0]]/1000.0 - 10.0)/2.0)**2.0 + ((Gr.z_half[k + Gr.dims.indx_lo[2]]/1000.0 - 2.0)/2.0)**2.0)
-                dist = np.minimum(1.0,dist)
-                thetas = RS.Tg
-                thetas += 2.0 * np.cos(np.pi * dist / 2.0)**2.0
-                PV.values[s_varshift + ijk] = entropy_from_thetas_c(thetas,RS.qtg)
-                PV.values[u_varshift + ijk] = 0.0 - RS.u0
-                PV.values[v_varshift + ijk] = 0.0 - RS.v0
-                PV.values[w_varshift + ijk] = 0.0
-                PV.values[qt_varshift + ijk] = RS.qtg
+
+    if 's' in PV.name_index:
+        s_varshift = PV.get_varshift(Gr,'s')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    dist = np.sqrt(((Gr.x_half[i + Gr.dims.indx_lo[0]]/1000.0 - 10.0)/2.0)**2.0 + ((Gr.z_half[k + Gr.dims.indx_lo[2]]/1000.0 - 2.0)/2.0)**2.0)
+                    dist = np.minimum(1.0,dist)
+                    thetas = RS.Tg
+                    thetas += 2.0 * np.cos(np.pi * dist / 2.0)**2.0
+                    PV.values[s_varshift + ijk] = entropy_from_thetas_c(thetas,RS.qtg)
+                    PV.values[u_varshift + ijk] = 0.0 - RS.u0
+                    PV.values[v_varshift + ijk] = 0.0 - RS.v0
+                    PV.values[w_varshift + ijk] = 0.0
+                    PV.values[qt_varshift + ijk] = RS.qtg
+    else:
+        thli_varshift = PV.get_varshift(Gr,'thli')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    dist = np.sqrt(((Gr.x_half[i + Gr.dims.indx_lo[0]]/1000.0 - 10.0)/2.0)**2.0 + ((Gr.z_half[k + Gr.dims.indx_lo[2]]/1000.0 - 2.0)/2.0)**2.0)
+                    dist = np.minimum(1.0,dist)
+                    thetas = RS.Tg
+                    thetas += 2.0 * np.cos(np.pi * dist / 2.0)**2.0
+                    PV.values[thli_varshift + ijk] = thetas
+                    PV.values[u_varshift + ijk] = 0.0 - RS.u0
+                    PV.values[v_varshift + ijk] = 0.0 - RS.v0
+                    PV.values[w_varshift + ijk] = 0.0
+                    PV.values[qt_varshift + ijk] = RS.qtg
+
+
 
     return
 
@@ -298,7 +323,8 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
-        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t s_varshift
+        Py_ssize_t thli_varshift
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift
@@ -353,24 +379,44 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     #Now loop and set the initial condition
     #First set the velocities
     count = 0
-    for i in xrange(Gr.dims.nlg[0]):
-        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        for j in xrange(Gr.dims.nlg[1]):
-            jshift = j * Gr.dims.nlg[2]
-            for k in xrange(Gr.dims.nlg[2]):
-                ijk = ishift + jshift + k
-                PV.values[u_varshift + ijk] = u[k] - RS.u0
-                PV.values[v_varshift + ijk] = 0.0 - RS.v0
-                PV.values[w_varshift + ijk] = 0.0
-                if Gr.zl_half[k] <= 1600.0:
-                    temp = (thetal[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
-                    qt_ = qt[k]+qt_pert[count]
-                else:
-                    temp = (thetal[k]) * exner_c(RS.p0_half[k])
-                    qt_ = qt[k]
-                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)
-                PV.values[qt_varshift + ijk] = qt_
-                count += 1
+    if 's' in PV.name_index:
+        s_varshift = PV.get_varshift(Gr,'s')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[u_varshift + ijk] = u[k] - RS.u0
+                    PV.values[v_varshift + ijk] = 0.0 - RS.v0
+                    PV.values[w_varshift + ijk] = 0.0
+                    if Gr.zl_half[k] <= 1600.0:
+                        temp = (thetal[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
+                        qt_ = qt[k] + qt_pert[count]
+                    else:
+                        temp = (thetal[k]) * exner_c(RS.p0_half[k])
+                        qt_ = qt[k]
+                    PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)
+                    PV.values[qt_varshift + ijk] = qt_
+                    count += 1
+    else:
+        thli_varshift = PV.get_varshift(Gr,'thli')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[u_varshift + ijk] = u[k] - RS.u0
+                    PV.values[v_varshift + ijk] = 0.0 - RS.v0
+                    PV.values[w_varshift + ijk] = 0.0
+                    if Gr.zl_half[k] <= 1600.0:
+                        PV.values[thli_varshift + ijk] = (thetal[k] + (theta_pert[count]))
+                        PV.values[qt_varshift + ijk] = qt[k] + qt_pert[count]
+                    else:
+                        PV.values[thli_varshift + ijk] = thetal[k]
+                        PV.values[qt_varshift + ijk] = qt[k]
+                    count += 1
 
     if 'e' in PV.name_index:
         e_varshift = PV.get_varshift(Gr, 'e')
@@ -381,7 +427,6 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 for k in xrange(Gr.dims.nlg[2]):
                     ijk = ishift + jshift + k
                     PV.values[e_varshift + ijk] = 1.0-Gr.zl_half[k]/3000.0
-
 
     return
 

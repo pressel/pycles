@@ -91,7 +91,6 @@ cdef class ScalarDiffusion:
 
         if 'qt' in PV.name_index:
             n_qt = PV.name_index['qt']
-            s_shift = PV.get_varshift(Gr,'s')
             qt_shift = PV.get_varshift(Gr,'qt')
             t_shift = DV.get_varshift(Gr,'temperature')
             qv_shift = DV.get_varshift(Gr,'qv')
@@ -122,6 +121,7 @@ cdef class ScalarDiffusion:
                                            &self.flux[flux_shift],&PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
 
                     if i == n_qt and self.qt_entropy_source:
+                        s_shift = PV.get_varshift(Gr,'s')
                         compute_qt_diffusion_s_source(&Gr.dims, &RS.p0_half[0], &RS.alpha0[0],&RS.alpha0_half[0],
                                                       &self.flux[flux_shift],&PV.values[qt_shift], &DV.values[qv_shift],
                                                       &DV.values[t_shift],&PV.tendencies[s_shift],self.Lambda_fp,
@@ -158,7 +158,6 @@ cdef class ScalarDiffusion:
             Py_ssize_t scalar_count = 0
 
         if 'qt' in PV.name_index:
-            s_shift = PV.get_varshift(Gr,'s')
             qt_shift = PV.get_varshift(Gr,'qt')
             t_shift = DV.get_varshift(Gr,'temperature')
             qv_shift = DV.get_varshift(Gr,'qv')
@@ -175,6 +174,7 @@ cdef class ScalarDiffusion:
                 scalar_count += 1
 
         if self.qt_entropy_source:
+            s_shift = PV.get_varshift(Gr,'s')
             #Ouput entropy source term from qt diffusion
             scalar_count = 0
             if 'qt' in PV.name_index:
