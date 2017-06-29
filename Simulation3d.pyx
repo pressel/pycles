@@ -304,6 +304,7 @@ class Simulation3d:
         # output stats here
 
         self.Pa.root_print('Doing 3D FieldIO')
+
         self.Th.update(self.Gr, self.Ref, self.PV, self.DV)
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
         self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
@@ -315,21 +316,36 @@ class Simulation3d:
         self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
 
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
+        print 'FO'
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+        print 'TH'
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+        print 'Micro'
         self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+        print 'Sur'
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
+        print 'SGS'
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke ,self.StatsIO, self.Pa)
+        print 'SA'
         self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+        print 'MA'
         self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+        print 'SD'
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
+        print 'MD'
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
+        print 'KE'
         self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
+        print 'Tr'
         self.Tr.stats_io( self.Gr, self.StatsIO, self.Pa)
+        print 'Ra'
         self.Ra.stats_io(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
+        print 'Budg'
         self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
+        print 'Aux'
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
+        self.Pa.root_print('Finished Forcing Initial io')
         return
 

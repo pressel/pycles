@@ -102,12 +102,13 @@ cdef class No_Microphysics_SA:
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            Py_ssize_t s_shift  = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
             Py_ssize_t wqt_shift
             double[:] s_src =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] tmp
 
         if self.cloud_sedimentation:
+            s_shift  = PV.get_varshift(Gr, 's')
             wqt_shift = DV.get_varshift(Gr,'w_qt')
 
             compute_advective_fluxes_a(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &DV.values[wqt_shift], &DV.values[ql_shift], &dummy[0], 2, self.order)

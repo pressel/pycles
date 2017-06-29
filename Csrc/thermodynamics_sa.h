@@ -244,7 +244,7 @@ void compute_s(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)
             const ssize_t jshift = j * jstride;
             for (k=kmin;k<kmax;k++){
                 const ssize_t ijk = ishift + jshift + k;
-                const double qv = qt [ijk]- ql[ijk] - qi[ijk];
+                const double qv = qt[ijk]- ql[ijk] - qi[ijk];
                 const double qd = 1.0 - qt[ijk];
                 const double pd = pd_c(p0[k], qt[ijk], qv);
                 const double pv = pv_c(p0[k], qt[ijk], qv);

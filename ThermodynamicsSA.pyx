@@ -69,7 +69,6 @@ cdef class ThermodynamicsSA:
         except:
             self.do_qt_clipping = True
 
-
         try:
             self.s_prognostic = namelist['thermodynamics']['s_prognostic']
         except:
@@ -165,7 +164,7 @@ cdef class ThermodynamicsSA:
             double Lambda = self.Lambda_fp(T)
             double L = self.L_fp(T, Lambda)
 
-        return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
+        return sd_c(pd, T) * qd + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
 
     cpdef alpha(self, double p0, double T, double qt, double qv):
         '''
@@ -292,27 +291,41 @@ cdef class ThermodynamicsSA:
             Py_ssize_t jmax = Gr.dims.nlg[1]
             Py_ssize_t kmax = Gr.dims.nlg[2]
             Py_ssize_t count
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] tmp
 
 
+        #If entropy is not a prognostic variable get it from the diagnostic variable class
+        if 's' in PV.name_index:
+            s_shift = PV.get_varshift(Gr, 's')
+            # Ouput profiles of thetas
+            with nogil:
+                count = 0
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
 
-        # Ouput profiles of thetas
-        with nogil:
-            count = 0
-            for i in range(imin, imax):
-                ishift = i * istride
-                for j in range(jmin, jmax):
-                    jshift = j * jstride
-                    for k in range(kmin, kmax):
-                        ijk = ishift + jshift + k
-                        data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
+                            count += 1
+        else:
+            s_shift = DV.get_varshift(Gr, 's')
+            # Ouput profiles of thetas
+            with nogil:
+                count = 0
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            data[count] = thetas_c(DV.values[s_shift + ijk], PV.values[qt_shift + ijk])
 
-                        count += 1
-
-
+                            count += 1
 
         # Compute and write mean
 
