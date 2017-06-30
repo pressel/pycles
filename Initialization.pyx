@@ -643,7 +643,12 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
                     PV.values[ijk + v_varshift] = 0.0
                     PV.values[ijk + w_varshift] = 0.0
                     PV.values[ijk + qt_varshift]  = qt[k]
-                    PV.values[ijk + thli_varshift] = thetal[k]
+
+                    if Gr.zl_half[k] < 200.0:
+                        theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                    else:
+                        theta_pert_ = 0.0
+                    PV.values[ijk + thli_varshift] = thetal[k] + theta_pert_
 
     if 'e' in PV.name_index:
         e_varshift = PV.get_varshift(Gr, 'e')

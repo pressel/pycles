@@ -21,7 +21,7 @@ cimport numpy as np
 import netCDF4 as nc
 from scipy.interpolate import pchip_interpolate
 from libc.math cimport pow, cbrt, exp, fmin, fmax
-from thermodynamic_functions cimport cpm_c
+from thermodynamic_functions cimport cpm_c, exner_c
 include 'parameters.pxi'
 from profiles import profile_data
 
@@ -183,7 +183,8 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
+            Py_ssize_t thli_shift
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t gw = Gr.dims.gw
             double [:, :] ql_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[ql_shift])
@@ -248,17 +249,29 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
 
 
         # Now update entropy tendencies
-        with nogil:
-            for i in xrange(imin, imax):
-                ishift = i * istride
-                for j in xrange(jmin, jmax):
-                    jshift = j * jstride
-                    for k in xrange(kmin, kmax):
-                        ijk = ishift + jshift + k
-                        PV.tendencies[
-                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] 
-                        self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift]) 
-
+        if 's' in PV.name_index:
+            s_shift = PV.get_varshift(Gr, 's')
+            with nogil:
+                for i in xrange(imin, imax):
+                    ishift = i * istride
+                    for j in xrange(jmin, jmax):
+                        jshift = j * jstride
+                        for k in xrange(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            PV.tendencies[
+                                s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
+                            self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift])
+        else:
+            thli_shift = PV.get_varshift(Gr, 'thli')
+            with nogil:
+                for i in xrange(imin, imax):
+                    ishift = i * istride
+                    for j in xrange(jmin, jmax):
+                        jshift = j * jstride
+                        for k in xrange(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            PV.tendencies[
+                                thli_shift + ijk] += self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift]) / exner_c(Ref.p0_half[k])
         return
 
     cpdef stats_io(self, Grid.Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,

@@ -538,7 +538,7 @@ cdef class SurfaceDYCOMS_RF01(SurfaceBase):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
@@ -563,6 +563,7 @@ cdef class SurfaceDYCOMS_RF01(SurfaceBase):
 
 
         if 's' in PV.name_index:
+            s_shift =  PV.get_varshift(Gr, 's')
             with nogil:
                 for i in xrange(gw-1, imax-gw+1):
                     for j in xrange(gw-1, jmax-gw+1):
