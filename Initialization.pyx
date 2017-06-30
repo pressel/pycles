@@ -548,7 +548,8 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
-        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t s_varshift
+        Py_ssize_t thli_varshift
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
         double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
@@ -610,25 +611,39 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
 
-    for i in xrange(Gr.dims.nlg[0]):
-        ishift = istride * i
-        for j in xrange(Gr.dims.nlg[1]):
-            jshift = jstride * j
-            for k in xrange(Gr.dims.nlg[2]):
-                ijk = ishift + jshift + k
-                PV.values[ijk + u_varshift] = 0.0
-                PV.values[ijk + v_varshift] = 0.0
-                PV.values[ijk + w_varshift] = 0.0
-                PV.values[ijk + qt_varshift]  = qt[k]
+    if 's' in PV.name_index:
+        s_varshift = PV.get_varshift(Gr, 's')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift = istride * i
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = jstride * j
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[ijk + u_varshift] = 0.0
+                    PV.values[ijk + v_varshift] = 0.0
+                    PV.values[ijk + w_varshift] = 0.0
+                    PV.values[ijk + qt_varshift]  = qt[k]
 
-                #Now set the entropy prognostic variable including a potential temperature perturbation
-                if Gr.zl_half[k] < 200.0:
-                    theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
-                else:
-                    theta_pert_ = 0.0
-                T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
-                PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
-
+                    #Now set the entropy prognostic variable including a potential temperature perturbation
+                    if Gr.zl_half[k] < 200.0:
+                        theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+                    else:
+                        theta_pert_ = 0.0
+                    T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
+                    PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
+    else:
+        thli_varshift = PV.get_varshift(Gr, 'thli')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift = istride * i
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = jstride * j
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[ijk + u_varshift] = 0.0
+                    PV.values[ijk + v_varshift] = 0.0
+                    PV.values[ijk + w_varshift] = 0.0
+                    PV.values[ijk + qt_varshift]  = qt[k]
+                    PV.values[ijk + thli_varshift] = thetal[k]
 
     if 'e' in PV.name_index:
         e_varshift = PV.get_varshift(Gr, 'e')

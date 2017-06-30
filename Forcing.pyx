@@ -417,6 +417,7 @@ cdef class ForcingDyCOMS_RF01:
 
 
         #Initialize Statistical Output
+        NS.add_profile('thli_subsidence_tendency', Gr, Pa)
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
         NS.add_profile('u_subsidence_tendency', Gr, Pa)
@@ -432,10 +433,16 @@ cdef class ForcingDyCOMS_RF01:
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
+            Py_ssize_t thli_shift
             Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
 
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        if 's' in PV.name_index:
+            s_shift = PV.get_varshift(Gr, 's')
+            apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        else:
+            thli_shift = s_shift = PV.get_varshift(Gr, 'thli')
+            apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[thli_shift],&PV.tendencies[thli_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
@@ -452,7 +459,8 @@ cdef class ForcingDyCOMS_RF01:
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
+            Py_ssize_t thli_shift
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] tmp_tendency_2 = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
@@ -462,10 +470,38 @@ cdef class ForcingDyCOMS_RF01:
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
-                         &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        if 's' in PV.name_index:
+            #Output entropy tendency from subsidence
+            s_shift = PV.get_varshift(Gr, 's')
+            apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
+                             &tmp_tendency[0])
+            mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+            NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+            tmp_tendency[:] = 0.0
+
+            #Output thetali tendency from subsidence (diagnostic source term)
+            thli_shift = DV.get_varshift(Gr, 'thetali')
+            apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&DV.values[thli_shift],
+                             &tmp_tendency[0])
+            mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+            NS.write_profile('thli_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        else:
+            #Output thli tendency from subsidence
+            thli_shift = PV.get_varshift(Gr, 'thli')
+            apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[thli_shift],
+                             &tmp_tendency[0])
+            mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+            NS.write_profile('thli_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+            tmp_tendency[:] = 0.0
+
+            #Output entropy tendency from subsidence (diagnostic source term)
+            s_shift = DV.get_varshift(Gr, 's')
+            apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&DV.values[s_shift],
+                             &tmp_tendency[0])
+            mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+            NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         tmp_tendency[:] = 0.0
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],

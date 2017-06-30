@@ -195,7 +195,7 @@ cdef class SurfaceBase:
                             self.b_flux[ij] = g * Ref.alpha0_half[gw]/cp_/t_mean[gw] * \
                                               (self.shf[ij] + (eps_vi-1.0)*cp_*t_mean[gw]*self.lhf[ij]/lv)
 
-                            self.shf[ij] = self.thli_flux[ij] * Ref.rho0_half[gw]*cp_
+                            self.shf[ij] = self.thli_flux[ij] * Ref.rho0_half[gw]*cp_*exner_c(Ref.Pg)
                             self.obukhov_length[ij] = -self.friction_velocity[ij] *self.friction_velocity[ij] *self.friction_velocity[ij] /self.b_flux[ij]/vkb
 
 
@@ -561,20 +561,34 @@ cdef class SurfaceDYCOMS_RF01(SurfaceBase):
             double [:] windspeed = self.windspeed
 
 
+
+        if 's' in PV.name_index:
+            with nogil:
+                for i in xrange(gw-1, imax-gw+1):
+                    for j in xrange(gw-1, jmax-gw+1):
+                        ijk = i * istride + j * jstride + gw
+                        ij = i * istride_2d + j
+                        self.friction_velocity[ij] = sqrt(self.cm) * self.windspeed[ij]
+                        lam = self.Lambda_fp(DV.values[t_shift+ijk])
+                        lv = self.L_fp(DV.values[t_shift+ijk],lam)
+                        pv = pv_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                        pd = pd_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                        sv = sv_c(pv,DV.values[t_shift+ijk])
+                        sd = sd_c(pd,DV.values[t_shift+ijk])
+                        self.qt_flux[ij] = self.fq / lv / 1.22
+                        self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ijk] + self.fq*(sv - sd)/lv)
+        else:
+            with nogil:
+                for i in xrange(gw-1, imax-gw+1):
+                    for j in xrange(gw-1, jmax-gw+1):
+                        ijk = i * istride + j * jstride + gw
+                        ij = i * istride_2d + j
+                        self.friction_velocity[ij] = sqrt(self.cm) * self.windspeed[ij]
+                        lam = self.Lambda_fp(DV.values[t_shift+ijk])
+                        lv = self.L_fp(DV.values[t_shift+ijk],lam)
+                        self.qt_flux[ij] = self.fq / lv / 1.22
+                        self.thli_flux[ij] =   self.ft/cpm_c(PV.values[qt_shift+ijk])/1.22/exner_c(Ref.Pg)
         with nogil:
-            for i in xrange(gw-1, imax-gw+1):
-                for j in xrange(gw-1, jmax-gw+1):
-                    ijk = i * istride + j * jstride + gw
-                    ij = i * istride_2d + j
-                    self.friction_velocity[ij] = sqrt(self.cm) * self.windspeed[ij]
-                    lam = self.Lambda_fp(DV.values[t_shift+ijk])
-                    lv = self.L_fp(DV.values[t_shift+ijk],lam)
-                    pv = pv_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
-                    pd = pd_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
-                    sv = sv_c(pv,DV.values[t_shift+ijk])
-                    sd = sd_c(pd,DV.values[t_shift+ijk])
-                    self.qt_flux[ij] = self.fq / lv / 1.22
-                    self.s_flux[ij] = Ref.alpha0_half[gw] * (self.ft/DV.values[t_shift+ijk] + self.fq*(sv - sd)/lv)
             for i in xrange(gw, imax-gw):
                 for j in xrange(gw, jmax-gw):
                     ijk = i * istride + j * jstride + gw
