@@ -83,7 +83,7 @@ cdef class VisualizationOutput:
             dict out_dict = {}
 
         comm = MPI.COMM_WORLD
-        try:
+        if 'ql' in DV.name_index:
             var_shift =  DV.get_varshift(Gr, 'ql')
             with nogil:
                 for i in xrange(imin, imax):
@@ -103,16 +103,20 @@ cdef class VisualizationOutput:
             if Pa.rank == 0:
                 out_dict['lwp'] = np.array(reduced_lwp,dtype=np.double)
             del reduced_lwp
-        except:
-            Pa.root_print('Trouble Writing LWP')
+
+
+        #Now get horizontal slices
+
+
+
 
 
         #Write output of Prognostic Variables and Diagnostic Variables
         cdef:
             double [:,:] local_var
             double [:,:] reduced_var
-            list pv_vars = ['qt', 's', 'w']
-            list dv_vars = ['ql', 'diffusivity']
+            list pv_vars = ['w', 's']
+            list dv_vars = ['buoyancy']
 
 
         for var in pv_vars:
@@ -140,10 +144,31 @@ cdef class VisualizationOutput:
                 del reduced_var
 
 
+                #Now output a horizontal slice
+                k = 9
+                local_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.double, order='c')
+                reduced_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.double, order='c')
+                with nogil:
+                    for i in xrange(imin, imax):
+                        ishift = i * istride
+                        for j in xrange(jmin, jmax):
+                            jshift = j * jstride
+                            ijk = ishift + jshift + k
+                            i2d = global_shift_i + i - Gr.dims.gw
+                            j2d = global_shift_j + j - Gr.dims.gw
+
+                            local_lwp[i2d, j2d] += (PV.values[var_shift + ijk] )
+
+                comm.Reduce(local_lwp, reduced_lwp, op=MPI.SUM)
+
+                del local_lwp
+                if Pa.rank == 0:
+                    out_dict[var + '_h'] = np.array(reduced_lwp,dtype=np.double)
+                del reduced_lwp
+
 
             except:
                 Pa.root_print('Trouble Writing ' + var)
-
 
         for var in dv_vars:
             local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
@@ -166,7 +191,7 @@ cdef class VisualizationOutput:
                 comm.Reduce(local_var, reduced_var, op=MPI.SUM)
                 del local_var
                 if Pa.rank == 0:
-                    out_dict[var] = np.array(reduced_var, dtype=np.double)
+                    out_dict[var] = np.array(reduced_var, dtype=np.double)[:,:] - np.mean(reduced_var,axis=0)
                 del reduced_var
 
 
