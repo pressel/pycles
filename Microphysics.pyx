@@ -334,22 +334,32 @@ cdef class Microphysics_SB_Liquid:
 
         cdef:
             Py_ssize_t tw_shift = DV.get_varshift(Gr, 'temperature_wb')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
+            Py_ssize_t thli_shift
 
 
+        if 's' in PV.name_index:
 
-        microphysics_wetbulb_temperature(&Gr.dims, &self.CC.LT.LookupStructC, &Ref.p0_half[0], &PV.values[s_shift],
-                                         &PV.values[qt_shift], &DV.values[t_shift], &DV.values[tw_shift])
+            s_shift = PV.get_varshift(Gr, 's')
+            microphysics_wetbulb_temperature(&Gr.dims, &self.CC.LT.LookupStructC, &Ref.p0_half[0], &PV.values[s_shift],
+                                             &PV.values[qt_shift], &DV.values[t_shift], &DV.values[tw_shift])
 
-        sb_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
-                                    &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qt_shift], &DV.values[qv_shift],
-                                    &qr_tend_micro[0], &PV.tendencies[s_shift])
+            sb_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.p0_half[0],
+                                        &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qt_shift], &DV.values[qv_shift],
+                                        &qr_tend_micro[0], &PV.tendencies[s_shift])
 
 
-        sb_entropy_source_heating(&Gr.dims, &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qr_shift],
-                                  &DV.values[wqr_shift],  &PV.values[w_shift], &PV.tendencies[s_shift])
+            sb_entropy_source_heating(&Gr.dims, &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qr_shift],
+                                      &DV.values[wqr_shift],  &PV.values[w_shift], &PV.tendencies[s_shift])
 
-        sb_entropy_source_drag(&Gr.dims, &DV.values[t_shift], &PV.values[qr_shift], &DV.values[wqr_shift], &PV.tendencies[s_shift])
+            sb_entropy_source_drag(&Gr.dims, &DV.values[t_shift], &PV.values[qr_shift], &DV.values[wqr_shift], &PV.tendencies[s_shift])
+        else:
+            thli_shfit = PV.get_varshift(Gr, 'thli')
+            s_shift = DV.get_varshift(Gr, 's')
+
+            microphysics_wetbulb_temperature(&Gr.dims, &self.CC.LT.LookupStructC, &Ref.p0_half[0], &DV.values[s_shift],
+                                 &PV.values[qt_shift], &DV.values[t_shift], &DV.values[tw_shift])
+
 
 
         return
