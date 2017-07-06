@@ -77,6 +77,120 @@ void eos_thli_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp
 
 }
 
+void eos_thli_qr_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                    const double p0, const double thli, const double qt, const double qr, double* T, double* qv, double* ql, double *qi){
+
+    *qv = qt;
+    *ql = 0.0;
+    *qi = 0.0;
+
+    double pv_1 = pv_c(p0,qt,qt );
+    double pd_1 = p0 - pv_1;
+    double T_1 = temperature_no_ql_thli(p0, thli);
+    double pv_star_1 = lookup(LT, T_1);
+    double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
+
+    /// If not saturated
+    if(qt <= qv_star_1){
+        *T = T_1;
+        return;
+    }
+    else{
+        double sigma_1 = qt - qv_star_1 + qr;
+        double lam_1 = lam_fp(T_1);
+        double L_1 = L_fp(T_1,lam_1);
+        double thli_1 = thetali_c(p0, T_1, 0.0,  lam_1 * sigma_1, (1.0 - lam_1) * sigma_1, L_1);
+        double f_1 = thli - thli_1;
+        double T_2 = T_1 + sigma_1 * L_1 / cpd;
+        double delta_T  = fabs(T_2 - T_1);
+        double qv_star_2;
+        double sigma_2;
+        double lam_2;
+        do{
+            double pv_star_2 = lookup(LT, T_2);
+            qv_star_2 = qv_star_c(p0,qt,pv_star_2);
+            double pv_2 = pv_c(p0,qt,qv_star_2);
+            double pd_2 = p0 - pv_2;
+            sigma_2 = qt - qv_star_2 + qr;
+            lam_2 = lam_fp(T_2);
+            double L_2 = L_fp(T_2,lam_2);
+
+            double thli_2 = thetali_c(p0, T_2, 0.0,  lam_2 * sigma_2, (1.0 - lam_2) * sigma_2, L_2);
+            double f_2 = thli - thli_2;
+            double T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1);
+            T_1 = T_2;
+            T_2 = T_n;
+            f_1 = f_2;
+            delta_T  = fabs(T_2 - T_1);
+
+
+        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
+        *T  = T_2;
+        *qv = qv_star_2;
+        *ql = lam_2 * sigma_2;
+        *qi = (1.0 - lam_2) * sigma_2;
+    }
+
+}
+
+
+void eos_thli_qs_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                    const double p0, const double thli, const double qt, const double qr, const double qs,
+                    double* T, double* qv, double* ql, double *qi){
+
+    *qv = qt;
+    *ql = 0.0;
+    *qi = 0.0;
+
+    double pv_1 = pv_c(p0,qt,qt );
+    double pd_1 = p0 - pv_1;
+    double T_1 = temperature_no_ql_thli(p0, thli);
+    double pv_star_1 = lookup(LT, T_1);
+    double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
+
+    /// If not saturated
+    if(qt <= qv_star_1){
+        *T = T_1;
+        return;
+    }
+    else{
+        double sigma_1 = qt - qv_star_1 + qr + qs;
+        double lam_1 = lam_fp(T_1);
+        double L_1 = L_fp(T_1,lam_1);
+        double thli_1 = thetali_c(p0, T_1, 0.0,  lam_1 * sigma_1, (1.0 - lam_1) * sigma_1, L_1);
+        double f_1 = thli - thli_1;
+        double T_2 = T_1 + sigma_1 * L_1 / cpd;
+        double delta_T  = fabs(T_2 - T_1);
+        double qv_star_2;
+        double sigma_2;
+        double lam_2;
+        do{
+            double pv_star_2 = lookup(LT, T_2);
+            qv_star_2 = qv_star_c(p0,qt,pv_star_2);
+            double pv_2 = pv_c(p0,qt,qv_star_2);
+            double pd_2 = p0 - pv_2;
+            sigma_2 = qt - qv_star_2 + qr + qs;
+            lam_2 = lam_fp(T_2);
+            double L_2 = L_fp(T_2,lam_2);
+
+            double thli_2 = thetali_c(p0, T_2, 0.0,  lam_2 * sigma_2, (1.0 - lam_2) * sigma_2, L_2);
+            double f_2 = thli - thli_2;
+            double T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1);
+            T_1 = T_2;
+            T_2 = T_n;
+            f_1 = f_2;
+            delta_T  = fabs(T_2 - T_1);
+
+
+        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
+        *T  = T_2;
+        *qv = qv_star_2;
+        *ql = lam_2 * sigma_2;
+        *qi = (1.0 - lam_2) * sigma_2;
+    }
+
+}
+
 void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                     const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
     *qv = qt;
@@ -187,6 +301,69 @@ void eos_update_thli(struct DimStruct *dims, struct LookupStruct *LT, double (*l
         } // End i loop
     return;
     }
+
+
+void eos_update_thli_qr(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+    double* restrict p0, double* restrict thli, double* restrict qt, double* restrict qr, double* restrict T,
+    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){
+
+    ssize_t i,j,k;
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+
+    for (i=imin; i<imax; i++){
+       const ssize_t ishift = i * istride;
+        for (j=jmin;j<jmax;j++){
+            const ssize_t jshift = j * jstride;
+                for (k=kmin;k<kmax;k++){
+                    const ssize_t ijk = ishift + jshift + k;
+                    eos_thli_qr_c(LT, lam_fp, L_fp, p0[k], thli[ijk],qt[ijk],qr[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
+                    alpha[ijk] = alpha_c(p0[k], T[ijk], qt[ijk], qv[ijk]);
+
+                } // End k loop
+            } // End j loop
+        } // End i loop
+    return;
+    }
+
+
+void eos_update_thli_qs(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+    double* restrict p0, double* restrict thli, double* restrict qt, double* restrict qr, double* restrict qs, double* restrict T,
+    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){
+
+    ssize_t i,j,k;
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+
+    for (i=imin; i<imax; i++){
+       const ssize_t ishift = i * istride;
+        for (j=jmin;j<jmax;j++){
+            const ssize_t jshift = j * jstride;
+                for (k=kmin;k<kmax;k++){
+                    const ssize_t ijk = ishift + jshift + k;
+                    eos_thli_qs_c(LT, lam_fp, L_fp, p0[k], thli[ijk], qt[ijk], qr[ijk], qs[ijk], &T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
+                    alpha[ijk] = alpha_c(p0[k], T[ijk], qt[ijk], qv[ijk]);
+                } // End k loop
+            } // End j loop
+        } // End i loop
+    return;
+    }
+
+
 
 void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double* restrict alpha, double* restrict buoyancy, double* restrict wt){
 
