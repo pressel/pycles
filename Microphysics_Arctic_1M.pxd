@@ -4,7 +4,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ParallelMPI
 cimport TimeStepping
-from libc.math cimport pow
+from libc.math cimport pow, exp
 
 from Thermodynamics cimport ClausiusClapeyron
 from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
@@ -37,6 +37,18 @@ cdef inline double lambda_Arctic(double T) nogil:
         Lambda = 0.0
 
     return Lambda
+
+cdef inline double lambda_Hu2010(double T) nogil:
+    #Equation 1 and 2 from Hu et al. (2010)
+    cdef:
+        double p
+        double liquid_fraction
+        double TC = T - 273.15
+
+    p = 5.3608 + 0.4025 * TC + 0.08387 * TC * TC + 0.007182 * TC * TC * TC + \
+        2.39e-4 * TC * TC * TC * TC + 2.87e-6 * TC * TC * TC * TC * TC
+    liquid_fraction = 1.0 / (1.0 + exp(-p))
+    return liquid_fraction
 
 cdef inline double latent_heat_Arctic(double T, double Lambda) nogil:
     cdef:
