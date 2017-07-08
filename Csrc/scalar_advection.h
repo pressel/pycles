@@ -748,6 +748,8 @@ void compute_qt_sedimentation_s_source(const struct DimStruct *dims, double *p0_
     const double dxi = 1.0/dx;
     const ssize_t stencil[3] = {istride,jstride,1};
 
+    const double * imetl_half = dims-> imetl_half;
+
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
@@ -768,7 +770,13 @@ void compute_qt_sedimentation_s_source(const struct DimStruct *dims, double *p0_
                 double L = L_fp(T[ijk],lam);
                 double sw = sv - (((qt[ijk] - qv[ijk])/qt[ijk])*L/T[ijk]);
 
-                tendency[ijk] -= (sw - sd) / rho0_half[k] * (flux[ijk + stencil[d]] - flux[ijk])*dxi;
+                if(d == 2){
+                    tendency[ijk] -= (sw - sd) / rho0_half[k] * (flux[ijk + stencil[d]] - flux[ijk])* dxi * imetl_half[k];
+                }
+                else{
+                    tendency[ijk] -= (sw - sd) / rho0_half[k] * (flux[ijk + stencil[d]] - flux[ijk])*dxi;
+
+                }
             }  // End k loop
         } // End j loop
     } // End i loop
