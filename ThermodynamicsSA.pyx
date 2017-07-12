@@ -24,11 +24,11 @@ cdef extern from "thermodynamics_sa.h":
     void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
                     double * qv, double * ql, double * qi, double * alpha)
     void eos_update_thli(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *thli, double *qt, double *T,
-                    double * qv, double * ql, double * qi, double * alpha)
+                    double * qv, double * ql, double * qi, double * qc, double * alpha)
     void eos_update_thli_qr(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *thli, double *qt, double *qr, double *T,
-                    double * qv, double * ql, double * qi, double * alpha)
+                    double * qv, double * ql, double * qi, double * qi, double * alpha)
     void eos_update_thli_qs(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *thli, double *qt, double *qr, double *qs, double *T,
-                    double * qv, double * ql, double * qi, double * alpha)
+                    double * qv, double * ql, double * qi, double * qc, double * alpha)
     void buoyancy_update_sa(Grid.DimStruct *dims, double *alpha0, double *alpha, double *buoyancy, double *wt)
     void bvf_sa(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *T, double *qt, double *qv, double *theta_rho, double *bvf)
     void thetali_update(Grid.DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double *p0, double *T, double *qt, double *ql, double *qi, double *thetali)
@@ -99,6 +99,7 @@ cdef class ThermodynamicsSA:
         else:
             PV.add_variable('thli', 'K', "sym", "scalar", Pa)
             DV.add_variables('s', '--', 'sym', Pa)
+            DV.add_variables('qc', 'kg/kg', 'sym', Pa)
         PV.add_variable('qt', 'kg/kg', "sym", "scalar", Pa)
 
         # Initialize class member arrays
@@ -200,6 +201,7 @@ cdef class ThermodynamicsSA:
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
             Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
+            Py_ssize_t qc_shift
             Py_ssize_t s_shift
             Py_ssize_t thli_shift
             Py_ssize_t qs_shift
@@ -230,6 +232,7 @@ cdef class ThermodynamicsSA:
         else:
             #If thetali is prognostic
             thli_shift = PV.get_varshift(Gr, 'thli')
+            qc_shift = DV.get_varshift(Gr, 'qc')
             s_shift = DV.get_varshift(Gr, 's')
 
             #Here we need to pick the correct eos
@@ -238,17 +241,17 @@ cdef class ThermodynamicsSA:
                 qs_shift = PV.get_varshift(Gr, 'qs')
                 eos_update_thli_qs(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                         &PV.values[thli_shift], &PV.values[qt_shift], &PV.values[qr_shift], &PV.values[qs_shift], &DV.values[t_shift],
-                        &DV.values[qv_shift], &DV.values[ql_shift], &DV.values[qi_shift], &DV.values[alpha_shift])
+                        &DV.values[qv_shift], &DV.values[ql_shift], &DV.values[qi_shift],  &DV.values[qc_shift], &DV.values[alpha_shift])
             elif 'qr' in PV.name_index:
                 qr_shift = PV.get_varshift(Gr, 'qr')
                 eos_update_thli_qr(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                         &PV.values[thli_shift], &PV.values[qt_shift], &PV.values[qr_shift], &DV.values[t_shift],
-                        &DV.values[qv_shift], &DV.values[ql_shift], &DV.values[qi_shift], &DV.values[alpha_shift])
+                        &DV.values[qv_shift], &DV.values[ql_shift], &DV.values[qi_shift],  &DV.values[qc_shift], &DV.values[alpha_shift])
             else:
                 #Simulations with no precipitation
                 eos_update_thli(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
-                        &PV.values[thli_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift],
-                        &DV.values[ql_shift], &DV.values[qi_shift], &DV.values[alpha_shift])
+                        &PV.values[thli_shift], &PV.values[qt_shift], &DV.values[t_shift],  &DV.values[qv_shift],
+                        &DV.values[ql_shift], &DV.values[qi_shift], &DV.values[qc_shift], &DV.values[alpha_shift])
 
 
 
