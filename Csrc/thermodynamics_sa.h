@@ -274,7 +274,7 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
 
 void eos_update_thli(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
     double* restrict p0, double* restrict thli, double* restrict qt, double* restrict T,
-    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){
+    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict qc, double* restrict alpha ){
 
     ssize_t i,j,k;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -295,7 +295,7 @@ void eos_update_thli(struct DimStruct *dims, struct LookupStruct *LT, double (*l
                     const ssize_t ijk = ishift + jshift + k;
                     eos_thli_c(LT, lam_fp, L_fp, p0[k], thli[ijk],qt[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk], qt[ijk], qv[ijk]);
-
+                    qc[ijk] = ql[ijk] + qi[ijk];
                 } // End k loop
             } // End j loop
         } // End i loop
@@ -305,7 +305,7 @@ void eos_update_thli(struct DimStruct *dims, struct LookupStruct *LT, double (*l
 
 void eos_update_thli_qr(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
     double* restrict p0, double* restrict thli, double* restrict qt, double* restrict qr, double* restrict T,
-    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){
+    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict qc, double* restrict alpha ){
 
     ssize_t i,j,k;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -326,6 +326,7 @@ void eos_update_thli_qr(struct DimStruct *dims, struct LookupStruct *LT, double 
                     const ssize_t ijk = ishift + jshift + k;
                     eos_thli_qr_c(LT, lam_fp, L_fp, p0[k], thli[ijk],qt[ijk],qr[ijk],&T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk], qt[ijk], qv[ijk]);
+                    qc[ijk] = qr[ijk] + ql[ijk] + qi[ijk];
 
                 } // End k loop
             } // End j loop
@@ -336,7 +337,7 @@ void eos_update_thli_qr(struct DimStruct *dims, struct LookupStruct *LT, double 
 
 void eos_update_thli_qs(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
     double* restrict p0, double* restrict thli, double* restrict qt, double* restrict qr, double* restrict qs, double* restrict T,
-    double* restrict qv, double* restrict ql, double* restrict qi, double* restrict alpha ){
+    double* restrict qv, double* restrict ql, double* restrict qi,  double* restrict qc, double* restrict alpha ){
 
     ssize_t i,j,k;
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
@@ -357,6 +358,7 @@ void eos_update_thli_qs(struct DimStruct *dims, struct LookupStruct *LT, double 
                     const ssize_t ijk = ishift + jshift + k;
                     eos_thli_qs_c(LT, lam_fp, L_fp, p0[k], thli[ijk], qt[ijk], qr[ijk], qs[ijk], &T[ijk],&qv[ijk],&ql[ijk],&qi[ijk]);
                     alpha[ijk] = alpha_c(p0[k], T[ijk], qt[ijk], qv[ijk]);
+                    qc[ijk] = qs[ijk] + qr[ijk] + ql[ijk] + qi[ijk];
                 } // End k loop
             } // End j loop
         } // End i loop
