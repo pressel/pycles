@@ -26,7 +26,7 @@ cdef extern from "thermodynamics_sa.h":
     void eos_update_thli(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *thli, double *qt, double *T,
                     double * qv, double * ql, double * qi, double * qc, double * alpha)
     void eos_update_thli_qr(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *thli, double *qt, double *qr, double *T,
-                    double * qv, double * ql, double * qi, double * qi, double * alpha)
+                    double * qv, double * ql, double * qi, double * qc, double * alpha)
     void eos_update_thli_qs(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *thli, double *qt, double *qr, double *qs, double *T,
                     double * qv, double * ql, double * qi, double * qc, double * alpha)
     void buoyancy_update_sa(Grid.DimStruct *dims, double *alpha0, double *alpha, double *buoyancy, double *wt)
