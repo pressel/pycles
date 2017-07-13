@@ -113,10 +113,14 @@ cdef class Microphysics_Arctic_1M:
                 self.Lambda_fp = lambda_Arctic
                 LH.Lambda_fp = lambda_Arctic
                 Par.root_print('Using Arctic specific liquid fraction by Kaul et al. 2015!')
+            elif namelist['microphysics']['phase_partitioning'] == 'Hu2010':
+                self.Lambda_fp = lambda_Hu2010
+                LH.Lambda_fp = lambda_Hu2010
+                Par.root_print('Using CALIPSO derived liquid fraction by Hu et al. 2015!')
         except:
-            self.Lambda_fp = lambda_Hu2010
-            LH.Lambda_fp = lambda_Hu2010
-            Par.root_print('Using default liquid fraction by Hu et al. (2010)!')
+            self.Lambda_fp = lambda_logistic
+            LH.Lambda_fp = lambda_logistic
+            Par.root_print('Using default logistic function as liquid fraction!')
 
         LH.L_fp = latent_heat_Arctic
 

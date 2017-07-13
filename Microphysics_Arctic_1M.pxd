@@ -50,6 +50,12 @@ cdef inline double lambda_Hu2010(double T) nogil:
     liquid_fraction = 1.0 / (1.0 + exp(-p))
     return liquid_fraction
 
+cdef inline double lambda_logistic(double T) nogil:
+    cdef:
+        double k = 0.42
+        double Tmid = 246.2
+    return 1.0/(1.0 + exp(-k*(T - Tmid)))
+
 cdef inline double latent_heat_Arctic(double T, double Lambda) nogil:
     cdef:
         double Lv = 2.501e6
