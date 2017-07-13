@@ -1771,7 +1771,7 @@ cdef class RadiationGCMGreyMean(RadiationBase):
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
                         #PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/DV.values[t_shift+ijk]*Gr.dims.imet_half[k]
-                        PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1] - self.net_flux[k])*dzi/DV.values[t_shift+ijk]*Gr.dims.imet_half[k]
+                        PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1] - self.net_flux[k])*dzi/DV.values[t_shift+ijk]*Gr.dims.imet_half[k]*Ref.alpha0_half[k]
 
         cdef double [:] t_mean = Pa.HorizontalMean(Gr, &DV.values[t_shift])
         with nogil:
