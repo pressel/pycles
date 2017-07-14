@@ -52,9 +52,9 @@ cdef inline double lambda_Hu2010(double T) nogil:
 
 cdef inline double lambda_logistic(double T) nogil:
     cdef:
-        double k = 0.42
-        double Tmid = 246.2
-    return 1.0/(1.0 + exp(-k*(T - Tmid)))
+        double k = 0.32928
+        double Tmid = 241.92
+    return 1.0/pow((1.0 + exp(-k*(T - Tmid))), 3)
 
 cdef inline double latent_heat_Arctic(double T, double Lambda) nogil:
     cdef:
