@@ -124,7 +124,7 @@ cdef class RayleighGCMMean:
 
         print temp
         for i in range(temp.shape[0]-1, -1, -1):
-            if temp[i]  >  230.0:
+            if temp[i]  >  220.0:
             #if np.abs(dt_qg_conv[i]) > cutoff:
                 self.tend_flat_z_d = z_top - Gr.zp_half[i]
                 break
@@ -258,11 +258,9 @@ cdef class RayleighGCMMean:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
                         PV.tendencies[s_shift + ijk] =   (weight)*PV.tendencies[s_shift + ijk]
-                        #PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.dt_qg_total[k]* (1.0 -weight) ) + (1.0 - weight) * (cpm_c(qt) * (self.dt_tg_total[k]))/t
-                        #PV.tendencies[qt_shift + ijk] = self.dt_qg_total[k]* (1.0 - weight) + PV.tendencies[qt_shift + ijk] *(weight)
                         PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] *(weight)
                         PV.tendencies[u_shift + ijk] = (weight) * PV.tendencies[u_shift + ijk]
-                        PV.tendencies[v_shift + ijk] = (weight) * PV.tendencies[v_shift + ijk] 
+                        PV.tendencies[v_shift + ijk] = (weight) * PV.tendencies[v_shift + ijk]
 
         return
 
