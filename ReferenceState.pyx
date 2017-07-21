@@ -150,14 +150,32 @@ cdef class ReferenceState:
 
 
         # Write reference profiles to StatsIO
+        # Output specific volume
+        NS.add_reference_profile('alpha0_half', Gr, Pa)
+        NS.write_reference_profile('alpha0_half', alpha_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+
         NS.add_reference_profile('alpha0', Gr, Pa)
-        NS.write_reference_profile('alpha0', alpha_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_reference_profile('alpha0', alpha[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Output pressure
+        NS.add_reference_profile('p0_half', Gr, Pa)
+        NS.write_reference_profile('p0_half', p_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+
         NS.add_reference_profile('p0', Gr, Pa)
-        NS.write_reference_profile('p0', p_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_reference_profile('p0', p[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Output densities
+        NS.add_reference_profile('rho0_half', Gr, Pa)
+        NS.write_reference_profile('rho0_half', 1.0 / np.array(alpha_half[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
         NS.add_reference_profile('rho0', Gr, Pa)
-        NS.write_reference_profile('rho0', 1.0 / np.array(alpha_half[Gr.dims.gw:-Gr.dims.gw]), Pa)
+        NS.write_reference_profile('rho0', 1.0 / np.array(alpha[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+        # Output temperature
         NS.add_reference_profile('temperature0', Gr, Pa)
         NS.write_reference_profile('temperature0', temperature_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Output water variable specific humidities
         NS.add_reference_profile('ql0', Gr, Pa)
         NS.write_reference_profile('ql0', ql_half[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.add_reference_profile('qv0', Gr, Pa)
