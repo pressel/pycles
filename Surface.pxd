@@ -14,6 +14,7 @@ cdef class SurfaceBase:
         double T_surface
         double [:] s_flux
         double [:] qt_flux
+        double [:] thli_flux
         double [:] u_flux
         double [:] v_flux
         double [:] friction_velocity
@@ -22,6 +23,7 @@ cdef class SurfaceBase:
         double [:] lhf
         double [:] b_flux
         bint dry_case
+        bint s_prognostic
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
 
@@ -163,6 +165,44 @@ cdef class SurfaceZGILS(SurfaceBase):
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
+cdef class SurfaceGCMVarying(SurfaceBase):
+
+    cdef:
+        ClausiusClapeyron CC
+        double gustiness
+        double z0
+        double ct
+        double fq
+        double ft
+        double rho0
+        int t_indx
+        str file
+        bint gcm_profiles_initialized
+        double [:] windspeed
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,   ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+cdef class SurfaceGCMMean(SurfaceBase):
+
+    cdef:
+        ClausiusClapeyron CC
+        double gustiness
+        double z0
+        double ct
+        double fq
+        double ft
+        double rho0
+        int t_indx
+        str file
+        bint gcm_profiles_initialized
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,   ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
 

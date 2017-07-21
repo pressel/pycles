@@ -4,16 +4,45 @@
 void smagorinsky_update(const struct DimStruct *dims, double* restrict visc, double* restrict diff,
 double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double prt){
 
-    double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
 
-    for (ssize_t i=0; i<dims->npg; i++){
-        visc[i] = cs*cs*delta*delta*strain_rate_mag[i];
-        if(buoy_freq[i] > 0.0){
-            double fb = sqrt(fmax(1.0 - buoy_freq[i]/(prt*strain_rate_mag[i]*strain_rate_mag[i]),0.0));
-            visc[i] = visc[i] * fb;
-        }
-        diff[i] = visc[i]/prt;
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+    double* restrict delta = malloc(dims->nlg[2] * sizeof(double));
+
+
+    //Compute delta allowing for grid stretching of physical coordiante
+    for(ssize_t k = 0; k < kmax; k++){
+        delta[k] = cbrt(dims->dx[0] * dims-> dx[1] * dims->dzpl_half[k]);
     }
+
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i*istride ;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j*jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+                visc[ijk] = cs*cs*delta[k]*delta[k]*strain_rate_mag[ijk];
+                if(buoy_freq[ijk] > 0.0){
+                    double fb = sqrt(fmax(1.0 - buoy_freq[ijk]/(prt*strain_rate_mag[ijk]*strain_rate_mag[ijk]),0.0));
+                    visc[ijk] = visc[ijk] * fb;
+                }
+                diff[ijk] = visc[ijk]/prt;
+            }
+        }
+    }
+
+
+    free(delta); // Free locally allocated memory.
     return;
 }
 
@@ -33,7 +62,13 @@ double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_m
     const ssize_t kmax = dims->nlg[2];
 
 
-    double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
+    double* restrict delta = malloc(dims->nlg[2] * sizeof(double));
+
+
+    //Compute delta allowing for grid stretching of physical coordiante
+    for(ssize_t k = 0; k < kmax; k++){
+        delta[k] = cbrt(dims->dx[0] * dims-> dx[1] * dims->dzpl_half[k]);
+    }
 
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i*istride ;
@@ -41,7 +76,7 @@ double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_m
             const ssize_t jshift = j*jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                double ell = delta * vkb * (zl_half[k])/(delta + vkb * (zl_half[k]) );
+                double ell = delta[k] * vkb * (zl_half[k])/(delta[k] + vkb * (zl_half[k]) );
 
                 visc[ijk] = cs*cs*ell*ell*strain_rate_mag[ijk];
                 if(buoy_freq[ijk] > 0.0){
@@ -52,6 +87,8 @@ double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_m
             }
         }
     }
+
+    free(delta); // Free locally allocated memory
     return;
 }
 
@@ -69,8 +106,13 @@ double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_m
     const ssize_t jmax = dims->nlg[1];
     const ssize_t kmax = dims->nlg[2];
 
+    double* restrict delta = malloc(dims->nlg[2] * sizeof(double));
 
-    double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
+
+    //Compute delta allowing for grid stretching of physical coordiante
+    for(ssize_t k = 0; k < kmax; k++){
+        delta[k] = cbrt(dims->dx[0] * dims-> dx[1] * dims->dzpl_half[k]);
+    }
 
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i*istride ;
@@ -78,7 +120,7 @@ double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_m
             const ssize_t jshift = j*jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                double ell = fmax(0.0,delta - vkb *zl_half[k]);
+                double ell = fmax(0.0,delta[k] - vkb *zl_half[k]);
 
                 visc[ijk] = cs*cs*ell*ell*strain_rate_mag[ijk];
                 if(buoy_freq[ijk] > 0.0){
@@ -89,6 +131,9 @@ double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_m
             }
         }
     }
+
+    free(delta); // Free locally allocated memory
+
     return;
 }
 

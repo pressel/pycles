@@ -13,6 +13,7 @@ cdef class ThermodynamicsSA:
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
         ClausiusClapeyron CC
+        s_prognostic
 
     cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

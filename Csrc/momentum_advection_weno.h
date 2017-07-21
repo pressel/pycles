@@ -206,7 +206,7 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                 }
             }
         }
-        else{
+        else if(d_advecting == 2){
             for(ssize_t i=imin;i<imax;i++){
                 const ssize_t ishift = i*istride;
                 for(ssize_t j=jmin;j<jmax;j++){
@@ -232,6 +232,38 @@ void weno_fifth_order_m(struct DimStruct *dims, double* restrict rho0, double* r
                                                         vel_advecting[ijk],
                                                         vel_advecting[ijk + sp1_ing],
                                                         vel_advecting[ijk + sp2_ing]);
+
+                        flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
+                    }
+                }
+            }
+        }
+         else if(d_advected == 2){
+            for(ssize_t i=imin;i<imax;i++){
+                const ssize_t ishift = i*istride;
+                for(ssize_t j=jmin;j<jmax;j++){
+                    const ssize_t jshift = j*jstride;
+                    for(ssize_t k=kmin;k<kmax;k++){
+                        const ssize_t ijk = ishift + jshift + k;
+
+                        //Upwind for positive velocity
+                        const double phip = interp_weno5(vel_advected[ijk + sm2_ed],
+                                                         vel_advected[ijk + sm1_ed],
+                                                         vel_advected[ijk],
+                                                         vel_advected[ijk + sp1_ed],
+                                                         vel_advected[ijk + sp2_ed]);
+
+                        // Upwind for negative velocity
+                        const double phim = interp_weno5(vel_advected[ijk + sp3_ed],
+                                                         vel_advected[ijk + sp2_ed],
+                                                         vel_advected[ijk + sp1_ed],
+                                                         vel_advected[ijk],
+                                                         vel_advected[ijk + sm1_ed]);
+
+                        const double vel_adv = interp_4(vel_advecting[ijk + sm1_ing],
+                                                        vel_advecting[ijk] ,
+                                                        vel_advecting[ijk + sp1_ing],
+                                                        vel_advecting[ijk + sp2_ing] );
 
                         flux[ijk] = 0.5 * ((vel_adv+fabs(vel_adv))*phip + (vel_adv-fabs(vel_adv))*phim)*rho0[k];
                     }

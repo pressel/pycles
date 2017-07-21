@@ -13,6 +13,9 @@ void compute_diffusive_flux_m(const struct DimStruct *dims, double* restrict str
     const ssize_t jmax = dims->nlg[1]-dims->gw;
     const ssize_t kmax = dims->nlg[2]-dims->gw;
     const ssize_t stencil[3] = {istride,jstride,1};
+
+    const double * imetl = dims -> imetl;
+    const double * imetl_half = dims -> imetl_half;
     
     ///Compute flux if not flux of $\tau_{3,3}$ or $\tau{3,2}$, or  $\tau{3,1}$,  $\tau{2,3}$, or  $\tau{1,3}$ 
     if(i1 != 2 && i2 != 2){

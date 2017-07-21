@@ -28,6 +28,7 @@ cdef class ParallelMPI:
         double domain_scalar_sum(self, double local_value)
         double domain_scalar_max(self, double local_value)
         double domain_scalar_min(self, double local_value)
+        double domain_integral(self, Grid.Grid Gr, double* values, double* rho)
         double [:] domain_vector_sum(self, double [:] local_vector, Py_ssize_t n)
         double [:] HorizontalMean(self,Grid.Grid Gr, double* values)
         double [:] HorizontalMeanofSquares(self,Grid.Grid Gr, double* values1, double* values2)

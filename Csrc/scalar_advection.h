@@ -748,6 +748,8 @@ void compute_qt_sedimentation_s_source(const struct DimStruct *dims, double *p0_
     const double dxi = 1.0/dx;
     const ssize_t stencil[3] = {istride,jstride,1};
 
+    const double * imetl_half = dims-> imetl_half;
+
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
@@ -768,7 +770,52 @@ void compute_qt_sedimentation_s_source(const struct DimStruct *dims, double *p0_
                 double L = L_fp(T[ijk],lam);
                 double sw = sv - (((qt[ijk] - qv[ijk])/qt[ijk])*L/T[ijk]);
 
-                tendency[ijk] -= (sw - sd) / rho0_half[k] * (flux[ijk + stencil[d]] - flux[ijk])*dxi;
+                if(d == 2){
+                    tendency[ijk] -= (sw - sd) / rho0_half[k] * (flux[ijk + stencil[d]] - flux[ijk])* dxi * imetl_half[k];
+                }
+                else{
+                    tendency[ijk] -= (sw - sd) / rho0_half[k] * (flux[ijk + stencil[d]] - flux[ijk])*dxi;
+
+                }
+            }  // End k loop
+        } // End j loop
+    } // End i loop
+}
+
+void compute_qt_sedimentation_thli_source(const struct DimStruct *dims, double *p0_half,  double* rho0_half, double *flux,
+                                    double* qc, double* T, double* tendency, double (*lam_fp)(double),
+                                    double (*L_fp)(double, double), double dx, ssize_t d){
+
+
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+
+    const ssize_t imax = dims->nlg[0] - dims->gw;
+    const ssize_t jmax = dims->nlg[1] - dims->gw;
+    const ssize_t kmax = dims->nlg[2] - dims->gw;
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+
+    const double dxi = 1.0/dx;
+    const ssize_t stencil[3] = {istride,jstride,1};
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+
+                double lam = lam_fp(T[ijk]);
+                double L = L_fp(T[ijk],lam);
+
+
+                tendency[ijk] -= (-L / cpd  / exner_c(p0_half[k])) * exp(-L * qc[ijk] / cpd / T[ijk]) * rho0_half[k] * (flux[ijk + stencil[d]] - flux[ijk])*dxi;
+
+
             }  // End k loop
         } // End j loop
     } // End i loop

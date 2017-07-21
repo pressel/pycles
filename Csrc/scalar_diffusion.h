@@ -19,6 +19,8 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
     const ssize_t stencil[3] = {istride,jstride,1};
     const double dxi = 1.0/dx;
 
+    const double * imetl = dims -> imetl;
+
     if (d == 2){
         for(ssize_t i=imin; i<imax; i++){
             const ssize_t ishift = i * istride;
@@ -26,7 +28,7 @@ void second_order_diffusion(const struct DimStruct *dims, double *rho0, double *
                 const ssize_t jshift = j * jstride;
                 for(ssize_t k=kmin; k<kmax; k++){
                     const ssize_t ijk = ishift + jshift + k;
-                    flux[ijk] = -factor * interp_2(diffusivity[ijk],diffusivity[ijk+stencil[d]]) * (scalar[ijk+stencil[d]]-scalar[ijk])*rho0[k]*dxi;
+                    flux[ijk] = -factor * interp_2(diffusivity[ijk],diffusivity[ijk+stencil[d]]) * (scalar[ijk+stencil[d]]-scalar[ijk])*rho0[k]*dxi * imetl[k];
                 } // End k loop
             } // End j loop
         } // End i loop

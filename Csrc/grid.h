@@ -19,6 +19,25 @@ struct DimStruct {
         long nbuffer[3]; /// Number of points in buffer for ghostpoint update
         long ghosted_stride[3];
 
+        double zp_half_0;
+        double zp_0;
+
         double dx[3]; /// Grid spacing in grid direction
         double dxi[3]; // Inverse gird spacing in grid direction
+
+        double *met;
+        double *imet;
+        double *met_half;
+        double *imet_half;
+
+        double *metl;
+        double *imetl;
+        double *metl_half;
+        double *imetl_half;
+
+        double *zpl;
+        double *zpl_half;
+
+        double *dzpl_half;
+        double *dzpl;
         };

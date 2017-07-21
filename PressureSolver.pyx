@@ -75,6 +75,18 @@ cdef class PressureSolver:
         second_order_pressure_correction(&Gr.dims,&DV.values[pres_shift],
                                          &PV.values[u_shift],&PV.values[v_shift],&PV.values[w_shift])
 
+
+        #Zero the divergence array [Perhaps we can replace this with a C-Call to Memset]
+        with nogil:
+            for i in xrange(Gr.dims.npg):
+                DV.values[div_shift + i] = 0.0
+
+        #Now compute the momentum divergence
+        for d in xrange(Gr.dims.dims):
+            vel_shift = PV.velocity_directions[d]*Gr.dims.npg
+            second_order_divergence(&Gr.dims, &RS.alpha0[0], &RS.alpha0_half[0],&PV.values[vel_shift],
+                 &DV.values[div_shift] ,d)
+
         #Switch this call at for a single variable boundary condition update
         PV.update_all_bcs(Gr,PM)
 
@@ -105,7 +117,8 @@ cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, doub
                 ijk = ishift + jshift + k
                 u[ijk] -=  (p[ijk + ip1] - p[ijk])*dims.dxi[0]
                 v[ijk] -=  (p[ijk + jp1] - p[ijk])*dims.dxi[1]
-                w[ijk] -=  (p[ijk + kp1] - p[ijk])*dims.dxi[2]  #(p[ijk + kp1] - p[ijk])*dims.dxi[2]
+                w[ijk] -=  (p[ijk + kp1] - p[ijk])*dims.dxi[2] * dims.imetl[k] #(p[ijk + kp1] - p[ijk])*dims.dxi[2]
+
 
     return
 
@@ -170,6 +183,6 @@ cdef void second_order_divergence(Grid.DimStruct *dims, double *alpha0, double *
                 jshift = j * jstride
                 for k in xrange(kmin,kmax):
                      ijk = ishift + jshift + k
-                     divergence[ijk] += ((velocity[ijk]) /alpha0[k] - (velocity[ijk+sm1])/alpha0[k-1])*dxi
+                     divergence[ijk] += ((velocity[ijk]) /alpha0[k] - (velocity[ijk+sm1])/alpha0[k-1])*dxi*dims.imetl_half[k]
 
     return
