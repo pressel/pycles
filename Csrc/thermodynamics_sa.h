@@ -14,79 +14,6 @@ inline double temperature_no_ql(double pd, double pv, double s, double qt){
                             /((1.0-qt)*cpd + qt * cpv));
 }
 
-void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
-                    const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
-//    printf("doing reference state saturation adjustment (eos_c_refstate)\n");
-    *qv = qt;
-    *ql = 0.0;
-    *qi = 0.0;
-    double pv_1 = pv_c(p0,qt,qt );
-    double pd_1 = p0 - pv_1;
-    double T_1 = temperature_no_ql(pd_1,pv_1,s,qt);
-    double pv_star_1 = lookup(LT, T_1);
-    double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
-//    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
-
-    // If not saturated
-    if(qt <= qv_star_1){
-//        printf("eos_c: not saturated\n");
-        *T = T_1;
-        // __
-//        printf("no iteration\n");
-        // __
-        return;
-    }
-    else{
-//        printf("eos_c: saturated\n");
-        double sigma_1 = qt - qv_star_1;
-        double lam_1 = lam_fp(T_1);         // lam_fp gives the liquid fraction for mixed-phase clouds (fraction of supercooled liquid)
-        double L_1 = L_fp(T_1,lam_1);       // L_fp = ThermdynamicsSA.L_fp = Thermodynamics/LatentHeat.L_fp --> LatentHeat.L_fp = LatentHeat.L
-        double s_1 = sd_c(pd_1,T_1) * (1.0 - qt) + sv_c(pv_1,T_1) * qt + sc_c(L_1,T_1)*sigma_1;
-        double f_1 = s - s_1;
-        double T_2 = T_1 + sigma_1 * L_1 /((1.0 - qt)*cpd + qv_star_1 * cpv);
-        double delta_T  = fabs(T_2 - T_1);
-        double qv_star_2;
-        double sigma_2;
-        double lam_2;
-        // __
-        int count = 0;
-        /*double pv_star_2 = lookup(LT, T_2);
-        qv_star_2 = qv_star_c(p0,qt,pv_star_2);
-        sigma_2 = qt - qv_star_2;
-        lam_2 = lam_fp(T_2);*/
-        // __
-        do{
-//            printf("start loop\n");
-            double pv_star_2 = lookup(LT, T_2);
-            qv_star_2 = qv_star_c(p0,qt,pv_star_2);
-            double pv_2 = pv_c(p0,qt,qv_star_2);
-            double pd_2 = p0 - pv_2;
-            sigma_2 = qt - qv_star_2;
-            lam_2 = lam_fp(T_2);
-            double L_2 = L_fp(T_2,lam_2);
-            double s_2 = sd_c(pd_2,T_2) * (1.0 - qt) + sv_c(pv_2,T_2) * qt + sc_c(L_2,T_2)*sigma_2;
-            double f_2 = s - s_2;
-            double T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1);
-            T_1 = T_2;
-            T_2 = T_n;
-            f_1 = f_2;
-            delta_T  = fabs(T_2 - T_1);
-            count ++;
-        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
-//        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 6);
-        *T  = T_2;
-        *qv = qv_star_2;
-        *ql = lam_2 * sigma_2;
-        *qi = (1.0 - lam_2) * sigma_2;
-        // __
-//        printf("eos_c iterations: count = %d\n",count);
-//        printf("ql = %f\n", *ql);
-        // __
-        return;
-        }
-}
-
-
 void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                     const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
     /*
@@ -159,20 +86,10 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         double delta_T  = fabs(T_2 - T_1);
         double qv_star_2;
         double sigma_2;
+        double pv_2;
+        double pd_2;
         double lam_2;
         // __
-//        // the following definitions are necessary if while-loop below commented out
-//        double pv_star_2 = lookup(LT, T_2);
-//        if (pv_star_2>p0){
-//            T_2 = 350.0;
-//            pv_star_2 = lookup(LT, T_2);
-//        }
-        if (T_2 > 350.0){
-            val_T2 = T_2;
-            T_2 = 350.0;
-        }
-        if(isnan(T_2)){nan_T2 = 1;}
-        double pv_star_2 = lookup(LT, T_2);
         int count = 0;
         // the following definitions are necessary if while-loop below commented out
         /*double pv_star_2 = lookup(LT, T_2);
@@ -180,12 +97,33 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
         sigma_2 = qt - qv_star_2;
         lam_2 = lam_fp(T_2);*/
         // __
+        //        if (pv_star_2>p0){
+        //             T_2 = 350.0;
+        //            pv_star_2 = lookup(LT, T_2);
+        //        }
+        if (T_2 > 350.0){
+            val_T2 = T_2;
+            T_2 = 350.0;
+        }
+        if(isnan(T_2)){nan_T2 = 1;}
+        double pv_star_2 = lookup(LT, T_2);
         do{
             double pv_star_2 = lookup(LT, T_2);
             qv_star_2 = qv_star_c(p0,qt,pv_star_2);
-            double pv_2 = pv_c(p0,qt,qv_star_2);
-            double pd_2 = p0 - pv_2;
-            sigma_2 = qt - qv_star_2;
+
+            if(qv_star_2 >= 0){
+                pv_2 = pv_c(p0,qt,qv_star_2);    // assume qv=qv_star_2
+                pd_2 = p0 - pv_2;
+                sigma_2 = qt - qv_star_2;
+            }
+            else{
+                pv_2 = pv_c(p0,qt,qt);       // assume qv=qt
+                pd_2 = p0 - pv_2;
+                sigma_2 = qt - qv_star_2;
+            }
+//            double pv_2 = pv_c(p0,qt,qv_star_2);
+//            double pd_2 = p0 - pv_2;
+//            sigma_2 = qt - qv_star_2;
             lam_2 = lam_fp(T_2);
             double L_2 = L_fp(T_2,lam_2);
             double s_2 = sd_c(pd_2,T_2) * (1.0 - qt) + sv_c(pv_2,T_2) * qt + sc_c(L_2,T_2)*sigma_2;
@@ -198,7 +136,7 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             count ++;
             if(isnan(T_n)){nan_Tn = 1;val_T1=T_1;val_pv1=pv_1;val_pd1=pd_1;val_pv2=pv_2;val_pd2=pv_2;}
         } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
-//        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 2);*/
+
         *T  = T_2;
         *qv = qv_star_2;
         *ql = lam_2 * sigma_2;
@@ -293,6 +231,80 @@ void eos_update(struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp
         - using a null pointer.
         - overflowing a buffer. */
     }
+
+
+void eos_c_refstate(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
+                    const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
+//    printf("doing reference state saturation adjustment (eos_c_refstate)\n");
+    *qv = qt;
+    *ql = 0.0;
+    *qi = 0.0;
+    double pv_1 = pv_c(p0,qt,qt );
+    double pd_1 = p0 - pv_1;
+    double T_1 = temperature_no_ql(pd_1,pv_1,s,qt);
+    double pv_star_1 = lookup(LT, T_1);
+    double qv_star_1 = qv_star_c(p0,qt,pv_star_1);
+//    printf("eos_c: qt = %f, qv_star_1 = %f, qv = %f\n", qt, qv_star_1, *qv);        // in initialisation: qt > qv_star_1 (qt ~ 10*qv_star_1)
+
+    // If not saturated
+    if(qt <= qv_star_1){
+//        printf("eos_c: not saturated\n");
+        *T = T_1;
+        // __
+//        printf("no iteration\n");
+        // __
+        return;
+    }
+    else{
+//        printf("eos_c: saturated\n");
+        double sigma_1 = qt - qv_star_1;
+        double lam_1 = lam_fp(T_1);         // lam_fp gives the liquid fraction for mixed-phase clouds (fraction of supercooled liquid)
+        double L_1 = L_fp(T_1,lam_1);       // L_fp = ThermdynamicsSA.L_fp = Thermodynamics/LatentHeat.L_fp --> LatentHeat.L_fp = LatentHeat.L
+        double s_1 = sd_c(pd_1,T_1) * (1.0 - qt) + sv_c(pv_1,T_1) * qt + sc_c(L_1,T_1)*sigma_1;
+        double f_1 = s - s_1;
+        double T_2 = T_1 + sigma_1 * L_1 /((1.0 - qt)*cpd + qv_star_1 * cpv);
+        double delta_T  = fabs(T_2 - T_1);
+        double qv_star_2;
+        double sigma_2;
+        double lam_2;
+        // __
+        int count = 0;
+        /*double pv_star_2 = lookup(LT, T_2);
+        qv_star_2 = qv_star_c(p0,qt,pv_star_2);
+        sigma_2 = qt - qv_star_2;
+        lam_2 = lam_fp(T_2);*/
+        // __
+        do{
+//            printf("start loop\n");
+            double pv_star_2 = lookup(LT, T_2);
+            qv_star_2 = qv_star_c(p0,qt,pv_star_2);
+            double pv_2 = pv_c(p0,qt,qv_star_2);
+            double pd_2 = p0 - pv_2;
+            sigma_2 = qt - qv_star_2;
+            lam_2 = lam_fp(T_2);
+            double L_2 = L_fp(T_2,lam_2);
+            double s_2 = sd_c(pd_2,T_2) * (1.0 - qt) + sv_c(pv_2,T_2) * qt + sc_c(L_2,T_2)*sigma_2;
+            double f_2 = s - s_2;
+            double T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1);
+            T_1 = T_2;
+            T_2 = T_n;
+            f_1 = f_2;
+            delta_T  = fabs(T_2 - T_1);
+            count ++;
+        } while(delta_T >= 1.0e-3 || sigma_2 < 0.0 );
+//        } while((delta_T >= 1.0e-3 || sigma_2 < 0.0) && count < 6);
+        *T  = T_2;
+        *qv = qv_star_2;
+        *ql = lam_2 * sigma_2;
+        *qi = (1.0 - lam_2) * sigma_2;
+        // __
+//        printf("eos_c iterations: count = %d\n",count);
+//        printf("ql = %f\n", *ql);
+        // __
+        return;
+        }
+}
+
 
 void buoyancy_update_sa(struct DimStruct *dims, double* restrict alpha0, double* restrict alpha, double* restrict buoyancy, double* restrict wt){
 
