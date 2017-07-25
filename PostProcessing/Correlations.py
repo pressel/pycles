@@ -43,7 +43,7 @@ def main():
     
     var_name = 't'
     global nt
-    time_series = read_in_netcdf_profile_all(var_name,"timeseries",path_profiles)
+    time_series = read_in_netcdf_stats(var_name,"timeseries",path_profiles)
     print('time[0]', time_series[0], np.int(args.time))
     if time_series[0] == 0:
         nt = np.int(args.time) / dt + 1
@@ -58,9 +58,10 @@ def main():
         sys.exit()
 
 
-    # (2) import fields & mean profiles
+    # (2) import fields & mean profiles & reference state profiles
     # u_profile, v_profile, w_profile, phi_profile: mean profiles of resp. variable at time t
     print('reading in eddy fields: ', path_fields)
+    global rho0, alpha0
     var_name = 'u'
 #    u_profile = read_in_netcdf_profile(var_name+'_mean',"profiles",path_profiles)
     u_field = read_in_netcdf_fields(var_name+'_eddy',path_fields)
@@ -73,6 +74,10 @@ def main():
     var_name = 'phi'
 #    phi_profile = read_in_netcdf_profile(var_name+'_mean',"profiles",path_profiles)
     phi_field = read_in_netcdf_fields(var_name+'_eddy',path_fields)
+    var_name = 'rho0'
+    rho0 = read_in_netcdf_stats(var_name,"reference",path_profiles)
+    var_name = 'alpha0'
+    alpha0 = read_in_netcdf_stats(var_name,"reference",path_profiles)
 #    print('profile: ', u_profile.shape)
     print('field: ', u_field.shape)
 
@@ -137,7 +142,7 @@ def main():
             for k in range(1,n[2]-1):
                 uphi_div[i,j,k] = 0.5*dxi*(uphi[i+1,j,k]-uphi[i-1,j,k])
                 vphi_div[i,j,k] = 0.5*dyi*(vphi[i,j+1,k]-vphi[i,j-1,k])
-                wphi_div[i,j,k] = 0.5*dzi*(wphi[i,j,k+1]-wphi[i,j,k-1])
+                wphi_div[i,j,k] = alpha0[k]*0.5*dzi*(rho0[k+1]*wphi[i,j,k+1]-rho0[k-1]*wphi[i,j,k-1])
     print('uphi_div:', np.amax(np.abs(uphi)), np.amax(np.abs(uphi_div)))
     print('vphi_div:', np.amax(np.abs(vphi)), np.amax(np.abs(vphi_div)))
     print('wphi_div:', np.amax(np.abs(wphi)), np.amax(np.abs(wphi_div)))
@@ -290,7 +295,7 @@ def read_in_netcdf_fields(variable_name, fullpath_in):
     return data
 
 
-def read_in_netcdf_profile_all(variable_name, group_name, fullpath_in):
+def read_in_netcdf_stats(variable_name, group_name, fullpath_in):
 #    print(fullpath_in)
     rootgrp = nc.Dataset(fullpath_in, 'r')
     var = rootgrp.groups[group_name].variables[variable_name]
@@ -310,7 +315,7 @@ def read_in_netcdf_profile_all(variable_name, group_name, fullpath_in):
     return data
 
 
-def read_in_netcdf_profile(variable_name, group_name, fullpath_in):
+def read_in_netcdf_stats_t(variable_name, group_name, fullpath_in):
     rootgrp = nc.Dataset(fullpath_in, 'r')
     var = rootgrp.groups[group_name].variables[variable_name]
     shape = var.shape
@@ -355,8 +360,8 @@ def setup_stats_file(path):
 
 #    z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
     profile_grp.createVariable('t', 'f8', ('t'))
-#    del z
-#    del z_half
+    del z
+    del z_half
 
 #    reference_grp = root_grp.createGroup('reference')
 #    reference_grp.createDimension('z', Gr.dims.n[2])
