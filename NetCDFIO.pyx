@@ -100,8 +100,18 @@ cdef class NetCDFIO_Stats:
         reference_grp = root_grp.createGroup('reference')
         reference_grp.createDimension('z', Gr.dims.n[2])
         z = reference_grp.createVariable('z', 'f8', ('z'))
+        z.setncattr('units', r'm')
+        z.setncattr('desc', r'physical height')
+        z.setncattr('nice_name', r'z')
+
         z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
+
+        #
         z_half = reference_grp.createVariable('z_half', 'f8', ('z'))
+        z_half.setncattr('units',r'm')
+        z_half.setncattr('desc', r'physical height at half levels')
+        z_half.setncattr('nice_name', r'z^{half}')
+
         z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
         del z
         del z_half
