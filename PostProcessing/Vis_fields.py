@@ -167,7 +167,7 @@ def plot_corrfield_phicont(field_name, field_data,cont_name,cont_data, file_name
 
 def plot_corrfield_wcont_phicont_vertical(field_name, field_data,cont_name1,cont_data1,cont_name2,cont_data2,file_name):
     print('plot corr/cont: ', field_name, field_data.shape)
-    plt.figure(figsize=(17,10))
+    plt.figure(figsize=(19,10))
     if field_name == 'w':
         print('field name is w', file_name)
         levels=np.linspace(-6,6,250)
@@ -175,11 +175,11 @@ def plot_corrfield_wcont_phicont_vertical(field_name, field_data,cont_name1,cont
     else:
         ax1 = plt.contourf(field_data.T)
     cont1 = np.linspace(0.93,1.01,9)
-    ax2a = plt.contour(cont_data1.T, levels = cont1)
+    ax2a = plt.contour(cont_data1.T, levels=cont1)
     cont2 = [-3.0,-2.0,-1.0,1.0,2.0,3.0]
-    ax2b = plt.contour(cont_data1.T, levels = cont2, color='k', linewidth=0.6)
-    plt.colorbar(ax2a)
-    plt.colorbar(ax2b)
+    ax2b = plt.contour(cont_data2.T, levels=cont2, colors='k', linewidths=0.6)
+    plt.colorbar(ax2a,shrink=0.75)
+    plt.colorbar(ax2b,shrink=0.75)
     plt.colorbar(ax1)
     max_field = np.amax(field_data)
     max_data1 = np.amax(cont_data1)
