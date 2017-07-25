@@ -225,9 +225,9 @@ cdef class SurfaceSullivanPatton(SurfaceBase):
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
+        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
         T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
         self.buoyancy_flux = self.theta_flux * exner(Ref.p0_half[Gr.dims.gw]) * g /T0
-        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
 
         return
 

@@ -47,11 +47,10 @@ elif platform.machine()  == 'x86_64':
     libraries = []
     libraries.append('mpi')
     libraries.append('gfortran')
-    print libraries 
     extensions = []
     extra_compile_args=[]
-    #extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
-    #                     '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
+    extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
+                         '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
     netcdf_include = '/opt/netcdf4/include'
     netcdf_lib = '/opt/netcdf4/lib'
@@ -261,7 +260,7 @@ if not rrtmg_compiled:
     run_str = 'cd ./RRTMG; '
     run_str += ('FC='+ f_compiler + ' LIB_NETCDF=' + netcdf_lib + ' INC_NETCDF='+
                netcdf_include + ' csh ./compile_RRTMG_combined.csh')
-    print run_str
+    print(run_str)
     sp.call([run_str], shell=True)
 else:
     print("RRTMG Seems to be already compiled.")
