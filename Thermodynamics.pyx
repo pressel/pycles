@@ -54,23 +54,25 @@ cdef class ClausiusClapeyron:
 
         try:
             Tmin = namelist['ClausiusClapeyron']['temperature_min']
+            Par.root_print('Clausius-Clapeyron lookup table temperature_min given in namelist as'+str(Tmin))
         except:
-            Par.root_print('Clasius-Clayperon lookup table temperature_min not '
-                           'given in name list taking default of 100.15 K')
+            Par.root_print('Clasius-Clapeyron lookup table temperature_min not '
+                           'given in namelist taking default of 100.15 K')
             Tmin = 100.15
 
         try:
             Tmax = namelist['ClausiusClapeyron']['temperature_max']
+            Par.root_print('Clausius-Clapeyron lookup table temperature_max given in namelist as'+str(Tmax))
         except:
-            Par.root_print('Clasius-Clayperon lookup table temperature_max not '
-                           'given in name list taking default of 380 K')
+            Par.root_print('Clasius-Clapeyron lookup table temperature_max not '
+                           'given in namelist taking default of 380 K')
             Tmax = 380.0
 
         try:
             n_lookup = namelist['ClausiusClapeyron']['n_lookup']
         except:
-            Par.root_print('Clasius-Clayperon lookup table n_lookup not '
-                           'given in name list taking default of 128')
+            Par.root_print('Clasius-Clapeyron lookup table n_lookup not '
+                           'given in namelist taking default of 128')
             n_lookup = 512
 
         #Generate array of equally space temperatures
