@@ -148,6 +148,9 @@ class Simulation3d:
             SetInitialConditions(namelist,self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa, self.LH)
             del SetInitialConditions
 
+
+
+
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Fo.initialize(self.Gr, self.Ref,self.StatsIO, self.Pa)
@@ -192,70 +195,26 @@ class Simulation3d:
             self.Pa.root_print('time: '+str(self.TS.t))
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
-                # __
-                # self.debug_tend('Ke')
-                # self.Nan.nan_checking('hoi', self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
-                # __
-
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
-                #_
-                self.debug_tend('Th')   # only w-tendencies != 0 ?!!!
-                #_
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
-                #_
-                # self.debug_tend('Micro') # only w-tendencies != 0 ?!!!
-                #_
                 self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.Pa)
-                #_
-                # self.debug_tend('Tr')
-                #_
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
-                #_
-                self.debug_tend('SA')
-                #_
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
-                #_
-                self.debug_tend('MA')
-                #_
-                # __
-                # self.SN.update(self.Gr,self.Ref,PV_,self.Th,self.Pa)
-                # __
                 self.Sur.update(self.Gr, self.Ref,self.PV, self.DV,self.Pa,self.TS)
-                #_
-                # self.debug_tend('Sur')
-                #_
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
-                #_
-                self.debug_tend('SGS')
-                #_
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
-                #_
-                # self.debug_tend('Damping')
-                #_
 
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
-                #_
-                self.debug_tend('SD')
-                # _
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
                 #_
-                self.debug_tend('MD')
+                # self.debug_tend('MD')
                 #_
 
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
-                #_
-                # self.debug_tend('Fo')
-                #_
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
-                #_
-                # self.debug_tend('Budg')
-                #_
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
-                #_
-                self.debug_tend('TS update') # tendencies set to zero
-                #_
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
@@ -330,7 +289,6 @@ class Simulation3d:
             self.TS.dt = np.amin(dts[dts > 0.0])
             # If time to ouptut fields do output
             if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
-            #if (1==1):
                 self.Pa.root_print('Doing 3D FieldIO')
                 self.FieldsIO.last_output_time = self.TS.t
                 self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
@@ -342,7 +300,6 @@ class Simulation3d:
             # self.Pa.root_print('StatsIO freq: ' + str(self.StatsIO.frequency) + ', ' + str(self.StatsIO.last_output_time) + ', ' + str(self.TS.t))
             if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t:
             #if self.StatsIO.last_output_time + self.StatsIO.frequency == self.TS.t or self.StatsIO.last_output_time + self.StatsIO.frequency + 10.0 == self.TS.t:
-            #if (1==1):
                 self.Pa.root_print('Doing StatsIO')
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.open_files(self.Pa)
@@ -371,7 +328,6 @@ class Simulation3d:
 
             # If time to ouput stats do output
             if self.CondStatsIO.last_output_time + self.CondStatsIO.frequency == self.TS.t:
-            #if (1==1):
                 self.Pa.root_print('Doing CondStatsIO')
                 self.CondStatsIO.last_output_time = self.TS.t
                 self.CondStatsIO.write_condstat_time(self.TS.t, self.Pa)
@@ -381,7 +337,6 @@ class Simulation3d:
 
 
             if self.VO.last_vis_time + self.VO.frequency == self.TS.t:
-            #if (1==1):
                 self.Pa.root_print('Dumping Visualisation File!')
                 self.VO.last_vis_time = self.TS.t
                 self.VO.write(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
@@ -412,11 +367,11 @@ class Simulation3d:
         # output stats here
         # self.Pa.root_print('Sim.force_io')
 
-        # self.Pa.root_print('Doing 3D FieldIO')
+        self.Pa.root_print('Doing 3D FieldIO')
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
         self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
         self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)
-        # self.Pa.root_print('Finished Doing 3D FieldIO')
+        self.Pa.root_print('Finished Doing 3D FieldIO')
 
         self.StatsIO.open_files(self.Pa)
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
@@ -438,11 +393,7 @@ class Simulation3d:
         self.Ra.stats_io(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
         self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
-        self.Pa.root_print('force_io, after Aux.stats_io')
         self.StatsIO.close_files(self.Pa)
-        # Pa.barrier()
-        self.Pa.root_print('Sim.force_io finished')
-
         return
 
 
