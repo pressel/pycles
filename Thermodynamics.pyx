@@ -56,21 +56,21 @@ cdef class ClausiusClapeyron:
             Tmin = namelist['ClausiusClapeyron']['temperature_min']
         except:
             Par.root_print('Clasius-Clayperon lookup table temperature_min not '
-                           'given in name list taking default of 180 K')
+                           'given in name list taking default of 100.15 K')
             Tmin = 100.15
 
         try:
             Tmax = namelist['ClausiusClapeyron']['temperature_max']
         except:
             Par.root_print('Clasius-Clayperon lookup table temperature_max not '
-                           'given in name list taking default of 340 K')
+                           'given in name list taking default of 380.0 K')
             Tmax = 380.0
 
         try:
             n_lookup = namelist['ClausiusClapeyron']['n_lookup']
         except:
             Par.root_print('Clasius-Clayperon lookup table n_lookup not '
-                           'given in name list taking default of 128')
+                           'given in name list taking default of 512')
             n_lookup = 512
 
         #Generate array of equally space temperatures
@@ -103,7 +103,15 @@ cdef class ClausiusClapeyron:
         pv_above_Tt = np.exp(odeint(rhs,pv0,T_above_Tt,hmax=0.1)[1:])
         pv_below_Tt = np.exp(odeint(rhs,pv0,T_below_Tt,hmax=0.1)[1:])[::-1]
         pv = np.append(pv_below_Tt,pv_above_Tt )
-        self.LT.initialize(T,pv)
+
+        #For really small values of pv, set pv to a slightly less small number. This avoids problems in integrating
+        #the reference profiles, when the reference temperature is <100K. For the vast majority of simulations this
+        #modification should have no impact.
+
+        pv_a = np.array(pv)
+        pv_a[pv_a < 1e-11]= 1e-11
+
+        self.LT.initialize(T,pv_a)
 
         return
 

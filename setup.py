@@ -46,14 +46,13 @@ elif platform.machine()  == 'x86_64':
     libraries = []
     libraries.append('mpi')
     libraries.append('gfortran')
-    print libraries 
     extensions = []
     extra_compile_args=[]
-    #extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
-    #                     '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
+    extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
+                         '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
-    netcdf_include = '/opt/netcdf4/include'
-    netcdf_lib = '/opt/netcdf4/lib'
+    netcdf_include = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/include'
+    netcdf_lib = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/lib'
     f_compiler = 'gfortran'
 
 else:

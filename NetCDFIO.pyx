@@ -100,8 +100,18 @@ cdef class NetCDFIO_Stats:
         reference_grp = root_grp.createGroup('reference')
         reference_grp.createDimension('z', Gr.dims.n[2])
         z = reference_grp.createVariable('z', 'f8', ('z'))
+        z.setncattr('units', r'm')
+        z.setncattr('desc', r'physical height')
+        z.setncattr('nice_name', r'z')
+
         z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
+
+        #
         z_half = reference_grp.createVariable('z_half', 'f8', ('z'))
+        z_half.setncattr('units',r'm')
+        z_half.setncattr('desc', r'physical height at half levels')
+        z_half.setncattr('nice_name', r'z^{half}')
+
         z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
         del z
         del z_half
@@ -113,18 +123,34 @@ cdef class NetCDFIO_Stats:
         root_grp.close()
         return
 
-    cpdef add_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+    cpdef add_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
 
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             profile_grp = root_grp.groups['profiles']
             new_var = profile_grp.createVariable(var_name, 'f8', ('t', 'z'))
 
+            #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
+            if units is not None:
+                new_var.setncattr('units', str(units))
+            else:
+                new_var.setncattr('units', 'None')
+
+            if nice_name is not None:
+                new_var.setncattr('nice_name', str(nice_name))
+            else:
+                new_var.setncattr('nice_name', 'None')
+
+            if desc is not None:
+                new_var.setncattr('description', str(desc))
+            else:
+                new_var.setncattr('description', 'None')
+
             root_grp.close()
 
         return
 
-    cpdef add_reference_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+    cpdef add_reference_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
         '''
         Adds a profile to the reference group NetCDF Stats file.
         :param var_name: name of variable
@@ -137,15 +163,48 @@ cdef class NetCDFIO_Stats:
             reference_grp = root_grp.groups['reference']
             new_var = reference_grp.createVariable(var_name, 'f8', ('z',))
 
+            #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
+            if units is not None:
+                new_var.setncattr('units', str(units))
+            else:
+                new_var.setncattr('units', 'None')
+
+            if nice_name is not None:
+                new_var.setncattr('nice_name', str(nice_name))
+            else:
+                new_var.setncattr('nice_name', 'None')
+
+            if desc is not None:
+                new_var.setncattr('description', str(desc))
+            else:
+                new_var.setncattr('description', 'None')
+
             root_grp.close()
 
         return
 
-    cpdef add_ts(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+    cpdef add_ts(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             ts_grp = root_grp.groups['timeseries']
             new_var = ts_grp.createVariable(var_name, 'f8', ('t',))
+
+            #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
+            if units is not None:
+                new_var.setncattr('units', str(units))
+            else:
+                new_var.setncattr('units', 'None')
+
+            if nice_name is not None:
+                new_var.setncattr('nice_name', str(nice_name))
+            else:
+                new_var.setncattr('nice_name', 'None')
+
+            if desc is not None:
+                new_var.setncattr('description', str(desc))
+            else:
+                new_var.setncattr('description', 'None')
+
 
             root_grp.close()
         return
