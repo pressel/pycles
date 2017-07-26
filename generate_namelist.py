@@ -1445,7 +1445,7 @@ def DCBLSoares():
     namelist['visualization']['frequency'] = 1800.0
 
     namelist['stochastic_noise'] = {}
-    namelist['stochastic_noise']['flag'] = True
+    namelist['stochastic_noise']['flag'] = False
     namelist['stochastic_noise']['amplitude'] = 0.05
 
     namelist['tracers'] = {}
