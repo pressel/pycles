@@ -1356,6 +1356,11 @@ def InitSoares(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV
         use_tracers = False
 
     try:
+        tracer_profile = namelist['tracers']['profile']
+    except:
+        tracer_profile = 'smooth'
+
+    try:
         kmax_tracer = namelist['tracers']['kmax']
     except:
         kmax_tracer = 10
@@ -1369,24 +1374,39 @@ def InitSoares(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV
         # double ddk = 5.0
 
     if use_tracers == 'passive':
-        Pa.root_print('initializing passive tracer phi, kmax: ' + str(kmax_tracer))
-        var_shift = PV.get_varshift(Gr, 'phi')
-        # with nogil:
-        if 1==1:
-            for i in xrange(Gr.dims.nlg[0]):
-                ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-                for j in xrange(Gr.dims.nlg[1]):
-                    jshift = j * Gr.dims.nlg[2]
-                    for k in xrange(Gr.dims.nlg[2]):
-                        ijk = ishift + jshift + k
-                        if k > kmin and k <= kmax:
-                    # for k in xrange(kmin, kmax):
-                            PV.values[var_shift + ijk] = 1.0
-                            # PV.values[var_shift + ijk] = 0.0
-                        # elif k > kmax and k < (kmax + dk):
-                        #     PV.values[var_shift + ijk] = 0.5*( 1+np.cos((k-kmax)/np.double(dk)*np.pi) )
-                        else:
-                            PV.values[var_shift + ijk] = 0.0
+        if tracer_profile == 'smooth':
+            Pa.root_print('initializing passive tracer phi, smooth profile, kmax: ' + str(kmax_tracer) + ', dk: ' + str(dk))
+            var_shift = PV.get_varshift(Gr, 'phi')
+            # with nogil:
+            if 1==1:
+                for i in xrange(Gr.dims.nlg[0]):
+                    ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+                    for j in xrange(Gr.dims.nlg[1]):
+                        jshift = j * Gr.dims.nlg[2]
+                        for k in xrange(Gr.dims.nlg[2]):
+                            ijk = ishift + jshift + k
+                            if k > kmin and k <= kmax:
+                                PV.values[var_shift + ijk] = 1.0
+                                # PV.values[var_shift + ijk] = 0.0
+                            elif k > kmax and k < (kmax + dk):
+                                PV.values[var_shift + ijk] = 0.5*( 1+np.cos((k-kmax)/np.double(dk)*np.pi) )
+                            else:
+                                PV.values[var_shift + ijk] = 0.0
+        else:
+            Pa.root_print('initializing passive tracer phi, edge profile, kmax: ' + str(kmax_tracer))
+            var_shift = PV.get_varshift(Gr, 'phi')
+            # with nogil:
+            if 1==1:
+                for i in xrange(Gr.dims.nlg[0]):
+                    ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+                    for j in xrange(Gr.dims.nlg[1]):
+                        jshift = j * Gr.dims.nlg[2]
+                        for k in xrange(Gr.dims.nlg[2]):
+                            ijk = ishift + jshift + k
+                            if k > kmin and k <= kmax:
+                                PV.values[var_shift + ijk] = 1.0
+                            else:
+                                PV.values[var_shift + ijk] = 0.0
     # __
 
     if 'e' in PV.name_index:
