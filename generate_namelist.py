@@ -1471,7 +1471,7 @@ def DCBLSoares_moist():
     namelist['grid']['nx'] = 256    # IOP
     namelist['grid']['ny'] = 256    # IOP
     namelist['grid']['nz'] = 150    # IOP
-    namelist['grid']['gw'] = 3      # for 2nd order
+    namelist['grid']['gw'] = 3      #racer for 2nd order
     namelist['grid']['dx'] = 25.0   # IOP
     namelist['grid']['dy'] = 25.0   # IOP
     namelist['grid']['dz'] = 25.0   # IOP
@@ -1565,6 +1565,7 @@ def DCBLSoares_moist():
 
     namelist['tracers'] = {}
     namelist['tracers']['use_tracers'] = 'passive'
+    namelist['tracers']['tracer_profile'] = 'smooth'
     namelist['tracers']['kmin'] = 0
     namelist['tracers']['kmax'] = 10
 
