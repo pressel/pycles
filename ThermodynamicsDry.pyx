@@ -54,11 +54,31 @@ cdef class ThermodynamicsDry:
 
 
         #Add statistical output
-        NS.add_profile('thetas_mean',Gr,Pa)
-        NS.add_profile('thetas_mean2',Gr,Pa)
-        NS.add_profile('thetas_mean3',Gr,Pa)
-        NS.add_profile('thetas_max',Gr,Pa)
-        NS.add_profile('thetas_min',Gr,Pa)
+        units = r'K'
+        nice_name = r'\overline{\theta_{s}}'
+        desc = r'horizontal mean entropy potential temperature'
+        NS.add_profile('thetas_mean' ,Gr ,Pa, units=units, nice_name = nice_name, desc=desc)
+
+        units = r'K^2'
+        nice_name = r'\overline{\theta_{s}^2}'
+        desc = r'horizontal mean squared entropy potential temperature'
+        NS.add_profile('thetas_mean2', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+
+        units = r'K^3'
+        nice_name = r'\overline{\theta_{s}^3}'
+        desc = r'horizontal mean cubed entropy potential temperature'
+        NS.add_profile('thetas_mean3', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+
+        units = r'K'
+        nice_name = r'\max\left(\theta_s\right)'
+        desc = r'horizontal max entropy potential temperature'
+        NS.add_profile('thetas_max', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+
+        units = r'K'
+        nice_name = r'\min\left(\theta_s\right)'
+        desc = r'horizontal min entropy potential temperature'
+        NS.add_profile('thetas_min',Gr,Pa, units=units, nice_name = nice_name, desc=desc)
+
         NS.add_ts('thetas_max',Gr,Pa)
         NS.add_ts('thetas_min',Gr,Pa)
 
