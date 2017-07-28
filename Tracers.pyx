@@ -636,7 +636,7 @@ cdef class PurityTracers:
             Py_ssize_t p_shift = PV.get_varshift(Gr,'purity_srf')
             Py_ssize_t pt_shift = PV.get_varshift(Gr,'time_srf')
             Py_ssize_t pq_shift = PV.get_varshift(Gr,'qt_srf')
-            Py_ssize_t pth_shift = PV.get_varshift(Gr,'thetal_srf')
+            Py_ssize_t pth_shift = PV.get_varshift(Gr,'thetali_srf')
 
         purity_extract_time(&Gr.dims,  &PV.values[p_shift], &PV.values[pt_shift], &extracted_purity_var[0], TS.t)
         tmp = Pa.HorizontalMeanConditional(Gr, &extracted_purity_var[0], &self.TracersUpdraft.updraft_indicator[0])
