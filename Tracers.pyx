@@ -657,7 +657,7 @@ cdef class PurityTracers:
                         PV.values[pth_shift + ijk] = fmax(PV.values[pth_shift + ijk],0.0)
 
 
-        if self.lcl_tracers:
+        if self.TracersUpdraft.lcl_tracers:
             p_shift = PV.get_varshift(Gr,'purity_lcl')
             pt_shift = PV.get_varshift(Gr,'time_lcl')
             pq_shift = PV.get_varshift(Gr,'qt_lcl')
