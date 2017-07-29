@@ -625,6 +625,60 @@ cdef class PurityTracers:
     cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
         self.TracersUpdraft.update_cleanup(Gr, Ref, PV, DV, Pa)
+        cdef:
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i,j,k,ishift,jshift,ijk
+            Py_ssize_t p_shift = PV.get_varshift(Gr,'purity_srf')
+            Py_ssize_t pt_shift = PV.get_varshift(Gr,'time_srf')
+            Py_ssize_t pq_shift = PV.get_varshift(Gr,'qt_srf')
+            Py_ssize_t pth_shift = PV.get_varshift(Gr,'thetali_srf')
+
+
+
+        #Below we assume domain uses only x-y decomposition, for the general case we should use pencils
+        #but we don't address that complication for now
+
+        # Set the value of the surface based tracers
+
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                for j in xrange(Gr.dims.nlg[1]):
+                    ijk = i * istride + j * jstride + Gr.dims.gw
+                    PV.tendencies[p_shift + ijk] = 0.0
+                    PV.tendencies[pt_shift + ijk] = 0.0
+                    PV.tendencies[pq_shift + ijk] = 0.0
+                    PV.tendencies[pth_shift + ijk] = 0.0
+                    for k in xrange( Gr.dims.nlg[2]):
+                        ijk = i * istride + j * jstride + k
+                        PV.values[p_shift + ijk] = fmax(PV.values[p_shift + ijk],0.0)
+                        PV.values[pt_shift + ijk] = fmax(PV.values[pt_shift + ijk],0.0)
+                        PV.values[pq_shift + ijk] = fmax(PV.values[pq_shift + ijk],0.0)
+                        PV.values[pth_shift + ijk] = fmax(PV.values[pth_shift + ijk],0.0)
+
+
+        if self.lcl_tracers:
+            p_shift = PV.get_varshift(Gr,'purity_lcl')
+            pt_shift = PV.get_varshift(Gr,'time_lcl')
+            pq_shift = PV.get_varshift(Gr,'qt_lcl')
+            pth_shift = PV.get_varshift(Gr,'thetali_lcl')
+            with nogil:
+                for i in xrange( Gr.dims.nlg[0]):
+                    for j in xrange( Gr.dims.nlg[1]):
+                        for k in xrange(self.TracersUpdraft.index_lcl + 1):
+                            ijk = i * istride + j * jstride + k
+                            PV.tendencies[p_shift + ijk] = 0.0
+                            PV.tendencies[pt_shift + ijk] = 0.0
+                            PV.tendencies[pq_shift + ijk] = 0.0
+                            PV.tendencies[pth_shift + ijk] = 0.0
+                        for k in xrange(self.TracersUpdraft.index_lcl + 1, Gr.dims.nlg[2]):
+                            ijk = i * istride + j * jstride + k
+                            PV.values[p_shift + ijk] = fmax(PV.values[p_shift + ijk],0.0)
+                            PV.values[pt_shift + ijk] = fmax(PV.values[pt_shift + ijk],0.0)
+                            PV.values[pq_shift + ijk] = fmax(PV.values[pq_shift + ijk],0.0)
+                            PV.values[pth_shift + ijk] = fmax(PV.values[pth_shift + ijk],0.0)
+
+
         return
 
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
