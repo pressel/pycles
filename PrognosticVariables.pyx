@@ -78,26 +78,27 @@ cdef class PrognosticVariables:
         Pa.root_print('Setting up statistical output files for Prognostic Variables')
         for var_name in self.name_index.keys():
             #Add mean profile
-            NS.add_profile(var_name+'_mean',Gr,Pa)
+            print var_name, self.units[var_name]
+            NS.add_profile(var_name+'_mean', Gr, Pa,  units=self.units[var_name], nice_name = r'\overline{' + var_name + r'}', desc=var_name + ' hoizontal domain mean (prognostic variable)')
 
             if var_name == 'u' or var_name == 'v':
-                NS.add_profile(var_name+'_translational_mean',Gr,Pa)
+                NS.add_profile(var_name+'_translational_mean',Gr, Pa, units = self.units[var_name], nice_name = var_name + '+'  + var_name + '_0', desc = var_name + 'plus domain translational mean')
 
             #Add mean of squares profile
-            NS.add_profile(var_name+'_mean2',Gr,Pa)
+            NS.add_profile(var_name+'_mean2',Gr ,Pa, units = '('+self.units[var_name]+')^2',nice_name = r'\overline{' + var_name + r'^2}', desc = var_name + '^2 horizontal domain mean (prognostic variable)')
             #Add mean of cubes profile
-            NS.add_profile(var_name+'_mean3',Gr,Pa)
+            NS.add_profile(var_name+'_mean3', Gr, Pa, units = '('+self.units[var_name]+')^3',nice_name = r'\overline{' + var_name + r'^3}', desc = var_name + '^3 horizontal domain mean (prognostic variable)')
             #Add max profile
-            NS.add_profile(var_name+'_max',Gr,Pa)
+            NS.add_profile(var_name+'_max', Gr, Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' horzontal domain maximum (prognostic variable)')
             #Add min profile
-            NS.add_profile(var_name+'_min',Gr,Pa)
+            NS.add_profile(var_name+'_min', Gr, Pa, units=self.units[var_name], nice_name = r'\min(' + var_name + r')', desc = var_name + ' horzontal domain minimum (prognostic variable)')
             #Add max ts
-            NS.add_ts(var_name+'_max',Gr,Pa)
+            NS.add_ts(var_name+'_max', Gr, Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' domain maximum (prognostic variable)')
             #Add min ts
-            NS.add_ts(var_name+'_min',Gr,Pa)
+            NS.add_ts(var_name+'_min',Gr , Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' domain minimum (prognostic variable)')
 
         if 'qt' in self.name_index.keys() and 's' in self.name_index.keys():
-            NS.add_profile('qt_s_product_mean', Gr, Pa)
+            NS.add_profile('qt_s_product_mean', Gr, Pa, units = r'J kg^-1 K^-1', nice_name = r'\overline{s q_t}', desc = 'domain horizontal mean of product of s and qt')
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS ,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):

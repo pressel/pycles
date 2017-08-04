@@ -82,7 +82,7 @@ cdef class ThermodynamicsSA:
         :return:
         '''
 
-        PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
+        PV.add_variable('s', 'J kg^-1 K^-1', "sym", "scalar", Pa)
         PV.add_variable('qt', 'kg/kg', "sym", "scalar", Pa)
 
         # Initialize class member arrays

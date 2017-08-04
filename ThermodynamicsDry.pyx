@@ -43,14 +43,14 @@ cdef class ThermodynamicsDry:
 
     cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        PV.add_variable('s','m/s',"sym","scalar",Pa)
+        PV.add_variable('s', 'J kg^-1 K^-1', "sym", "scalar", Pa)
 
         #Initialize class member arrays
-        DV.add_variables('buoyancy','--','sym',Pa)
-        DV.add_variables('alpha','--','sym',Pa)
-        DV.add_variables('temperature','K','sym',Pa)
-        DV.add_variables('buoyancy_frequency','1/s','sym',Pa)
-        DV.add_variables('theta','K','sym',Pa)
+        DV.add_variables('buoyancy' ,'--', 'sym', Pa)
+        DV.add_variables('alpha', '--', 'sym', Pa)
+        DV.add_variables('temperature', 'K', 'sym', Pa)
+        DV.add_variables('buoyancy_frequency', '1/s', 'sym',Pa)
+        DV.add_variables('theta', 'K', 'sym', Pa)
 
 
         #Add statistical output
