@@ -74,7 +74,7 @@ cdef class No_Microphysics_SA:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         if self.cloud_sedimentation:
-            DV.add_variables('w_qt', 'm/s', 'sym', Pa)
+            DV.add_variables('w_qt', 'm/s', r'w_ql', 'cloud liquid water sedimentation velocity', 'sym', Pa)
             NS.add_profile('qt_sedimentation_flux', Gr, Pa)
             NS.add_profile('s_qt_sedimentation_source',Gr,Pa)
 
@@ -254,18 +254,18 @@ cdef class Microphysics_SB_Liquid:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         # add prognostic variables for mass and number of rain
-        PV.add_variable('nr', '1/kg', 'sym','scalar',Pa)
-        PV.add_variable('qr', 'kg/kg', 'sym','scalar',Pa)
+        PV.add_variable('nr', '1/kg', r'n_r', 'rain droplet number concentration','sym','scalar',Pa)
+        PV.add_variable('qr', 'kg/kg', r'q_r', 'rain water specific humidity','sym','scalar',Pa)
 
         # add sedimentation velocities as diagnostic variables
-        DV.add_variables('w_qr', 'm/s', 'sym', Pa)
-        DV.add_variables('w_nr', 'm/s', 'sym', Pa)
+        DV.add_variables('w_qr', 'm/s', r'w_{qr}', 'rain mass sedimentation veloctiy', 'sym', Pa)
+        DV.add_variables('w_nr', 'm/s', r'w_{nr}', 'rain number sedimentation velocity', 'sym', Pa)
         if self.cloud_sedimentation:
-            DV.add_variables('w_qt', 'm/s', 'sym', Pa)
+            DV.add_variables('w_qt', 'm/s', r'w_ql', 'cloud liquid water sedimentation velocity', 'sym', Pa)
             NS.add_profile('qt_sedimentation_flux', Gr, Pa)
             NS.add_profile('s_qt_sedimentation_source',Gr,Pa)
         # add wet bulb temperature
-        DV.add_variables('temperature_wb', 'K', 'sym', Pa)
+        DV.add_variables('temperature_wb', 'K', r'T_{wb}','wet bulb temperature','sym', Pa)
 
 
         # add statistical output for the class

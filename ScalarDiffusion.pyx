@@ -27,7 +27,7 @@ cdef extern from "scalar_diffusion.h":
 
 cdef class ScalarDiffusion:
     def __init__(self, namelist, LatentHeat LH, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa):
-        DV.add_variables('diffusivity','--','sym',Pa)
+        DV.add_variables('diffusivity',r'm^2s^{-1}', 'D_t', 'eddy diffusivity', 'sym', Pa)
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
 

@@ -1269,6 +1269,6 @@ def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
 
     casename = nml['meta']['casename']
     if casename == 'SMOKE':
-        PV.add_variable('smoke', 'm/s', "sym", "scalar", Pa)
+        PV.add_variable('smoke', 'kg/kg', 'smoke', 'radiatively active smoke', "sym", "scalar", Pa)
         return
     return
