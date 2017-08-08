@@ -106,14 +106,13 @@ $ brew install netcdf open-mpi
 Create a new virtualenv that will contain all the necessary python libraries, without interfering with any that you may have previously installed.  I like to put this inside the pycles source folder, but you can put it whereever you wish.
 
 If virtualenv is not yet installed::
+
 $ [sudo] pip install virtualenv
 
 Then create and activate the environment::
 
 $ cd pycles
-
 $ virtualenv pyclesenv
-
 $ source pyclesenv/bin/activate
 
 Now we can install all the Python libraries::
@@ -122,9 +121,8 @@ Now we can install all the Python libraries::
 
 And proceed to build the extensions as above::
 
-$ python generate_parameters.py
-
-$ CC=mpicc python setup.py build_ext --inplace
+(pyclesenv) $ python generate_parameters.py
+(pyclesenv) $ CC=mpicc python setup.py build_ext --inplace
 
 
 Building on Linux
