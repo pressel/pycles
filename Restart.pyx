@@ -141,12 +141,16 @@ cdef class Restart:
             self.restart_data = pickle.load(f)
         Pa.barrier()
 
+
         # We rename the input directory in case it ends in one of the suffixes
         # that is used to find files for deletion
+
+        print self.delete_old, self.input_path
         if Pa.rank == 0:
             if self.delete_old:
                 os.rename(self.input_path, self.input_path +'_original')
 
+        print self.input_path
 
         return
 

@@ -67,11 +67,11 @@ class Simulation3d:
         self.Tr = TracersFactory(namelist)
 
         # Add new prognostic variables
-        self.PV.add_variable('u', 'm/s', "sym", "velocity", self.Pa)
+        self.PV.add_variable('u', 'm/s', 'u', 'u velocity component',"sym", "velocity", self.Pa)
         self.PV.set_velocity_direction('u', 0, self.Pa)
-        self.PV.add_variable('v', 'm/s', "sym", "velocity", self.Pa)
+        self.PV.add_variable('v', 'm/s', 'v', 'v velocity component', "sym", "velocity", self.Pa)
         self.PV.set_velocity_direction('v', 1, self.Pa)
-        self.PV.add_variable('w', 'm/s', "asym", "velocity", self.Pa)
+        self.PV.add_variable('w', 'm/s', 'w', 'w velocity component', "asym", "velocity", self.Pa)
         self.PV.set_velocity_direction('w', 2, self.Pa)
 
         AuxillaryVariables(namelist, self.PV, self.DV, self.Pa)
@@ -312,32 +312,32 @@ class Simulation3d:
         self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
 
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
-        print 'FO'
+        #print 'FO'
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        print 'TH'
+        #print 'TH'
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Micro.stats_io(self.Gr, self.Ref, self.Th, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
-        print 'SGS'
+        #print 'SGS'
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke ,self.StatsIO, self.Pa)
-        print 'SA'
+        #print 'SA'
         self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-        print 'MA'
+        #print 'MA'
         self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-        print 'SD'
+        #print 'SD'
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
-        print 'MD'
+        #print 'MD'
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
-        print 'KE'
+        #print 'KE'
         self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
-        print 'Tr'
+        #print 'Tr'
         self.Tr.stats_io( self.Gr, self.StatsIO, self.Pa)
-        print 'Ra'
+        #print 'Ra'
         self.Ra.stats_io(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
-        print 'Budg'
+        #print 'Budg'
         self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
-        print 'Aux'
+        #print 'Aux'
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
         self.Pa.root_print('Finished Forcing Initial io')

@@ -151,36 +151,65 @@ cdef class ReferenceState:
 
         # Write reference profiles to StatsIO
         # Output specific volume
-        NS.add_reference_profile('alpha0_half', Gr, Pa)
-        NS.write_reference_profile('alpha0_half', alpha_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+        units = r'm^{3}kg^{-1}'
+        nice_name  = r'\alpha_{0}'
+        desc = r'reference state specific volume at half level'
 
-        NS.add_reference_profile('alpha0', Gr, Pa)
-        NS.write_reference_profile('alpha0', alpha[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.add_reference_profile('alpha0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+        NS.write_reference_profile('alpha0', alpha_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        nice_name = r'\alpha_{0}_{full}'
+        desc = r'reference state specific volume at full level'
+        NS.add_reference_profile('alpha0_full', Gr, Pa, units='m^{3}kg^{-1}', nice_name=nice_name, desc=desc, z_full=True)
+        NS.write_reference_profile('alpha0_full', alpha[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Output pressure
-        NS.add_reference_profile('p0_half', Gr, Pa)
-        NS.write_reference_profile('p0_half', p_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+        units = r'Pa'
+        nice_name = r'p_{0}'
+        desc = r'reference state pressure at half level'
+        NS.add_reference_profile('p0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+        NS.write_reference_profile('p0', p_half[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        NS.add_reference_profile('p0', Gr, Pa)
-        NS.write_reference_profile('p0', p[Gr.dims.gw:-Gr.dims.gw], Pa)
+        nice_name = r'p_{0}^{full}'
+        desc = r'reference state pressure at full level'
+        NS.add_reference_profile('p0_full', Gr, Pa, units=units, nice_name = nice_name, desc=desc, z_full=True)
+        NS.write_reference_profile('p0_full', p[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Output densities
-        NS.add_reference_profile('rho0_half', Gr, Pa)
-        NS.write_reference_profile('rho0_half', 1.0 / np.array(alpha_half[Gr.dims.gw:-Gr.dims.gw]), Pa)
+        units = r'kgm^{-3}'
+        nice_name = r'\rho_{0}'
+        desc = r'reference state density at half level'
+        NS.add_reference_profile('rho0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+        NS.write_reference_profile('rho0', 1.0 / np.array(alpha_half[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
-        NS.add_reference_profile('rho0', Gr, Pa)
-        NS.write_reference_profile('rho0', 1.0 / np.array(alpha[Gr.dims.gw:-Gr.dims.gw]), Pa)
+        nice_name = r'\rho_0^{full}'
+        desc = r'reference state density at full level'
+        NS.add_reference_profile('rho0_full', Gr, Pa, units=units, nice_name = nice_name, desc=desc, z_full=True)
+        NS.write_reference_profile('rho0_full', 1.0 / np.array(alpha[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
+        units = r'K'
+        nice_name = r'T_{0}'
+
+        desc = r'reference state temperature at half level'
         # Output temperature
-        NS.add_reference_profile('temperature0', Gr, Pa)
+        NS.add_reference_profile('temperature0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('temperature0', temperature_half[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         # Output water variable specific humidities
-        NS.add_reference_profile('ql0', Gr, Pa)
+        units=r'kg/kg'
+        nice_name = r'ql_{0}'
+        desc = r'reference state liquid water specific humidity at half level'
+        NS.add_reference_profile('ql0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('ql0', ql_half[Gr.dims.gw:-Gr.dims.gw], Pa)
-        NS.add_reference_profile('qv0', Gr, Pa)
+
+        nice_name = r'qv_{0}'
+        desc = r'reference state water vapor specific humidity at half level'
+        NS.add_reference_profile('qv0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('qv0', qv_half[Gr.dims.gw:-Gr.dims.gw], Pa)
-        NS.add_reference_profile('qi0', Gr, Pa)
+
+        nice_name = r'qi_{0}'
+        desc = r'reference state ice water specific humidity at half level'
+        NS.add_reference_profile('qi0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('qi0', qi_half[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
@@ -234,6 +263,3 @@ cdef class ReferenceState:
 
 
         return
-
-
-

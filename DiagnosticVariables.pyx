@@ -23,6 +23,8 @@ cdef class DiagnosticVariables:
         self.name_index = {}
         self.index_name = []
         self.units = {}
+        self.nice_name = {}
+        self.desc = {}
         self.nv = 0
         self.bc_type = np.array([],dtype=np.double,order='c')
 
@@ -33,7 +35,7 @@ cdef class DiagnosticVariables:
         self.sedv_index  = np.array([],dtype=np.int,order='c')
         self.nsedv = 0
 
-    cpdef add_variables(self, name, units,bc_type,  ParallelMPI.ParallelMPI Pa):
+    cpdef add_variables(self, name, units, nice_name, desc, bc_type,  ParallelMPI.ParallelMPI Pa):
         self.name_index[name] = self.nv
         self.index_name.append(name)
         self.units[name] = units
@@ -131,19 +133,19 @@ cdef class DiagnosticVariables:
         Pa.root_print('Setting up statistical output files for Prognostic Variables')
         for var_name in self.name_index.keys():
             #Add mean profile
-            NS.add_profile(var_name+'_mean',Gr,Pa)
+            NS.add_profile(var_name+'_mean', Gr, Pa,  units=self.units[var_name], nice_name = r'\overline{' + var_name + r'}', desc=var_name + ' hoizontal domain mean')
             #Add mean of squares profile
-            NS.add_profile(var_name+'_mean2',Gr,Pa)
+            NS.add_profile(var_name+'_mean2',Gr ,Pa, units = '('+self.units[var_name]+')^2',nice_name = r'\overline{' + var_name + r'^2}', desc = var_name + '^2 horizontal domain mean')
             #Add mean of cubes profile
-            NS.add_profile(var_name+'_mean3',Gr,Pa)
+            NS.add_profile(var_name+'_mean3', Gr, Pa, units = '('+self.units[var_name]+')^3',nice_name = r'\overline{' + var_name + r'^3}', desc = var_name + '^3 horizontal domain mean')
             #Add max profile
-            NS.add_profile(var_name+'_max',Gr,Pa)
+            NS.add_profile(var_name+'_max', Gr, Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' horzontal domain maximum ')
             #Add min profile
-            NS.add_profile(var_name+'_min',Gr,Pa)
+            NS.add_profile(var_name+'_min', Gr, Pa, units=self.units[var_name], nice_name = r'\min(' + var_name + r')', desc = var_name + ' horzontal domain minimum ')
             #Add max ts
-            NS.add_ts(var_name+'_max',Gr,Pa)
+            NS.add_ts(var_name+'_max', Gr, Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' domain maximum ')
             #Add min ts
-            NS.add_ts(var_name+'_min',Gr,Pa)
+            NS.add_ts(var_name+'_min',Gr , Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' domain minimum ')
         for var_name in self.name_index_2d.keys():
             #Add mean profile
             NS.add_ts(var_name+'_mean',Gr,Pa)

@@ -95,23 +95,24 @@ cdef class ThermodynamicsSA:
         '''
 
         if self.s_prognostic:
-            PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
+            PV.add_variable('s', 'J kg^-1 K^-1', 's', 'specific entropy', "sym", "scalar", Pa)
         else:
-            PV.add_variable('thli', 'K', "sym", "scalar", Pa)
-            DV.add_variables('s', '--', 'sym', Pa)
-            DV.add_variables('qc', 'kg/kg', 'sym', Pa)
-        PV.add_variable('qt', 'kg/kg', "sym", "scalar", Pa)
+            PV.add_variable('thli', 'K', r'\theta_l', r'liquid-ice potential temperature', "sym", "scalar", Pa)
+            DV.add_variables('s', 'J kg^-1 K^-1', 's', 'specific entropy', 'sym', Pa)
+            DV.add_variables('qc', 'kg/kg', 'q_c', 'specific humidity of condensate','sym', Pa)
+
+        PV.add_variable('qt', 'kg/kg', 'q_t', 'total water specific humidity', "sym", "scalar", Pa)
 
         # Initialize class member arrays
-        DV.add_variables('buoyancy', '--', 'sym', Pa)
-        DV.add_variables('alpha', '--', 'sym', Pa)
-        DV.add_variables('temperature', 'K', 'sym', Pa)
-        DV.add_variables('buoyancy_frequency', '1/s', 'sym', Pa)
-        DV.add_variables('qv', 'kg/kg', 'sym', Pa)
-        DV.add_variables('ql', 'kg/kg', 'sym', Pa)
-        DV.add_variables('qi', 'kg/kg', 'sym', Pa)
-        DV.add_variables('theta_rho', 'K', 'sym', Pa)
-        DV.add_variables('thetali', 'K', 'sym', Pa)
+        DV.add_variables('buoyancy' ,r'ms^{-1}', r'b', 'buoyancy','sym', Pa)
+        DV.add_variables('alpha', r'm^3kg^-2', r'\alpha', 'specific volume', 'sym', Pa)
+        DV.add_variables('temperature', r'K', r'T', r'temperature', 'sym', Pa)
+        DV.add_variables('buoyancy_frequency', r's^-1', r'N', 'buoyancy frequencyt', 'sym', Pa)
+        DV.add_variables('qv', 'kg/kg', r'q_v', 'water vapor specific humidity', 'sym', Pa)
+        DV.add_variables('ql', 'kg/kg', r'q_l', 'liquid water specific humidity', 'sym', Pa)
+        DV.add_variables('qi', 'kg/kg', r'q_i', 'ice water specific humidity', 'sym', Pa)
+        DV.add_variables('theta_rho', 'K', r'\theta_{\rho}', 'density potential temperature', 'sym', Pa)
+        DV.add_variables('thetali', 'K', r'\theta_l', r'liqiud water potential temperature', 'sym', Pa)
 
 
         # Add statistical output

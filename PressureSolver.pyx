@@ -25,8 +25,8 @@ cdef class PressureSolver:
 
     cpdef initialize(self,namelist, Grid.Grid Gr,ReferenceState.ReferenceState RS ,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI PM):
 
-        DV.add_variables('dynamic_pressure','Pa','sym',PM)
-        DV.add_variables('divergence','1/s','sym',PM)
+        DV.add_variables('dynamic_pressure', 'Pa', r'p', 'dynamic pressure', 'sym', PM)
+        DV.add_variables('divergence', '1/s', r'd', '3d divergence', 'sym',PM)
 
         self.divergence = np.zeros(Gr.dims.npl,dtype=np.double, order='c')
         #self.poisson_solver = PressureFFTSerial.PressureFFTSerial()

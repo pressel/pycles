@@ -27,7 +27,7 @@ cdef extern from 'momentum_diffusion.h':
 cdef class MomentumDiffusion:
 
     def __init__(self, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
-        DV.add_variables('viscosity', '--', 'sym', Pa)
+        DV.add_variables('viscosity', r'm^2s^{-1}', r'\nu_t', 'eddy viscosity', 'sym', Pa)
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,

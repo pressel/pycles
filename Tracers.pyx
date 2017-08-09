@@ -74,12 +74,11 @@ cdef class UpdraftTracers:
             self.tracer_dict['lcl']['c_lcl_15']['timescale'] = 15.0 * 60.0
 
         for var in self.tracer_dict['surface'].keys():
-            PV.add_variable(var, '-', "sym", "scalar", Pa)
-
+            PV.add_variable(var, '-', var, 'tracer diagnostics' , "sym", "scalar", Pa)
 
         if self.lcl_tracers:
             for var in self.tracer_dict['lcl'].keys():
-                PV.add_variable(var, '-', "sym", "scalar", Pa)
+                PV.add_variable(var, '-', var, 'tracer diagnostics', "sym", "scalar", Pa)
             NS.add_ts('grid_lcl', Gr, Pa )
 
         return

@@ -156,7 +156,7 @@ cdef class ScalarAdvection:
                 scalar_count += 1
 
 
-            print PV.index_name[i], np.amax(tmp_interp[Gr.dims.gw:-Gr.dims.gw]), np.min(tmp_interp[Gr.dims.gw:-Gr.dims.gw])
+            #print PV.index_name[i], np.amax(tmp_interp[Gr.dims.gw:-Gr.dims.gw]), np.min(tmp_interp[Gr.dims.gw:-Gr.dims.gw])
 
 
 
