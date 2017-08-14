@@ -32,7 +32,7 @@ def InitializationFactory(namelist):
             return InitStableBubble
         elif casename == 'SaturatedBubble':
             return InitSaturatedBubble
-        elif casename == 'Bomex':
+        elif casename == 'Bomex' or casename == 'BomexImpulse':
             return InitBomex
         elif casename == 'Gabls':
             return InitGabls
@@ -363,8 +363,8 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         Py_ssize_t count
 
-        theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
-        qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
+        theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1  * 0.0
+        qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0 * 0.0
 
     for k in xrange(Gr.dims.nlg[2]):
 
