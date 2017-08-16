@@ -328,6 +328,8 @@ cdef class UpdraftTracers:
             Py_ssize_t ql_shift, th_shift, qr_shift
             double [:] tracer_normed = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] env_indicator = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
+            double [:] u_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
+            double [:] v_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] w_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] mean = Pa.HorizontalMean(Gr, &PV.values[c_shift])
             double [:] mean_square = Pa.HorizontalMeanofSquares(Gr, &PV.values[c_shift], &PV.values[c_shift])
@@ -372,6 +374,8 @@ cdef class UpdraftTracers:
                     jshift = j * jstride
                     for k in range(Gr.dims.gw-1,Gr.dims.nlg[2]):
                         ijk = ishift + jshift + k
+                        u_half[ijk] = 0.5 * (PV.values[u_shift+ijk-istride] + PV.values[u_shift+ijk])
+                        v_half[ijk] = 0.5 * (PV.values[v_shift+ijk-jstride] + PV.values[v_shift+ijk])
                         w_half[ijk] = 0.5 * (PV.values[w_shift+ijk-1] + PV.values[w_shift+ijk])
 
         tmp = Pa.HorizontalMean(Gr, &self.updraft_indicator[0])
@@ -383,14 +387,14 @@ cdef class UpdraftTracers:
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &w_half[0], &w_half[0], &self.updraft_indicator[0])
         NS.write_profile('updraft_w2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[u_shift], &self.updraft_indicator[0])
+        tmp = Pa.HorizontalMeanConditional(Gr, &u_half[0], &self.updraft_indicator[0])
         NS.write_profile('updraft_u', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[u_shift], &PV.values[u_shift], &self.updraft_indicator[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &u_half[0], &u_half[0], &self.updraft_indicator[0])
         NS.write_profile('updraft_u2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[v_shift], &self.updraft_indicator[0])
+        tmp = Pa.HorizontalMeanConditional(Gr, &v_half[0], &self.updraft_indicator[0])
         NS.write_profile('updraft_v', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[v_shift], &PV.values[v_shift], &self.updraft_indicator[0])
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr,&v_half[0], &v_half[0], &self.updraft_indicator[0])
         NS.write_profile('updraft_v2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[q_shift], &self.updraft_indicator[0])
