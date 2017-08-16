@@ -35,7 +35,7 @@ def main():
 
         rootgrp.close()
 
-        out_path = os.path.join(args.out_dir, str(d) + '.nc')
+        out_path = os.path.join(args.out_dir, str(100000 + int(d)) + '.nc')
         if not os.path.exists(out_path):
             create_file(out_path, n_0, n_1, n_2)
         for f in field_keys:

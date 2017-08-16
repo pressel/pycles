@@ -18,7 +18,7 @@ import cython
 from thermodynamic_functions import exner, cpm
 from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c
-from libc.math cimport sqrt, log, fabs,atan, exp, fmax
+from libc.math cimport sqrt, log, fabs,atan, exp, fmax, cos
 cimport numpy as np
 import numpy as np
 import cPickle
@@ -424,16 +424,14 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
         self.qt_flux = np.add(self.qt_flux,5.2e-5) # m/s
 
 
-        self.theta_flux = 8.0e-3 # K m/s
+        self.theta_flux = 8.0e-3
         self.thli_flux = np.add(self.qt_flux, self.theta_flux)
         self.ustar_ = 0.28 #m/s
         self.theta_surface = 299.1 #K
-        self.qt_surface = 22.45e-3 # kg/kg
+        self.qt_surface = 5.2e-5
         self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux[0]
                                                                    + self.qt_surface *self.theta_flux))
                               /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))
-
-
 
 
         cdef :
@@ -471,9 +469,12 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
 
-
-
-
+            double L
+            double weight, weight_store=-1.0
+            double [:,:] weight_array = np.empty((imax,jmax), dtype=np.double)
+            double theta_weighted, qt_weighted
+            double r = sqrt(0.2 * 1.0/pi * (6400.0**2))
+        print r
 
         # Get the scalar flux
         with nogil:
@@ -481,17 +482,41 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
                 for j in xrange(jmax):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
+
+                    L = sqrt(((Gr.xl_half[i] - 3200.0)/r)**2.0 + ((Gr.yl_half[j] - 3200.0)/r)**2.0)
+                    if L > 1.0:
+                        weigth = 0.0
+                    else:
+                        weight =  2.5* (cos(pi * L) + 1.0)/2.0
+
+                    if TS.t > 600:
+                        weight = 0.0
+
+                    #with gil:
+                    #    weight_store = fmax(weight,weight_store)
+                    #self.qt_flux[ij] =  22.45e-3
                     self.friction_velocity[ij] = self.ustar_
-                    self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux[ij], Ref.p0_half[gw],
+                    theta_weighted = self.theta_flux * weight
+                    self.qt_flux[ij] = 5.2e-5 * weight
+                    qt_weighted = self.qt_flux[ij]
+                    self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(theta_weighted,  qt_weighted, Ref.p0_half[gw],
                                                                         DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
-                    if(fabs(3200 - Gr.xl_half[i])>= 1500.0  or fabs(3200 - Gr.yl_half[i]) >= 1500.0 ):
-                        self.qt_flux[ij] *= 0.0
-                        self.s_flux[ij] *= 0.0
-                    if TS.t >= 500.0:
-                        self.qt_flux[ij] *= 0.0
-                        self.s_flux[ij] *= 0.0
 
 
+                    weight_array[i,j] = weight
+
+                    #if(fabs(3200 - Gr.xl_half[i])>= 1500.0  or fabs(3200 - Gr.yl_half[j]) >= 1500.0 ):
+                    #    self.qt_flux[ij] *= 0.0
+                    #    self.s_flux[ij] *= 0.0
+                    #if TS.t >= 1200.0:
+                    #    self.qt_flux[ij] *= 0.0
+                    #    self.s_flux[ij] *= 0.0
+
+
+        #import pylab as plt
+        #plt.contourf(weight_array)
+        #plt.colorbar()
+        #plt.show()
 
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')

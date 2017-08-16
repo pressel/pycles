@@ -393,13 +393,14 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
         #Set u profile
         if Gr.zp_half[k] <= 700.0:
-            u[k] = -8.75
+            u[k] = 0.5#-8.75
         if Gr.zp_half[k] > 700.0:
-            u[k] = -8.75 + (Gr.zp_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
+            u[k] = 0.5#-8.75 + (Gr.zp_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
 
     #Set velocities for Galilean transformation
     RS.v0 = 0.0
-    RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
+    RS.u0 = 0.0 #(np.amax(u)+np.amin(u))
+
 
     #Now loop and set the initial condition
     #First set the velocities
