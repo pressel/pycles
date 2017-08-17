@@ -471,12 +471,13 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
 
             double L
             double weight, weight_store=-1.0
-            double [:,:] weight_array = np.empty((imax,jmax), dtype=np.double)
+            double [:,:] weight_array = np.zeros((imax,jmax), dtype=np.double)
             double theta_weighted, qt_weighted
             double r = sqrt(0.2 * 1.0/pi * (6400.0**2))
-        print r
+       # print r
 
         # Get the scalar flux
+        #print np.array(Gr.yl_half[:]), np.shape(np.array(Gr.yl_half[:])), imax, jmax, Gr.dims.indx_lo_g[1]
         with nogil:
             for i in xrange(imax):
                 for j in xrange(jmax):
@@ -485,9 +486,10 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
 
                     L = sqrt(((Gr.xl_half[i] - 3200.0)/r)**2.0 + ((Gr.yl_half[j] - 3200.0)/r)**2.0)
                     if L > 1.0:
-                        weigth = 0.0
+                        weight = 0.0
                     else:
-                        weight =  2.5* (cos(pi * L) + 1.0)/2.0
+                        weight =  1.0 #2.5* (cos(pi * L) + 1.0)/2.0
+
 
                     if TS.t > 600:
                         weight = 0.0
@@ -502,7 +504,9 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
                     self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(theta_weighted,  qt_weighted, Ref.p0_half[gw],
                                                                         DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
 
-
+                    #with gil:
+                    #    if weight > 1.0:
+                    #        print i, j, weight, L
                     weight_array[i,j] = weight
 
                     #if(fabs(3200 - Gr.xl_half[i])>= 1500.0  or fabs(3200 - Gr.yl_half[j]) >= 1500.0 ):
@@ -512,7 +516,7 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
                     #    self.qt_flux[ij] *= 0.0
                     #    self.s_flux[ij] *= 0.0
 
-
+        #print np.max(weight_array)
         #import pylab as plt
         #plt.contourf(weight_array)
         #plt.colorbar()

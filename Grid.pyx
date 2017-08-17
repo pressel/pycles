@@ -183,15 +183,15 @@ cdef class Grid:
 
         #Extract just the local components of the height coordinate
         self.zl = self.extract_local_ghosted(self.z,2)
-        self.zl_half = self.extract_local_ghosted(self.zl,2)
+        self.zl_half = self.extract_local_ghosted(self.z_half,2)
 
         #Extract just the local components of the height coordinate
         self.xl = self.extract_local_ghosted(self.x,0)
-        self.xl_half = self.extract_local_ghosted(self.xl,0)
+        self.xl_half = self.extract_local_ghosted(self.x_half,0)
 
         #Extract just the local components of the height coordinate
         self.yl = self.extract_local_ghosted(self.y,1)
-        self.yl_half = self.extract_local_ghosted(self.yl,1)
+        self.yl_half = self.extract_local_ghosted(self.y_half,1)
 
         #Now set up the tranformation arrays
 
@@ -270,7 +270,7 @@ cdef class Grid:
         pass
 
     cpdef extract_local_ghosted(self,double [:] global_array, int dim):
-        cdef int start = self.dims.indx_lo_g[dim]
+        cdef int start = max(0, self.dims.indx_lo_g[dim] - 2*self.dims.gw)
         cdef int end = self.dims.indx_lo_g[dim] + self.dims.nlg[dim]
         #Force a copy with the return statement
         return np.array(global_array[start:end],dtype=np.double)
