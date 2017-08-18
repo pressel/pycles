@@ -363,8 +363,8 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         Py_ssize_t count
 
-        theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1  * 0.0
-        qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0 * 0.0
+        theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1  *0.1
+        qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0 * 0.1
 
     for k in xrange(Gr.dims.nlg[2]):
 
@@ -393,9 +393,9 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
         #Set u profile
         if Gr.zp_half[k] <= 700.0:
-            u[k] = 0.5#-8.75
+            u[k] = 0.01#-8.75
         if Gr.zp_half[k] > 700.0:
-            u[k] = 0.5#-8.75 + (Gr.zp_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
+            u[k] = 0.01#-8.75 + (Gr.zp_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
 
     #Set velocities for Galilean transformation
     RS.v0 = 0.0

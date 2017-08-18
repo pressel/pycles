@@ -474,6 +474,7 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
             double [:,:] weight_array = np.zeros((imax,jmax), dtype=np.double)
             double theta_weighted, qt_weighted
             double r = sqrt(0.2 * 1.0/pi * (6400.0**2))
+        r = 640.0
        # print r
 
         # Get the scalar flux
@@ -484,13 +485,11 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
                     ijk = i * istride + j * jstride + gw
                     ij = i * istride_2d + j
 
-                    L = sqrt(((Gr.xl_half[i] - 3200.0)/r)**2.0 + ((Gr.yl_half[j] - 3200.0)/r)**2.0)
+                    L = sqrt(((3200.0 - 3200.0)/r)**2.0 + ((Gr.yl_half[j]  - 3200.0)/r)**2.0)
                     if L > 1.0:
                         weight = 0.0
                     else:
-                        weight =  1.0 #2.5* (cos(pi * L) + 1.0)/2.0
-
-
+                        weight = 5.0* (cos(pi * L) + 1.0)/2.0
                     if TS.t > 600:
                         weight = 0.0
 
