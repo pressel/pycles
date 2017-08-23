@@ -470,7 +470,7 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
             Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
 
             double L
-            double weight, weight_store=-1.0
+            double weight, weight_factor, weight_store=-1.0
             double [:,:] weight_array = np.zeros((imax,jmax), dtype=np.double)
             double theta_weighted, qt_weighted
             double r = sqrt(0.2 * 1.0/pi * (6400.0**2))
@@ -489,9 +489,15 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
                     if L > 1.0:
                         weight = 0.0
                     else:
-                        weight = 5.0* (cos(pi * L) + 1.0)/2.0
-                    if TS.t > 600:
-                        weight = 0.0
+                        weight = 5.0 #5.0* (cos(pi * L) + 1.0)/2.0
+
+                    if TS.t % 3600.0 <= 600.0:
+                        weight_factor = 1.0
+                    else:
+                        weight_factor = 0.0
+
+                    weight = weight * weight_factor
+
 
                     #with gil:
                     #    weight_store = fmax(weight,weight_store)

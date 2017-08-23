@@ -120,7 +120,7 @@ cdef class NetCDFIO_Stats:
 
         ts_grp = root_grp.createGroup('timeseries')
         ts_grp.createDimension('t', None)
-        ts_grp.createVariable('t', 'f8', ('t'), chunksizes=(24*60,))
+        ts_grp.createVariable('t', 'f8', ('t'))
 
         root_grp.close()
         return
@@ -130,7 +130,7 @@ cdef class NetCDFIO_Stats:
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             profile_grp = root_grp.groups['profiles']
-            new_var = profile_grp.createVariable(var_name, 'f8', ('t', 'z'), chunksizes=(60,Gr.dims.n[2]))
+            new_var = profile_grp.createVariable(var_name, 'f8', ('t', 'z'))
 
             #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
             if units is not None:
