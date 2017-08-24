@@ -243,39 +243,22 @@ class Simulation3d:
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.open_files(self.Pa)
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
-                print 'Micro'
                 self.Micro.stats_io(self.Gr, self.Ref, self.Th, self.PV, self.DV, self.StatsIO, self.Pa) # do Micro.stats_io prior to DV.stats_io to get sedimentation velocity only in output
-                print 'PV'
                 self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
-                print 'DV'
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
-                print 'FO'
                 self.Fo.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-                print 'TH'
                 self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-                print "Sur"
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
-                print 'SGS'
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
-                print 'SA'
                 self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-                print 'MA'
                 self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-                print 'SD'
                 self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
-                print 'MD'
                 self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
-                print 'KE'
                 self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
-                print 'TR'
                 self.Tr.stats_io( self.Gr, self.StatsIO, self.Pa)
-                print 'RA'
                 self.Ra.stats_io(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
-                print 'BUDG'
                 self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
-                print 'AUX'
                 self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
-                print 'CLOSE'
                 self.StatsIO.close_files(self.Pa)
                 self.Pa.root_print('Finished Doing StatsIO')
 
@@ -329,34 +312,21 @@ class Simulation3d:
         self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
 
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
-        print 'FO'
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        print 'TH'
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Micro.stats_io(self.Gr, self.Ref, self.Th, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
-        print 'SGS'
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke ,self.StatsIO, self.Pa)
-        print 'SA'
         self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-        print 'MA'
         self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-        print 'SD'
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
-        print 'MD'
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
-        print 'KE'
         self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
-        print 'Tr'
         self.Tr.stats_io( self.Gr, self.StatsIO, self.Pa)
-        print 'Ra'
         self.Ra.stats_io(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
-        print 'Budg'
         self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
-        print 'Aux'
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
-        print 'Close'
         self.StatsIO.close_files(self.Pa)
         self.Pa.root_print('Finished Forcing Initial io')
         return
