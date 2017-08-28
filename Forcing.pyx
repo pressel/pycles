@@ -175,8 +175,8 @@ cdef class ForcingBomex:
 
 
         #Apply Coriolis Forcing
-        #large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &PV.tendencies[u_shift],
-        #               &PV.tendencies[v_shift], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
+        large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &PV.tendencies[u_shift],
+                       &PV.tendencies[v_shift], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
 
         if 's' in PV.name_index:
             s_shift = PV.get_varshift(Gr, 's')

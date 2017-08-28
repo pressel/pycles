@@ -491,11 +491,13 @@ cdef class SurfaceBomexImpulse(SurfaceBase):
                     else:
                         weight = 5.0* (cos(pi * L) + 1.0)/2.0
 
-                    if TS.t % 3600.0 <= 600.0:
-                        weight_factor = 1.0
-                    else:
-                        weight_factor = 0.0
-
+                    weight = 1.0 
+                    #iif TS.t % 3600.0 <= 1200.0:
+                    #    weight_factor = 1.0
+                    #else:
+                    #    weight_factor = 0.0
+                     
+                    weight_factor = 0.01 + 0.99 *(cos(2.0*pi * TS.t /3600.0) + 1.0)/2.0  
                     weight = weight * weight_factor
 
 
