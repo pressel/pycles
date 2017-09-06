@@ -368,11 +368,11 @@ cdef class UpdraftTracers:
                         else:
                             self.updraft_indicator[ijk] = 0.0
                         env_indicator[ijk] = 1.0 - self.updraft_indicator[ijk]
-            for i in range(Gr.dims.nlg[0]):
+            for i in range(imin,imax):
                 ishift = i * istride
-                for j in range(Gr.dims.nlg[1]):
+                for j in range(jmin,jmax):
                     jshift = j * jstride
-                    for k in range(Gr.dims.gw-1,Gr.dims.nlg[2]):
+                    for k in range(kmin,kmax):
                         ijk = ishift + jshift + k
                         u_half[ijk] = 0.5 * (PV.values[u_shift+ijk-istride] + PV.values[u_shift+ijk])
                         v_half[ijk] = 0.5 * (PV.values[v_shift+ijk-jstride] + PV.values[v_shift+ijk])
