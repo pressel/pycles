@@ -20,6 +20,8 @@ cdef class PrognosticVariables:
     cdef:
         dict name_index
         dict units
+        dict nice_name
+        dict desc
         list index_name
         Py_ssize_t nv
         Py_ssize_t nv_scalars
@@ -31,7 +33,7 @@ cdef class PrognosticVariables:
         cdef long [:] velocity_directions
         list velocity_names_directional
 
-    cpdef add_variable(self,name,units,bc_type,var_type,ParallelMPI.ParallelMPI Pa)
+    cpdef add_variable(self, name,units, nice_name, desc, bc_type, var_type, ParallelMPI.ParallelMPI Pa)
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cdef:
         void update_all_bcs(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)

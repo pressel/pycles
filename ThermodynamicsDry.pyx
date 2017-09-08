@@ -43,22 +43,42 @@ cdef class ThermodynamicsDry:
 
     cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        PV.add_variable('s','m/s',"sym","scalar",Pa)
+        PV.add_variable('s', 'J kg^-1 K^-1', 's', 'specific entropy', "sym", "scalar", Pa)
 
         #Initialize class member arrays
-        DV.add_variables('buoyancy','--','sym',Pa)
-        DV.add_variables('alpha','--','sym',Pa)
-        DV.add_variables('temperature','K','sym',Pa)
-        DV.add_variables('buoyancy_frequency','1/s','sym',Pa)
-        DV.add_variables('theta','K','sym',Pa)
+        DV.add_variables('buoyancy' ,r'ms^{-1}', r'b', 'buoyancy','sym', Pa)
+        DV.add_variables('alpha', r'm^3kg^-2', r'\alpha', 'specific volume', 'sym', Pa)
+        DV.add_variables('temperature', r'K', r'T', r'temperature', 'sym', Pa)
+        DV.add_variables('buoyancy_frequency', r's^-1', r'N', 'buoyancy frequencyt', 'sym', Pa)
+        DV.add_variables('theta', r'K', r'\theta','potential tremperature', 'sym', Pa)
 
 
         #Add statistical output
-        NS.add_profile('thetas_mean',Gr,Pa)
-        NS.add_profile('thetas_mean2',Gr,Pa)
-        NS.add_profile('thetas_mean3',Gr,Pa)
-        NS.add_profile('thetas_max',Gr,Pa)
-        NS.add_profile('thetas_min',Gr,Pa)
+        units = r'K'
+        nice_name = r'\overline{\theta_{s}}'
+        desc = r'horizontal mean entropy potential temperature'
+        NS.add_profile('thetas_mean' ,Gr ,Pa, units=units, nice_name = nice_name, desc=desc)
+
+        units = r'K^2'
+        nice_name = r'\overline{\theta_{s}^2}'
+        desc = r'horizontal mean squared entropy potential temperature'
+        NS.add_profile('thetas_mean2', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+
+        units = r'K^3'
+        nice_name = r'\overline{\theta_{s}^3}'
+        desc = r'horizontal mean cubed entropy potential temperature'
+        NS.add_profile('thetas_mean3', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+
+        units = r'K'
+        nice_name = r'\max\left(\theta_s\right)'
+        desc = r'horizontal max entropy potential temperature'
+        NS.add_profile('thetas_max', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+
+        units = r'K'
+        nice_name = r'\min\left(\theta_s\right)'
+        desc = r'horizontal min entropy potential temperature'
+        NS.add_profile('thetas_min',Gr,Pa, units=units, nice_name = nice_name, desc=desc)
+
         NS.add_ts('thetas_max',Gr,Pa)
         NS.add_ts('thetas_min',Gr,Pa)
 

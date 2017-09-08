@@ -174,7 +174,7 @@ cdef class TKE:
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        PV.add_variable('e', 'm^2/s^2', 'sym','scalar',Pa)
+        PV.add_variable('e', 'm^2/s^2', 'e', 'turbulence kinetic energy', 'sym','scalar',Pa)
 
 
         self.Z_Pencil = ParallelMPI.Pencil()

@@ -20,21 +20,25 @@ cdef class PrognosticVariables:
         self.name_index = {}
         self.index_name = []
         self.units = {}
+        self.nice_name = {}
+        self.desc = {}
         self.nv = 0
         self.nv_scalars = 0
         self.nv_velocities = 0
-        self.bc_type = np.array([],dtype=np.double,order='c')
-        self.var_type = np.array([],dtype=np.int,order='c')
+        self.bc_type = np.array([], dtype=np.double, order='c')
+        self.var_type = np.array([], dtype=np.int, order='c')
         self.velocity_directions = np.zeros((Gr.dims.dims,),dtype=np.int,order='c')
         self.velocity_names_directional = ["" for dim in range(Gr.dims.dims)]
         return
 
-    cpdef add_variable(self,name,units,bc_type,var_type,ParallelMPI.ParallelMPI Pa):
+    cpdef add_variable(self, name, units, nice_name, desc, bc_type, var_type, ParallelMPI.ParallelMPI Pa):
 
         #Store names and units
         self.name_index[name] = self.nv
         self.index_name.append(name)
         self.units[name] = units
+        self.nice_name[name] = nice_name
+        self.desc[name] = desc
         self.nv = len(self.name_index.keys())
 
         #Add bc type to array
@@ -78,26 +82,25 @@ cdef class PrognosticVariables:
         Pa.root_print('Setting up statistical output files for Prognostic Variables')
         for var_name in self.name_index.keys():
             #Add mean profile
-            NS.add_profile(var_name+'_mean',Gr,Pa)
-
+            NS.add_profile(var_name+'_mean', Gr, Pa,  units=self.units[var_name], nice_name = r'\overline{' + self.nice_name[var_name] + r'}', desc=self.desc[var_name] + ' hoizontal domain mean (prognostic variable)')
             if var_name == 'u' or var_name == 'v':
-                NS.add_profile(var_name+'_translational_mean',Gr,Pa)
+                NS.add_profile(var_name+'_translational_mean',Gr, Pa, units = self.units[var_name], nice_name = var_name + '+'  + var_name + '_0', desc = var_name + 'plus domain translational mean')
 
             #Add mean of squares profile
-            NS.add_profile(var_name+'_mean2',Gr,Pa)
+            NS.add_profile(var_name+'_mean2',Gr ,Pa, units = '('+self.units[var_name]+')^2',nice_name = r'\overline{' + var_name + r'^2}', desc = var_name + '^2 horizontal domain mean (prognostic variable)')
             #Add mean of cubes profile
-            NS.add_profile(var_name+'_mean3',Gr,Pa)
+            NS.add_profile(var_name+'_mean3', Gr, Pa, units = '('+self.units[var_name]+')^3',nice_name = r'\overline{' + self.nice_name[var_name] + r'^3}', desc = var_name + '^3 horizontal domain mean (prognostic variable)')
             #Add max profile
-            NS.add_profile(var_name+'_max',Gr,Pa)
+            NS.add_profile(var_name+'_max', Gr, Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' horzontal domain maximum (prognostic variable)')
             #Add min profile
-            NS.add_profile(var_name+'_min',Gr,Pa)
+            NS.add_profile(var_name+'_min', Gr, Pa, units=self.units[var_name], nice_name = r'\min(' + var_name + r')', desc = var_name + ' horzontal domain minimum (prognostic variable)')
             #Add max ts
-            NS.add_ts(var_name+'_max',Gr,Pa)
+            NS.add_ts(var_name+'_max', Gr, Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' domain maximum (prognostic variable)')
             #Add min ts
-            NS.add_ts(var_name+'_min',Gr,Pa)
+            NS.add_ts(var_name+'_min',Gr , Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' domain minimum (prognostic variable)')
 
         if 'qt' in self.name_index.keys() and 's' in self.name_index.keys():
-            NS.add_profile('qt_s_product_mean', Gr, Pa)
+            NS.add_profile('qt_s_product_mean', Gr, Pa, units = r'J kg^-1 K^-1', nice_name = r'\overline{s q_t}', desc = 'domain horizontal mean of product of s and qt')
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS ,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -107,7 +110,6 @@ cdef class PrognosticVariables:
 
         for var_name in self.name_index.keys():
             var_shift = self.get_varshift(Gr,var_name)
-
 
             #Compute and write mean
             tmp = Pa.HorizontalMean(Gr,&self.values[var_shift])
@@ -269,6 +271,8 @@ cdef class PrognosticVariables:
         Re.restart_data['PV'] = {}
         Re.restart_data['PV']['name_index'] = self.name_index
         Re.restart_data['PV']['units'] = self.units
+        Re.restart_data['PV']['nice_name'] = self.nice_name
+        Re.restart_data['PV']['desc'] = self.desc
         Re.restart_data['PV']['index_name'] = self.index_name
         Re.restart_data['PV']['nv'] = self.nv
         Re.restart_data['PV']['nv_scalars'] = self.nv_scalars
