@@ -580,8 +580,8 @@ cdef class Microphysics_T_Liquid:
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        DV.add_variables('dqtdt_precip', 'kg/kg/s', 'sym', Pa)
-        DV.add_variables('dsdt_precip', '', 'sym', Pa)
+        DV.add_variables('dqtdt_precip', 'kg/kg/s', 'dqtdt_precip', 'qt precip source','sym', Pa)
+        DV.add_variables('dsdt_precip', '','dsdt_precip', 's precip source', 'sym', Pa)
 
 
         return

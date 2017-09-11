@@ -132,19 +132,19 @@ cdef class Microphysics_Arctic_1M:
         self.evap_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
         #Add precipitation variables
-        PV.add_variable('qrain', 'kg kg^-1', "sym", "scalar", Pa)
-        PV.add_variable('qsnow', 'kg kg^-1', "sym", "scalar", Pa)
+        PV.add_variable('qrain', 'kg kg^-1', 'qrain', 'qrain', "sym", "scalar", Pa)
+        PV.add_variable('qsnow', 'kg kg^-1', "sym", 'qsnow', 'qsnow',"scalar", Pa)
 
         # add sedimentation velocities as diagnostic variables (the format has to be w_q)
-        DV.add_variables('w_qrain', 'm/s', 'sym', Pa)
-        DV.add_variables('w_qsnow', 'm/s', 'sym', Pa)
+        DV.add_variables('w_qrain', 'm/s', 'w_qrain', 'w_qrain', 'sym', Pa)
+        DV.add_variables('w_qsnow', 'm/s', 'w_qsnow', 'w_qsnow','sym', Pa)
 
         # add number concentrations as DV
-        DV.add_variables('nrain', '1/kg', 'sym', Pa)
-        DV.add_variables('nsnow', '1/kg', 'sym', Pa)
+        DV.add_variables('nrain', '1/kg','nrain','nrain', 'sym', Pa)
+        DV.add_variables('nsnow', '1/kg','nsnow','nsnow', 'sym', Pa)
 
         # add wet bulb temperature
-        DV.add_variables('temperature_wb', 'K', 'sym', Pa)
+        DV.add_variables('temperature_wb', 'K','temperature_wb','temperature_wb', 'sym', Pa)
 
         NS.add_profile('evap_rate', Gr, Pa)
         NS.add_profile('precip_rate', Gr, Pa)

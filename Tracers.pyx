@@ -81,11 +81,11 @@ cdef class UpdraftTracers:
             self.tracer_dict['lcl']['c_lcl_15']['timescale'] = 15.0 * 60.0
 
         for var in self.tracer_dict['surface'].keys():
-            PV.add_variable(var, '-', "sym", "scalar", Pa)
+            PV.add_variable(var, '-', var, var, "sym", "scalar", Pa)
 
         if self.lcl_tracers:
             for var in self.tracer_dict['lcl'].keys():
-                PV.add_variable(var, '-', "sym", "scalar", Pa)
+                PV.add_variable(var, '-', var, var, "sym", "scalar", Pa)
 
         NS.add_ts('grid_lcl', Gr, Pa )
 
@@ -233,17 +233,17 @@ cdef class PurityTracers:
         self.TracersUpdraft.initialize(Gr, PV, NS, Pa)
         # Here we need to add purity + origin info tracers for each of the updraft diagnostic tracers
         # To get this working, we assume only 15 min timescale diagnostic tracers
-        PV.add_variable('purity_srf', '-', "sym", "scalar", Pa)
-        PV.add_variable('time_srf', '-', "sym", "scalar", Pa)
-        PV.add_variable('qt_srf', '-', "sym", "scalar", Pa)
-        PV.add_variable('s_srf', '-', "sym", "scalar", Pa)
+        PV.add_variable('purity_srf', '-', 'purity_srf','purity_srf',"sym", "scalar", Pa)
+        PV.add_variable('time_srf', '-','time_srf','time_srf', "sym", "scalar", Pa)
+        PV.add_variable('qt_srf', '-','qt_srf','qt_srf', "sym", "scalar", Pa)
+        PV.add_variable('s_srf', '-', 's_srf','s_srf',"sym", "scalar", Pa)
 
         if self.TracersUpdraft.lcl_tracers:
 
-            PV.add_variable('purity_lcl', '-', "sym", "scalar", Pa)
-            PV.add_variable('time_lcl', '-', "sym", "scalar", Pa)
-            PV.add_variable('qt_lcl', '-', "sym", "scalar", Pa)
-            PV.add_variable('s_lcl', '-', "sym", "scalar", Pa)
+            PV.add_variable('purity_lcl', '-', 'purity_lcl','purity_lcl',"sym", "scalar", Pa)
+            PV.add_variable('time_lcl', '-','time_lcl','time_lcl', "sym", "scalar", Pa)
+            PV.add_variable('qt_lcl', '-','qt_lcl','qt_lcl', "sym", "scalar", Pa)
+            PV.add_variable('s_lcl', '-', 's_lcl','s_lcl',"sym", "scalar", Pa)
 
         return
 
