@@ -719,7 +719,7 @@ cdef class RadiationRRTM(RadiationBase):
         lw_absorber = np.where(lw_absorber>2.0, np.zeros_like(lw_absorber), lw_absorber)
         lw_ngas = lw_absorber.shape[1]
         lw_np = lw_absorber.shape[0]
-        print('trace gas')
+
 
         # 9 Gases: O3, CO2, CH4, N2O, O2, CFC11, CFC12, CFC22, CCL4
         # From rad_driver.f90, lines 546 to 552
@@ -730,7 +730,6 @@ cdef class RadiationRRTM(RadiationBase):
                 trace[0,:] = lw_absorber[:,i].reshape(1,lw_np)
             elif 'CO2' in gas_name:
                 trace[1,:] = lw_absorber[:,i].reshape(1,lw_np)*self.co2_factor*400.0/355.0
-                print('CO2')
             elif 'CH4' in gas_name:
                 trace[2,:] = lw_absorber[:,i].reshape(1,lw_np)
             elif 'N2O' in gas_name:
