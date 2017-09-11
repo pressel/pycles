@@ -181,11 +181,16 @@ class Simulation3d:
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 self.Pa.root_print('Budg.update')
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
+                self.Pa.root_print('Tr.update_cleanup' )
                 self.TS.update(self.Gr, self.PV, self.Pa)
+                self.Pa.root_print('TS.update')
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
+                self.Pa.root_print('Pr.update')
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
+                self.Pa.root_print("TS.adjust_timestep")
                 self.io()
+                self.Pa.root_print('io')
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
@@ -204,19 +209,20 @@ class Simulation3d:
             double restart_dt = 0.0
             double vis_dt = 0.0
             double min_dt = 0.0
+            double af = self.TS.acceleration_factor
 
         if self.TS.t > 0 and self.TS.rk_step == self.TS.n_rk_steps - 1:
             # Adjust time step for output if necessary
-            fields_dt = self.FieldsIO.last_output_time + self.FieldsIO.frequency - self.TS.t
-            stats_dt = self.StatsIO.last_output_time + self.StatsIO.frequency - self.TS.t
-            condstats_dt = self.CondStatsIO.last_output_time + self.CondStatsIO.frequency - self.TS.t
-            restart_dt = self.Restart.last_restart_time + self.Restart.frequency - self.TS.t
-            vis_dt = self.VO.last_vis_time + self.VO.frequency - self.TS.t
+            fields_dt = self.FieldsIO.last_output_time + self.FieldsIO.frequency/af - self.TS.t
+            stats_dt = self.StatsIO.last_output_time + self.StatsIO.frequency/af - self.TS.t
+            condstats_dt = self.CondStatsIO.last_output_time + self.CondStatsIO.frequency/af - self.TS.t
+            restart_dt = self.Restart.last_restart_time + self.Restart.frequency/af - self.TS.t
+            vis_dt = self.VO.last_vis_time + self.VO.frequency/af - self.TS.t
 
 
             dts = np.array([fields_dt, stats_dt, condstats_dt, restart_dt, vis_dt,
-                            self.TS.dt, self.TS.dt_max, self.VO.frequency, self.Restart.frequency,
-                            self.StatsIO.frequency, self.CondStatsIO.frequency, self.FieldsIO.frequency])
+                            self.TS.dt, self.TS.dt_max, self.VO.frequency/af, self.Restart.frequency/af,
+                            self.StatsIO.frequency/af, self.CondStatsIO.frequency/af, self.FieldsIO.frequency/af])
 
 
 
