@@ -133,7 +133,7 @@ cdef class Microphysics_Arctic_1M:
 
         #Add precipitation variables
         PV.add_variable('qrain', 'kg kg^-1', 'qrain', 'qrain', "sym", "scalar", Pa)
-        PV.add_variable('qsnow', 'kg kg^-1', "sym", 'qsnow', 'qsnow',"scalar", Pa)
+        PV.add_variable('qsnow', 'kg kg^-1', 'qsnow', 'qsnow',"sym", "scalar", Pa)
 
         # add sedimentation velocities as diagnostic variables (the format has to be w_q)
         DV.add_variables('w_qrain', 'm/s', 'w_qrain', 'w_qrain', 'sym', Pa)
