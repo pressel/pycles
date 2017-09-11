@@ -135,6 +135,7 @@ class Simulation3d:
         self.Damping.initialize(self.Gr, self.Ref)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
+        self.Pa.root_print('Simulation initialized')
 
 
         return
@@ -149,7 +150,9 @@ class Simulation3d:
         cdef int rk_step
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
+        self.Pa.root_print('First Th.update')
         self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV,  self.Sur, self.Pa)
+        self.Pa.root_print('Ra.initialize_profiles')
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
@@ -160,7 +163,9 @@ class Simulation3d:
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
+                self.Pa.root_print('Th.update')
                 self.Micro.update(self.Gr, self.Ref, self.Th, PV_, DV_, self.TS, self.Pa )
+                self.Pa.root_print('Micro.update')
                 self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.TS,self.Pa)
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
@@ -170,8 +175,11 @@ class Simulation3d:
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
+                self.Pa.root_print('Fo.update')
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
+                self.Pa.root_print('Ra.update')
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
+                self.Pa.root_print('Budg.update')
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
