@@ -99,6 +99,7 @@ class Simulation3d:
         self.SD.initialize(self.Gr,self.PV,self.DV,self.StatsIO,self.Pa)
         self.MD.initialize(self.Gr,self.PV,self.DV,self.StatsIO, self.Pa)
         self.TS.initialize(namelist,self.PV,self.Pa)
+        print("acceleration factor ", self.TS.acceleration_factor)
         self.Sur.initialize(namelist, self.Gr, self.Ref,  self.StatsIO, self.Pa)
 
 

@@ -13,7 +13,7 @@ cdef class TimeStepping:
         public double dt_max
         public double dt_initial
         public double t_max
-        double acceleration_factor
+        public double acceleration_factor
         double [:,:] value_copies
         double [:,:] tendency_copies
         public Py_ssize_t rk_step
