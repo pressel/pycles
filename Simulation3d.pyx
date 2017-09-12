@@ -99,8 +99,10 @@ class Simulation3d:
         self.SD.initialize(self.Gr,self.PV,self.DV,self.StatsIO,self.Pa)
         self.MD.initialize(self.Gr,self.PV,self.DV,self.StatsIO, self.Pa)
         self.TS.initialize(namelist,self.PV,self.Pa)
-        print("acceleration factor ", self.TS.acceleration_factor)
+        self.Pa.root_print("acceleration factor ", self.TS.acceleration_factor)
         self.Sur.initialize(namelist, self.Gr, self.Ref,  self.StatsIO, self.Pa)
+        self.Pa.barrier()
+        self.Pa.root_print('going to restart')
 
 
         if self.Restart.is_restart_run:
@@ -116,12 +118,16 @@ class Simulation3d:
             self.Ref.init_from_restart(self.Gr, self.Restart, self.StatsIO, self.Pa)
             self.PV.init_from_restart(self.Gr, self.Restart)
             self.Sur.init_from_restart(self.Restart)
+            self.Pa.root_print('Restart check 1')
             self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']
             self.CondStatsIO.last_output_time = self.Restart.restart_data['last_condstats_output']
             self.FieldsIO.last_output_time = self.Restart.restart_data['last_fields_output']
             self.Restart.last_restart_time = self.Restart.restart_data['last_restart_time']
             self.VO.last_vis_time = self.Restart.restart_data['last_vis_time']
             self.Restart.free_memory()
+            self.Pa.barrier()
+            self.Pa.root_print('Restart completed')
+            self.Pa.barrier()
         else:
             self.Pa.root_print('This is not a restart run!')
             SetInitialConditions = InitializationFactory(namelist)
@@ -136,7 +142,9 @@ class Simulation3d:
         self.Damping.initialize(self.Gr, self.Ref)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
+        self.Pa.barrier()
         self.Pa.root_print('Simulation initialized')
+        self.Pa.barrier()
 
 
         return
@@ -151,8 +159,10 @@ class Simulation3d:
         cdef int rk_step
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
+        self.Pa.barrier()
         self.Pa.root_print('First Th.update')
         self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV,  self.Sur, self.Pa)
+        self.Pa.barrier()
         self.Pa.root_print('Ra.initialize_profiles')
 
         #Do IO if not a restarted run
@@ -180,19 +190,26 @@ class Simulation3d:
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Pa.root_print('Fo.update')
+                self.Pa.barrier()
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Pa.root_print('Ra.update')
+                self.Pa.barrier()
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 self.Pa.root_print('Budg.update')
+                self.Pa.barrier()
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.Pa.root_print('Tr.update_cleanup' )
+                self.Pa.barrier()
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 self.Pa.root_print('TS.update')
+                self.Pa.barrier()
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
                 self.Pa.root_print('Pr.update')
+                self.Pa.barrier()
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.Pa.root_print("TS.adjust_timestep")
+                self.Pa.barrier()
                 self.io()
                 self.Pa.root_print('io')
                 self.Pa.barrier()
