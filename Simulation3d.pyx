@@ -101,7 +101,7 @@ class Simulation3d:
         self.TS.initialize(namelist,self.PV,self.Pa)
         self.Pa.root_print("acceleration factor "+ str( self.TS.acceleration_factor))
         self.Sur.initialize(namelist, self.Gr, self.Ref,  self.StatsIO, self.Pa)
-        self.Pa.barrier()
+        self.Pa.barrier2()
         self.Pa.root_print('going to restart')
 
 
@@ -125,9 +125,9 @@ class Simulation3d:
             self.Restart.last_restart_time = self.Restart.restart_data['last_restart_time']
             self.VO.last_vis_time = self.Restart.restart_data['last_vis_time']
             self.Restart.free_memory()
-            self.Pa.barrier()
+            self.Pa.barrier2()
             self.Pa.root_print('Restart completed')
-            self.Pa.barrier()
+            self.Pa.barrier2()
         else:
             self.Pa.root_print('This is not a restart run!')
             SetInitialConditions = InitializationFactory(namelist)
@@ -142,9 +142,9 @@ class Simulation3d:
         self.Damping.initialize(self.Gr, self.Ref)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
-        self.Pa.barrier()
+        self.Pa.barrier2()
         self.Pa.root_print('Simulation initialized')
-        self.Pa.barrier()
+        self.Pa.barrier2()
 
 
         return
@@ -159,10 +159,10 @@ class Simulation3d:
         cdef int rk_step
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
-        self.Pa.barrier()
+        self.Pa.barrier2()
         self.Pa.root_print('First Th.update')
         self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV,  self.Sur, self.Pa)
-        self.Pa.barrier()
+        self.Pa.barrier2()
         self.Pa.root_print('Ra.initialize_profiles')
 
         #Do IO if not a restarted run
@@ -173,13 +173,13 @@ class Simulation3d:
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 self.Pa.root_print('Th.update')
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 self.Micro.update(self.Gr, self.Ref, self.Th, PV_, DV_, self.TS, self.Pa )
                 self.Pa.root_print('Micro.update')
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.TS,self.Pa)
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
@@ -190,29 +190,29 @@ class Simulation3d:
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
                 self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Pa.root_print('Fo.update')
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Pa.root_print('Ra.update')
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 self.Pa.root_print('Budg.update')
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.Pa.root_print('Tr.update_cleanup' )
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 self.Pa.root_print('TS.update')
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
                 self.Pa.root_print('Pr.update')
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.Pa.root_print("TS.adjust_timestep")
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 self.io()
                 self.Pa.root_print('io')
-                self.Pa.barrier()
+                self.Pa.barrier2()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +

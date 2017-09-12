@@ -94,6 +94,14 @@ cdef class ParallelMPI:
         mpi.MPI_Barrier(self.comm_world)
         return
 
+    cpdef barrier2(self):
+        '''
+        Call MPI_Barrier on global MPI communicator.
+        :return:
+        '''
+        mpi.MPI_Barrier(self.comm_world)
+        return
+
     cdef void create_sub_communicators(self):
         '''
         :return: Sets up cartesian sub topologies from cart_comm_world.

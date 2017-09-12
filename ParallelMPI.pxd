@@ -40,6 +40,7 @@ cdef class ParallelMPI:
 
     cpdef root_print(self, txt_output)
     cpdef kill(self)
+    cpdef barrier2(self)
 
 cdef class Pencil:
 
