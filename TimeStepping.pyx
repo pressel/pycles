@@ -120,10 +120,10 @@ cdef class TimeStepping:
             Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
-            double [:] ut_mean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
-            double [:] vt_mean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
-            double [:] qtt_mean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
-            double [:] st_mean = Pa.HorizontalMean(Gr, &PV.values[s_shift])
+            double [:] ut_mean = Pa.HorizontalMean(Gr, &PV.tendencies[u_shift])
+            double [:] vt_mean = Pa.HorizontalMean(Gr, &PV.tendencies[v_shift])
+            double [:] qtt_mean = Pa.HorizontalMean(Gr, &PV.tendencies[qt_shift])
+            double [:] st_mean = Pa.HorizontalMean(Gr, &PV.tendencies[s_shift])
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
             Py_ssize_t i,j,k,ishift,jshift,ijk

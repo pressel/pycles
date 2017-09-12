@@ -163,10 +163,13 @@ class Simulation3d:
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
+                self.Pa.barrier()
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
                 self.Pa.root_print('Th.update')
+                self.Pa.barrier()
                 self.Micro.update(self.Gr, self.Ref, self.Th, PV_, DV_, self.TS, self.Pa )
                 self.Pa.root_print('Micro.update')
+                self.Pa.barrier()
                 self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.TS,self.Pa)
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
@@ -192,6 +195,7 @@ class Simulation3d:
                 self.Pa.root_print("TS.adjust_timestep")
                 self.io()
                 self.Pa.root_print('io')
+                self.Pa.barrier()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
