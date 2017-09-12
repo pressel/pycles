@@ -99,7 +99,7 @@ class Simulation3d:
         self.SD.initialize(self.Gr,self.PV,self.DV,self.StatsIO,self.Pa)
         self.MD.initialize(self.Gr,self.PV,self.DV,self.StatsIO, self.Pa)
         self.TS.initialize(namelist,self.PV,self.Pa)
-        self.Pa.root_print("acceleration factor ", self.TS.acceleration_factor)
+        self.Pa.root_print("acceleration factor "+ str( self.TS.acceleration_factor))
         self.Sur.initialize(namelist, self.Gr, self.Ref,  self.StatsIO, self.Pa)
         self.Pa.barrier()
         self.Pa.root_print('going to restart')
