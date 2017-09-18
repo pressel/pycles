@@ -896,8 +896,9 @@ cdef class RadiationRRTM(RadiationBase):
 
         cdef double [:] pressures = np.arange(25, 1015, 10) * 100.0
         pressures = np.array(pressures[::-1], dtype=np.double)
+        cdef double adjusted_rad_freq = self.radiation_frequency * TS.acceleration_factor
 
-        if self.radiation_frequency <= 0.0:
+        if adjusted_rad_freq <= 0.0:
             if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
                 self.reference_profile.update(pressures, Sur.T_surface)
                 self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
@@ -908,7 +909,7 @@ cdef class RadiationRRTM(RadiationBase):
                 self.reference_profile.update(pressures, Sur.T_surface)
                 self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
             self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
-            self.next_radiation_calculate = (TS.t//self.radiation_frequency + 1.0) * self.radiation_frequency
+            self.next_radiation_calculate = (TS.t//adjusted_rad_freq + 1.0) * adjusted_rad_freq
 
 
         cdef:

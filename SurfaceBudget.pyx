@@ -52,11 +52,11 @@ cdef class SurfaceBudget:
         try:
             self.water_depth_initial = namelist['surface_budget']['water_depth_initial']
         except:
-            self.water_depth_initial = 1.0
+            self.water_depth_initial = 0.1
         try:
             self.water_depth_final = namelist['surface_budget']['water_depth_final']
         except:
-            self.water_depth_final = 1.0
+            self.water_depth_final = 0.1
         try:
             self.water_depth_time = namelist['surface_budget']['water_depth_time']
         except:
@@ -107,7 +107,7 @@ cdef class SurfaceBudget:
 
             net_flux =  -self.ocean_heat_flux - Ra.srf_lw_up - Ra.srf_sw_up - mean_shf - mean_lhf + Ra.srf_lw_down + Ra.srf_sw_down
             tendency = net_flux/4.19e3/rho_liquid/self.water_depth
-            Sur.T_surface += tendency *TS.dt * TS.acceleration_factor
+            Sur.T_surface += tendency *TS.dt
 
         mpi.MPI_Bcast(&Sur.T_surface,count,mpi.MPI_DOUBLE,root, Pa.cart_comm_sub_z)
 
