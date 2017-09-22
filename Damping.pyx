@@ -358,6 +358,7 @@ cdef class RayleighGCMVarying:
         self.tend_flat_half = tend_flat
 
 
+
         #import pylab as plt
         #plt.plot(self.tend_flat_half, np.array(Gr.zpl_half)/1000.0,'-ok')
         #plt.plot(dt_tg_rad, zfull,'-ok')
@@ -464,11 +465,13 @@ cdef class RayleighGCMVarying:
                         pd = pd_c(p0,qt,qv)
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
-                        PV.tendencies[s_shift + ijk] =   (weight)*PV.tendencies[s_shift + ijk]
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.dt_qg_total[k]* (1.0 -weight) ) + (1.0 - weight) * (cpm_c(qt) * (self.dt_tg_total[k]))/t
-                        PV.tendencies[qt_shift + ijk] = self.dt_qg_total[k]* (1.0 - weight) + PV.tendencies[qt_shift + ijk] *(weight)
-                        #PV.tendencies[u_shift + ijk] = (weight) * PV.tendencies[u_shift + ijk]
-                        #PV.tendencies[v_shift + ijk] = (weight) * PV.tendencies[v_shift + ijk]
+                        #PV.tendencies[s_shift + ijk] =   (weight)*PV.tendencies[s_shift + ijk]
+                        #PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.dt_qg_total[k]* (1.0 -weight) ) + (1.0 - weight) * (cpm_c(qt) * (self.dt_tg_total[k]))/t
+                        #PV.tendencies[qt_shift + ijk] = self.dt_qg_total[k]* (1.0 - weight) + PV.tendencies[qt_shift + ijk] *(weight)
+                        PV.tendencies[s_shift + ijk] *= weight
+                        PV.tendencies[qt_shift + ijk] *= weight
+                        PV.tendencies[u_shift + ijk] = (weight) * PV.tendencies[u_shift + ijk]
+                        PV.tendencies[v_shift + ijk] = (weight) * PV.tendencies[v_shift + ijk]
 
         return
 

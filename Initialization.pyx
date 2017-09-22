@@ -1037,8 +1037,6 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         q_data[index] = q_data[index]/ (1.0 + q_data[index])
 
 
-
-
     # Get the surface information we need from the data file
     RS.Tg= data.variables['Tg'][0,0,0]
     RS.Pg= data.variables['Ps'][0,0,0]

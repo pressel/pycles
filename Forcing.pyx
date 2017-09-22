@@ -1291,6 +1291,8 @@ cdef class ForcingGCMVarying:
             temp_dt_hadv = input_data_tv['temp_hadv'][self.t_indx,::-1]
             temp_dt_fino = input_data_tv['temp_fino'][self.t_indx,::-1]
             shum_dt_hadv = input_data_tv['dt_qg_hadv'][self.t_indx,::-1]
+            temp_dt_resid = input_data_tv['temp_real1'][self.t_indx,::-1] - input_data_tv['temp_total'][self.t_indx,::-1]
+            shum_dt_resid = input_data_tv['dt_qg_real1'][self.t_indx,::-1] - input_data_tv['dt_qg_total'][self.t_indx,::-1]
             v_dt_tot = input_data_tv['dt_vg_real1'][self.t_indx,::-1]
             u_dt_tot = input_data_tv['dt_ug_real1'][self.t_indx,::-1]
             omega = input_data_tv['omega'][self.t_indx,::-1]
@@ -1303,7 +1305,9 @@ cdef class ForcingGCMVarying:
 
             self.temp_dt_hadv = interp_pchip(Gr.zp_half, zfull, temp_dt_hadv)
             self.temp_dt_fino = interp_pchip(Gr.zp_half, zfull, temp_dt_fino)
+            self.temp_dt_resid = interp_pchip(Gr.zp_half, zfull, temp_dt_resid)
             self.shum_dt_hadv = interp_pchip(Gr.zp_half, zfull, shum_dt_hadv)
+            self.shum_dt_resid = interp_pchip(Gr.zp_half, zfull, shum_dt_resid)
 
             self.rho_gcm = interp_pchip(Gr.zp, zfull, 1.0/alpha)
             self.rho_half_gcm = interp_pchip(Gr.zp_half, zfull, 1.0/alpha)
@@ -1366,9 +1370,9 @@ cdef class ForcingGCMVarying:
                         pv = pv_c(p0,qt,qv)
                         t  = DV.values[t_shift + ijk]
 
-                        PV.tendencies[s_shift + ijk] += (cpm_c(qt) * (self.temp_dt_hadv[k] + self.temp_dt_fino[k]))/t
-                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * ( self.shum_dt_hadv[k]  + qt_tend_tmp[ijk] )
-                        PV.tendencies[qt_shift + ijk] += (self.shum_dt_hadv[k] + qt_tend_tmp[ijk])
+                        PV.tendencies[s_shift + ijk] += (cpm_c(qt) * (self.temp_dt_resid[k] + self.temp_dt_hadv[k] + self.temp_dt_fino[k]))/t
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * ( self.shum_dt_resid[k] + self.shum_dt_hadv[k]  + qt_tend_tmp[ijk]  )
+                        PV.tendencies[qt_shift + ijk] +=(self.shum_dt_resid[k] + self.shum_dt_hadv[k] + qt_tend_tmp[ijk])
                         PV.tendencies[u_shift + ijk] += self.u_dt_tot[k]
                         PV.tendencies[v_shift + ijk] += self.v_dt_tot[k]
 
