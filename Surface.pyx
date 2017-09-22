@@ -912,7 +912,7 @@ cdef class SurfaceZGILS(SurfaceBase):
             co2_factor =  namelist['radiation']['RRTM']['co2_factor']
         except:
             co2_factor = 1.0
-        n_double_co2 = int(np.log2(co2_factor))
+        n_double_co2 = (np.log2(co2_factor))
 
         try:
             constant_sst = namelist['surface_budget']['constant_sst']
