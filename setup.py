@@ -19,7 +19,7 @@ if sys.platform == 'darwin':
     extensions = []
     extra_compile_args = []
     extra_compile_args += ['-O3', '-march=native', '-Wno-unused', '-Wno-#warnings']
-elif 'euler' in platform.node():
+elif 'eu' in platform.node():
     #Compile flags for euler @ ETHZ
     library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
     libraries = []
