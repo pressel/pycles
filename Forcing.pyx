@@ -908,6 +908,11 @@ cdef class ForcingZGILS:
         except:
             self.varsub = False
 
+        try:
+            self.divergence_factor = namelist['forcing']['divergence_factor']
+        except:
+            self.divergence_factor = 1.0
+
 
         # Current climate/control advection forcing values (modified below for climate change)
         self.t_adv_max = -1.2/86400.0  # K/s BL tendency of temperature due to horizontal advection
@@ -957,7 +962,7 @@ cdef class ForcingZGILS:
 
         cdef:
             Py_ssize_t k
-            double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g
+            double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g * self.divergence_factor
             double pv_star, qv_star, SST_1xCO2
 
         if self.reference_type == 'InteractiveRCE':

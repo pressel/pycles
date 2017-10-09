@@ -179,6 +179,7 @@ cdef class ForcingZGILS:
         double tau_relax_inverse
         double alpha_h
         double h_BL
+        double divergence_factor
         ClausiusClapeyron CC
         ForcingReferenceBase forcing_ref
 
