@@ -192,6 +192,13 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
 
+        try:
+            self.RH_subtrop = namelist['forcing']['RH_subtropical']
+        except:
+            self.RH_subtrop = 0.3
+        print('RH_subtropical', self.RH_subtrop)
+
+
         # Radiation parameters
         #--Namelist options related to gas concentrations
         try:
@@ -449,7 +456,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.dt_rce  =3600.0  #1 hr?
         self.RH_surf = 0.7 # check this
         self.RH_tropical = 0.7
-        self.RH_subtrop = 0.3
+
 
         # pressure coordinates
         self.nlayers = 100
