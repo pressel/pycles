@@ -845,6 +845,9 @@ def Isdac():
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     namelist['microphysics']['n0_ice'] = 1.0e7
 
+    namelist['forcing'] = {}
+    namelist['forcing']['merra2'] = True
+
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] = {}
