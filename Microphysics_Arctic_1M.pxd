@@ -48,6 +48,23 @@ cdef inline double lambda_Hu2010(double T) nogil:
         2.39e-4 * TC * TC * TC * TC + 2.87e-6 * TC * TC * TC * TC * TC
     return 1.0 / (1.0 + exp(-p))
 
+cdef inline double lambda_Cesana(double T) nogil:
+    #Emperical polynomial derived from Greg Cesana based on CALIPSO-GOCCP for the Arctic ocean
+    #Night time only observations of cloud phase
+    cdef:
+        double TC = T - 273.15
+        double p
+
+    if -40.0 <= TC < 0.0:
+        p = 0.4847323 + 0.0313655*TC + 0.001268696*TC*TC - 0.0000225937*TC*TC*TC - 6.731156e-7*TC*TC*TC*TC
+    elif TC >= 0.0:
+        p = 0.0
+    else:
+        p = 1.0
+
+    return 1.0 - p
+
+
 cdef inline double lambda_logistic(double T) nogil:
     #Cubic logistic function fitted to the Hu et al. (2009) expression
     #(Temperature is in Kelvin)

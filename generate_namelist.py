@@ -842,7 +842,8 @@ def Isdac():
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic_1M'
-    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    # namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['phase_partitioning'] = 'Cesana'
     namelist['microphysics']['n0_ice'] = 1.0e7
 
     namelist['forcing'] = {}
