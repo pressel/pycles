@@ -12,6 +12,10 @@ cdef class RadiationBase:
     cdef:
         double [:] heating_rate
         double [:] dTdt_rad
+        double [:] uflux_lw
+        double [:] dflux_lw
+        double [:] uflux_sw
+        double [:] dflux_sw
         ParallelMPI.Pencil z_pencil
         double srf_lw_down
         double srf_lw_up
@@ -21,6 +25,8 @@ cdef class RadiationBase:
         double toa_lw_up
         double toa_sw_down
         double toa_sw_up
+
+
 
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

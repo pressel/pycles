@@ -62,9 +62,18 @@ cdef class RadiationBase:
         self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
         self.dTdt_rad = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
+        self.uflux_lw = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.dflux_lw = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.uflux_sw = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.dflux_sw = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+
         NS.add_profile('radiative_heating_rate', Gr, Pa)
         NS.add_profile('radiative_entropy_tendency', Gr, Pa)
         NS.add_profile('radiative_temperature_tendency',Gr, Pa)
+        NS.add_profile('lw_flux_up', Gr, Pa)
+        NS.add_profile('lw_flux_down', Gr, Pa)
+        NS.add_profile('sw_flux_up', Gr, Pa)
+        NS.add_profile('sw_flux_down', Gr,Pa)
         NS.add_ts('srf_lw_flux_up', Gr, Pa)
         NS.add_ts('srf_lw_flux_down', Gr, Pa)
         NS.add_ts('srf_sw_flux_up', Gr, Pa)
@@ -125,6 +134,17 @@ cdef class RadiationBase:
         tmp = Pa.HorizontalMean(Gr, &self.dTdt_rad[0])
         NS.write_profile('radiative_temperature_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+        tmp = Pa.HorizontalMean(Gr, &self.uflux_lw[0])
+        NS.write_profile('lw_flux_up', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.dflux_lw[0])
+        NS.write_profile('lw_flux_down', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.uflux_sw[0])
+        NS.write_profile('sw_flux_up', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.dflux_sw[0])
+        NS.write_profile('sw_flux_down', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         NS.write_ts('srf_lw_flux_up',self.srf_lw_up, Pa ) # Units are W/m^2
         NS.write_ts('srf_lw_flux_down', self.srf_lw_down, Pa)
@@ -1116,6 +1136,11 @@ cdef class RadiationRRTM(RadiationBase):
              &uflx_sw_out[0,0]    ,&dflx_sw_out[0,0]    ,&hr_sw_out[0,0]      ,&uflxc_sw_out[0,0]   ,&dflxc_sw_out[0,0], &hrc_sw_out[0,0])
 
         cdef double [:,:] heating_rate_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
+        cdef double [:,:] uflux_lw_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
+        cdef double [:,:] dflux_lw_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
+        cdef double [:,:] uflux_sw_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
+        cdef double [:,:] dflux_sw_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
+
         cdef double srf_lw_up_local =0.0, srf_lw_down_local=0.0, srf_sw_up_local=0.0, srf_sw_down_local=0.0
         cdef double toa_lw_up_local =0.0, toa_lw_down_local=0.0, toa_sw_up_local=0.0, toa_sw_down_local=0.0
 
@@ -1133,6 +1158,11 @@ cdef class RadiationRRTM(RadiationBase):
                toa_sw_down_local += dflx_sw_out[ip,nz_full] * nxny_i
                for k in xrange(nz):
                    heating_rate_pencil[ip, k] = (hr_lw_out[ip,k] + hr_sw_out[ip,k]) * Ref.rho0_half_global[k+gw] * cpm_c(qv_pencil[ip,k])/86400.0
+                   uflux_lw_pencil[ip,k] = (uflx_lw_out[ip,k] + uflx_lw_out[ip, k+1]) * 0.5
+                   dflux_lw_pencil[ip,k] = (dflx_lw_out[ip,k] + dflx_lw_out[ip, k+1]) * 0.5
+                   uflux_sw_pencil[ip,k] = (uflx_sw_out[ip,k] + uflx_sw_out[ip, k+1]) * 0.5
+                   dflux_sw_pencil[ip,k] = (dflx_sw_out[ip,k] + dflx_sw_out[ip, k+1]) * 0.5
+
 
         self.srf_lw_up = Pa.domain_scalar_sum(srf_lw_up_local)
         self.srf_lw_down = Pa.domain_scalar_sum(srf_lw_down_local)
@@ -1148,9 +1178,14 @@ cdef class RadiationRRTM(RadiationBase):
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
 
+        self.z_pencil.reverse_double(&Gr.dims, Pa, uflux_lw_pencil, &self.uflux_lw[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, dflux_lw_pencil, &self.dflux_lw[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, uflux_sw_pencil, &self.uflux_sw[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, dflux_sw_pencil, &self.dflux_sw[0])
 
 
         return
+
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
