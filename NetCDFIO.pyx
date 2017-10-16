@@ -283,7 +283,7 @@ cdef class NetCDFIO_Fields:
         self.diagnostic_fields = namelist['fields_io']['diagnostic_fields']
 
         # Setup the statistics output path
-        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
+        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[:]))
         self.fields_path = str(os.path.join(outpath, namelist['fields_io']['fields_dir']))
         if Pa.rank == 0:
             try:
