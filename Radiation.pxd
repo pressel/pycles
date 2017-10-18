@@ -111,6 +111,7 @@ cdef class RadiationRRTM(RadiationBase):
 
         double co2_factor
         double h2o_factor
+        double SST_1xCO2
         int dyofyr
         double scon
         double adjes

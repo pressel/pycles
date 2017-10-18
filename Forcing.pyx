@@ -924,7 +924,7 @@ cdef class ForcingZGILS:
         # Initialize the reference profiles class
         if int(self.n_double_co2) == 0 and self.reference_type == 'AdjustedAdiabat':
             self.forcing_ref = AdjustedMoistAdiabat(namelist, LH, Pa)
-        elif self.reference_type == 'InteractiveRCE':
+        elif self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
             self.forcing_ref = InteractiveReferenceRCE(namelist, LH, Pa)
         else:
             filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
@@ -955,7 +955,7 @@ cdef class ForcingZGILS:
         cdef double Pg_parcel = 1000.0e2
         cdef double Tg_parcel = 295.0
         cdef double RH_ref = 0.3
-        if self.reference_type == 'InteractiveRCE':
+        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
             self.forcing_ref.initialize(Pa, Ref.p0_half[:], Ref.Pg, Sur.T_surface, RH_ref)
         else:
             self.forcing_ref.initialize(Pa, Ref.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)
@@ -965,13 +965,14 @@ cdef class ForcingZGILS:
             double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g * self.divergence_factor
             double pv_star, qv_star, SST_1xCO2
 
-        if self.reference_type == 'InteractiveRCE':
+        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
             if self.loc == 12:
                 SST_1xCO2  = 289.8
             elif self.loc == 11:
                 SST_1xCO2 = 292.2
             elif self.loc == 6:
                 SST_1xCO2 = 298.9
+            self.SST_1xCO2 = SST_1xCO2
 
             pv_star = self.CC.LT.fast_lookup(SST_1xCO2)
             qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
@@ -1075,6 +1076,8 @@ cdef class ForcingZGILS:
         # update reference profiles if necessary
         if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
            self.forcing_ref.update(Ref.p0_half[:], Sur.T_surface)
+        if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE_fix':
+            self.forcing_ref.update(Ref.p0_half[:], self.SST_1xCO2)
 
 
 
@@ -1123,8 +1126,15 @@ cdef class ForcingZGILS:
 
         if self.reference_type == 'InteractiveRCE':
             pv_star = self.CC.LT.fast_lookup(Sur.T_surface)
+            # HACK
+            #pv_star = self.CC.LT.fast_lookup(288.53)
             qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
             qt_ls_factor = qv_star
+        elif self.reference_type == 'InteractiveRCE_fix':
+            pv_star = self.CC.LT.fast_lookup(self.SST_1xCO2)
+            qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
+            qt_ls_factor = qv_star
+
         #Apply large scale source terms (BL advection, Free Tropo relaxation, BL humidity nudging)
         with nogil:
             for i in xrange(gw,imax):

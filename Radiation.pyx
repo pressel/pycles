@@ -467,6 +467,13 @@ cdef class RadiationRRTM(RadiationBase):
         elif casename == 'ZGILS':
             self.use_reference_class = True
             loc = namelist['meta']['ZGILS']['location']
+            if loc == 12:
+                self.SST_1xCO2  = 289.8
+            elif loc == 11:
+                self.SST_1xCO2 = 292.2
+            elif loc == 6:
+                self.SST_1xCO2 = 298.9
+
             try:
                 co2_factor = namelist['radiation']['RRTM']['co2_factor']
             except:
@@ -479,7 +486,7 @@ cdef class RadiationRRTM(RadiationBase):
                 self.profile_name = 'cgils_ctl_s'+str(loc)
                 self.reference_profile = AdjustedMoistAdiabat(namelist, LH, Pa)
 
-            elif self.reference_type == 'InteractiveRCE':
+            elif self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
                 self.reference_profile = InteractiveReferenceRCE(namelist, LH, Pa)
             else:
                 self.profile_name = 'cgils_ctl_s'+str(loc)
@@ -609,8 +616,12 @@ cdef class RadiationRRTM(RadiationBase):
             pressures = np.array(pressures[::-1], dtype=np.double)
             n_adiabat = np.shape(pressures)[0]
             if self.reference_type == 'InteractiveRCE':
-                self.RH_adiabat = 0.3
+                self.RH_adiabat = 0.3 # This value is not used
                 self.reference_profile.initialize(Pa, pressures, Ref.Pg, Sur.T_surface, self.RH_adiabat)
+            elif self.reference_type == 'InteractiveRCE_fix':
+                self.RH_adiabat = 0.3 # This value is not used
+                self.reference_profile.initialize(Pa, pressures, Ref.Pg, self.SST_1xCO2, self.RH_adiabat)
+
             else:
                 self.Tg_adiabat = 295.0
                 self.Pg_adiabat = 1000.0e2
@@ -833,7 +844,11 @@ cdef class RadiationRRTM(RadiationBase):
 
         if not self.use_reference_class:
             return
-        if self.reference_type != 'InteractiveRCE':
+        if self.reference_type == 'InteractiveRCE':
+            Pa.root_print('reinitialize_profiles')
+        elif self.reference_type == 'InteractiveRCE_fix':
+            Pa.root_print('reinit profiles')
+        else:
             return
 
         cdef:
@@ -853,7 +868,11 @@ cdef class RadiationRRTM(RadiationBase):
         cdef double [:] pressures = np.arange(25, 1015, 10) * 100.0
         pressures = np.array(pressures[::-1], dtype=np.double)
         n_adiabat = np.shape(pressures)[0]
-        self.reference_profile.update(pressures, Sur.T_surface)
+        if self.reference_type == 'InteractiveRCE':
+            self.reference_profile.update(pressures, Sur.T_surface)
+        elif self.reference_type == 'InteractiveRCE_fix':
+            self.reference_profile.update(pressures, self.SST_1xCO2)
+
 
         cdef:
             Py_ssize_t n_profile = self.n_ext - self.n_buffer
@@ -922,11 +941,17 @@ cdef class RadiationRRTM(RadiationBase):
             if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
                 self.reference_profile.update(pressures, Sur.T_surface)
                 self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
+            elif TS.rk_step == 0 and self.reference_type == 'InteractiveRCE_fix':
+                self.reference_profile.update(pressures, self.SST_1xCO2)
+                self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
             self.update_RRTM(Gr, Ref, PV, DV,Sur, Pa)
 
         elif TS.t >= self.next_radiation_calculate:
             if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
                 self.reference_profile.update(pressures, Sur.T_surface)
+                self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
+            elif TS.rk_step == 0 and self.reference_type == 'InteractiveRCE_fix':
+                self.reference_profile.update(pressures, self.SST_1xCO2)
                 self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
             self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
             self.next_radiation_calculate = (TS.t//adjusted_rad_freq + 1.0) * adjusted_rad_freq

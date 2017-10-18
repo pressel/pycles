@@ -1179,7 +1179,7 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     if int(n_double_co2) == 0 and reference_type == 'AdjustedAdiabat':
         reference_profiles = AdjustedMoistAdiabat(namelist, LH, Pa)
-    elif reference_type == 'InteractiveRCE':
+    elif reference_type == 'InteractiveRCE' or reference_type == 'InteractiveRCE_fix':
         reference_profiles = InteractiveReferenceRCE(namelist, LH, Pa)
     else:
         filename = './CGILSdata/RCE_'+ str(co2_factor)+'xCO2.nc'
@@ -1210,7 +1210,7 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     cdef double Pg_parcel = 1000.0e2
     cdef double Tg_parcel = 295.0
     cdef double RH_ref = 0.3
-    if reference_type == 'InteractiveRCE':
+    if reference_type == 'InteractiveRCE' or reference_type == 'InteractiveRCE_fix':
         reference_profiles.initialize(Pa, RS.p0_half[:], RS.Pg, Sur.T_surface, RH_ref)
     else:
         reference_profiles.initialize(Pa, RS.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)
