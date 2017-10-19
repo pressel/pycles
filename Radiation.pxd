@@ -16,6 +16,11 @@ cdef class RadiationBase:
         double [:] dflux_lw
         double [:] uflux_sw
         double [:] dflux_sw
+        double [:] heating_rate_clear
+        double [:] uflux_lw_clear
+        double [:] dflux_lw_clear
+        double [:] uflux_sw_clear
+        double [:] dflux_sw_clear
         ParallelMPI.Pencil z_pencil
         double srf_lw_down
         double srf_lw_up
@@ -26,7 +31,14 @@ cdef class RadiationBase:
         double toa_sw_down
         double toa_sw_up
 
-
+        double srf_lw_down_clear
+        double srf_lw_up_clear
+        double srf_sw_down_clear
+        double srf_sw_up_clear
+        double toa_lw_down_clear
+        double toa_lw_up_clear
+        double toa_sw_down_clear
+        double toa_sw_up_clear
 
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
