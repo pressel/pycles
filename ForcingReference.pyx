@@ -13,7 +13,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
-# import pylab as plt
+import pylab as plt
 try:
     import cPickle as pickle
 except:
@@ -473,12 +473,13 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
 
         #initialize the lookup table
-        cdef Py_ssize_t n_sst = 5
+        cdef Py_ssize_t n_sst = 13
         self.t_table = LookupProfiles(n_sst,self.nlayers)
-        self.t_table.access_vals =  np.linspace(Tg+self.sst_increment-10.0, Tg+self.sst_increment+10.0,n_sst)
+        self.t_table.access_vals =  np.linspace(Tg+self.sst_increment-10.0, Tg+self.sst_increment+15.0,n_sst)
 
         self.p_tropo_store = np.zeros(n_sst, dtype=np.double, order='c')
         self.toa_store = np.zeros(n_sst, dtype=np.double, order='c')
+        self.tci_store = np.zeros(n_sst, dtype=np.double, order='c')
 
 
         cdef:
@@ -499,7 +500,8 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
                 self.rce_step(self.sst)
                 self.t_table.table_vals[sst_index,:] = self.t_layers[:]
                 self.p_tropo_store[sst_index] = self.p_layers[self.index_h]
-                self.toa_store[sst_index] = self.total_column_influx #self.toa_flux
+                self.tci_store[sst_index] = self.total_column_influx
+                self.toa_store[sst_index] = self.toa_flux
 
         self.t_table.communicate(Pa)
 
@@ -517,41 +519,42 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             dict = {}
             dict['t_table'] = np.asarray(self.t_table.table_vals)
             dict['sst'] = np.asarray(self.t_table.access_vals)
-            dict['net_rad_in'] = np.asarray(self.toa_store)
+            dict['net_rad_in'] = np.asarray(self.tci_store)
+            dict['toa_influx'] = np.asarray(self.toa_store)
             dict['p_tropo'] = np.asarray(self.p_tropo_store)
             pickle.dump(dict, open('IRCE_SST_'+str(int(Tg)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
 
 
-            # plt.figure(1)
-            # try:
-            #     for k in xrange(n_sst):
-            #         plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-b')
-            #     # plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
-            #     plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
-            #     plt.xlabel('Temperature, K')
-            #     plt.ylabel('Pressure, hPa')
-            #     plt.gca().invert_yaxis()
-            # except:
-            #     pass
-            #
-            #
-            # plt.figure(2)
-            # try:
-            #     plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0))
-            #     plt.xlabel('SST, K')
-            #     plt.ylabel('Pressure at tropopause, hPa')
-            # except:
-            #     pass
-            #
-            # plt.figure(3)
-            # try:
-            #     plt.plot(self.t_table.access_vals[:], self.toa_store[:])
-            #     plt.xlabel('SST, K')
-            #     plt.ylabel('Net column influx, W/m^2')
-            # except:
-            #     pass
-            # plt.show()
-            ##################################################################
+            plt.figure(1)
+            try:
+                for k in xrange(n_sst):
+                    plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-b')
+                # plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
+                plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
+                plt.xlabel('Temperature, K')
+                plt.ylabel('Pressure, hPa')
+                plt.gca().invert_yaxis()
+            except:
+                pass
+
+
+            plt.figure(2)
+            try:
+                plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0))
+                plt.xlabel('SST, K')
+                plt.ylabel('Pressure at tropopause, hPa')
+            except:
+                pass
+
+            plt.figure(3)
+            try:
+                plt.plot(self.t_table.access_vals[:], self.toa_store[:])
+                plt.xlabel('SST, K')
+                plt.ylabel('Net column influx, W/m^2')
+            except:
+                pass
+            plt.show()
+            #################################################################
 
         # Now set the current reference profile (assuming we want it at domain SST+sst_increment...)
 

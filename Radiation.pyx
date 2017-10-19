@@ -468,7 +468,7 @@ cdef class RadiationRRTM(RadiationBase):
             self.use_reference_class = True
             loc = namelist['meta']['ZGILS']['location']
             if loc == 12:
-                self.SST_1xCO2  = 289.8
+                self.SST_1xCO2  = 290.0
             elif loc == 11:
                 self.SST_1xCO2 = 292.2
             elif loc == 6:

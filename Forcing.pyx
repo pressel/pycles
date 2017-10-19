@@ -915,8 +915,8 @@ cdef class ForcingZGILS:
 
 
         # Current climate/control advection forcing values (modified below for climate change)
-        self.t_adv_max = -1.2/86400.0  # K/s BL tendency of temperature due to horizontal advection
-        self.qt_adv_max = -0.6e-3/86400.0 # kg/kg/s BL tendency of qt due to horizontal advection
+        self.t_adv_max = -1.5/86400.0  # K/s BL tendency of temperature due to horizontal advection
+        self.qt_adv_max = -0.8e-3/86400.0 # kg/kg/s BL tendency of qt due to horizontal advection
         self.tau_relax_inverse = 1.0/(6.0*3600)
         # relaxation time scale. Note this differs from Tan et al 2016 but is consistent with Zhihong's code. Due to the
         # way he formulates the relaxation coefficient formula, effective timescale in FT is about 24 hr
@@ -967,7 +967,7 @@ cdef class ForcingZGILS:
 
         if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
             if self.loc == 12:
-                SST_1xCO2  = 289.8
+                SST_1xCO2  = 290.0
             elif self.loc == 11:
                 SST_1xCO2 = 292.2
             elif self.loc == 6:
@@ -1108,11 +1108,11 @@ cdef class ForcingZGILS:
                 factor = fmax(fmin((z_h-1.2)/0.3, 1.0), 0.0)
                 xi_relax[k] = 0.5*self.tau_relax_inverse*(1.0 -   cos(factor))
                 # here we also set the nudging to 20% rh in the BL
-                if Gr.zl_half[k] < 2000.0:
-                    pv_star = self.CC.LT.fast_lookup(tmean[k])
-                    qv_star = eps_v * pv_star/(Ref.p0_half[k] + (eps_v-1.0)*pv_star)
-                    if qtmean[k] < 0.2 * qv_star:
-                        self.source_rh_nudge[k] = (qv_star*0.2-qtmean[k])/3600.0
+                # if Gr.zl_half[k] < 2000.0:
+                #     pv_star = self.CC.LT.fast_lookup(tmean[k])
+                #     qv_star = eps_v * pv_star/(Ref.p0_half[k] + (eps_v-1.0)*pv_star)
+                #     if qtmean[k] < 0.2 * qv_star:
+                #         self.source_rh_nudge[k] = (qv_star*0.2-qtmean[k])/3600.0
                 # Here we find the nudging rates
                 self.source_qt_nudge[k] = xi_relax[k] * (self.forcing_ref.qt[k]-qtmean[k])
                 self.source_t_nudge[k]  = xi_relax[k] * (self.forcing_ref.temperature[k]-tmean[k])

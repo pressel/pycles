@@ -44,6 +44,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         double dt_rce
         double [:] p_tropo_store
         double [:] toa_store
+        double [:] tci_store
         double RH_surf
         double RH_tropical
         double RH_subtrop

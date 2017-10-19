@@ -922,7 +922,7 @@ cdef class SurfaceZGILS(SurfaceBase):
 
         # Set the initial sst value to the Fixed-SST case value (Tan et al 2016a, Table 1)
         if self.loc == 12:
-            self.T_surface  = 289.8
+            self.T_surface  = 290.0
         elif self.loc == 11:
             self.T_surface = 292.2
         elif self.loc == 6:
