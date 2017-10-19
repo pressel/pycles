@@ -371,7 +371,7 @@ void accretion_all(double density, double p0, double temperature, double ccn, do
             src_r = -src_s;
         }
         else{
-            src_r = pi*dv*nsnow*nrain*A_RAIN*k_2r/density;
+            src_r = pi*dv*nsnow*nrain*A_SNOW*k_2r/density;
             src_s = -src_r;
         }
     }
