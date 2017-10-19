@@ -915,8 +915,8 @@ cdef class ForcingZGILS:
 
 
         # Current climate/control advection forcing values (modified below for climate change)
-        self.t_adv_max = -1.5/86400.0  # K/s BL tendency of temperature due to horizontal advection
-        self.qt_adv_max = -0.8e-3/86400.0 # kg/kg/s BL tendency of qt due to horizontal advection
+        self.t_adv_max = -1.2/86400.0  # K/s BL tendency of temperature due to horizontal advection
+        self.qt_adv_max = -0.6e-3/86400.0 # kg/kg/s BL tendency of qt due to horizontal advection
         self.tau_relax_inverse = 1.0/(6.0*3600)
         # relaxation time scale. Note this differs from Tan et al 2016 but is consistent with Zhihong's code. Due to the
         # way he formulates the relaxation coefficient formula, effective timescale in FT is about 24 hr
