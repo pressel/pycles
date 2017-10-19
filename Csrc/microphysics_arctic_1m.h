@@ -129,7 +129,7 @@ void get_rain_n0(const struct DimStruct *dims, double* restrict density, double*
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin; k<kmax+1; k++){
+            for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
                 double rwc = fmax(qrain[ijk]*density[k], SMALL);
@@ -166,7 +166,7 @@ void get_snow_n0(const struct DimStruct *dims, double* restrict density, double*
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin; k<kmax+1; k++){
+            for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
                 double swc = fmax(qsnow[ijk]*density[k], SMALL);
@@ -543,7 +543,7 @@ void sedimentation_velocity_rain(const struct DimStruct *dims, double* restrict 
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin; k<kmax+1; k++){
+            for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
                 double rain_lam = rain_lambda(density[k], qrain[ijk], nrain[ijk]);
@@ -588,7 +588,7 @@ void sedimentation_velocity_snow(const struct DimStruct *dims, double* restrict 
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
             const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin; k<kmax+1; k++){
+            for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
 
                 double snow_lam = snow_lambda(density[k], qsnow[ijk], nsnow[ijk]);
