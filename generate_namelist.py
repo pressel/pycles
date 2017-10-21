@@ -851,7 +851,7 @@ def Isdac():
     namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['radiation'] = {}
-    namelist['radiation']['use_RRTM'] = True
+    namelist['radiation']['use_RRTM'] = False
     namelist['radiation']['RRTM'] = {}
     namelist['radiation']['RRTM']['frequency'] = 60.0
     namelist['radiation']['RRTM']['buffer_points'] = 15

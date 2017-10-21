@@ -83,6 +83,9 @@ cdef class SurfaceBase:
         self.lhf = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
         self.b_flux = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
 
+        # If not overridden in the specific case, set T_surface = Tg
+        self.T_surface = Ref.Tg
+
         NS.add_ts('uw_surface_mean', Gr, Pa)
         NS.add_ts('vw_surface_mean', Gr, Pa)
         NS.add_ts('s_flux_surface_mean', Gr, Pa)
