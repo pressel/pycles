@@ -62,7 +62,7 @@ cdef class Forcing:
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
                  TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
-        self.scheme.update(Gr, Ref, PV, DV, Sur, TS, Pa)
+        self.scheme.update(Gr, Ref, PV, DV, Sur, Ra, TS, Pa)
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
