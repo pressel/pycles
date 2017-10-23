@@ -60,6 +60,8 @@ cdef class RadiationBase:
         self.z_pencil = ParallelMPI.Pencil()
         self.z_pencil.initialize(Gr, Pa, 2)
         self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.lw_heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.sw_heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
         self.dTdt_rad = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
         self.uflux_lw = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
@@ -68,14 +70,18 @@ cdef class RadiationBase:
         self.dflux_sw = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
         self.heating_rate_clear = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.lw_heating_rate_clear = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        self.sw_heating_rate_clear = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+
         self.uflux_lw_clear = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
         self.dflux_lw_clear = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
         self.uflux_sw_clear = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
         self.dflux_sw_clear = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
-
-
         NS.add_profile('radiative_heating_rate', Gr, Pa)
+        NS.add_profile('lw_radiative_heating_rate', Gr, Pa)
+        NS.add_profile('sw_radiative_heating_rate', Gr, Pa)
+
         NS.add_profile('radiative_entropy_tendency', Gr, Pa)
         NS.add_profile('radiative_temperature_tendency',Gr, Pa)
         NS.add_profile('lw_flux_up', Gr, Pa)
@@ -93,6 +99,9 @@ cdef class RadiationBase:
 
 
         NS.add_profile('radiative_heating_rate_clear', Gr, Pa)
+        NS.add_profile('lw_radiative_heating_rate_clear', Gr, Pa)
+        NS.add_profile('sw_radiative_heating_rate_clear', Gr, Pa)
+
         NS.add_profile('lw_flux_up_clear', Gr, Pa)
         NS.add_profile('lw_flux_down_clear', Gr, Pa)
         NS.add_profile('sw_flux_up_clear', Gr, Pa)
@@ -109,6 +118,16 @@ cdef class RadiationBase:
 
 
 
+        return
+
+    cpdef init_from_restart(self, Restart):
+        self.swcre_srf = Restart.restart_data['rad']['swcre_srf']
+        self.swcre_int = Restart.restart_data['rad']['swcre_int']
+        return
+    cpdef restart(self, Restart):
+        Restart.restart_data['rad'] = {}
+        Restart.restart_data['rad']['swcre_srf'] = self.swcre_srf
+        Restart.restart_data['rad']['swcre_int'] = self.swcre_int
         return
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
@@ -154,6 +173,12 @@ cdef class RadiationBase:
         tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
         NS.write_profile('radiative_heating_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+        tmp = Pa.HorizontalMean(Gr, &self.lw_heating_rate[0])
+        NS.write_profile('lw_radiative_heating_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.sw_heating_rate[0])
+        NS.write_profile('sw_radiative_heating_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
         tmp = Pa.HorizontalMean(Gr, &entropy_tendency[0])
         NS.write_profile('radiative_entropy_tendency', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
@@ -182,11 +207,14 @@ cdef class RadiationBase:
         NS.write_ts('toa_sw_flux_up', self.toa_sw_up, Pa)
         NS.write_ts('toa_sw_flux_down', self.toa_sw_down, Pa)
 
-
-
-        ###
         tmp = Pa.HorizontalMean(Gr, &self.heating_rate_clear[0])
         NS.write_profile('radiative_heating_rate_clear', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.lw_heating_rate_clear[0])
+        NS.write_profile('lw_radiative_heating_rate_clear', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMean(Gr, &self.sw_heating_rate_clear[0])
+        NS.write_profile('sw_radiative_heating_rate_clear', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMean(Gr, &self.uflux_lw_clear[0])
         NS.write_profile('lw_flux_up_clear', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -504,6 +532,15 @@ cdef class RadiationRRTM(RadiationBase):
         self.toa_sw_down = 0.0
         self.toa_lw_up = 0.0
         self.toa_sw_up = 0.0
+
+        # For ZGILS interactive RCE simulations
+        #self.swcre_int_sc = #Someval
+        #self.swcre_int = self.swcre_int_sc
+        self.swcre_srf_sc = 160.0
+        self.swcre_srf_cu = 0.0
+        self.swcre_srf = self.swcre_srf_sc
+
+
         casename = namelist['meta']['casename']
         self.use_reference_class = False
         if casename == 'SHEBA':
@@ -660,6 +697,8 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t i,k
             Py_ssize_t n_adiabat
             double [:] pressures_adiabat
+            double deltaT
+
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
@@ -669,11 +708,12 @@ cdef class RadiationRRTM(RadiationBase):
             pressures = np.array(pressures[::-1], dtype=np.double)
             n_adiabat = np.shape(pressures)[0]
             if self.reference_type == 'InteractiveRCE':
+                deltaT = fmin(fmax(5.0/self.swcre_srf_sc * self.swcre_srf + 5.0, 10.0), 5.0)
                 self.RH_adiabat = 0.3 # This value is not used
-                self.reference_profile.initialize(Pa, pressures, Ref.Pg, Sur.T_surface, self.RH_adiabat)
+                self.reference_profile.initialize(Pa, pressures, Ref.Pg, Sur.T_surface + deltaT, self.RH_adiabat)
             elif self.reference_type == 'InteractiveRCE_fix':
                 self.RH_adiabat = 0.3 # This value is not used
-                self.reference_profile.initialize(Pa, pressures, Ref.Pg, self.SST_1xCO2, self.RH_adiabat)
+                self.reference_profile.initialize(Pa, pressures, Ref.Pg, self.SST_1xCO2 + 10.0, self.RH_adiabat)
 
             else:
                 self.Tg_adiabat = 295.0
@@ -897,10 +937,8 @@ cdef class RadiationRRTM(RadiationBase):
 
         if not self.use_reference_class:
             return
-        if self.reference_type == 'InteractiveRCE':
+        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
             Pa.root_print('reinitialize_profiles')
-        elif self.reference_type == 'InteractiveRCE_fix':
-            Pa.root_print('reinit profiles')
         else:
             return
 
@@ -915,6 +953,7 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t i,k
             Py_ssize_t n_adiabat
             double [:] pressures_adiabat
+            double deltaT
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
@@ -922,9 +961,10 @@ cdef class RadiationRRTM(RadiationBase):
         pressures = np.array(pressures[::-1], dtype=np.double)
         n_adiabat = np.shape(pressures)[0]
         if self.reference_type == 'InteractiveRCE':
-            self.reference_profile.update(pressures, Sur.T_surface)
+            deltaT = fmin(fmax(5.0/self.swcre_srf_sc * self.swcre_srf + 5.0, 10.0), 5.0)
+            self.reference_profile.update(pressures, Sur.T_surface + deltaT)
         elif self.reference_type == 'InteractiveRCE_fix':
-            self.reference_profile.update(pressures, self.SST_1xCO2)
+            self.reference_profile.update(pressures, self.SST_1xCO2 + 10.0)
 
 
         cdef:
@@ -989,22 +1029,25 @@ cdef class RadiationRRTM(RadiationBase):
         cdef double [:] pressures = np.arange(25, 1015, 10) * 100.0
         pressures = np.array(pressures[::-1], dtype=np.double)
         cdef double adjusted_rad_freq = self.radiation_frequency * TS.acceleration_factor
+        cdef double deltaT
 
         if adjusted_rad_freq <= 0.0:
             if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
-                self.reference_profile.update(pressures, Sur.T_surface)
+                deltaT = fmin(fmax(5.0/self.swcre_srf_sc * self.swcre_srf + 5.0, 10.0), 5.0)
+                self.reference_profile.update(pressures, Sur.T_surface+ deltaT)
                 self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
             elif TS.rk_step == 0 and self.reference_type == 'InteractiveRCE_fix':
-                self.reference_profile.update(pressures, self.SST_1xCO2)
+                self.reference_profile.update(pressures, self.SST_1xCO2 + 10.0)
                 self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
             self.update_RRTM(Gr, Ref, PV, DV,Sur, Pa)
 
         elif TS.t >= self.next_radiation_calculate:
             if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
-                self.reference_profile.update(pressures, Sur.T_surface)
+                deltaT = fmin(fmax(5.0/self.swcre_srf_sc * self.swcre_srf + 5.0, 10.0), 5.0)
+                self.reference_profile.update(pressures, Sur.T_surface + deltaT)
                 self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
             elif TS.rk_step == 0 and self.reference_type == 'InteractiveRCE_fix':
-                self.reference_profile.update(pressures, self.SST_1xCO2)
+                self.reference_profile.update(pressures, self.SST_1xCO2 + 10.0)
                 self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
             self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
             self.next_radiation_calculate = (TS.t//adjusted_rad_freq + 1.0) * adjusted_rad_freq
@@ -1214,12 +1257,16 @@ cdef class RadiationRRTM(RadiationBase):
              &uflx_sw_out[0,0]    ,&dflx_sw_out[0,0]    ,&hr_sw_out[0,0]      ,&uflxc_sw_out[0,0]   ,&dflxc_sw_out[0,0], &hrc_sw_out[0,0])
 
         cdef double [:,:] heating_rate_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
+        cdef double [:,:] lw_heating_rate_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
+        cdef double [:,:] sw_heating_rate_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
         cdef double [:,:] uflux_lw_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
         cdef double [:,:] dflux_lw_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
         cdef double [:,:] uflux_sw_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
         cdef double [:,:] dflux_sw_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
 
         cdef double [:,:] heating_rate_clear_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
+        cdef double [:,:] lw_heating_rate_clear_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
+        cdef double [:,:] sw_heating_rate_clear_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
         cdef double [:,:] uflux_lw_clear_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
         cdef double [:,:] dflux_lw_clear_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
         cdef double [:,:] uflux_sw_clear_pencil = np.zeros((n_pencils,nz), dtype=np.double, order='c')
@@ -1256,12 +1303,16 @@ cdef class RadiationRRTM(RadiationBase):
                toa_sw_down_clear_local += dflxc_sw_out[ip,nz_full] * nxny_i
                for k in xrange(nz):
                    heating_rate_pencil[ip, k] = (hr_lw_out[ip,k] + hr_sw_out[ip,k]) * Ref.rho0_half_global[k+gw] * cpm_c(qv_pencil[ip,k])/86400.0
+                   lw_heating_rate_pencil[ip, k] = (hr_lw_out[ip,k] ) * Ref.rho0_half_global[k+gw] * cpm_c(qv_pencil[ip,k])/86400.0
+                   sw_heating_rate_pencil[ip, k] = (hr_sw_out[ip,k]) * Ref.rho0_half_global[k+gw] * cpm_c(qv_pencil[ip,k])/86400.0
                    uflux_lw_pencil[ip,k] = (uflx_lw_out[ip,k] + uflx_lw_out[ip, k+1]) * 0.5
                    dflux_lw_pencil[ip,k] = (dflx_lw_out[ip,k] + dflx_lw_out[ip, k+1]) * 0.5
                    uflux_sw_pencil[ip,k] = (uflx_sw_out[ip,k] + uflx_sw_out[ip, k+1]) * 0.5
                    dflux_sw_pencil[ip,k] = (dflx_sw_out[ip,k] + dflx_sw_out[ip, k+1]) * 0.5
 
                    heating_rate_clear_pencil[ip, k] = (hrc_lw_out[ip,k] + hrc_sw_out[ip,k]) * Ref.rho0_half_global[k+gw] * cpm_c(qv_pencil[ip,k])/86400.0
+                   lw_heating_rate_clear_pencil[ip, k] = (hrc_lw_out[ip,k] ) * Ref.rho0_half_global[k+gw] * cpm_c(qv_pencil[ip,k])/86400.0
+                   sw_heating_rate_clear_pencil[ip, k] = (hrc_sw_out[ip,k]) * Ref.rho0_half_global[k+gw] * cpm_c(qv_pencil[ip,k])/86400.0
                    uflux_lw_clear_pencil[ip,k] = (uflxc_lw_out[ip,k] + uflxc_lw_out[ip, k+1]) * 0.5
                    dflux_lw_clear_pencil[ip,k] = (dflxc_lw_out[ip,k] + dflxc_lw_out[ip, k+1]) * 0.5
                    uflux_sw_clear_pencil[ip,k] = (uflxc_sw_out[ip,k] + uflxc_sw_out[ip, k+1]) * 0.5
@@ -1287,14 +1338,21 @@ cdef class RadiationRRTM(RadiationBase):
         self.toa_sw_up_clear = Pa.domain_scalar_sum(toa_sw_up_clear_local)
         self.toa_sw_down_clear = Pa.domain_scalar_sum(toa_sw_down_clear_local)
 
+        self.swcre_srf = (self.srf_sw_down_clear - self.srf_sw_up_clear) - (self.srf_sw_down - self.srf_sw_up)
+
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_pencil, &self.heating_rate[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, lw_heating_rate_pencil, &self.lw_heating_rate[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, sw_heating_rate_pencil, &self.sw_heating_rate[0])
+
         self.z_pencil.reverse_double(&Gr.dims, Pa, uflux_lw_pencil, &self.uflux_lw[0])
         self.z_pencil.reverse_double(&Gr.dims, Pa, dflux_lw_pencil, &self.dflux_lw[0])
         self.z_pencil.reverse_double(&Gr.dims, Pa, uflux_sw_pencil, &self.uflux_sw[0])
         self.z_pencil.reverse_double(&Gr.dims, Pa, dflux_sw_pencil, &self.dflux_sw[0])
 
         self.z_pencil.reverse_double(&Gr.dims, Pa, heating_rate_clear_pencil, &self.heating_rate_clear[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, lw_heating_rate_clear_pencil, &self.lw_heating_rate_clear[0])
+        self.z_pencil.reverse_double(&Gr.dims, Pa, sw_heating_rate_clear_pencil, &self.sw_heating_rate_clear[0])
         self.z_pencil.reverse_double(&Gr.dims, Pa, uflux_lw_clear_pencil, &self.uflux_lw_clear[0])
         self.z_pencil.reverse_double(&Gr.dims, Pa, dflux_lw_clear_pencil, &self.dflux_lw_clear[0])
         self.z_pencil.reverse_double(&Gr.dims, Pa, uflux_sw_clear_pencil, &self.uflux_sw_clear[0])

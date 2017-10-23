@@ -60,7 +60,8 @@ cdef class Forcing:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
         self.scheme.update(Gr, Ref, PV, DV, Sur, TS, Pa)
         return
 
@@ -81,7 +82,8 @@ cdef class ForcingNone:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -143,7 +145,8 @@ cdef class ForcingBomex:
 
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -259,7 +262,8 @@ cdef class ForcingSullivanPatton:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -304,7 +308,8 @@ cdef class ForcingGabls:
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -384,7 +389,8 @@ cdef class ForcingDyCOMS_RF01:
 
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur ,Radiation.RadiationBase Ra,
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -498,7 +504,8 @@ cdef class ForcingRico:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -743,7 +750,8 @@ cdef class ForcingCGILS:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -955,8 +963,9 @@ cdef class ForcingZGILS:
         cdef double Pg_parcel = 1000.0e2
         cdef double Tg_parcel = 295.0
         cdef double RH_ref = 0.3
+        cdef double deltaT
         if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
-            self.forcing_ref.initialize(Pa, Ref.p0_half[:], Ref.Pg, Sur.T_surface, RH_ref)
+            self.forcing_ref.initialize(Pa, Ref.p0_half[:], Ref.Pg, Sur.T_surface + 10.0, RH_ref)
         else:
             self.forcing_ref.initialize(Pa, Ref.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)
 
@@ -1047,7 +1056,8 @@ cdef class ForcingZGILS:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
+                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
 
 
@@ -1071,13 +1081,15 @@ cdef class ForcingZGILS:
             double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
             double RH = 0.3
+            double deltaT
 
 
         # update reference profiles if necessary
         if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
-           self.forcing_ref.update(Ref.p0_half[:], Sur.T_surface)
+            deltaT = fmin(fmax(5.0/Ra.swcre_srf_sc * Ra.swcre_srf + 5.0, 10.0), 5.0)
+            self.forcing_ref.update(Ref.p0_half[:], Sur.T_surface + deltaT)
         if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE_fix':
-            self.forcing_ref.update(Ref.p0_half[:], self.SST_1xCO2)
+            self.forcing_ref.update(Ref.p0_half[:], self.SST_1xCO2+10.0)
 
 
 

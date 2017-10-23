@@ -11,12 +11,16 @@ from Forcing cimport ForcingReferenceBase
 cdef class RadiationBase:
     cdef:
         double [:] heating_rate
+        double [:] lw_heating_rate
+        double [:] sw_heating_rate
         double [:] dTdt_rad
         double [:] uflux_lw
         double [:] dflux_lw
         double [:] uflux_sw
         double [:] dflux_sw
         double [:] heating_rate_clear
+        double [:] lw_heating_rate_clear
+        double [:] sw_heating_rate_clear
         double [:] uflux_lw_clear
         double [:] dflux_lw_clear
         double [:] uflux_sw_clear
@@ -40,8 +44,16 @@ cdef class RadiationBase:
         double toa_sw_down_clear
         double toa_sw_up_clear
 
+        double swcre_srf_sc
+        double swcre_srf_cu
+        double swcre_srf
+        double swcre_int_sc
+        double swcre_int
+
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef init_from_restart(self, Restart)
+    cpdef restart(self, Restart)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,

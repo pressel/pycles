@@ -37,7 +37,6 @@ cdef class ReferenceRCE(ForcingReferenceBase):
 
 cdef class InteractiveReferenceRCE(ForcingReferenceBase):
     cdef:
-        double sst_increment
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
         Thermodynamics.ClausiusClapeyron CC

@@ -13,7 +13,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
-# import pylab as plt
+import pylab as plt
 try:
     import cPickle as pickle
 except:
@@ -185,7 +185,6 @@ cdef extern:
 cdef class InteractiveReferenceRCE(ForcingReferenceBase):
     def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
         self.is_init = False
-        self.sst_increment = 10.0 # K, assumed difference between LES domain SST and tropical SST
 
         self.L_fp = LH.L_fp
         self.Lambda_fp = LH.Lambda_fp
@@ -475,7 +474,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         #initialize the lookup table
         cdef Py_ssize_t n_sst = 21
         self.t_table = LookupProfiles(n_sst,self.nlayers)
-        self.t_table.access_vals =  np.linspace(Tg+self.sst_increment-15.0, Tg+self.sst_increment+25.0,n_sst)
+        self.t_table.access_vals =  np.linspace(Tg-15.0, Tg+15.0,n_sst)
 
         self.p_tropo_store = np.zeros(n_sst, dtype=np.double, order='c')
         self.toa_store = np.zeros(n_sst, dtype=np.double, order='c')
@@ -514,51 +513,56 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         # pressure_ref = data.variables['p_full'][:]
         # temperature_ref = data.variables['temp_rc'][:]
         #
-        self.t_table.lookup(Tg+self.sst_increment-1.5)
-        if Pa.rank==0:
-            dict = {}
-            dict['t_table'] = np.asarray(self.t_table.table_vals)
-            dict['sst'] = np.asarray(self.t_table.access_vals)
-            dict['net_rad_in'] = np.asarray(self.tci_store)
-            dict['toa_influx'] = np.asarray(self.toa_store)
-            dict['p_tropo'] = np.asarray(self.p_tropo_store)
-            pickle.dump(dict, open('IRCE_SST_'+str(int(Tg)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
-
-
-            # plt.figure(1)
-            # try:
-            #     for k in xrange(n_sst):
-            #         plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-k')
-            #     # plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
-            #     # plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
-            #     plt.xlabel('Temperature, K',fontsize=16)
-            #     plt.ylabel('Pressure, hPa',fontsize=16)
-            #     plt.gca().invert_yaxis()
-            # except:
-            #     pass
-            #
-            #
-            # plt.figure(2)
-            # try:
-            #     plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0),'-k')
-            #     plt.xlabel('SST, K',fontsize=16)
-            #     plt.ylabel('Pressure at tropopause, hPa',fontsize=16)
-            # except:
-            #     pass
-            #
-            # plt.figure(3)
-            # try:
-            #     plt.plot(self.t_table.access_vals[:], self.toa_store[:],'-k')
-            #     plt.xlabel('Tropical SST, K',fontsize=16)
-            #     plt.ylabel(r'TOA influx, W m$^{-2}$',fontsize=16)
-            # except:
-            #     pass
-            # plt.show()
+        # self.t_table.lookup(Tg-1.5)
+        # if Pa.rank==0:
+        #     dict = {}
+        #     dict['t_table'] = np.asarray(self.t_table.table_vals)
+        #     dict['sst'] = np.asarray(self.t_table.access_vals)
+        #     dict['net_rad_in'] = np.asarray(self.tci_store)
+        #     dict['toa_influx'] = np.asarray(self.toa_store)
+        #     dict['p_tropo'] = np.asarray(self.p_tropo_store)
+        #     pickle.dump(dict, open('IRCE_SST_'+str(int(Tg)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
+        #
+        #
+        #     plt.figure(1)
+        #     try:
+        #         for k in xrange(n_sst):
+        #             plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-k')
+        #         # plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
+        #         # plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
+        #         plt.xlabel('Temperature, K',fontsize=16)
+        #         plt.ylabel('Pressure, hPa',fontsize=16)
+        #         plt.xlim(180,340)
+        #         plt.gca().invert_yaxis()
+        #     except:
+        #         pass
+        #
+        #
+        #     plt.figure(2)
+        #     try:
+        #         plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0),'-k')
+        #         plt.xlabel('SST, K',fontsize=16)
+        #         plt.ylabel('Pressure at tropopause, hPa',fontsize=16)
+        #         plt.ylim(50,350)
+        #         plt.xlim(285,325)
+        #     except:
+        #         pass
+        #
+        #     plt.figure(3)
+        #     try:
+        #         plt.plot(self.t_table.access_vals[:], self.toa_store[:],'-k')
+        #         plt.xlabel('Tropical SST, K',fontsize=16)
+        #         plt.ylabel(r'TOA influx, W m$^{-2}$',fontsize=16)
+        #         plt.ylim(110,160)
+        #         plt.xlim(285,325)
+        #     except:
+        #         pass
+        #     plt.show()
             #################################################################
 
-        # Now set the current reference profile (assuming we want it at domain SST+sst_increment...)
+        # Now set the current reference profile (assuming we want it at domain SST+deltaT...)
 
-        self.t_table.lookup(Tg+self.sst_increment)
+        self.t_table.lookup(Tg)
         cdef double pv, pd
         with nogil:
             for k in xrange(self.nlayers):
@@ -693,7 +697,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         return
     cpdef update(self, double [:] pressure_array, double Tg):
         # Now set the current reference profile
-        self.t_table.lookup(Tg+self.sst_increment)
+        self.t_table.lookup(Tg)
         cdef:
             double pv, pd
             Py_ssize_t k

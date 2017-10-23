@@ -115,6 +115,7 @@ class Simulation3d:
             self.Ref.init_from_restart(self.Gr, self.Restart, self.StatsIO, self.Pa)
             self.PV.init_from_restart(self.Gr, self.Restart)
             self.Sur.init_from_restart(self.Restart)
+            self.Ra.init_from_restart(self.Restart)
             self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']
             self.CondStatsIO.last_output_time = self.Restart.restart_data['last_condstats_output']
             self.FieldsIO.last_output_time = self.Restart.restart_data['last_fields_output']
@@ -170,8 +171,9 @@ class Simulation3d:
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
-                self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
+                self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.Ra, self.TS,  self.Pa)
+
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.TS.update(self.Gr, self.PV, self.Pa)
@@ -275,6 +277,7 @@ class Simulation3d:
                 self.Restart.restart_data['last_vis_time'] = self.VO.last_vis_time
                 self.Gr.restart(self.Restart)
                 self.Sur.restart(self.Restart)
+                self.Ra.restart(self.Restart)
                 self.Ref.restart(self.Gr, self.Restart)
                 self.PV.restart(self.Gr, self.Restart)
                 self.TS.restart(self.Restart)
