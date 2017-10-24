@@ -1781,7 +1781,7 @@ cdef class RadiationGCMGreyMean(RadiationBase):
         with nogil:
             for k in xrange(0, kmax):
                 self.h_profile[k] =  - \
-                       (self.net_flux[k+1] - self.net_flux[k]) * dzi * self.alpha_gcm[k]  / cpm_c(qt_profile[k])*Gr.dims.imet_half[k]
+                       (self.net_flux[k+1] - self.net_flux[k]) * dzi*self.alpha_gcm[k] / cpm_c(qt_profile[k])*Gr.dims.imet_half[k]
 
 
         if 's' in PV.name_index:
@@ -1794,7 +1794,7 @@ cdef class RadiationGCMGreyMean(RadiationBase):
                         for k in xrange(kmin, kmax):
                             ijk = ishift + jshift + k
                             #PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1-Gr.dims.gw] - self.net_flux[k-Gr.dims.gw])*dzi/DV.values[t_shift+ijk]*Gr.dims.imet_half[k]
-                            PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1] - self.net_flux[k])*dzi/DV.values[t_shift+ijk]*Gr.dims.imet_half[k]*self.alpha_gcm[k]
+                            PV.tendencies[s_shift + ijk] +=  -(self.net_flux[k+1] - self.net_flux[k])*dzi/DV.values[t_shift+ijk]*Gr.dims.imet_half[k]*self.alpha_gcm[k]#*self.alpha_gcm[k]
         else:
             thli_shift = PV.get_varshift(Gr, 'thli')
             with nogil:
@@ -1844,7 +1844,7 @@ cdef class RadiationGCMGreyMean(RadiationBase):
 
 
 
-def interp_pchip(z_out, z_in, v_in, pchip_type=False):
+def interp_pchip(z_out, z_in, v_in, pchip_type=True):
     if pchip_type:
         p = pchip(z_in, v_in, extrapolate=True)
         return p(z_out)

@@ -124,7 +124,7 @@ cdef class RayleighGCMMean:
 
         print temp
         for i in range(temp.shape[0]-1, -1, -1):
-            if temp[i]  >  230.0:
+            if temp[i]  >  220.0:
             #if np.abs(dt_qg_conv[i]) > cutoff:
                 self.tend_flat_z_d = z_top - Gr.zp_half[i]
                 break

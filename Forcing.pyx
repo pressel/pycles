@@ -1533,6 +1533,7 @@ cdef class ForcingGCMMean:
             ug = np.mean(input_data_tv['u_geos'][:,::-1],axis=0)
             vg = np.mean(input_data_tv['v_geos'][:,::-1],axis=0)
             temp_dt_hadv = np.mean(input_data_tv['temp_hadv'][:,::-1],axis=0)
+            temp_dt_vadv = np.mean(input_data_tv['temp_vadv'][:,::-1],axis=0)
             temp_dt_fino = np.mean(input_data_tv['temp_fino'][:,::-1],axis=0)
             temp_dt_resid = np.mean(input_data_tv['temp_real1'][:,::-1],axis=0) - np.mean(input_data_tv['temp_total'][:,::-1],axis=0)
             shum_dt_hadv = np.mean(input_data_tv['dt_qg_hadv'][:,::-1],axis=0)
@@ -1548,12 +1549,29 @@ cdef class ForcingGCMMean:
             self.vg = interp_pchip(Gr.zp_half, zfull, vg)
             self.subsidence = interp_pchip(Gr.zp_half, zfull, -omega * alpha / g)
 
+            subsa = np.array(self.subsidence)
+
             self.temp_dt_hadv = interp_pchip(Gr.zp_half, zfull, temp_dt_hadv)
             self.temp_dt_fino = interp_pchip(Gr.zp_half, zfull, temp_dt_fino)
             self.temp_dt_resid = interp_pchip(Gr.zp_half, zfull, temp_dt_resid)
             self.shum_dt_hadv = interp_pchip(Gr.zp_half, zfull, shum_dt_hadv)
             self.shum_dt_resid = interp_pchip(Gr.zp_half, zfull, shum_dt_resid)
 
+
+            temp_dt_vadv = interp_pchip(Gr.zp_half, zfull, temp_dt_vadv)
+            tinterp = interp_pchip(Gr.zp, zfull, temp)
+
+            #print tinterp; import sys; sys.exit()
+
+            #for k in range(1,self.subsidence.shape[0]):
+            #    print k
+            #    self.subsidence[k] = 1.0/(((Gr.zp[k] - Gr.zp[k-1])/(tinterp[k] - tinterp[k-1])))*temp_dt_vadv[k]
+
+            #import pylab as plt
+            #plt.figure(1)
+            #plt.plot(1.0/np.array(self.subsidence)[1:])
+            #plt.plot(np.array(tinterp))
+            #plt.show()
 
             self.rho_gcm = interp_pchip(Gr.zp, zfull, 1.0/alpha)
             self.rho_half_gcm = interp_pchip(Gr.zp_half, zfull, 1.0/alpha)
@@ -1587,7 +1605,6 @@ cdef class ForcingGCMMean:
 
             print "\t Ref.u0 = ", Ref.u0
             print "\t Ref.v0 = ", Ref.v0
-
 
 
         #Apply Coriolis Forcing
@@ -2006,8 +2023,9 @@ cdef apply_subsidence_temperature(Grid.DimStruct *dims, double *rho0, double *rh
                 for k in xrange(kmax, dims.nlg[2]):
                     ijk = ishift + jshift + k
                     tendencies[ijk] -= tend
-
     return
+
+
 
 cdef apply_subsidence_temperature_thli(Grid.DimStruct *dims, double *rho0, double *p0_half, double *rho0_half, double *subsidence, double *qt, double* values,  double *tendencies):
 
@@ -2042,10 +2060,21 @@ cdef apply_subsidence_temperature_thli(Grid.DimStruct *dims, double *rho0, doubl
 
     return
 
-from scipy.interpolate import pchip
-def interp_pchip(z_out, z_in, v_in, pchip_type=False):
+
+from scipy.interpolate import pchip, interp1d
+def interp_pchip(z_out, z_in, v_in, pchip_type=True):
     if pchip_type:
         p = pchip(z_in, v_in, extrapolate=True)
+        #p = interp1d(z_in, v_in, kind='linear', fill_value='extrapolate')
         return p(z_out)
     else:
         return np.interp(z_out, z_in, v_in)
+
+
+#from scipy.interpolate import pchip
+#def interp_pchip(z_out, z_in, v_in, pchip_type=True):
+#    if pchip_type:
+#        p = pchip(z_in, v_in, extrapolate=True)
+#        return p(z_out)
+#    else:
+#        return np.interp(z_out, z_in, v_in)

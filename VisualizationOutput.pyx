@@ -111,7 +111,7 @@ cdef class VisualizationOutput:
         cdef:
             double [:,:] local_var
             double [:,:] reduced_var
-            list pv_vars = ['w',  'thli']
+            list pv_vars = ['w',  's', 'qt']
             list dv_vars = ['buoyancy', 'viscosity', 'ql']
 
 
