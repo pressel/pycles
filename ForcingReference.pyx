@@ -195,7 +195,6 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             self.RH_subtrop = namelist['forcing']['RH_subtropical']
         except:
             self.RH_subtrop = 0.3
-        print('RH_subtropical', self.RH_subtrop)
 
 
         # Radiation parameters
