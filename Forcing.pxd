@@ -159,14 +159,16 @@ cdef class ForcingZGILS:
     cdef:
         Py_ssize_t loc
         bint varsub
+        bint adjust_t_adv
         double n_double_co2
         str reference_type
+        double qt_ls_factor
+        double t_ls_factor
         double [:] dtdt
         double [:] dqtdt
         double [:] subsidence
         double [:] ug
         double [:] vg
-        double [:] source_rh_nudge
         double [:] source_qt_nudge
         double [:] source_t_nudge
         double [:] source_s_nudge

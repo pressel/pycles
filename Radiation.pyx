@@ -534,10 +534,7 @@ cdef class RadiationRRTM(RadiationBase):
         self.toa_sw_up = 0.0
 
         # For ZGILS interactive RCE simulations
-        #self.swcre_int_sc = #Someval
-        #self.swcre_int = self.swcre_int_sc
         self.swcre_srf_sc = 160.0
-        self.swcre_srf_cu = 0.0
         self.swcre_srf = self.swcre_srf_sc
 
 

@@ -45,11 +45,7 @@ cdef class RadiationBase:
         double toa_sw_up_clear
 
         double swcre_srf_sc
-        double swcre_srf_cu
         double swcre_srf
-        double swcre_int_sc
-        double swcre_int
-
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef init_from_restart(self, Restart)
