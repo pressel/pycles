@@ -109,7 +109,7 @@ cdef class Microphysics_Arctic_1M:
                 self.Lambda_fp = lambda_constant_Arctic
                 LH.Lambda_fp = lambda_constant_Arctic
                 Par.root_print('Using constant liquid fraction = 1.0! ')
-            elif namelist['microphysics']['phase_partitioning'] == 'arctic':
+            elif namelist['microphysics']['phase_partitioning'] == 'Arctic':
                 self.Lambda_fp = lambda_Arctic
                 LH.Lambda_fp = lambda_Arctic
                 Par.root_print('Using Arctic specific liquid fraction by Kaul et al. 2015!')
