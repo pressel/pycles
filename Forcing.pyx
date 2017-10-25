@@ -967,7 +967,7 @@ cdef class ForcingZGILS:
         cdef double Pg_parcel = 1000.0e2
         cdef double Tg_parcel = 295.0
         cdef double RH_ref = 0.3
-        cdef double deltaT
+
         if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
             self.forcing_ref.initialize(Pa, Ref.p0_half[:], Ref.Pg, Sur.T_surface + 10.0, RH_ref)
         else:
@@ -1081,7 +1081,8 @@ cdef class ForcingZGILS:
 
         # update reference profiles if necessary
         if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
-            deltaT = fmin(fmax(5.0/Ra.swcre_srf_sc * Ra.swcre_srf + 5.0, 10.0), 5.0)
+            deltaT = 5.0/Ra.swcre_srf_sc * fmax(fmin(Ra.swcre_srf,Ra.swcre_srf_sc),0.0) + 5.0
+
             self.forcing_ref.update(Ref.p0_half[:], Sur.T_surface + deltaT)
         if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE_fix':
             self.forcing_ref.update(Ref.p0_half[:], self.SST_1xCO2+10.0)

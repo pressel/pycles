@@ -471,7 +471,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
 
         #initialize the lookup table
-        cdef Py_ssize_t n_sst = 21
+        cdef Py_ssize_t n_sst = 31
         self.t_table = LookupProfiles(n_sst,self.nlayers)
         self.t_table.access_vals =  np.linspace(Tg-15.0, Tg+15.0,n_sst)
 

@@ -115,6 +115,7 @@ cdef class RadiationBase:
         NS.add_ts('toa_sw_flux_up_clear', Gr, Pa)
         NS.add_ts('toa_sw_flux_down_clear', Gr, Pa)
 
+        NS.add_ts('swcre_srf', Gr, Pa)
 
 
 
@@ -236,6 +237,10 @@ cdef class RadiationBase:
         NS.write_ts('toa_lw_flux_down_clear', self.toa_lw_down_clear, Pa)
         NS.write_ts('toa_sw_flux_up_clear', self.toa_sw_up_clear, Pa)
         NS.write_ts('toa_sw_flux_down_clear', self.toa_sw_down_clear, Pa)
+
+
+
+        NS.write_ts('swcre_srf', self.swcre_srf, Pa)
         return
 
 
@@ -704,7 +709,8 @@ cdef class RadiationRRTM(RadiationBase):
             pressures = np.array(pressures[::-1], dtype=np.double)
             n_adiabat = np.shape(pressures)[0]
             if self.reference_type == 'InteractiveRCE':
-                deltaT = fmin(fmax(5.0/self.swcre_srf_sc * self.swcre_srf + 5.0, 10.0), 5.0)
+                deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
+
                 self.RH_adiabat = 0.3 # This value is not used
                 self.reference_profile.initialize(Pa, pressures, Ref.Pg, Sur.T_surface + deltaT, self.RH_adiabat)
             elif self.reference_type == 'InteractiveRCE_fix':
@@ -957,7 +963,7 @@ cdef class RadiationRRTM(RadiationBase):
         pressures = np.array(pressures[::-1], dtype=np.double)
         n_adiabat = np.shape(pressures)[0]
         if self.reference_type == 'InteractiveRCE':
-            deltaT = fmin(fmax(5.0/self.swcre_srf_sc * self.swcre_srf + 5.0, 10.0), 5.0)
+            deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
             self.reference_profile.update(pressures, Sur.T_surface + deltaT)
         elif self.reference_type == 'InteractiveRCE_fix':
             self.reference_profile.update(pressures, self.SST_1xCO2 + 10.0)
@@ -1029,7 +1035,7 @@ cdef class RadiationRRTM(RadiationBase):
 
         if adjusted_rad_freq <= 0.0:
             if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
-                deltaT = fmin(fmax(5.0/self.swcre_srf_sc * self.swcre_srf + 5.0, 10.0), 5.0)
+                deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
                 self.reference_profile.update(pressures, Sur.T_surface+ deltaT)
                 self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
             elif TS.rk_step == 0 and self.reference_type == 'InteractiveRCE_fix':
@@ -1039,7 +1045,7 @@ cdef class RadiationRRTM(RadiationBase):
 
         elif TS.t >= self.next_radiation_calculate:
             if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
-                deltaT = fmin(fmax(5.0/self.swcre_srf_sc * self.swcre_srf + 5.0, 10.0), 5.0)
+                deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
                 self.reference_profile.update(pressures, Sur.T_surface + deltaT)
                 self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
             elif TS.rk_step == 0 and self.reference_type == 'InteractiveRCE_fix':
