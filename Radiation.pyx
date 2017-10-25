@@ -122,12 +122,11 @@ cdef class RadiationBase:
 
     cpdef init_from_restart(self, Restart):
         self.swcre_srf = Restart.restart_data['rad']['swcre_srf']
-        self.swcre_int = Restart.restart_data['rad']['swcre_int']
+
         return
     cpdef restart(self, Restart):
         Restart.restart_data['rad'] = {}
         Restart.restart_data['rad']['swcre_srf'] = self.swcre_srf
-        Restart.restart_data['rad']['swcre_int'] = self.swcre_int
         return
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
