@@ -75,7 +75,7 @@ cdef class SurfaceBudget:
         try:
             self.fixed_sst_time = namelist['surface_budget']['fixed_sst_time']
         except:
-            self.fixed_sst_time = 0.0
+            self.fixed_sst_time = 3600.0 * 6.0
 
 
 

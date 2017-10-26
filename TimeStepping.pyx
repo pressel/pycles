@@ -180,7 +180,7 @@ cdef class TimeStepping:
                 for i in xrange(Gr.dims.npg*PV.nv):
                     PV.values[i] = (1.0/3.0) * self.value_copies[0,i] + (2.0/3.0)*(PV.values[i] + PV.tendencies[i]*self.dt)
                     PV.tendencies[i] = 0.0
-                self.t += self.dt * self.acceleration_factor
+                self.t += self.dt #* self.acceleration_factor
 
         return
 
@@ -218,7 +218,7 @@ cdef class TimeStepping:
                                     + 0.096059710526147*self.value_copies[2,i] +0.063692468666290*self.tendency_copies[0,i]*self.dt
                                     + 0.386708617503269*PV.values[i] + 0.226007483236906*PV.tendencies[i]*self.dt)
                     PV.tendencies[i] = 0.0
-                self.t += self.dt * self.acceleration_factor
+                self.t += self.dt #* self.acceleration_factor
         return
 
     cdef void initialize_second(self,PrognosticVariables.PrognosticVariables PV):
