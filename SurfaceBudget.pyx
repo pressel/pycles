@@ -62,11 +62,11 @@ cdef class SurfaceBudget:
         try:
             self.water_depth_initial = namelist['surface_budget']['water_depth_initial']
         except:
-            self.water_depth_initial = 1.0
+            self.water_depth_initial = 0.1
         try:
             self.water_depth_final = namelist['surface_budget']['water_depth_final']
         except:
-            self.water_depth_final = 1.0
+            self.water_depth_final = 0.1
         try:
             self.water_depth_time = namelist['surface_budget']['water_depth_time']
         except:

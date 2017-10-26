@@ -1480,6 +1480,10 @@ def InitGCMMean(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
     v_in = np.mean(input_data_tv['v_geos'][:,::-1], axis=0)
     z_in = np.mean(input_data_tv['zfull'][:, ::-1], axis=0)
 
+    phalf_gcm_in = np.mean(input_data_tv['phalf'][:, ::-1], axis=0)
+    integral_interp(phalf_gcm_in, t_in[1:])
+    #print input_data_tv.keys() ; import sys; sys.exit()
+
 
     cdef double [:] t = interp_pchip(Gr.zp_half, z_in, t_in)
     cdef double [:] qt = interp_pchip(Gr.zp_half, z_in, shum_in)
@@ -1535,7 +1539,7 @@ def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
     return
 
 from scipy.interpolate import pchip, interp1d
-def interp_pchip(z_out, z_in, v_in, pchip_type=True):
+def interp_pchip(z_out, z_in, v_in, pchip_type=False):
     if pchip_type:
         p = pchip(z_in, v_in, extrapolate=True)
         #p = interp1d(z_in, v_in, kind='linear', fill_value='extrapolate')
@@ -1544,9 +1548,16 @@ def interp_pchip(z_out, z_in, v_in, pchip_type=True):
         return np.interp(z_out, z_in, v_in)
 
 
-def integral_interp():
+def integral_interp(p_half_gcm, variable_gcm):
+
+    int_var = np.zeros(p_half_gcm.shape[0], dtype=np.double)
+    for k in range(variable_gcm.shape[0]-1, -1, -1):
+        dsigma = -(p_half_gcm[k] - p_half_gcm[k+1])/9.81
+        int_var[k] = int_var[k+1] + variable_gcm[k] * dsigma
 
 
-
+    #import pylab as plt
+    #plt.plot(int_var)
+    #plt.show()
 
     return

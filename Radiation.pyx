@@ -1844,7 +1844,7 @@ cdef class RadiationGCMGreyMean(RadiationBase):
 
 
 
-def interp_pchip(z_out, z_in, v_in, pchip_type=True):
+def interp_pchip(z_out, z_in, v_in, pchip_type=False):
     if pchip_type:
         p = pchip(z_in, v_in, extrapolate=True)
         return p(z_out)

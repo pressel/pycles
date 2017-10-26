@@ -2062,7 +2062,7 @@ cdef apply_subsidence_temperature_thli(Grid.DimStruct *dims, double *rho0, doubl
 
 
 from scipy.interpolate import pchip, interp1d
-def interp_pchip(z_out, z_in, v_in, pchip_type=True):
+def interp_pchip(z_out, z_in, v_in, pchip_type=False):
     if pchip_type:
         p = pchip(z_in, v_in, extrapolate=True)
         #p = interp1d(z_in, v_in, kind='linear', fill_value='extrapolate')
@@ -2078,3 +2078,6 @@ def interp_pchip(z_out, z_in, v_in, pchip_type=True):
 #        return p(z_out)
 #    else:
 #        return np.interp(z_out, z_in, v_in)
+
+
+
