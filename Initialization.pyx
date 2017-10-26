@@ -1485,8 +1485,10 @@ def InitGCMMean(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
     #print input_data_tv.keys() ; import sys; sys.exit()
 
 
-    cdef double [:] t = interp_pchip(Gr.zp_half, z_in, t_in)
-    cdef double [:] qt = interp_pchip(Gr.zp_half, z_in, shum_in)
+    cdef double [:] t = interp_pchip(Gr.zp_half, z_in, np.log(t_in))
+    t = np.exp(t)
+    cdef double [:] qt = interp_pchip(Gr.zp_half, z_in, np.log(shum_in))
+    qt = np.exp(qt)
     cdef double [:] u = interp_pchip(Gr.zp_half, z_in, u_in)
     cdef double [:] v = interp_pchip(Gr.zp_half, z_in, v_in)
 
@@ -1539,7 +1541,7 @@ def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
     return
 
 from scipy.interpolate import pchip, interp1d
-def interp_pchip(z_out, z_in, v_in, pchip_type=False):
+def interp_pchip(z_out, z_in, v_in, pchip_type=True):
     if pchip_type:
         p = pchip(z_in, v_in, extrapolate=True)
         #p = interp1d(z_in, v_in, kind='linear', fill_value='extrapolate')

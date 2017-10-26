@@ -1684,7 +1684,8 @@ cdef class RadiationGCMGreyMean(RadiationBase):
             t = np.mean(input_data_tv['temp'][:, ::-1], axis=0)
             p = np.mean(input_data_tv['pfull'][:, ::-1], axis=0)
 
-            self.alpha_gcm = interp_pchip(np.array(Gr.zp_half), zfull, alpha)
+            self.alpha_gcm = interp_pchip(np.array(Gr.zp_half), zfull, np.log(alpha))
+            self.alpha_gcm = np.exp(self.alpha_gcm)
             self.p0_les_min = np.min(Ref.p0_half_global)
 
             self.t_ext = interp_pchip(np.array(Gr.zp_half), zfull, t)
@@ -1780,9 +1781,10 @@ cdef class RadiationGCMGreyMean(RadiationBase):
 
         with nogil:
             for k in xrange(0, kmax):
+                #self.h_profile[k] =  - \
+                #       (self.net_flux[k+1] - self.net_flux[k]) * dzi*self.alpha_gcm[k] / cpm_c(qt_profile[k])*Gr.dims.imet_half[k]
                 self.h_profile[k] =  - \
                        (self.net_flux[k+1] - self.net_flux[k]) * dzi*self.alpha_gcm[k] / cpm_c(qt_profile[k])*Gr.dims.imet_half[k]
-
 
         if 's' in PV.name_index:
             s_shift = PV.get_varshift(Gr, 's')
@@ -1844,7 +1846,7 @@ cdef class RadiationGCMGreyMean(RadiationBase):
 
 
 
-def interp_pchip(z_out, z_in, v_in, pchip_type=False):
+def interp_pchip(z_out, z_in, v_in, pchip_type=True):
     if pchip_type:
         p = pchip(z_in, v_in, extrapolate=True)
         return p(z_out)

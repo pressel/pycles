@@ -65,7 +65,7 @@ cdef class TimeStepping:
         try:
             self.acceleration_factor = namelist['time_stepping']['acceleration_factor']
         except:
-            self.acceleration_factor = 4.0
+            self.acceleration_factor = 1.0
 
         #Now initialize the correct time stepping routine
         if self.ts_type == 2:
