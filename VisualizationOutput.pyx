@@ -22,10 +22,10 @@ cdef class VisualizationOutput:
 
         try:
             outpath = str(os.path.join(str(namelist['output']['output_root'])
-                                   + 'Output.' + str(namelist['meta']['simname']) + '.' + self.uuid[-5:]))
+                                   + 'Output.' + str(namelist['meta']['simname']) + '.' + self.uuid[:]))
             self.vis_path = os.path.join(outpath, 'Visualization')
         except:
-            self.vis_path = './Visualization.' + self.uuid[-5:]
+            self.vis_path = './Visualization.' + self.uuid[:]
 
         if Pa.rank == 0:
             try:
@@ -111,8 +111,8 @@ cdef class VisualizationOutput:
         cdef:
             double [:,:] local_var
             double [:,:] reduced_var
-            list pv_vars = ['w',  's', 'qt']
-            list dv_vars = ['buoyancy', 'viscosity', 'ql']
+            list pv_vars = ['qt', 's']
+            list dv_vars = ['ql']
 
 
         for var in pv_vars:
@@ -141,7 +141,7 @@ cdef class VisualizationOutput:
 
 
                 #Now output a horizontal slice
-                k = 9
+                k = 4
                 local_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.double, order='c')
                 reduced_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.double, order='c')
                 with nogil:
@@ -176,7 +176,7 @@ cdef class VisualizationOutput:
 
                     with nogil:
                         if global_shift_i == 0:
-                            i = 10
+                            i = 1
                             ishift = i * istride
                             for j in xrange(jmin, jmax):
                                 jshift = j * jstride
@@ -194,7 +194,7 @@ cdef class VisualizationOutput:
                     del reduced_var
 
                     #Now output a horizontal slice
-                    k = 9
+                    k = 4 
                     local_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.double, order='c')
                     reduced_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.double, order='c')
                     with nogil:
