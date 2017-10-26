@@ -104,7 +104,7 @@ cdef class RadiationBase:
 
         return
 
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, DiagnosticVariables.DiagnosticVariables DV,
                      Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
 
@@ -193,7 +193,7 @@ cdef class RadiationNone(RadiationBase):
         return
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, DiagnosticVariables.DiagnosticVariables DV,
                      Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -220,7 +220,7 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
 
         return
 
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, DiagnosticVariables.DiagnosticVariables DV,
                      Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
 
@@ -347,7 +347,7 @@ cdef class RadiationSmoke:
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         RadiationBase.initialize(self, Gr, NS, Pa)
         return
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, DiagnosticVariables.DiagnosticVariables DV,
                      Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
         return
@@ -441,7 +441,7 @@ cdef class RadiationIsdac(RadiationBase):
         NS.add_profile('radiative_flux',Gr, Pa)
         return
 
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, DiagnosticVariables.DiagnosticVariables DV,
                      Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
 
@@ -698,7 +698,12 @@ cdef class RadiationRRTM:
 
         self.next_radiation_calculate = 0.0
 
-
+        #For IsdacCC simulations, initial profiles need to be justified correspondingly
+        try:
+            self.IsdacCC_dT = namelist['initial']['dSST'] + namelist['initial']['dTi'] - 5.0
+            print('IsdacCC case: RRTM profiles are shifted according to %2.2f temperature change.'%(self.IsdacCC_dT))
+        except:
+            self.IsdacCC_dT = 0.0
 
         return
 
@@ -723,7 +728,7 @@ cdef class RadiationRRTM:
 
 
 
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
 
 
@@ -740,7 +745,8 @@ cdef class RadiationRRTM:
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
         pressures = profile_data[self.profile_name]['pressure'][:]
         temperatures = profile_data[self.profile_name]['temperature'][:]
-        vapor_mixing_ratios = profile_data[self.profile_name]['vapor_mixing_ratio'][:]
+        # vapor_mixing_ratios = profile_data[self.profile_name]['vapor_mixing_ratio'][:]
+        specific_humidity = profile_data[self.profile_name]['specific_humidity'][:]
 
         n_profile = len(pressures[pressures<=self.patch_pressure]) # nprofile = # of points in the fixed profile to use
         self.n_ext =  n_profile + self.n_buffer # n_ext = total # of points to add to LES domain (buffer portion + fixed profile portion)
@@ -756,8 +762,9 @@ cdef class RadiationRRTM:
         cdef Py_ssize_t count = 0
         for k in xrange(len(pressures)-n_profile, len(pressures)):
             self.p_ext[self.n_buffer+count] = pressures[k]
-            self.t_ext[self.n_buffer+count] = temperatures[k]
-            self.rv_ext[self.n_buffer+count] = vapor_mixing_ratios[k]
+            qt_new = get_humidity(temperatures[k], specific_humidity[k], pressures[k], temperatures[k]+self.IsdacCC_dT, Th)
+            self.t_ext[self.n_buffer+count] = temperatures[k] + self.IsdacCC_dT
+            self.rv_ext[self.n_buffer+count] = qt_new / (1.0 - qt_new)
             count += 1
 
 
@@ -791,7 +798,7 @@ cdef class RadiationRRTM:
         # # Plotting to evaluate implementation of buffer zone
         # plt.figure(1)
         # plt.scatter(self.rv_ext,self.p_ext)
-        # plt.plot(vapor_mixing_ratios, pressures)
+        # plt.plot(specific_humidity, pressures)
         # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
         # plt.figure(2)
         # plt.scatter(self.t_ext,self.p_ext)
@@ -1272,3 +1279,11 @@ cdef double cos_sza(double jday, double hourz, double dlat, double dlon) nogil:
 
     return cos_sza
 
+def get_humidity(temperature_old, qt_old, pressure, temperature_new, Th):
+    pv_star_1 = Th.get_pv_star(temperature_old)
+    pv_1 = (pressure * qt_old) / (eps_v * (1.0 - qt_old) + qt_old)
+    rh_ = pv_1 / pv_star_1
+    pv_star_2 = Th.get_pv_star(temperature_new)
+    pv_2 = rh_ * pv_star_2
+    qt_new = 1.0/(eps_vi * (pressure - pv_2)/pv_2 + 1.0)
+    return qt_new

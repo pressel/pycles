@@ -961,14 +961,15 @@ def IsdacCC():
 
     namelist['initial'] = {}
     namelist['initial']['SST'] = 265.0 #initial surface temperature
-    namelist['initial']['dTi'] = 5.0 #temperature jump at the inversion
+    namelist['initial']['dTi'] = 7.0 #temperature jump at the inversion
     namelist['initial']['rh0'] = 0.8 #Surface relative humidity
     namelist['initial']['gamma'] = 5.0/1000. #free tropospheric lapse rate
     namelist['initial']['rh'] = 0.6 #free tropospheric relative humidity
     namelist['initial']['z_top'] = 820.0 #top of mixed layer
     namelist['initial']['dzi'] = 30.0 #inversion height
-    namelist['initial']['dSST'] = 0.0 #SST change (climate change)
+    namelist['initial']['dSST'] = 8.0 #SST change (climate change)
     namelist['initial']['divergence'] = 5.0e-6 # LS divergence
+    namelist['initial']['fix_dqt'] = True
 
     namelist['surface'] = {}
     namelist['surface']['sensible'] = 0.0 #surface sensible heat flux Wm-2
@@ -977,8 +978,8 @@ def IsdacCC():
     namelist['radiation']['use_RRTM'] = True
     namelist['radiation']['RRTM'] = {}
     namelist['radiation']['RRTM']['frequency'] = 60.0
-    namelist['radiation']['RRTM']['buffer_points'] = 12
-    namelist['radiation']['RRTM']['patch_pressure'] = 650.0*100.0
+    namelist['radiation']['RRTM']['buffer_points'] = 15
+    namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
     namelist['radiation']['RRTM']['adjes'] = 0.0
     # namelist['radiation']['RRTM']['coszen'] = 0.0
 
@@ -1002,7 +1003,7 @@ def IsdacCC():
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     namelist['meta'] = {}
-    namelist['meta']['simname'] = 'IsdacCC_rrtm'
+    namelist['meta']['simname'] = 'IsdacCC'
     namelist['meta']['casename'] = 'IsdacCC'
 
     return namelist

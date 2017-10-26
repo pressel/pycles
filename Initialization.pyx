@@ -1014,7 +1014,12 @@ def InitIsdacCC(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double rh_tropo = namelist['initial']['rh'] #lower tropospheric relative humidity
         double z_top = namelist['initial']['z_top'] #cloud top height
         double dz_inv = namelist['initial']['dzi'] #inversion depth
+        bint fix_dqt = namelist['initial']['fix_dqt'] #Whether dqt is fixed
         # double temp, pv_sat, qv_sat, pv
+        double dqt_baseline = -0.000454106424679 #Value for the reference climate
+        double [:] temp = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] p0_half = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double t_above_inv, p_above_inv
 
 
     RS.ic_qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
@@ -1029,22 +1034,40 @@ def InitIsdacCC(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             RS.ic_thetal[k] = RS.Tg + (Gr.zl_half[k] - z_top) * thetal_inv / dz_inv
         if Gr.zl_half[k] > (z_top + dz_inv):
             RS.ic_thetal[k] = RS.ic_thetal[k-1] + Gr.dims.dx[2] * thetal_gamma
-            temp = RS.ic_thetal[k] * (RS.p0_half[k] / p_tilde)**(Rd/cpd)
-            pv_sat = Th.get_pv_star(temp)
+            temp[k] = RS.ic_thetal[k] * (RS.p0_half[k] / p_tilde)**(Rd/cpd)
+            pv_sat = Th.get_pv_star(temp[k])
             pv = pv_sat * rh_tropo
             RS.ic_qt[k] = qv_unsat(RS.p0_half[k], pv)
+            p0_half[k] = RS.p0_half[k]
             rh[k] = rh_tropo
 
 
     cdef double qt_above_inv = np.amax(RS.ic_qt)
 
-    for k in xrange(Gr.dims.nlg[2]):
-        if z_top < Gr.zl_half[k] <= (z_top + dz_inv):
-            RS.ic_qt[k] = RS.qtg - (Gr.zl_half[k] - z_top) * (RS.qtg - qt_above_inv) / dz_inv
+    #If to fix dqt above the cloud top to be the baseline value, calculate the qt values above cloud top here
+    if fix_dqt:
+        qt_above_inv = RS.qtg + dqt_baseline
+        t_above_inv = np.amax(temp)
+        p_above_inv = np.amax(p0_half)
+        pv_sat = Th.get_pv_star(t_above_inv)
+        pv = (p_above_inv * qt_above_inv) / (eps_v * (1.0 - qt_above_inv) + qt_above_inv)
+        rh_tropo = pv / pv_sat
+        Pa.root_print(rh_tropo)
+
+        for k in xrange(Gr.dims.nlg[2]):
+            if Gr.zl_half[k] > (z_top + dz_inv):
+                pv_sat = Th.get_pv_star(temp[k])
+                pv = pv_sat * rh_tropo
+                RS.ic_qt[k] = qv_unsat(RS.p0_half[k], pv)
+                rh[k] = rh_tropo
 
     for k in xrange(Gr.dims.nlg[2]):
         if Gr.zl_half[k] <= z_top:
             RS.ic_qt[k] = RS.qtg
+
+    for k in xrange(Gr.dims.nlg[2]):
+        if z_top < Gr.zl_half[k] <= (z_top + dz_inv):
+            RS.ic_qt[k] = RS.qtg - (Gr.zl_half[k] - z_top) * (RS.qtg - qt_above_inv) / dz_inv
 
     for k in xrange(Gr.dims.nlg[2]):
         if Gr.zl_half[k] <= (z_top + dz_inv):
@@ -1082,7 +1105,8 @@ def InitIsdacCC(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     # plt.subplot(132)
     # plt.plot(RS.ic_qt, Gr.zl_half)
     # plt.subplot(133)
-    # plt.plot(RS.ic_rh, Gr.zl_half)
+    # plt.plot(rh, Gr.zl_half)
+    # plt.show()
 
 
     for k in xrange(Gr.dims.nlg[2]):

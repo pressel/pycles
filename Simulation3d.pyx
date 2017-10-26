@@ -144,7 +144,7 @@ class Simulation3d:
         cdef int rk_step
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
-        self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.Sur, self.Pa)
+        self.Ra.initialize_profiles(self.Gr, self.Ref, self.Th, self.DV, self.Sur, self.Pa)
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
