@@ -911,11 +911,13 @@ cdef class ForcingZGILS:
         except:
             self.reference_type = 'AdjustedAdiabat'
 
+        # Change subsidence by a factor that depends on ECS as in Tan et al 2017
         try:
             self.varsub = namelist['forcing']['VarSub']
         except:
             self.varsub = False
 
+        # Change subsidence by a fixed factor (i.e. 20% reduction--> divergence_factor = 0.8)
         try:
             self.divergence_factor = namelist['forcing']['divergence_factor']
         except:
@@ -934,12 +936,16 @@ cdef class ForcingZGILS:
         # relaxation time scale. Note this differs from Tan et al 2016 but is consistent with Zhihong's code. Due to the
         # way he formulates the relaxation coefficient formula, effective timescale in FT is about 24 hr
         self.alpha_h = 1.2 # ad hoc qt/qt_ref threshold ratio for determining BL height
+
+
         # Initialize the reference profiles class
         if int(self.n_double_co2) == 0 and self.reference_type == 'AdjustedAdiabat':
+            # Tan et al 2016 style reference
             self.forcing_ref = AdjustedMoistAdiabat(namelist, LH, Pa)
         elif self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
             self.forcing_ref = InteractiveReferenceRCE(namelist, LH, Pa)
         else:
+            # Tan et al 2017 style reference
             filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
             self.forcing_ref = ReferenceRCE(filename)
 
@@ -968,32 +974,42 @@ cdef class ForcingZGILS:
         cdef double Tg_parcel = 295.0
         cdef double RH_ref = 0.3
 
-        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
+        if self.reference_type == 'InteractiveRCE':
+            # the reference profile returned here is not actually used, we just need to get the right-ish
+            # value of tropical SST for creating the lookup table
+            # RH_ref is not used, it is read from namelist (defaults to 0.3)
             self.forcing_ref.initialize(Pa, Ref.p0_half[:], Ref.Pg, Sur.T_surface + 10.0, RH_ref)
+        elif self.reference_type == 'InteractiveRCE_fix':
+            # We will actually use this reference profile (it is frozen through out simulation)
+            # RH_ref is not used, it is read from namelist (defaults to 0.3)
+            self.forcing_ref.initialize(Pa, Ref.p0_half[:], Ref.Pg,
+                                        Sur.T_surface_init + 10.0 + ecs * self.n_double_co2, RH_ref)
         else:
+            # '_parcel' values are used for Tan et al 2016 style reference profile
+            # if Tan et al 2017 reference profiles are used, we just read the file set during the init()
             self.forcing_ref.initialize(Pa, Ref.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)
 
         cdef:
             Py_ssize_t k
             double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g * self.divergence_factor
-            double pv_star, qv_star, SST_1xCO2
+            double pv_star, qv_star
+
+        if self.loc == 12:
+            self.SST_1xCO2  = 290.0
+        elif self.loc == 11:
+            self.SST_1xCO2 = 292.2
+        elif self.loc == 6:
+            self.SST_1xCO2 = 298.9
 
         if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
-            if self.loc == 12:
-                SST_1xCO2  = 290.0
-            elif self.loc == 11:
-                SST_1xCO2 = 292.2
-            elif self.loc == 6:
-                SST_1xCO2 = 298.9
-            self.SST_1xCO2 = SST_1xCO2
-
-            pv_star = self.CC.LT.fast_lookup(SST_1xCO2)
+            pv_star = self.CC.LT.fast_lookup(self.SST_1xCO2)
             qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
             self.qt_adv_max = self.qt_adv_max/qv_star
         else:
-            # Adjust the moisture advection
+            # Adjust the moisture advection as in Tan et al 2017
             self.qt_adv_max = self.qt_adv_max * (1.18) ** self.n_double_co2
         # Adjust the subsidence if a VarSub climate change case is being run
+        # As in Tan et al 2017
         if self.varsub:
             sub_factor = sub_factor * (0.86) ** self.n_double_co2
 
@@ -1082,12 +1098,7 @@ cdef class ForcingZGILS:
         # update reference profiles if necessary
         if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
             deltaT = 5.0/Ra.swcre_srf_sc * fmax(fmin(Ra.swcre_srf,Ra.swcre_srf_sc),0.0) + 5.0
-
             self.forcing_ref.update(Ref.p0_half[:], Sur.T_surface + deltaT)
-        if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE_fix':
-            self.forcing_ref.update(Ref.p0_half[:], self.SST_1xCO2+10.0)
-
-
 
         #Apply Coriolis Forcing
 
@@ -1128,14 +1139,8 @@ cdef class ForcingZGILS:
         self.qt_ls_factor = 1.0
         self.t_ls_factor = 1.0
 
-        if self.reference_type == 'InteractiveRCE':
+        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
             pv_star = self.CC.LT.fast_lookup(Sur.T_surface)
-            # HACK
-            #pv_star = self.CC.LT.fast_lookup(288.53)
-            qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
-            self.qt_ls_factor = qv_star
-        elif self.reference_type == 'InteractiveRCE_fix':
-            pv_star = self.CC.LT.fast_lookup(self.SST_1xCO2)
             qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
             self.qt_ls_factor = qv_star
         if self.adjust_t_adv:

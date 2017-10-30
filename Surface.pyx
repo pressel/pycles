@@ -931,6 +931,8 @@ cdef class SurfaceZGILS(SurfaceBase):
         # adjust surface temperature for climate change experiments
         self.T_surface = self.T_surface + 3.0 * n_double_co2
 
+        self.T_surface_init = 290.0  # For Item 3 fixed ECS simulations
+
         return
 
 

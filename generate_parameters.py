@@ -31,6 +31,9 @@ def main():
     parameters['omega'] = 7.2921151467064e-5  # Earth's rotational rate (http://hpiers.obspm.fr/eop-pc/models/constants.html)
     parameters['ql_threshold'] = 1.0e-8
     parameters['sigma_sb'] = 5.670367e-8 # Stefan-Boltzmann constant
+    # Added for CO2 experiments
+    parameters['ecs'] = 3.7 # equilibrium climate sensitivity, K per CO2-doubling
+
 
 
 

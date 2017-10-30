@@ -12,6 +12,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cdef class SurfaceBase:
     cdef:
         double T_surface
+        double T_surface_init
         double [:] s_flux
         double [:] qt_flux
         double [:] u_flux
