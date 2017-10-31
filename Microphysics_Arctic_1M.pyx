@@ -132,8 +132,8 @@ cdef class Microphysics_Arctic_1M:
         self.evap_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
         #Add precipitation variables
-        PV.add_variable('nr', '1/kg', r'n_r', 'rain droplet number concentration','sym','scalar',Pa)
         PV.add_variable('qr', 'kg/kg', r'q_r', 'rain water specific humidity','sym','scalar',Pa)
+        PV.add_variable('qs', 'kg/kg', r'q_r', 'snow water specific humidity','sym','scalar',Pa)
 
         # add sedimentation velocities as diagnostic variables (the format has to be w_q)
         DV.add_variables('w_qr', 'm/s', r'w_{qr}', r'rain mass sedimentation velocity', 'sym', Pa)
@@ -192,8 +192,8 @@ cdef class Microphysics_Arctic_1M:
             Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t tw_shift = DV.get_varshift(Gr, 'temperature_wb')
-            Py_ssize_t wqrain_shift = DV.get_varshift(Gr, 'w_qrain')
-            Py_ssize_t wqsnow_shift = DV.get_varshift(Gr, 'w_qsnow')
+            Py_ssize_t wqrain_shift = DV.get_varshift(Gr, 'w_qr')
+            Py_ssize_t wqsnow_shift = DV.get_varshift(Gr, 'w_qs')
 
             double [:] qrain_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double [:] qsnow_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
@@ -224,21 +224,22 @@ cdef class Microphysics_Arctic_1M:
         # #Add entropy tendency due to microphysics (precipitation and evaporation only)
         microphysics_wetbulb_temperature(&Gr.dims, &self.CC.LT.LookupStructC, &Ref.p0_half[0], &PV.values[s_shift],
                                           &PV.values[qt_shift], &DV.values[t_shift], &DV.values[tw_shift])
-        #
+
         get_s_source_precip(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
-                             &self.precip_rate[0], &PV.tendencies[s_shift])
+                               &self.precip_rate[0], &PV.tendencies[s_shift])
+
         get_s_source_evap(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qt_shift], &DV.values[qv_shift],
                              &self.evap_rate[0], &PV.tendencies[s_shift])
-        #
+
         entropy_source_heating_rain(&Gr.dims, &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qrain_shift],
                                    &DV.values[wqrain_shift],  &PV.values[w_shift], &PV.tendencies[s_shift])
-        #
+
         entropy_source_heating_snow(&Gr.dims, &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qsnow_shift],
                                    &DV.values[wqsnow_shift],  &PV.values[w_shift], &PV.tendencies[s_shift])
-        #
+
         entropy_source_drag(&Gr.dims, &DV.values[t_shift], &PV.values[qrain_shift], &DV.values[wqrain_shift],
                              &PV.tendencies[s_shift])
-        #
+
         entropy_source_drag(&Gr.dims, &DV.values[t_shift], &PV.values[qsnow_shift], &DV.values[wqsnow_shift],
                              &PV.tendencies[s_shift])
 
@@ -366,8 +367,8 @@ cdef class Microphysics_Arctic_1M:
             Py_ssize_t pi, k
             ParallelMPI.Pencil z_pencil = ParallelMPI.Pencil()
             Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
-            Py_ssize_t qrain_shift = PV.get_varshift(Gr, 'qrain')
-            Py_ssize_t qsnow_shift = PV.get_varshift(Gr, 'qsnow')
+            Py_ssize_t qrain_shift = PV.get_varshift(Gr, 'qr')
+            Py_ssize_t qsnow_shift = PV.get_varshift(Gr, 'qs')
             double[:, :] qi_pencils
             double[:, :] qrain_pencils
             double[:, :] qsnow_pencils

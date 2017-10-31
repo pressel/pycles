@@ -98,9 +98,9 @@ double rain_lambda(double density, double qrain, double nrain){
 
 double snow_lambda(double density, double qsnow, double nsnow){
     double wc = fmax(qsnow * density, SMALL);
-    double val = cbrt(A_SNOW*nsnow*GB1_SNOW/wc);
+    //double val = cbrt(A_SNOW*nsnow*GB1_SNOW/wc);
     /*Morrison et al. 2011 alternative formulation*/
-    /*double val = 3.81e3*pow(wc, -0.147)*/
+    double val = 3.81e3*pow(wc, -0.147);
     return val;
 };
 
@@ -371,7 +371,7 @@ void accretion_all(double density, double p0, double temperature, double ccn, do
             src_r = -src_s;
         }
         else{
-            src_r = pi*dv*nsnow*nrain*A_RAIN*k_2r/density;
+            src_r = pi*dv*nsnow*nrain*A_SNOW*k_2r/density;
             src_s = -src_r;
         }
     }
@@ -442,7 +442,7 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
 
                 qrain_tmp = fmax(qrain[ijk],0.0); //clipping
                 qsnow_tmp = fmax(qsnow[ijk],0.0); //clipping
-                qt_tmp = qt[ijk];
+                qt_tmp = fmax(qt[ijk], SMALL);
                 ql_tmp = fmax(ql[ijk],0.0);
 
 
@@ -659,39 +659,6 @@ double entropy_src_evaporation_c(const double p0, const double temperature, doub
     double sc = sc_c(L, Tw);
 
     return -(sv + sc - sd) * evap_rate;
-};
-
-void entropy_source_formation(const struct DimStruct *dims, struct LookupStruct *LT, double (*lam_fp)(double),
-                              double (*L_fp)(double, double), double* restrict p0, double* restrict T,
-                              double* restrict Twet, double* restrict qt, double* restrict qv,
-                              double* restrict qrain_tendency, double* restrict qsnow_tendency,
-                              double* restrict precip_rate, double* restrict evap_rate, double* restrict entropy_tendency){
-
-    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
-    const ssize_t jstride = dims->nlg[2];
-    const ssize_t imin = dims->gw;
-    const ssize_t jmin = dims->gw;
-    const ssize_t kmin = dims->gw;
-    const ssize_t imax = dims->nlg[0]-dims->gw;
-    const ssize_t jmax = dims->nlg[1]-dims->gw;
-    const ssize_t kmax = dims->nlg[2]-dims->gw;
-
-    //entropy tendencies from formation or evaporation of precipitation
-    //we use fact that P = d(qr)/dt > 0, E =  d(qr)/dt < 0
-    for(ssize_t i=imin; i<imax; i++){
-        const ssize_t ishift = i * istride;
-        for(ssize_t j=jmin; j<jmax; j++){
-            const ssize_t jshift = j * jstride;
-            for(ssize_t k=kmin; k<kmax; k++){
-                const ssize_t ijk = ishift + jshift + k;
-
-
-
-
-            }
-        }
-    }
-    return;
 };
 
 void entropy_source_heating_rain(const struct DimStruct *dims, double* restrict temperature, double* restrict Twet, double* restrict qrain,
