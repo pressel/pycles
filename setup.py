@@ -34,7 +34,7 @@ elif 'eu' in platform.node():
     libraries.append('gfortran')
     extensions = []
     extra_compile_args=[]
-    extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
+    extra_compile_args+=['-std=c99', '-O3',  '-Wno-unused',
                          '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
     netcdf_include = '/cluster/apps/netcdf/4.3.1/x86_64/gcc_4.8.2/openmpi_1.6.5/include'

@@ -520,7 +520,13 @@ void sb_entropy_source_heating(const struct DimStruct *dims, double* restrict T,
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                entropy_tendency[ijk]+= qr[ijk]*(fabs(w_qr[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk])* dzi/T[ijk]*dims->imetl_half[k];
+                const double w_adv = w_qr[ijk] - w[ijk]; 
+                if(w_adv <= 0.0){
+                    entropy_tendency[ijk]-= qr[ijk]*w_adv * cl * (Twet[ijk+1] - Twet[ijk])* dzi/T[ijk]*dims->imetl_half[k];
+                }
+                else{
+                    entropy_tendency[ijk]-= qr[ijk]*w_adv * cl * (Twet[ijk] - Twet[ijk-1])* dzi/T[ijk]*dims->imetl_half[k];
+                }
             }
         }
     }
