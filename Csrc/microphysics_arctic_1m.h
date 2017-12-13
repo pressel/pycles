@@ -98,9 +98,9 @@ double rain_lambda(double density, double qrain, double nrain){
 
 double snow_lambda(double density, double qsnow, double nsnow){
     double wc = fmax(qsnow * density, SMALL);
-    double val = cbrt(A_SNOW*nsnow*GB1_SNOW/wc);
+//    double val = cbrt(A_SNOW*nsnow*GB1_SNOW/wc);
     /*Morrison et al. 2011 alternative formulation*/
-    /*double val = 3.81e3*pow(wc, -0.147)*/
+    double val = 3.81e3*pow(wc, -0.147);
     return val;
 };
 
