@@ -417,6 +417,7 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
     double ql_tendency_acc=0.0, qi_tendency_acc=0.0;
     double ql_tendency_tmp=0.0, qi_tendency_tmp=0.0, qrain_tendency_tmp=0.0, qsnow_tendency_tmp=0.0;
     double qt_tmp, ql_tmp, qi_tmp, qrain_tmp, qsnow_tmp;
+    double precip_tmp, evap_tmp;
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -444,6 +445,8 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                 qt_tmp = qt[ijk];
                 ql_tmp = fmax(ql[ijk],0.0);
 
+                precip_rate[ijk] = 0.0;
+                evap_rate[ijk] = 0.0;
 
                 // Now do sub-timestepping
                 double time_added = 0.0, dt_, rate;
@@ -466,6 +469,9 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
 
                     ql_tendency_acc = 0.0;
                     qi_tendency_acc = 0.0;
+
+                    precip_tmp = 0.0;
+                    evap_tmp = 0.0;
 
                     autoconversion_rain(density[k], ccn, ql_tmp, qrain_tmp, nrain[ijk], &qrain_tendency_aut);
                     autoconversion_snow(LT, lam_fp, L_fp, density[k], p0[k], temperature[ijk], qt_tmp,
@@ -495,15 +501,20 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                         dt_ = fmax(dt_/rate, 1.0e-3);
                     }
 
-                    precip_rate[ijk] = -qrain_tendency_aut + ql_tendency_acc - qsnow_tendency_aut + qi_tendency_acc;
-                    evap_rate[ijk] = qrain_tendency_evp + qsnow_tendency_evp;
+                    // precip_tmp is NEGATIVE if rain/snow forms (+precip_tmp is to remove qt via precip formation);
+                    // evap_tmp is NEGATIVE if rain/snow evaporate/sublimate (-evap_tmp is to add qt via evap/subl);
+                    precip_tmp = -qrain_tendency_aut + ql_tendency_acc - qsnow_tendency_aut + qi_tendency_acc;
+                    evap_tmp = qrain_tendency_evp + qsnow_tendency_evp;
+
+                    precip_rate[ijk] += precip_tmp;
+                    evap_rate[ijk] += evap_tmp;
 
                     //Integrate forward in time
                     ql_tmp += ql_tendency_tmp * dt_;
                     qi_tmp += qi_tendency_tmp * dt_;
                     qrain_tmp += qrain_tendency_tmp * dt_;
                     qsnow_tmp += qsnow_tendency_tmp * dt_;
-                    qt_tmp += (precip_rate[ijk] - evap_rate[ijk]) * dt_;
+                    qt_tmp += (precip_tmp - evap_tmp) * dt_;
 
                     qrain_tmp = fmax(qrain_tmp, 0.0);
                     qsnow_tmp = fmax(qsnow_tmp, 0.0);
