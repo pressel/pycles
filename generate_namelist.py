@@ -1039,7 +1039,7 @@ def Mpace():
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic_1M'
-    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['phase_partitioning'] = 'Arctic'
     namelist['microphysics']['n0_ice'] = 1.0e7
 
     namelist["sgs"] = {}
@@ -1093,7 +1093,7 @@ def Mpace():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = "fields"
     namelist['fields_io']['frequency'] = 36000.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Mpace'
