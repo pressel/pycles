@@ -19,12 +19,12 @@ import cython
 
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 cdef extern from "entropies.h":
-    inline double sd_c(double p0, double T) nogil
+    double sd_c(double p0, double T) nogil
 
 
 cdef extern from "thermodynamics_dry.h":
-    inline double eos_c(double p0, double s) nogil
-    inline double alpha_c(double p0, double T, double qt, double qv) nogil
+    double eos_c(double p0, double s) nogil
+    double alpha_c(double p0, double T, double qt, double qv) nogil
     void eos_update(Grid.DimStruct *dims, double *pd, double *s, double *T,
                     double *alpha)
     void buoyancy_update(Grid.DimStruct *dims, double *alpha0, double *alpha,double *buoyancy,

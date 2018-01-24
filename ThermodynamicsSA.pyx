@@ -19,7 +19,7 @@ from NetCDFIO cimport NetCDFIO_Stats, NetCDFIO_Fields
 from libc.math cimport fmax, fmin
 
 cdef extern from "thermodynamics_sa.h":
-    inline double alpha_c(double p0, double T, double qt, double qv) nogil
+    double alpha_c(double p0, double T, double qt, double qv) nogil
     void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
     void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
                     double * qv, double * ql, double * qi, double * alpha)
@@ -30,18 +30,18 @@ cdef extern from "thermodynamics_sa.h":
 
 cdef extern from "thermodynamic_functions.h":
     # Dry air partial pressure
-    inline double pd_c(double p0, double qt, double qv) nogil
+    double pd_c(double p0, double qt, double qv) nogil
     # Water vapor partial pressure
-    inline double pv_c(double p0, double qt, double qv) nogil
+    double pv_c(double p0, double qt, double qv) nogil
 
 
 cdef extern from "entropies.h":
     # Specific entropy of dry air
-    inline double sd_c(double pd, double T) nogil
+    double sd_c(double pd, double T) nogil
     # Specific entropy of water vapor
-    inline double sv_c(double pv, double T) nogil
+    double sv_c(double pv, double T) nogil
     # Specific entropy of condensed water
-    inline double sc_c(double L, double T) nogil
+    double sc_c(double L, double T) nogil
 
 
 cdef class ThermodynamicsSA:
