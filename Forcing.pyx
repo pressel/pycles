@@ -1048,7 +1048,7 @@ cdef class ForcingMpace:
         with nogil:
             for k in range(Gr.dims.nlg[2]):
                 self.dtdt[k] = fmin(-4.0, -15.0*(1.0 - (RS.Pg - RS.p0_half[k])/21818.0))/86400.0
-                self.dqtdt[k] = fmin(-0.164, -3.0*(1.0 - (RS.Pg - RS.p0_half[k])/15171.0))/86400000.0
+                self.dqtdt[k] = fmin(0.164, -3.0*(1.0 - (RS.Pg - RS.p0_half[k])/15171.0))/86400000.0
                 self.subsidence[k] = -fmin(self.divergence*(RS.Pg - RS.p0_half[k]), omega_min) / RS.rho0_half[k] / g
 
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
