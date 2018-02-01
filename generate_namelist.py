@@ -1148,12 +1148,12 @@ def Sheba():
     namelist['radiation']['RRTM']['frequency'] = 60.0
     namelist['radiation']['RRTM']['buffer_points'] = 15
     namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
-    namelist['radiation']['RRTM']['dyofyr'] = 283
+    namelist['radiation']['RRTM']['dyofyr'] = 127
     # namelist['radiation']['RRTM']['coszen'] = 0.0
     namelist['radiation']['RRTM']['daily_mean_sw'] = False
-    namelist['radiation']['RRTM']['hourz'] = 17.0
-    namelist['radiation']['RRTM']['latitude'] = 71.75
-    namelist['radiation']['RRTM']['longitude'] = 151.0
+    namelist['radiation']['RRTM']['hourz'] = 12.0
+    namelist['radiation']['RRTM']['latitude'] = 76.0
+    namelist['radiation']['RRTM']['longitude'] = -165.0
     namelist['radiation']['RRTM']['adir'] = 0.827
 
     namelist['forcing'] = {}
