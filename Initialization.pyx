@@ -43,7 +43,7 @@ def InitializationFactory(namelist):
         elif casename == 'IsdacCC':
             return InitIsdacCC
         elif casename == 'Mpace':
-            return InitMpace()
+            return InitMpace
         elif casename == 'Sheba':
             return InitSheba
         else:
@@ -1298,8 +1298,8 @@ def InitSheba(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                    8.2893,8.4211,8.553,8.6848,8.8167,8.9485,9.0804,9.2122,9.3441,9.493,9.6463,9.7995,9.9527,10.106,
                    10.259])
 
-    u = np.interp(np.array(RS.p0)[::-1], ps[::-1], us[::-1])[::-1]
-    v = np.interp(np.array(RS.p0)[::-1], ps[::-1], vs[::-1])[::-1]
+    u = interp_pchip(np.array(RS.p0)[::-1], ps[::-1], us[::-1])[::-1]
+    v = interp_pchip(np.array(RS.p0)[::-1], ps[::-1], vs[::-1])[::-1]
 
 
     RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
@@ -1401,3 +1401,10 @@ def qv_unsat(p0, pv):
     val = 1.0/(eps_vi * (p0 - pv)/pv + 1.0)
     return val
 
+from scipy.interpolate import pchip
+def interp_pchip(z_out, z_in, v_in, pchip_type=True):
+    if pchip_type:
+        p = pchip(z_in, v_in, extrapolate=True)
+        return p(z_out)
+    else:
+        return np.interp(z_out, z_in, v_in)

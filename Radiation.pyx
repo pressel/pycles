@@ -651,6 +651,7 @@ cdef class RadiationRRTM:
                 self.longitude = namelist['radiation']['RRTM']['longitude']
                 self.hourz_init = namelist['radiation']['RRTM']['hourz']
                 self.coszen = cos_sza(self.dyofyr_init, self.hourz_init, self.latitude, self.longitude)
+                print('Calculated cos(sza) based on time and location, cos(sza) = %5.4f .'%(self.coszen))
             except:
                 print('Hourz, latitude, or longitude not set. Cannot calculate RRTM SW. Exit now!')
                 sys.exit()

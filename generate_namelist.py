@@ -1153,7 +1153,7 @@ def Sheba():
     namelist['radiation']['RRTM']['daily_mean_sw'] = False
     namelist['radiation']['RRTM']['hourz'] = 12.0
     namelist['radiation']['RRTM']['latitude'] = 76.0
-    namelist['radiation']['RRTM']['longitude'] = -165.0
+    namelist['radiation']['RRTM']['longitude'] = 195.0
     namelist['radiation']['RRTM']['adir'] = 0.827
 
     namelist['forcing'] = {}

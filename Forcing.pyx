@@ -19,7 +19,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 include 'parameters.pxi'
 from Initialization import sat_adjst, qv_unsat
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 cdef class Forcing:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
@@ -1182,10 +1182,10 @@ cdef class ForcingSheba:
 
         self.subsidence = np.empty((Gr.dims.nlg[2]), dtype=np.double, order='c')
         self.nudge_coeff_velocities = 1.0 / 3600.0
-        self.dtdt = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.dqtdt = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.u0 = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
-        self.v0 = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.u0 = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.v0 = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
         data = nc.Dataset(input_file, 'r')
         time_all = data.variables['yymmddhh'][:]
@@ -1200,15 +1200,15 @@ cdef class ForcingSheba:
 
         Pa.root_print('Finish reading in SHEBA forcing fields.')
 
-        dtdt = interp_pchip(np.array(RS.p0_half)[::-1], np.array(EC_pressure)[:], np.array(EC_dTdt)[:])
-        dqtdt = interp_pchip(np.array(RS.p0_half)[::-1], np.array(EC_pressure)[:], np.array(EC_dqdt)[:])
-        u0 = interp_pchip(np.array(RS.p0)[::-1], np.array(EC_pressure)[:], np.array(EC_u)[:])
-        v0 = interp_pchip(np.array(RS.p0)[::-1], np.array(EC_pressure)[:], np.array(EC_v)[:])
+        dtdt = np.interp(np.array(RS.p0_half)[::-1], np.array(EC_pressure)[:], np.array(EC_dTdt)[:])
+        dqtdt = np.interp(np.array(RS.p0_half)[::-1], np.array(EC_pressure)[:], np.array(EC_dqdt)[:])
+        u0 = np.interp(np.array(RS.p0)[::-1], np.array(EC_pressure)[:], np.array(EC_u)[:])
+        v0 = np.interp(np.array(RS.p0)[::-1], np.array(EC_pressure)[:], np.array(EC_v)[:])
 
-        self.dtdt = dtdt[::-1]
-        self.dqtdt = dqtdt[::-1]
-        self.u0 = u0[::-1]
-        self.v0 = v0[::-1]
+        self.dtdt = np.array(dtdt[::-1],dtype=np.double, order='c')
+        self.dqtdt = np.array(dqtdt[::-1],dtype=np.double, order='c')
+        self.u0 = np.array(u0[::-1],dtype=np.double, order='c')
+        self.v0 = np.array(v0[::-1],dtype=np.double, order='c')
 
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
