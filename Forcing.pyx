@@ -1181,7 +1181,7 @@ cdef class ForcingSheba:
             double [:] v0# = self.v0
 
         self.subsidence = np.empty((Gr.dims.nlg[2]), dtype=np.double, order='c')
-        self.nudge_coeff_velocities = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') / 3600.0
+        self.nudge_coeff_velocities = 1.0 / 3600.0
         self.dtdt = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dqtdt = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.u0 = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -1198,7 +1198,7 @@ cdef class ForcingSheba:
         EC_pressure = np.array(data.variables['sigma'][:])*EC_ps
         data.close()
 
-        print('Finish reading in SHEBA forcing fields.')
+        Pa.root_print('Finish reading in SHEBA forcing fields.')
 
         dtdt = interp_pchip(np.array(RS.p0_half)[::-1], np.array(EC_pressure)[:], np.array(EC_dTdt)[:])
         dqtdt = interp_pchip(np.array(RS.p0_half)[::-1], np.array(EC_pressure)[:], np.array(EC_dqdt)[:])
@@ -1211,15 +1211,15 @@ cdef class ForcingSheba:
         self.v0 = v0[::-1]
 
         with nogil:
-            for k in range(Gr.dims.nlg[2]):
+            for k in xrange(Gr.dims.nlg[2]):
                 if RS.p0_half[k] < p_inv:
                     self.dtdt[k] = fmin(1.815e-9*(p_inv - RS.p0_half[k]), 2.85e-5) - 0.05 * RS.alpha0_half[k] / cpd
                     self.dqtdt[k] = 7.0e-10
 
                 omega = fmin((RS.Pg - RS.p0[k])*0.05/6000.0, 0.05)
                 self.subsidence[k] = -omega / RS.rho0[k] / g
-                self.u0[k] -= RS.u0
-                self.v0[k] -= RS.v0
+                # self.u0[k] -= RS.u0
+                # self.v0[k] -= RS.v0
 
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
@@ -1281,6 +1281,31 @@ cdef class ForcingSheba:
 
         # apply_nudging(&Gr.dims, &self.nudge_coeff_velocities[0], &self.u0[0], &PV.values[u_shift], &PV.tendencies[u_shift])
         # apply_nudging(&Gr.dims, &self.nudge_coeff_velocities[0], &self.v0[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+
+        #Horizontal wind nudging
+        cdef:
+            double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
+            double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            double [:] nudge_source_u = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] nudge_source_v = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+
+        # Calculate nudging
+        with nogil:
+            for k in xrange(Gr.dims.nlg[2]):
+                # Nudge mean wind profiles through entire depth
+                nudge_source_u[k] = -(umean[k] + Ref.u0 - self.u0[k]) * self.nudge_coeff_velocities
+                nudge_source_v[k] = -(vmean[k] + Ref.v0 - self.v0[k]) * self.nudge_coeff_velocities
+
+        with nogil:
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        PV.tendencies[u_shift + ijk] += nudge_source_u[k]
+                        PV.tendencies[v_shift + ijk] += nudge_source_v[k]
+
 
         return
 
@@ -1384,11 +1409,12 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
         Py_ssize_t kmin = dims.gw
         Py_ssize_t imax = dims.nlg[0] -dims.gw
         Py_ssize_t jmax = dims.nlg[1] -dims.gw
-        Py_ssize_t kmax = dims.nlg[2] -dims.gw
+        Py_ssize_t kmax = dims.nlg[2] -dims.gw -1
         Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
         Py_ssize_t jstride = dims.nlg[2]
         Py_ssize_t ishift, jshift, ijk, i,j,k
         double dxi = dims.dxi[2]
+        double tend
     with nogil:
         for i in xrange(imin,imax):
             ishift = i*istride
@@ -1396,7 +1422,11 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                 jshift = j*jstride
                 for k in xrange(kmin,kmax):
                     ijk = ishift + jshift + k
-                    tendencies[ijk] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k]
+                    tend = (values[ijk+1] - values[ijk]) * dxi * subsidence[k]
+                    tendencies[ijk] -= tend
+                for k in xrange(kmax, dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    tendencies[ijk] -= tend
 
     return
 

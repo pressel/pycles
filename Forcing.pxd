@@ -162,7 +162,7 @@ cdef class ForcingSheba:
         double [:] dqtdt
         double [:] u0
         double [:] v0
-        double [:] nudge_coeff_velocities
+        double nudge_coeff_velocities
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, namelist)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
