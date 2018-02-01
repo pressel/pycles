@@ -1252,8 +1252,8 @@ def InitSheba(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double [:] ps
         double [:] us
         double [:] vs
-        double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] v #= np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
+        double [:] u #= np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
     for k in xrange(Gr.dims.nlg[2]):
 
@@ -1298,8 +1298,8 @@ def InitSheba(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                    8.2893,8.4211,8.553,8.6848,8.8167,8.9485,9.0804,9.2122,9.3441,9.493,9.6463,9.7995,9.9527,10.106,
                    10.259])
 
-    u = np.interp(RS.p0[::-1], ps[::-1], us[::-1])[::-1]
-    v = np.interp(RS.p0[::-1], ps[::-1], vs[::-1])[::-1]
+    u = np.interp(np.array(RS.p0)[::-1], ps[::-1], us[::-1])[::-1]
+    v = np.interp(np.array(RS.p0)[::-1], ps[::-1], vs[::-1])[::-1]
 
 
     RS.u0 = 0.5 * (np.amax(u)+np.amin(u))

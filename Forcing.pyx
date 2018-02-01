@@ -1175,13 +1175,17 @@ cdef class ForcingSheba:
             double [:] EC_u
             double [:] EC_v
             double EC_ps
-            double [:] dtdt = self.dtdt
-            double [:] dqtdt = self.dqtdt
-            double [:] u0 = self.u0
-            double [:] v0 = self.v0
+            double [:] dtdt# = self.dtdt
+            double [:] dqtdt# = self.dqtdt
+            double [:] u0# = self.u0
+            double [:] v0# = self.v0
 
         self.subsidence = np.empty((Gr.dims.nlg[2]), dtype=np.double, order='c')
         self.nudge_coeff_velocities = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') / 3600.0
+        self.dtdt = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.dqtdt = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.u0 = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.v0 = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
 
         data = nc.Dataset(input_file, 'r')
         time_all = data.variables['yymmddhh'][:]
@@ -1196,19 +1200,26 @@ cdef class ForcingSheba:
 
         print('Finish reading in SHEBA forcing fields.')
 
-        dtdt = np.interp(np.array(RS.p0_half)[::-1], EC_pressure, EC_dTdt)[::-1]
-        dqtdt = np.interp(np.array(RS.p0_half)[::-1], EC_pressure, EC_dqdt)[::-1]
-        u0 = np.interp(np.array(RS.p0)[::-1], EC_pressure, EC_u)[::-1]
-        v0 = np.interp(np.array(RS.p0)[::-1], EC_pressure, EC_v)[::-1]
+        dtdt = interp_pchip(np.array(RS.p0_half)[::-1], np.array(EC_pressure)[:], np.array(EC_dTdt)[:])
+        dqtdt = interp_pchip(np.array(RS.p0_half)[::-1], np.array(EC_pressure)[:], np.array(EC_dqdt)[:])
+        u0 = interp_pchip(np.array(RS.p0)[::-1], np.array(EC_pressure)[:], np.array(EC_u)[:])
+        v0 = interp_pchip(np.array(RS.p0)[::-1], np.array(EC_pressure)[:], np.array(EC_v)[:])
+
+        self.dtdt = dtdt[::-1]
+        self.dqtdt = dqtdt[::-1]
+        self.u0 = u0[::-1]
+        self.v0 = v0[::-1]
 
         with nogil:
             for k in range(Gr.dims.nlg[2]):
                 if RS.p0_half[k] < p_inv:
-                    dtdt[k] = fmin(1.815e-9*(p_inv - RS.p0_half[k]), 2.85e-5) - 0.05 * RS.alpha0_half[k] / cpd
-                    dqtdt[k] = 7.0e-10
+                    self.dtdt[k] = fmin(1.815e-9*(p_inv - RS.p0_half[k]), 2.85e-5) - 0.05 * RS.alpha0_half[k] / cpd
+                    self.dqtdt[k] = 7.0e-10
 
                 omega = fmin((RS.Pg - RS.p0[k])*0.05/6000.0, 0.05)
                 self.subsidence[k] = -omega / RS.rho0[k] / g
+                self.u0[k] -= RS.u0
+                self.v0[k] -= RS.v0
 
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
@@ -1268,8 +1279,8 @@ cdef class ForcingSheba:
                         PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
-        apply_nudging(&Gr.dims, &self.nudge_coeff_velocities[0], &self.u0[0], &PV.values[u_shift], &PV.tendencies[u_shift])
-        apply_nudging(&Gr.dims, &self.nudge_coeff_velocities[0], &self.v0[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+        # apply_nudging(&Gr.dims, &self.nudge_coeff_velocities[0], &self.u0[0], &PV.values[u_shift], &PV.tendencies[u_shift])
+        # apply_nudging(&Gr.dims, &self.nudge_coeff_velocities[0], &self.v0[0], &PV.values[v_shift], &PV.tendencies[v_shift])
 
         return
 
@@ -1464,7 +1475,7 @@ cdef apply_ls_advection_qt(Grid.DimStruct *dims, double *tendencies, double *ls_
     return
 
 from scipy.interpolate import pchip
-def interp_pchip(z_out, z_in, v_in, pchip_type=False):
+def interp_pchip(z_out, z_in, v_in, pchip_type=True):
     if pchip_type:
         p = pchip(z_in, v_in, extrapolate=True)
         return p(z_out)
