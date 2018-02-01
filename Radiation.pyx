@@ -579,8 +579,8 @@ cdef class RadiationRRTM:
         self.toa_lw_up = 0.0
         self.toa_sw_up = 0.0
         casename = namelist['meta']['casename']
-        if casename == 'SHEBA':
-            self.profile_name = 'sheba'
+        if casename == 'Sheba':
+            self.profile_name = 'arctic'
         elif casename == 'DYCOMS_RF01':
             self.profile_name = 'cgils_s12'
         elif casename == 'Isdac':

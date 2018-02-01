@@ -15,7 +15,7 @@ from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c,
 cimport ReferenceState
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 def InitializationFactory(namelist):
 
@@ -43,7 +43,7 @@ def InitializationFactory(namelist):
         elif casename == 'IsdacCC':
             return InitIsdacCC
         elif casename == 'Mpace':
-            return InitSheba
+            return InitMpace()
         elif casename == 'Sheba':
             return InitSheba
         else:

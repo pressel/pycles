@@ -1154,6 +1154,10 @@ def Sheba():
     namelist['radiation']['RRTM']['hourz'] = 17.0
     namelist['radiation']['RRTM']['latitude'] = 71.75
     namelist['radiation']['RRTM']['longitude'] = 151.0
+    namelist['radiation']['RRTM']['adir'] = 0.827
+
+    namelist['forcing'] = {}
+    namelist['forcing']['input_file'] = '/Users/xiyue/Clouds/SHEBA/input/EC_tend.nc'
 
     namelist["diffusion"] = {}
     namelist['diffusion']['qt_entropy_source'] = False

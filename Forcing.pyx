@@ -4,6 +4,7 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
+import netCDF4 as nc
 cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
@@ -18,6 +19,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 include 'parameters.pxi'
 from Initialization import sat_adjst, qv_unsat
+import matplotlib.pyplot as plt
 
 cdef class Forcing:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
@@ -45,6 +47,8 @@ cdef class Forcing:
             self.scheme = ForcingNone()
         elif casename == 'Mpace':
             self.scheme = ForcingMpace()
+        elif casename == 'Sheba':
+            self.scheme = ForcingSheba()
         else:
             Pa.root_print('No focing for casename: ' +  casename)
             Pa.root_print('Killing simulation now!!!')
@@ -1143,6 +1147,164 @@ cdef class ForcingMpace:
 
 
         return
+
+cdef class ForcingSheba:
+    def __init__(self):
+        # self.divergence = 5.8e-6
+
+        return
+
+    @cython.wraparound(True)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, namelist):
+
+        try:
+            input_file = str(namelist['forcing']['input_file'])
+            Pa.root_print('Using SHEBA input file for forcing profiles.')
+        except:
+            Pa.root_print('No SHEBA input file! Kill simulation now!')
+            Pa.kill()
+
+
+        cdef:
+            Py_ssize_t k, idx
+            double omega
+            double p_inv = 95700.0
+            double [:] EC_dTdt
+            double [:] EC_dqdt
+            double [:] EC_pressure
+            double [:] EC_u
+            double [:] EC_v
+            double EC_ps
+            double [:] dtdt = self.dtdt
+            double [:] dqtdt = self.dqtdt
+            double [:] u0 = self.u0
+            double [:] v0 = self.v0
+
+        self.subsidence = np.empty((Gr.dims.nlg[2]), dtype=np.double, order='c')
+        self.nudge_coeff_velocities = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') / 3600.0
+
+        data = nc.Dataset(input_file, 'r')
+        time_all = data.variables['yymmddhh'][:]
+        idx = np.where(time_all==1998050712)[0][0]
+        EC_dTdt = np.mean(data.variables['dTdt-hor-adv'][idx:idx+12,:],axis=0)
+        EC_dqdt = np.mean(data.variables['dqdt-hor-adv'][idx:idx+12,:],axis=0)
+        EC_u = np.mean(data.variables['u'][idx:idx+12,:],axis=0)
+        EC_v = np.mean(data.variables['v'][idx:idx+12,:],axis=0)
+        EC_ps = np.mean(data.variables['psurf'][idx:idx+12])
+        EC_pressure = np.array(data.variables['sigma'][:])*EC_ps
+        data.close()
+
+        print('Finish reading in SHEBA forcing fields.')
+
+        dtdt = np.interp(np.array(RS.p0_half)[::-1], EC_pressure, EC_dTdt)[::-1]
+        dqtdt = np.interp(np.array(RS.p0_half)[::-1], EC_pressure, EC_dqdt)[::-1]
+        u0 = np.interp(np.array(RS.p0)[::-1], EC_pressure, EC_u)[::-1]
+        v0 = np.interp(np.array(RS.p0)[::-1], EC_pressure, EC_v)[::-1]
+
+        with nogil:
+            for k in range(Gr.dims.nlg[2]):
+                if RS.p0_half[k] < p_inv:
+                    dtdt[k] = fmin(1.815e-9*(p_inv - RS.p0_half[k]), 2.85e-5) - 0.05 * RS.alpha0_half[k] / cpd
+                    dqtdt[k] = 7.0e-10
+
+                omega = fmin((RS.Pg - RS.p0[k])*0.05/6000.0, 0.05)
+                self.subsidence[k] = -omega / RS.rho0[k] / g
+
+        NS.add_profile('s_subsidence_tendency', Gr, Pa)
+        NS.add_profile('qt_subsidence_tendency', Gr, Pa)
+
+        return
+
+    @cython.wraparound(False)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+
+
+        cdef:
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i, j, k, ishift, jshift, ijk
+
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
+            double pd
+            double pv
+            double qt
+            double qv
+            double p0
+            double rho0
+            double t
+
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
+
+        #Apply large scale source terms
+        with nogil:
+            for i in xrange(imin,imax):
+                ishift = i * istride
+                for j in xrange(jmin,jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        p0 = Ref.p0_half[k]
+                        rho0 = Ref.rho0_half[k]
+                        qt = PV.values[qt_shift + ijk]
+                        qv = qt - DV.values[ql_shift + ijk]
+                        pd = pd_c(p0,qt,qv)
+                        pv = pv_c(p0,qt,qv)
+                        t  = DV.values[t_shift + ijk]
+                        PV.tendencies[s_shift + ijk] += (cpm_c(qt)
+                                                         * self.dtdt[k] * exner_c(p0) * rho0)/t
+                        PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t))*self.dqtdt[k]
+                        PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
+
+        apply_nudging(&Gr.dims, &self.nudge_coeff_velocities[0], &self.u0[0], &PV.values[u_shift], &PV.tendencies[u_shift])
+        apply_nudging(&Gr.dims, &self.nudge_coeff_velocities[0], &self.v0[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
+
+        #Output subsidence tendencies
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        tmp_tendency[:] = 0.0
+        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
+                         &tmp_tendency[0])
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        #Output advective forcing tendencies
+        tmp_tendency[:] = 0.0
+
+
+
+        return
+
 
 cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):
 
