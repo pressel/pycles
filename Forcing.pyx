@@ -1192,9 +1192,16 @@ cdef class ForcingSheba:
         EC_dqdt = np.mean(data.variables['dqdt-hor-adv'][idx:idx+12,:],axis=0)
         EC_u = np.mean(data.variables['u'][idx:idx+12,:],axis=0)
         EC_v = np.mean(data.variables['v'][idx:idx+12,:],axis=0)
-        EC_ps = np.mean(data.variables['psurf'][idx:idx+12])
+        EC_ps = np.amax(data.variables['psurf'][idx:idx+12])
         EC_pressure = np.array(data.variables['sigma'][:])*EC_ps
         data.close()
+
+        #Patch in the surface value
+        EC_pressure = np.append(EC_pressure, EC_ps)
+        EC_u = np.append(EC_u, EC_u[-1])
+        EC_v = np.append(EC_v, EC_v[-1])
+        EC_dTdt = np.append(EC_dTdt, EC_dTdt[-1])
+        EC_dqdt = np.append(EC_dqdt, EC_dqdt[-1])
 
         Pa.root_print('Finish reading in SHEBA forcing fields.')
 
