@@ -1298,9 +1298,6 @@ def InitSheba(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                    8.2893,8.4211,8.553,8.6848,8.8167,8.9485,9.0804,9.2122,9.3441,9.493,9.6463,9.7995,9.9527,10.106,
                    10.259],dtype=np.double,order='c')
 
-    # u = interp_pchip(np.array(RS.p0)[::-1], ps[::-1], us[::-1])[::-1]
-    # v = interp_pchip(np.array(RS.p0)[::-1], ps[::-1], vs[::-1])[::-1]
-
     #Interpolate to LES grid
     for k in xrange(Gr.dims.nlg[2]):
         u[k] = interp_pchip(RS.p0[k], ps[::-1], us[::-1])

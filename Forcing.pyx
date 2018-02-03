@@ -1205,16 +1205,6 @@ cdef class ForcingSheba:
 
         Pa.root_print('Finish reading in SHEBA forcing fields.')
 
-        # dtdt = interp_pchip(np.array(RS.p0_half)[::-1], np.array(EC_pressure)[:], np.array(EC_dTdt)[:])
-        # dqtdt = interp_pchip(np.array(RS.p0_half)[::-1], np.array(EC_pressure)[:], np.array(EC_dqdt)[:])
-        # u0 = interp_pchip(np.array(RS.p0)[::-1], np.array(EC_pressure)[:], np.array(EC_u)[:])
-        # v0 = interp_pchip(np.array(RS.p0)[::-1], np.array(EC_pressure)[:], np.array(EC_v)[:])
-        #
-        # self.dtdt = np.array(dtdt[::-1],dtype=np.double, order='c')
-        # self.dqtdt = np.array(dqtdt[::-1],dtype=np.double, order='c')
-        # self.u0 = np.array(u0[::-1],dtype=np.double, order='c')
-        # self.v0 = np.array(v0[::-1],dtype=np.double, order='c')
-
         for k in xrange(Gr.dims.nlg[2]):
             self.dtdt[k] = interp_pchip(RS.p0_half[k], EC_pressure, EC_dTdt)
             self.dqtdt[k] = interp_pchip(RS.p0_half[k], EC_pressure, EC_dqdt)
