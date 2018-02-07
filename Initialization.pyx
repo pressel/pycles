@@ -1227,7 +1227,7 @@ def InitSheba(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.Tg = 257.4 #Sea surface temperature (ice-covered)
     pvg = Th.get_pv_star(RS.Tg) #Saturation vapor pressure
     wtg = eps_v * pvg/(RS.Pg - pvg) #Saturation mixing ratio
-    RS.qtg = wtg/(1.0+wtg) #Saturation specific humidity
+    RS.qtg = wtg/(1.0+wtg)*0.99 #Saturation specific humidity
 
     RS.initialize(Gr, Th, NS, Pa)
 
