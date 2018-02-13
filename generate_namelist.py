@@ -478,7 +478,7 @@ def DYCOMS_RF01():
     namelist['grid']['nx'] = 96
     namelist['grid']['ny'] = 96
     namelist['grid']['nz'] = 300
-    namelist['grid']['gw'] = 5
+    namelist['grid']['gw'] = 3
     namelist['grid']['dx'] = 35.0
     namelist['grid']['dy'] = 35.0
     namelist['grid']['dz'] = 5.0
@@ -506,15 +506,17 @@ def DYCOMS_RF01():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
-
+    namelist['sgs']['Smagorinsky'] = {} 
+    namelist['sgs']['Smagorinsky']['iles'] = True 
+    
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 7
+    namelist['momentum_transport']['order'] = 5
 
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 7
+    namelist['scalar_transport']['order'] = 5
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
@@ -533,13 +535,13 @@ def DYCOMS_RF01():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE']
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency']
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -565,7 +567,7 @@ def DYCOMS_RF02():
     namelist['grid']['nx'] = 128
     namelist['grid']['ny'] = 128
     namelist['grid']['nz'] = 300
-    namelist['grid']['gw'] = 5
+    namelist['grid']['gw'] = 3
     namelist['grid']['dx'] = 50.0
     namelist['grid']['dy'] = 50.0
     namelist['grid']['dz'] = 5.0
@@ -593,15 +595,17 @@ def DYCOMS_RF02():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] = {} 
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 7
+    namelist['momentum_transport']['order'] = 5
 
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 7
+    namelist['scalar_transport']['order'] = 5
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
@@ -626,7 +630,7 @@ def DYCOMS_RF02():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency']
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 1e6
