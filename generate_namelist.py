@@ -506,8 +506,8 @@ def DYCOMS_RF01():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
-    namelist['sgs']['Smagorinsky'] = {} 
-    namelist['sgs']['Smagorinsky']['iles'] = True 
+    namelist['sgs']['Smagorinsky'] = {}
+    namelist['sgs']['Smagorinsky']['iles'] = True
     
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
