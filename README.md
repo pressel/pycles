@@ -6,9 +6,9 @@ Pressel, K. G., C. M. Kaul, T. Schneider, Z. Tan, and S. Mishra, 2015: Large-edd
 
 PyCLES Related Publications:
 
-Tan, Z., C. M. Kaul, K. G. Pressel, Y. Cohen, T. Schneider, and J. Teixeira, 2017: An extended eddy-diffusivity mass-flux scheme for unified representation of subgrid-scale turbulence and convection. Journal of Advances in Modeling Earth Systems, submitted. [PDF](http://climate-dynamics.org/wp-content/uploads/2017/09/Tan-etal-2017b.pdf) 
+Zhang, X., T. Schneider, and C. M. Kaul, 2018: Arctic mixed-phase clouds in large-eddy simulations and a mixed-layer model. Journal of Advances in Modeling Earth Systems, submitted. [PDF](http://climate-dynamics.org/wp-content/uploads/2018/01/isdac-revision.pdf)
 
-Zhang, X., T. Schneider, and C. M. Kaul, 2017: Arctic mixed-phase clouds in large-eddy simulations and a mixed-layer model. Journal of Advances in Modeling Earth Systems, submitted. [PDF](http://climate-dynamics.org/wp-content/uploads/2017/07/Zhang2017.pdf)
+Tan, Z., C. M. Kaul, K. G. Pressel, Y. Cohen, T. Schneider, and J. Teixeira, 2018: An extended eddy-diffusivity mass-flux scheme for unified representation of subgrid-scale turbulence and convection. Journal of Advances in Modeling Earth Systems, In Press. [Early Release](http://onlinelibrary.wiley.com/doi/10.1002/2017MS001162/full) 
 
 Pressel, K. G., S. Mishra, T. Schneider, C. M. Kaul, Z. Tan, 2017: Numerics and subgrid-scale modeling in large eddy simulations of stratocumulus clouds. Journal of Advances in Modeling Earth Systems, 9, 1342-1365, [doi:10.1002/2016MS000778](http://dx.doi.org/10.1002/2016MS000778).
 
