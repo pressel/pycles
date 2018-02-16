@@ -7,13 +7,19 @@ import sys
 import platform
 import subprocess as sp
 import os.path
-import string 
+import string
 
 
 # Now get include paths from relevant python modules
 include_path = [mpi4py.get_include()]
 include_path += [np.get_include()]
 include_path += ['./Csrc']
+
+def get_netcdf_include():
+    return sp.check_output(['nc-config', '--includedir']).strip().decode()
+
+def get_netcdf_prefix():
+    return sp.check_output(['nc-config', '--prefix']).strip().decode()
 
 if sys.platform == 'darwin':
     #Compile flags for MacOSX
@@ -23,8 +29,8 @@ if sys.platform == 'darwin':
     extra_compile_args = []
     extra_compile_args += ['-O3', '-march=native', '-Wno-unused', '-Wno-#warnings','-fPIC']
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
-    netcdf_include = '/opt/local/include'
-    netcdf_lib = '/opt/local/lib'
+    netcdf_include = get_netcdf_include()
+    netcdf_lib = os.path.join(get_netcdf_prefix(), 'lib')
     f_compiler = 'gfortran'
 elif 'eu' in platform.node():
     #Compile flags for euler @ ETHZ
@@ -42,7 +48,7 @@ elif 'eu' in platform.node():
     f_compiler = 'gfortran'
 elif platform.machine()  == 'x86_64':
     #Compile flags for fram @ Caltech
-    library_dirs = string.split(os.environ['LD_LIBRARY_PATH'],':')  
+    library_dirs = string.split(os.environ['LD_LIBRARY_PATH'],':')
     libraries = []
     libraries.append('mpi')
     libraries.append('gfortran')

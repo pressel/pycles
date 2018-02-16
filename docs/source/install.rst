@@ -39,10 +39,7 @@ Building on a Mac
 +++++++++++++++++
 PyCLES is developed on Macs, so installation on Mac systems is very straight forward.
 
-Perhaps the simplest way to install PyCLES on a Mac is to use MacPorts_. Alternatively one could use Homebrew_, although the
-developers have no experience doing so. If you have experience building the dependencies with Homebrew_ please
-contribute your experience to this documentation!
-
+Perhaps the simplest way to install PyCLES on a Mac is to use MacPorts_. Alternatively one could use Homebrew_, see below for further details.
 .. _MacPorts: https://www.macports.org/
 .. _Homebrew: http://brew.sh/
 
@@ -98,6 +95,35 @@ $ CC=mpicc python setup.py build_ext --inplace
 
 .. note::
     In the above command, mpicc should be replaced by the name of your MPI C compiler.
+
+Building on Mac with Homebrew
++++++++++++++++++++++++++++++
+
+Install the necessary Homebrew libraries::
+
+$ brew install netcdf open-mpi
+
+Create a new virtualenv that will contain all the necessary python libraries, without interfering with any that you may have previously installed.  I like to put this inside the pycles source folder, but you can put it whereever you wish.
+
+If virtualenv is not yet installed::
+
+$ [sudo] pip install virtualenv
+
+Then create and activate the environment::
+
+$ cd pycles
+$ virtualenv pyclesenv
+$ source pyclesenv/bin/activate
+
+Now we can install all the Python libraries::
+
+(pyclesenv) $ pip install cython numpy scipy mpi4py
+
+And proceed to build the extensions as above::
+
+(pyclesenv) $ python generate_parameters.py
+(pyclesenv) $ CC=mpicc python setup.py build_ext --inplace
+
 
 Building on Linux
 +++++++++++++++++
