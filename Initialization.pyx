@@ -11,7 +11,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport Grid
 cimport PrognosticVariables
 cimport DiagnosticVariables
-from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
+from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c, thetali_c
 cimport ReferenceState
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
@@ -1259,10 +1259,10 @@ def InitSheba(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
         #Set thetal and qt profile
         if RS.p0_half[k] > p_inv:
-            thetal[k] = 257.0
-            wt[k] = 0.915 #Mixing ratio in g/kg
+            thetal[k] = 255.7 #257.0
+            wt[k] = 0.91 #0.915 #Mixing ratio in g/kg
         else:
-            thetal[k] = 263.9
+            thetal[k] = 255.7+6.9 #263.9
             wt[k] = 0.8
 
     for k in xrange(Gr.dims.nlg[2]-1):
