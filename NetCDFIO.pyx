@@ -46,7 +46,6 @@ cdef class NetCDFIO_Stats:
             except:
                 pass
 
-
         self.path_plus_file = str( self.stats_path + '/' + 'Stats.' + namelist['meta']['simname'] + '.nc')
         if os.path.exists(self.path_plus_file):
             for i in range(100):
@@ -59,8 +58,6 @@ cdef class NetCDFIO_Stats:
                     break
 
         Pa.barrier()
-
-
 
         if Pa.rank == 0:
             shutil.copyfile(
@@ -105,7 +102,6 @@ cdef class NetCDFIO_Stats:
 
         z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
 
-        #
         z_half = reference_grp.createVariable('z', 'f8', ('z'))
         z_half.setncattr('units',r'm')
         z_half.setncattr('desc', r'physical height at half levels')
@@ -210,7 +206,6 @@ cdef class NetCDFIO_Stats:
                 new_var.setncattr('description', str(desc))
             else:
                 new_var.setncattr('description', 'None')
-
 
             root_grp.close()
         return
@@ -492,8 +487,6 @@ cdef class NetCDFIO_CondStats:
                     break
 
         Pa.barrier()
-
-
 
         if Pa.rank == 0:
             shutil.copyfile(
