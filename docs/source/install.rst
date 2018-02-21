@@ -158,6 +158,9 @@ $ CC=mpicc python setup.py build_ext --inplace
 .. note::
     In the above command, mpicc should be replaced by the name of your MPI C compiler.
 
+.. note::
+    If compilation fails with a KeyError, check the flags used in the setup.py to make sure they match the flags in your machine.
+
 Site Specific Builds
 --------------------
 
