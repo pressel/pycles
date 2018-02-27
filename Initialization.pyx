@@ -1212,12 +1212,12 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     cdef double RH_ref = 0.3
     if reference_type == 'InteractiveRCE':
         # appropriate to assume deltaT = 10 in initialization as we always start from Sc state
-        reference_profiles.initialize(Pa, RS.p0_half[:], RS.Pg, Sur.T_surface + 10.0, RH_ref)
+        reference_profiles.initialize(Pa, RS.p0_half[:], RS.Pg, Sur.T_surface + 10.0, RH_ref, co2_factor)
     elif reference_type == 'InteractiveRCE_fix':
         reference_profiles.initialize(Pa, RS.p0_half[:], RS.Pg,
-                                      Sur.T_surface_init + 10.0 + n_double_co2 * ecs, RH_ref)
+                                      Sur.T_surface_init + 10.0 + n_double_co2 * ecs, RH_ref, co2_factor)
     else:
-        reference_profiles.initialize(Pa, RS.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)
+        reference_profiles.initialize(Pa, RS.p0_half[:], Pg_parcel, Tg_parcel, RH_ref, co2_factor)
 
 
 

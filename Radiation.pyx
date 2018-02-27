@@ -131,7 +131,10 @@ cdef class RadiationBase:
         return
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+
+
         return
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
@@ -250,7 +253,7 @@ cdef class RadiationNone(RadiationBase):
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
@@ -283,7 +286,7 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
         return
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur,  ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
@@ -414,7 +417,7 @@ cdef class RadiationSmoke(RadiationBase):
         RadiationBase.initialize(self, Gr, NS, Pa)
         return
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
@@ -569,6 +572,14 @@ cdef class RadiationRRTM(RadiationBase):
                 co2_factor = namelist['radiation']['RRTM']['co2_factor']
             except:
                 co2_factor = 1.0
+
+            try:
+                self.fix_wv = namelist['radiation']['RRTM']['fix_wv']
+            except:
+                self.fix_wv = False
+            if self.fix_wv:
+                self.fix_wv_statsfile = namelist['radiation']['RRTM']['fix_wv_statsfile']
+
             try:
                 self.reference_type = str(namelist['forcing']['reference_profile'])
             except:
@@ -579,6 +590,7 @@ cdef class RadiationRRTM(RadiationBase):
 
             elif self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
                 self.reference_profile = InteractiveReferenceRCE(namelist, LH, Pa)
+
             else:
                 self.profile_name = 'cgils_ctl_s'+str(loc)
                 filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
@@ -685,7 +697,7 @@ cdef class RadiationRRTM(RadiationBase):
 
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
 
         cdef:
@@ -711,20 +723,23 @@ cdef class RadiationRRTM(RadiationBase):
             if self.reference_type == 'InteractiveRCE':
                 deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
                 self.RH_adiabat = 0.3 # This value is not used
-                self.reference_profile.initialize(Pa, pressures, Ref.Pg, Sur.T_surface + deltaT, self.RH_adiabat)
+                self.reference_profile.initialize(Pa, pressures, Ref.Pg, Sur.T_surface + deltaT, self.RH_adiabat, self.co2_factor)
+
             elif self.reference_type == 'InteractiveRCE_fix':
                 self.RH_adiabat = 0.3 # This value is not used
                 # Note we only compute the reference profile once for this option!
                 self.reference_profile.initialize(Pa,
                                                   pressures, Ref.Pg,
                                                   Sur.T_surface_init + 10.0 + ecs * np.log2(self.co2_factor),
-                                                  self.RH_adiabat)
+                                                  self.RH_adiabat, self.co2_factor)
 
             else:
                 self.Tg_adiabat = 295.0
                 self.Pg_adiabat = 1000.0e2
                 self.RH_adiabat = 0.3
-                self.reference_profile.initialize(Pa, pressures, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
+                self.reference_profile.initialize(Pa, pressures, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat, self.co2_factor)
+
+
             temperatures =np.array( self.reference_profile.temperature)
             vapor_mixing_ratios = np.array(self.reference_profile.rv)
 
@@ -935,6 +950,44 @@ cdef class RadiationRRTM(RadiationBase):
         self.ccl4vmr  =  np.array(tmpTrace[:,8],dtype=np.double, order='F')
 
 
+        NS.add_toa_profile_group(self.p_full, Gr, Pa)
+
+
+        NS.add_toa_profile('temperature', Gr, Pa)
+        NS.add_toa_profile('h2ovmr', Gr, Pa)
+        NS.add_toa_profile('rl', Gr, Pa)
+        NS.add_toa_profile('cliqwp', Gr, Pa)
+        NS.add_toa_profile('cicewp', Gr, Pa)
+        NS.add_toa_profile('cldfr', Gr, Pa)
+
+
+        cdef:
+            Py_ssize_t nz_full = self.n_ext + Gr.dims.n[2]
+
+
+        self.temperature_localsum = np.zeros((nz_full), dtype=np.double, order='c')
+        self.h2ovmr_localsum = np.zeros((nz_full), dtype=np.double, order='c')
+        self.rl_localsum = np.zeros((nz_full), dtype=np.double, order='c')
+        self.cliqwp_localsum = np.zeros((nz_full), dtype=np.double, order='c')
+        self.cicewp_localsum = np.zeros((nz_full), dtype=np.double, order='c')
+        self.cldfr_localsum = np.zeros((nz_full), dtype=np.double, order='c')
+
+
+
+        cdef double [:] h2o_prof=np.zeros((nz_full), dtype=np.double, order='c')
+
+        if self.fix_wv:
+            if Pa.rank == 0:
+                wvdat = nc.Dataset(self.fix_wv_statsfile,  "r")
+                h2o_prof = np.mean(wvdat.groups['toa_profiles'].variables['h2ovmr'][1:,:], axis=0)
+                wvdat.close()
+                if len(h2o_prof) != nz_full:
+                    print("Problem with toa stats profile?!")
+
+            self.h2ovmr_fix_wv = Pa.domain_vector_sum(h2o_prof,nz_full)
+
+
+
         return
 
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
@@ -972,11 +1025,13 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t n_profile = self.n_ext - self.n_buffer
             Py_ssize_t count = 0
 
+
         for k in xrange(len(pressures)-n_profile, len(pressures)):
             self.p_ext[self.n_buffer+count] = pressures[k]
             self.t_ext[self.n_buffer+count] = self.reference_profile.temperature[k]
             self.rv_ext[self.n_buffer+count] = self.reference_profile.rv[k]
             count += 1
+
 
         # Now  create the buffer zone
         if self.n_buffer > 0:
@@ -1087,6 +1142,7 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t nz = Gr.dims.n[2]
             Py_ssize_t nz_full = self.n_ext + nz
             Py_ssize_t n_pencils = self.z_pencil.n_local_pencils
+            double n_horizontal_i = 1.0/np.double(Gr.dims.n[1]*Gr.dims.n[0])
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
@@ -1164,27 +1220,55 @@ cdef class RadiationRRTM(RadiationBase):
 
             double rv_to_reff = np.exp(np.log(1.2)**2.0)*10.0*1000.0
 
-        with nogil:
-            for k in xrange(nz, nz_full):
-                for ip in xrange(n_pencils):
-                    tlay_in[ip, k] = self.t_ext[k-nz]
-                    h2ovmr_in[ip, k] = self.rv_ext[k-nz] * Rv/Rd * self.h2o_factor
-                    # Assuming for now that there is no condensate above LES domain!
-            for k in xrange(nz):
-                for ip in xrange(n_pencils):
-                    tlay_in[ip,k] = t_pencil[ip,k]
-                    h2ovmr_in[ip,k] = qv_pencil[ip,k]/ (1.0 - qv_pencil[ip,k])* Rv/Rd * self.h2o_factor
-                    rl_full[ip,k] = (ql_pencil[ip,k])/ (1.0 - qv_pencil[ip,k])
-                    cliqwp_in[ip,k] = ((ql_pencil[ip,k])/ (1.0 - qv_pencil[ip,k])
-                                       *1.0e3*(self.pi_full[k] - self.pi_full[k+1])/g)
-                    cicewp_in[ip,k] = ((qi_pencil[ip,k])/ (1.0 - qv_pencil[ip,k])
-                                       *1.0e3*(self.pi_full[k] - self.pi_full[k+1])/g)
-                    if ql_pencil[ip,k] + qi_pencil[ip,k] > ql_threshold:
-                        cldfr_in[ip,k] = 1.0
+
+        if self.fix_wv:
+            with nogil:
+                for k in xrange(nz, nz_full):
+                    for ip in xrange(n_pencils):
+                        tlay_in[ip, k] = self.t_ext[k-nz]
+                        h2ovmr_in[ip, k] = self.h2ovmr_fix_wv[k]
+                        # Assuming for now that there is no condensate above LES domain!
+                for k in xrange(nz):
+                    for ip in xrange(n_pencils):
+                        tlay_in[ip,k] = t_pencil[ip,k]
+                        h2ovmr_in[ip,k] = self.h2ovmr_fix_wv[k]
+                        rl_full[ip,k] = (ql_pencil[ip,k])/ (1.0 - qv_pencil[ip,k])
+                        cliqwp_in[ip,k] = ((ql_pencil[ip,k])/ (1.0 - qv_pencil[ip,k])
+                                           *1.0e3*(self.pi_full[k] - self.pi_full[k+1])/g)
+                        cicewp_in[ip,k] = ((qi_pencil[ip,k])/ (1.0 - qv_pencil[ip,k])
+                                           *1.0e3*(self.pi_full[k] - self.pi_full[k+1])/g)
+                        if ql_pencil[ip,k] + qi_pencil[ip,k] > ql_threshold:
+                            cldfr_in[ip,k] = 1.0
+
+        else:
+            with nogil:
+                for k in xrange(nz, nz_full):
+                    for ip in xrange(n_pencils):
+                        tlay_in[ip, k] = self.t_ext[k-nz]
+                        h2ovmr_in[ip, k] = self.rv_ext[k-nz] * Rv/Rd * self.h2o_factor
+                        # Assuming for now that there is no condensate above LES domain!
+                for k in xrange(nz):
+                    for ip in xrange(n_pencils):
+                        tlay_in[ip,k] = t_pencil[ip,k]
+                        h2ovmr_in[ip,k] = qv_pencil[ip,k]/ (1.0 - qv_pencil[ip,k])* Rv/Rd * self.h2o_factor
+                        rl_full[ip,k] = (ql_pencil[ip,k])/ (1.0 - qv_pencil[ip,k])
+                        cliqwp_in[ip,k] = ((ql_pencil[ip,k])/ (1.0 - qv_pencil[ip,k])
+                                           *1.0e3*(self.pi_full[k] - self.pi_full[k+1])/g)
+                        cicewp_in[ip,k] = ((qi_pencil[ip,k])/ (1.0 - qv_pencil[ip,k])
+                                           *1.0e3*(self.pi_full[k] - self.pi_full[k+1])/g)
+                        if ql_pencil[ip,k] + qi_pencil[ip,k] > ql_threshold:
+                            cldfr_in[ip,k] = 1.0
 
 
         with nogil:
             for k in xrange(nz_full):
+                self.temperature_localsum[k] = 0.0
+                self.h2ovmr_localsum[k] = 0.0
+                self.rl_localsum[k] = 0.0
+                self.cliqwp_localsum[k] = 0.0
+                self.cicewp_localsum[k] = 0.0
+                self.cldfr_localsum[k] = 0.0
+
                 for ip in xrange(n_pencils):
                     play_in[ip,k] = self.p_full[k]/100.0
                     o3vmr_in[ip, k] = self.o3vmr[k]
@@ -1196,6 +1280,12 @@ cdef class RadiationRRTM(RadiationBase):
                     cfc12vmr_in[ip, k] = self.cfc12vmr[k]
                     cfc22vmr_in[ip, k] = self.cfc22vmr[k]
                     ccl4vmr_in[ip, k] = self.ccl4vmr[k]
+                    self.temperature_localsum[k] += tlay_in[ip,k] * n_horizontal_i
+                    self.h2ovmr_localsum[k] +=h2ovmr_in[ip,k] * n_horizontal_i
+                    self.rl_localsum[k] += rl_full[ip,k] * n_horizontal_i
+                    self.cliqwp_localsum[k] += cliqwp_in[ip,k] * n_horizontal_i
+                    self.cicewp_localsum[k] +=cicewp_in[ip,k] * n_horizontal_i
+                    self.cldfr_localsum[k] +=cldfr_in[ip,k] * n_horizontal_i
 
 
                     if self.uniform_reliq:
@@ -1356,6 +1446,22 @@ cdef class RadiationRRTM(RadiationBase):
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t nz_full = self.n_ext + Gr.dims.n[2]
+            double [:] temperature_toa = Pa.domain_vector_sum(self.temperature_localsum,nz_full)
+            double [:] h2ovmr_toa = Pa.domain_vector_sum(self.h2ovmr_localsum, nz_full)
+            double [:] rl_toa = Pa.domain_vector_sum(self.rl_localsum,nz_full)
+            double [:] cliqwp_toa = Pa.domain_vector_sum(self.cliqwp_localsum,nz_full)
+            double [:] cicewp_toa = Pa.domain_vector_sum(self.cicewp_localsum, nz_full)
+            double [:] cldfr_toa = Pa.domain_vector_sum(self.cldfr_localsum, nz_full)
+
+        NS.write_toa_profile('temperature', temperature_toa, Pa)
+        NS.write_toa_profile('h2ovmr', h2ovmr_toa, Pa)
+        NS.write_toa_profile('rl', rl_toa, Pa)
+        NS.write_toa_profile('cliqwp', cliqwp_toa, Pa)
+        NS.write_toa_profile('cicewp', cicewp_toa, Pa)
+        NS.write_toa_profile('cldfr', cldfr_toa, Pa)
 
         RadiationBase.stats_io(self, Gr, Ref, DV, NS,  Pa)
 

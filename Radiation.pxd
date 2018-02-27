@@ -25,6 +25,13 @@ cdef class RadiationBase:
         double [:] dflux_lw_clear
         double [:] uflux_sw_clear
         double [:] dflux_sw_clear
+        double [:] temperature_localsum
+        double [:] h2ovmr_localsum
+        double [:] rl_localsum
+        double [:] cliqwp_localsum
+        double [:] cicewp_localsum
+        double [:] cldfr_localsum
+        double [:] h2ovmr_fix_wv
         ParallelMPI.Pencil z_pencil
         double srf_lw_down
         double srf_lw_up
@@ -51,7 +58,7 @@ cdef class RadiationBase:
     cpdef init_from_restart(self, Restart)
     cpdef restart(self, Restart)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -63,7 +70,7 @@ cdef class RadiationBase:
 cdef class RadiationNone(RadiationBase):
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -82,7 +89,7 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
+                              Surface.SurfaceBase Sur,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -99,7 +106,7 @@ cdef class RadiationSmoke(RadiationBase):
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -113,6 +120,8 @@ cdef class RadiationRRTM(RadiationBase):
     cdef:
         str profile_name
         bint use_reference_class
+        bint fix_wv
+        str fix_wv_statsfile
         str reference_type
         ForcingReferenceBase reference_profile
         double Tg_adiabat
@@ -156,7 +165,7 @@ cdef class RadiationRRTM(RadiationBase):
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,

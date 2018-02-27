@@ -901,10 +901,10 @@ cdef class ForcingZGILS:
         # Get the multiplying factor for current levels of CO2
         # Then convert to a number of CO2 doublings, which is how forcings are rescaled
         try:
-            co2_factor =  namelist['radiation']['RRTM']['co2_factor']
+            self.co2_factor =  namelist['radiation']['RRTM']['co2_factor']
         except:
-            co2_factor = 1.0
-        self.n_double_co2 = np.log2(co2_factor)
+            self.co2_factor = 1.0
+        self.n_double_co2 = np.log2(self.co2_factor)
 
         try:
             self.reference_type = str(namelist['forcing']['reference_profile'])
@@ -946,7 +946,7 @@ cdef class ForcingZGILS:
             self.forcing_ref = InteractiveReferenceRCE(namelist, LH, Pa)
         else:
             # Tan et al 2017 style reference
-            filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
+            filename = './CGILSdata/RCE_'+ str(int(self.co2_factor))+'xCO2.nc'
             self.forcing_ref = ReferenceRCE(filename)
 
         self.CC = ClausiusClapeyron()
@@ -978,16 +978,16 @@ cdef class ForcingZGILS:
             # the reference profile returned here is not actually used, we just need to get the right-ish
             # value of tropical SST for creating the lookup table
             # RH_ref is not used, it is read from namelist (defaults to 0.3)
-            self.forcing_ref.initialize(Pa, Ref.p0_half[:], Ref.Pg, Sur.T_surface + 10.0, RH_ref)
+            self.forcing_ref.initialize(Pa, Ref.p0_half[:], Ref.Pg, Sur.T_surface + 10.0, RH_ref, self.co2_factor)
         elif self.reference_type == 'InteractiveRCE_fix':
             # We will actually use this reference profile (it is frozen through out simulation)
             # RH_ref is not used, it is read from namelist (defaults to 0.3)
             self.forcing_ref.initialize(Pa, Ref.p0_half[:], Ref.Pg,
-                                        Sur.T_surface_init + 10.0 + ecs * self.n_double_co2, RH_ref)
+                                        Sur.T_surface_init + 10.0 + ecs * self.n_double_co2, RH_ref, self.co2_factor)
         else:
             # '_parcel' values are used for Tan et al 2016 style reference profile
             # if Tan et al 2017 reference profiles are used, we just read the file set during the init()
-            self.forcing_ref.initialize(Pa, Ref.p0_half[:], Pg_parcel, Tg_parcel, RH_ref)
+            self.forcing_ref.initialize(Pa, Ref.p0_half[:], Pg_parcel, Tg_parcel, RH_ref, self.co2_factor)
 
         cdef:
             Py_ssize_t k

@@ -21,6 +21,7 @@ cdef class NetCDFIO_Stats:
         self.root_grp = None
         self.profiles_grp = None
         self.ts_grp = None
+        self.toa_profiles_grp = None
         return
 
     @cython.wraparound(True)
@@ -74,6 +75,11 @@ cdef class NetCDFIO_Stats:
             self.root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             self.profiles_grp = self.root_grp.groups['profiles']
             self.ts_grp = self.root_grp.groups['timeseries']
+            try:
+                self.toa_profiles_grp = self.root_grp.groups['toa_profiles']
+            except:
+                Pa.root_print('Unable to open toa_profiles_grp')
+                pass
         return
 
     cpdef close_files(self, ParallelMPI.ParallelMPI Pa):
@@ -121,6 +127,25 @@ cdef class NetCDFIO_Stats:
 
         root_grp.close()
         return
+
+    cpdef add_toa_profile_group(self,  pressure_array, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+
+            # Set profile dimensions
+            new_grp = root_grp.createGroup('toa_profiles')
+            new_grp.createDimension('pressure', len(pressure_array))
+            new_grp.createDimension('t', None)
+            press = new_grp.createVariable('pressure', 'f8', ('pressure'))
+            press[:] = np.array(pressure_array)
+            # z_half = profile_grp.createVariable('z_half', 'f8', ('z'))
+            # z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
+            new_grp.createVariable('t', 'f8', ('t'))
+            root_grp.close()
+        return
+
+
 
     cpdef add_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
 
@@ -188,6 +213,36 @@ cdef class NetCDFIO_Stats:
 
         return
 
+    cpdef add_toa_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
+
+
+        if Pa.rank == 0:
+            root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            profile_grp = root_grp.groups['toa_profiles']
+            new_var = profile_grp.createVariable(var_name, 'f8', ('t', 'pressure'))
+
+            #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
+            if units is not None:
+                new_var.setncattr('units', str(units))
+            else:
+                new_var.setncattr('units', 'None')
+
+            if nice_name is not None:
+                new_var.setncattr('nice_name', str(nice_name))
+            else:
+                new_var.setncattr('nice_name', 'None')
+
+            if desc is not None:
+                new_var.setncattr('description', str(desc))
+            else:
+                new_var.setncattr('description', 'None')
+
+            root_grp.close()
+
+        return
+
+
+
     cpdef add_ts(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
@@ -219,6 +274,15 @@ cdef class NetCDFIO_Stats:
             #root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             #profile_grp = root_grp.groups['profiles']
             var = self.profiles_grp.variables[var_name]
+            var[-1, :] = np.array(data)
+            #root_grp.close()
+        return
+
+    cpdef write_toa_profile(self, var_name, double[:] data, ParallelMPI.ParallelMPI Pa):
+        if Pa.rank == 0:
+            #root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
+            #profile_grp = root_grp.groups['profiles']
+            var = self.toa_profiles_grp.variables[var_name]
             var[-1, :] = np.array(data)
             #root_grp.close()
         return
@@ -263,6 +327,9 @@ cdef class NetCDFIO_Stats:
             # Write to timeseries group
             ts_t = self.ts_grp.variables['t']
             ts_t[ts_t.shape[0]] = t
+
+            toa_t= self.toa_profiles_grp.variables['t']
+            toa_t[toa_t.shape[0]] = t
 
             #root_grp.close()
         return

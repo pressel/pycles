@@ -12,7 +12,7 @@ cdef class ForcingReferenceBase:
         double [:] u
         double [:] v
         bint is_init
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH, double co2_factor)
     cpdef update(self, double [:] pressure_array, double Tg)
 
 
@@ -25,14 +25,14 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
     cpdef get_pv_star(self, t)
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH, double co2_factor)
     cpdef update(self, double [:] pressure_array, double Tg)
 
 
 cdef class ReferenceRCE(ForcingReferenceBase):
     cdef:
         str filename
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH, double co2_factor)
     cpdef update(self, double [:] pressure_array, double Tg)
 
 cdef class InteractiveReferenceRCE(ForcingReferenceBase):
@@ -40,6 +40,8 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
         Thermodynamics.ClausiusClapeyron CC
+        bint fix_wv
+        str filename
         double dt_rce
         double [:] p_tropo_store
         double [:] toa_store
@@ -77,16 +79,17 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         double adif
         double adir
         LookupProfiles t_table
+        LookupProfiles t_table_wv
 
     cpdef get_pv_star(self, double t)
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
-    cpdef initialize_radiation(self)
+    cpdef initialize_radiation(self, double co2_factor)
     cpdef compute_radiation(self)
     cpdef update_qv(self, double p, double t, double rh)
     cpdef compute_adiabat(self, double Tg, double Pg, double RH_surf)
     cpdef rce_step(self, double Tg)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH, double co2_factor)
     cpdef update(self, double [:] pressure_array, double Tg)
 
 
