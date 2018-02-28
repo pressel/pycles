@@ -600,7 +600,8 @@ cdef class ForcingIsdac:
 
         try:
             self.merra2 = Namelist['forcing']['merra2']
-            Pa.root_print('Forcing from MERRA-2 is applied to ISDAC!')
+            if self.merra2:
+                Pa.root_print('Forcing from MERRA-2 is applied to ISDAC!')
         except:
             self.merra2 = False
 
