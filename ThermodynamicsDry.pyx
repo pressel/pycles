@@ -13,6 +13,7 @@ cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 cimport Thermodynamics
+cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
 from thermodynamic_functions cimport thetas_c
 import cython
@@ -102,7 +103,7 @@ cdef class ThermodynamicsDry:
         qt = 0.0
         return alpha_c(p0,T,qv,qt)
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+    cpdef update(self, Grid.Grid Gr, TimeStepping.TimeStepping TS, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
 
         cdef Py_ssize_t buoyancy_shift = DV.get_varshift(Gr,'buoyancy')

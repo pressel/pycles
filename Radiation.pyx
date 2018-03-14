@@ -163,6 +163,7 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -185,6 +186,7 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t rad_diabatic_heating_shift = DV.get_varshift(Gr, 'rad_diabatic_heating')
             Py_ssize_t gw = Gr.dims.gw
             double [:, :] ql_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[ql_shift])
             double [:, :] qt_pencils =  self.z_pencil.forward_double(&Gr.dims, Pa, &PV.values[qt_shift])
@@ -257,7 +259,8 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
                         ijk = ishift + jshift + k
                         PV.tendencies[
                             s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] 
-                        self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift]) 
+                        self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift])
+                        DV.values[rad_diabatic_heating_shift + ijk] = self.dTdt_rad[ijk]
 
         return
 

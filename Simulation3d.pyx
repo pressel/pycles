@@ -67,6 +67,7 @@ class Simulation3d:
         self.Tr = TracersFactory(namelist)
 
         # Add new prognostic variables
+        self.DV.add_variables('rad_diabatic_heating', 'K/s', r'\frac{dT}{dt}', r'diabatic heating from radiation', 'sym', self.Pa)
         self.PV.add_variable('u', 'm/s', 'u', 'u velocity component',"sym", "velocity", self.Pa)
         self.PV.set_velocity_direction('u', 0, self.Pa)
         self.PV.add_variable('v', 'm/s', 'v', 'v velocity component', "sym", "velocity", self.Pa)
@@ -146,7 +147,7 @@ class Simulation3d:
         cdef ParallelMPI.ParallelMPI PA_ = self.Pa
         cdef int rk_step
         # DO First Output
-        self.Th.update(self.Gr, self.Ref, PV_, DV_)
+        self.Th.update(self.Gr, self.TS, self.Ref, PV_, DV_)
         self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.StatsIO,self.Pa)
 
         #Do IO if not a restarted run
@@ -157,7 +158,7 @@ class Simulation3d:
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
-                self.Th.update(self.Gr,self.Ref,PV_,DV_)
+                self.Th.update(self.Gr, self.TS, self.Ref, PV_, DV_)
                 self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
                 self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
@@ -216,7 +217,7 @@ class Simulation3d:
             # If time to ouptut fields do output
             if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
                 self.Pa.root_print('Doing 3D FieldIO')
-                self.Th.update(self.Gr, self.Ref, self.PV, self.DV)
+                self.Th.update(self.Gr, self.TS, self.Ref, self.PV, self.DV)
                 self.FieldsIO.last_output_time = self.TS.t
                 self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
                 self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
@@ -293,7 +294,7 @@ class Simulation3d:
         # output stats here
 
         self.Pa.root_print('Doing 3D FieldIO')
-        self.Th.update(self.Gr, self.Ref, self.PV, self.DV)
+        self.Th.update(self.Gr, self.TS, self.Ref, self.PV, self.DV)
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
         self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
         self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)

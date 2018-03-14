@@ -3,6 +3,7 @@ cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ParallelMPI
+cimport TimeStepping
 
 from Thermodynamics cimport ClausiusClapeyron
 from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
@@ -12,6 +13,10 @@ cdef class ThermodynamicsSA:
         bint do_qt_clipping
         double (*L_fp)(double T, double Lambda) nogil
         double (*Lambda_fp)(double T) nogil
+
+        double [:] ql_old
+        double [:] ql_new
+
         ClausiusClapeyron CC
 
     cpdef initialize(self,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
@@ -19,7 +24,7 @@ cdef class ThermodynamicsSA:
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi)
     cpdef alpha(self, double p0, double T, double qt, double qv)
     cpdef eos(self, double p0, double s, double qt)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+    cpdef update(self, Grid.Grid Gr,  TimeStepping.TimeStepping TS, ReferenceState.ReferenceState RS,
               PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
     cpdef get_pv_star(self, t)
     cpdef get_lh(self,t)

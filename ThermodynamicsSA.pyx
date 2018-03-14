@@ -13,7 +13,7 @@ cimport ReferenceState
 cimport DiagnosticVariables
 cimport PrognosticVariables
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
-from thermodynamic_functions cimport thetas_c, theta_c, thetali_c
+from thermodynamic_functions cimport thetas_c, theta_c, thetali_c, cpm_c
 import cython
 from NetCDFIO cimport NetCDFIO_Stats, NetCDFIO_Fields
 from libc.math cimport fmax, fmin
@@ -33,6 +33,7 @@ cdef extern from "thermodynamic_functions.h":
     double pd_c(double p0, double qt, double qv) nogil
     # Water vapor partial pressure
     double pv_c(double p0, double qt, double qv) nogil
+
 
 
 cdef extern from "entropies.h":
@@ -95,6 +96,7 @@ cdef class ThermodynamicsSA:
         DV.add_variables('qi', 'kg/kg', r'q_i', 'ice water specific humidity', 'sym', Pa)
         DV.add_variables('theta_rho', 'K', r'\theta_{\rho}', 'density potential temperature', 'sym', Pa)
         DV.add_variables('thetali', 'K', r'\theta_l', r'liqiud water potential temperature', 'sym', Pa)
+        DV.add_variables('sa_diabatic_heating', 'K/s', r'\frac{dT}{dt}', r'diabatic heating from saturation adjustment', 'sym', Pa)
 
 
         # Add statistical output
@@ -129,6 +131,11 @@ cdef class ThermodynamicsSA:
         NS.add_ts('cloud_top', Gr, Pa)
         NS.add_ts('cloud_base', Gr, Pa)
         NS.add_ts('lwp', Gr, Pa)
+
+
+        #Allocate memory for capturing ql
+        self.ql_old = np.zeros(Gr.dims.npg, dtype=np.double)
+        self.ql_new = np.zeros(Gr.dims.npg, dtype=np.double)
 
 
         return
@@ -173,7 +180,7 @@ cdef class ThermodynamicsSA:
         eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
         return T, ql, qi
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+    cpdef update(self, Grid.Grid Gr, TimeStepping.TimeStepping TS, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
 
         # Get relevant variables shifts
@@ -196,13 +203,40 @@ cdef class ThermodynamicsSA:
         changes the values in the qt array directly. Perhaps we should eventually move this to the timestepping function
         so that the output statistics correctly reflect clipping.
         '''
+
+
         if self.do_qt_clipping:
             clip_qt(&Gr.dims, &PV.values[qt_shift], 1e-11)
 
+        #Capture ql here when rk_step = 0
+        cdef:
+            Py_ssize_t n
+            Py_ssize_t sa_diabatic_heating_shift = DV.get_varshift(Gr, 'sa_diabatic_heating')
+            double Lambda
+            double L
+
+        if TS.rk_step == 0:
+            print('Capturing first ql')
+            with nogil:
+                for n in xrange(Gr.dims.npg):
+                    self.ql_old[n] = DV.values[ql_shift + n]
 
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
                     &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
                     &DV.values[qi_shift], &DV.values[alpha_shift])
+
+        if TS.rk_step == 0:
+            print('Capturing second ql')
+            with nogil:
+                for n in xrange(Gr.dims.npg):
+                    self.ql_new[n] = DV.values[ql_shift + n]
+                    Lambda = self.Lambda_fp(DV.values[t_shift + n])
+                    L = self.L_fp(DV.values[t_shift +n], Lambda)
+                    DV.values[sa_diabatic_heating_shift + n] = (L/cpm_c(PV.values[qt_shift + n]))*(self.ql_new[n] - self.ql_old[n])/TS.dt
+
+
+        #Capture ql here when rk_step = n_rk_step
+
 
         buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
 
