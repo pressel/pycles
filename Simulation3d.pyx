@@ -230,7 +230,7 @@ class Simulation3d:
 
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
-                self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+                self.SA.stats_io(self.Gr, self.Ref,self.PV, self.StatsIO, self.Pa)
                 self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
                 self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
                 self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
@@ -299,7 +299,7 @@ class Simulation3d:
         self.Micro.stats_io(self.Gr, self.Ref, self.Th, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke ,self.StatsIO, self.Pa)
-        self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+        self.SA.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
         self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
