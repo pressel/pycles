@@ -779,8 +779,8 @@ cdef class ForcingIsdac:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
+            double [:] tmp_tendency  = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            double [:] mean_tendency = np.empty(Gr.dims.nlg[2],dtype=np.double,order='c')
             Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
             Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t imax = Gr.dims.nlg[0] - gw
@@ -1058,6 +1058,8 @@ cdef class ForcingMpace:
 
         NS.add_profile('s_subsidence_tendency', Gr, Pa)
         NS.add_profile('qt_subsidence_tendency', Gr, Pa)
+        NS.add_profile('s_ls_adv_tendency', Gr, Pa)
+        NS.add_profile('qt_ls_adv_tendency', Gr, Pa)
 
         return
 
@@ -1127,8 +1129,17 @@ cdef class ForcingMpace:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
-            double [:] tmp_tendency  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
-            double [:] mean_tendency = np.empty((Gr.dims.npg,),dtype=np.double,order='c')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+            double [:] tmp_tendency  = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            double [:] mean_tendency = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - gw
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i,j,k,ishift,jshift,ijk
+            double pd, pv, qt, qv, p0, rho0, t
 
         #Output subsidence tendencies
         apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
@@ -1144,6 +1155,29 @@ cdef class ForcingMpace:
 
         #Output advective forcing tendencies
         tmp_tendency[:] = 0.0
+        with nogil:
+            for i in xrange(gw,imax):
+                ishift = i * istride
+                for j in xrange(gw,jmax):
+                    jshift = j * jstride
+                    for k in xrange(gw,kmax):
+                        ijk = ishift + jshift + k
+                        p0 = Ref.p0_half[k]
+                        rho0 = Ref.rho0_half[k]
+                        qt = PV.values[qt_shift + ijk]
+                        qv = DV.values[qv_shift + ijk]
+                        pd = pd_c(p0,qt,qv)
+                        pv = pv_c(p0,qt,qv)
+                        t  = DV.values[t_shift + ijk]
+
+                        tmp_tendency[ijk] += (cpm_c(qt) * self.dtdt[k]* exner_c(p0) * rho0 )/t
+                        tmp_tendency[ijk] += (sv_c(pv,t) - sd_c(pd,t)) * self.dqtdt[k]
+
+        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('s_ls_adv_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+
+        NS.write_profile('qt_ls_adv_tendency',self.dqtdt[Gr.dims.gw:-Gr.dims.gw],Pa)
+
 
 
 
