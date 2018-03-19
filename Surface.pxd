@@ -166,4 +166,4 @@ cdef class SurfaceZGILS(SurfaceBase):
 
 
 
-cdef inline double compute_z0(double z1, double windspeed) nogil
+cdef double compute_z0(double z1, double windspeed) nogil

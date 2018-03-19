@@ -21,7 +21,7 @@ include "parameters.pxi"
 import cython
 
 cdef extern from "thermodynamic_functions.h":
-    inline double pv_c(double p0, double qt, double qv) nogil
+    double pv_c(double p0, double qt, double qv) nogil
 
 def TracersFactory(namelist):
     try:
