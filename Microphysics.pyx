@@ -15,6 +15,7 @@ cimport ParallelMPI
 cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
+from thermodynamic_functions cimport cpm_c
 from libc.math cimport fmax, fmin, fabs
 include 'parameters.pxi'
 
@@ -266,6 +267,8 @@ cdef class Microphysics_SB_Liquid:
             NS.add_profile('s_qt_sedimentation_source',Gr,Pa)
         # add wet bulb temperature
         DV.add_variables('temperature_wb', 'K', r'T_{wb}','wet bulb temperature','sym', Pa)
+        DV.add_variables('dTdt_micro', 'K/s', r'dT/dt micro', 'diabatic heating microphysics', 'sym', Pa)
+
 
 
         # add statistical output for the class
@@ -282,6 +285,9 @@ cdef class Microphysics_SB_Liquid:
         NS.add_profile('s_evaporation', Gr,Pa)
         NS.add_profile('s_precip_heating', Gr, Pa)
         NS.add_profile('s_precip_drag', Gr, Pa)
+
+
+
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
@@ -298,9 +304,11 @@ cdef class Microphysics_SB_Liquid:
             double dt = TS.dt
             Py_ssize_t wqr_shift = DV.get_varshift(Gr, 'w_qr')
             Py_ssize_t wnr_shift = DV.get_varshift(Gr, 'w_nr')
+            Py_ssize_t dTdt_micro_shift = DV.get_varshift(Gr, 'dTdt_micro')
             Py_ssize_t wqt_shift
             double[:] qr_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] nr_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            Py_ssize_t i
 
 
         sb_microphysics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, self.compute_rain_shape_parameter,
@@ -329,6 +337,11 @@ cdef class Microphysics_SB_Liquid:
         # DV.communicate_variable(Gr,Pa,wqr_nv )
 
         sb_qt_source_formation(&Gr.dims,  &qr_tend_micro[0], &PV.tendencies[qt_shift])
+
+
+        with nogil:
+            for i in xrange(Gr.dims.npg):
+                DV.values[dTdt_micro_shift + i] = qr_tend_micro[i] * self.L_fp(DV.values[t_shift+ i], self.Lambda_fp(DV.values[t_shift+ i]))/cpm_c(PV.values[qt_shift + i])
 
 
         cdef:
