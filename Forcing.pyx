@@ -1129,12 +1129,12 @@ cdef class ForcingZGILS:
 cdef extern from "thermodynamics_sa.h":
     void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
 cdef extern from "thermodynamic_functions.h":
-    inline double pd_c(double p0, double qt, double qv) nogil
-    inline double pv_c(double p0, double qt, double qv) nogil
+    double pd_c(double p0, double qt, double qv) nogil
+    double pv_c(double p0, double qt, double qv) nogil
 cdef extern from "entropies.h":
-    inline double sd_c(double pd, double T) nogil
-    inline double sv_c(double pv, double T) nogil
-    inline double sc_c(double L, double T) nogil
+    double sd_c(double pd, double T) nogil
+    double sv_c(double pv, double T) nogil
+    double sc_c(double L, double T) nogil
 
 
 # This class computes the reference profiles needed for ZGILS cases

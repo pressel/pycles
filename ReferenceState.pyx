@@ -14,7 +14,7 @@ from scipy.integrate import odeint
 include 'parameters.pxi'
 
 cdef extern from "thermodynamic_functions.h":
-    inline double qt_from_pv(double p0, double pv)
+    double qt_from_pv(double p0, double pv)
 
 cdef class ReferenceState:
     def __init__(self, Grid.Grid Gr ):

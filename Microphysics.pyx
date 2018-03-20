@@ -481,12 +481,10 @@ cdef class Microphysics_SB_Liquid:
 
 
 cdef extern from "entropies.h":
-    inline double sd_c(double pd, double T) nogil
-    inline double sv_c(double pv, double T) nogil
+    double sd_c(double pd, double T) nogil
+    double sv_c(double pv, double T) nogil
 cdef extern from "thermodynamic_functions.h":
-    inline double qv_star_c(const double p0, const double qt, const double pv)nogil
-
-
+    double qv_star_c(const double p0, const double qt, const double pv)nogil
 
 
 cdef cython_wetbulb(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double *p0, double *s, double *qt, double *T, double *Twet):

@@ -26,23 +26,22 @@ include "parameters.pxi"
 import cython
 
 
-
 cdef extern from "advection_interpolation.h":
     double interp_2(double phi, double phip1) nogil
 cdef extern from "thermodynamic_functions.h":
-    inline double pd_c(double p0, double qt, double qv) nogil
-    inline double pv_c(double p0, double qt, double qv) nogil
-    inline double exner_c(const double p0) nogil
-    inline double theta_rho_c(double p0, double T,double qt, double qv) nogil
-    inline double cpm_c(double qt) nogil
+    double pd_c(double p0, double qt, double qv) nogil
+    double pv_c(double p0, double qt, double qv) nogil
+    double exner_c(const double p0) nogil
+    double theta_rho_c(double p0, double T,double qt, double qv) nogil
+    double cpm_c(double qt) nogil
 cdef extern from "surface.h":
     double compute_ustar(double windspeed, double buoyancy_flux, double z0, double z1) nogil
-    inline double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0_b, double T_b, double qt_b, double qv_b) nogil
+    double entropyflux_from_thetaflux_qtflux(double thetaflux, double qtflux, double p0_b, double T_b, double qt_b, double qv_b) nogil
     void compute_windspeed(Grid.DimStruct *dims, double* u, double*  v, double*  speed, double u0, double v0, double gustiness ) nogil
     void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, double* ch, double* lmo) nogil
 cdef extern from "entropies.h":
-    inline double sd_c(double pd, double T) nogil
-    inline double sv_c(double pv, double T) nogil
+    double sd_c(double pd, double T) nogil
+    double sv_c(double pv, double T) nogil
 
 def SurfaceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
 
@@ -1000,7 +999,7 @@ cdef class SurfaceZGILS(SurfaceBase):
 # Anderson, R. J., 1993: A Study of Wind Stress and Heat Flux over the Open
 # Ocean by the Inertial-Dissipation Method. J. Phys. Oceanogr., 23, 2153--“2161.
 # See also: ARPS documentation
-cdef inline double compute_z0(double z1, double windspeed) nogil:
+cdef double compute_z0(double z1, double windspeed) nogil:
     cdef double z0 =z1*exp(-kappa/sqrt((0.4 + 0.079*windspeed)*1e-3))
     return z0
 
