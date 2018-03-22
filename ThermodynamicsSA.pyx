@@ -473,7 +473,7 @@ cdef class ThermodynamicsSA:
         NS.write_ts('cloud_base', cb, Pa)
         NS.write_ts('cloud_top', ct, Pa)
 
-        # Compute liquid, ice, rain, and snow water paths
+        # Compute liquid water path
         lwp = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):

@@ -134,7 +134,6 @@ cdef class Smagorinsky:
 
         return
 
-
     cpdef update(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV,
                  PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, Surface.SurfaceBase Sur,  ParallelMPI.ParallelMPI Pa):
 
