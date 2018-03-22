@@ -24,6 +24,7 @@ from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 include 'parameters.pxi'
 from Initialization import sat_adjst, qv_unsat
 # import matplotlib.pyplot as plt
+import cPickle
 
 cdef class Forcing:
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
@@ -1113,19 +1114,9 @@ cdef class ForcingSheba:
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            Py_ssize_t k, idx
+            Py_ssize_t k
             double omega
             double p_inv = 95700.0
-            double [:] EC_dTdt
-            double [:] EC_dqdt
-            double [:] EC_pressure
-            double [:] EC_u
-            double [:] EC_v
-            double EC_ps
-            double [:] dtdt
-            double [:] dqtdt
-            double [:] u0
-            double [:] v0
 
         self.subsidence = np.zeros((Gr.dims.nlg[2]), dtype=np.double, order='c')
         self.nudge_coeff_velocities = 1.0 / 3600.0
@@ -1134,33 +1125,18 @@ cdef class ForcingSheba:
         self.u0 = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.v0 = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
-        #SHEBA forcing file from https://atmos.washington.edu/~roode/SHEBA.html
-        data = nc.Dataset('./SHEBAdata/EC_tend.nc', 'r')
-
-        time_all = data.variables['yymmddhh'][:]
-        idx = np.where(time_all==1998050712)[0][0]
-        EC_dTdt = np.mean(data.variables['dTdt-hor-adv'][idx:idx+12,:],axis=0)
-        EC_dqdt = np.mean(data.variables['dqdt-hor-adv'][idx:idx+12,:],axis=0)
-        EC_u = np.mean(data.variables['u'][idx:idx+12,:],axis=0)
-        EC_v = np.mean(data.variables['v'][idx:idx+12,:],axis=0)
-        EC_ps = np.amax(data.variables['psurf'][idx:idx+12])
-        EC_pressure = np.array(data.variables['sigma'][:])*EC_ps
-        data.close()
-
-        #Patch in the surface value
-        EC_pressure = np.append(EC_pressure, EC_ps)
-        EC_u = np.append(EC_u, EC_u[-1])
-        EC_v = np.append(EC_v, EC_v[-1])
-        EC_dTdt = np.append(EC_dTdt, EC_dTdt[-1])
-        EC_dqdt = np.append(EC_dqdt, EC_dqdt[-1])
+        #Original SHEBA forcing file from https://atmos.washington.edu/~roode/SHEBA.html
+        fh = open('./SHEBAdata/SHEBA_forcing.pkl', 'r')
+        sheba_ec = cPickle.load(fh)
+        fh.close()
 
         Pa.root_print('Finish reading in SHEBA forcing fields.')
 
         for k in xrange(Gr.dims.nlg[2]):
-            self.dtdt[k] = interp_pchip(RS.p0_half[k], EC_pressure, EC_dTdt)
-            self.dqtdt[k] = interp_pchip(RS.p0_half[k], EC_pressure, EC_dqdt)
-            self.u0[k] = interp_pchip(RS.p0[k], EC_pressure, EC_u)
-            self.v0[k] = interp_pchip(RS.p0[k], EC_pressure, EC_v)
+            self.dtdt[k] = interp_pchip(RS.p0_half[k], sheba_ec['pressure'], sheba_ec['dTdt'])
+            self.dqtdt[k] = interp_pchip(RS.p0_half[k], sheba_ec['pressure'], sheba_ec['dqdt'])
+            self.u0[k] = interp_pchip(RS.p0[k], sheba_ec['pressure'], sheba_ec['u'])
+            self.v0[k] = interp_pchip(RS.p0[k], sheba_ec['pressure'], sheba_ec['v'])
 
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
