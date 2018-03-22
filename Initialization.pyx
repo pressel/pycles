@@ -983,7 +983,6 @@ def InitIsdacCC(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
     #First generate the reference profiles
     RS.Pg = 1.02e5  #Pressure at ground
-    # RS.Tg = (namelist['initial']['SST'] + namelist['initial']['dSST']) * (RS.Pg / p_tilde)**(Rd/cpd) #Temperature at ground
     RS.Tg = namelist['initial']['SST'] + namelist['initial']['dSST']
     pv_sat = Th.get_pv_star(RS.Tg)
     pv = pv_sat * namelist['initial']['rh0']
@@ -1005,8 +1004,6 @@ def InitIsdacCC(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
-        # double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        # double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] rh = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
@@ -1017,7 +1014,6 @@ def InitIsdacCC(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         double z_top = namelist['initial']['z_top'] #cloud top height
         double dz_inv = namelist['initial']['dzi'] #inversion depth
         bint fix_dqt = namelist['initial']['fix_dqt'] #Whether dqt is fixed
-        # double temp, pv_sat, qv_sat, pv
         double dqt_baseline = -0.000454106424679 #Value for the reference climate
         double [:] temp = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] p0_half = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
@@ -1078,37 +1074,6 @@ def InitIsdacCC(Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             qv = RS.ic_qt[k] - ql
             pv = (RS.p0_half[k] * qv) / (eps_v * (1.0 - RS.ic_qt[k]) + qv)
             rh[k] = pv / pv_sat
-
-
-    # #Now calculate profiles after warming
-    # for k in xrange(Gr.dims.nlg[2]):
-    #     if Gr.zl_half[k] <= (z_top):
-    #         RS.ic_thetal[k] = thetal[k] + t_warming
-    #         T = RS.ic_thetal[k] * (RS.p0_half[k] / p_tilde)**(Rd/cpd)
-    #         pv_sat = Th.get_pv_star(T)
-    #         pv = pv_sat * RS.ic_rh[k]
-    #         RS.ic_qt[k] = 1.0/(eps_vi * (RS.p0_half[k] - pv) / pv + 1.0)
-    #         if RS.ic_rh[k] > 0.999:
-    #             print(k, RS.ic_qt[k], RS.ic_qt[k-1])
-    #             RS.ic_qt[k] = RS.ic_qt[k-1]
-    #
-    #     else:
-    #         RS.ic_thetal[k] = thetal[k] + t_warming
-    #         T = RS.ic_thetal[k] * (RS.p0_half[k] / p_tilde)**(Rd/cpd)
-    #         pv_sat = Th.get_pv_star(T)
-    #         pv = pv_sat * RS.ic_rh[k]
-    #         RS.ic_qt[k] = 1.0/(eps_vi * (RS.p0_half[k] - pv) / pv + 1.0)
-    #
-    #
-    # print(np.array(rh[80:87]), np.array(RS.ic_thetal[80:87]), np.array(RS.ic_qt[80:87]))
-    # plt.figure(1)
-    # plt.subplot(131)
-    # plt.plot(RS.ic_thetal, Gr.zl_half)
-    # plt.subplot(132)
-    # plt.plot(RS.ic_qt, Gr.zl_half)
-    # plt.subplot(133)
-    # plt.plot(rh, Gr.zl_half)
-    # plt.show()
 
 
     for k in xrange(Gr.dims.nlg[2]):

@@ -839,17 +839,11 @@ def Isdac():
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 3600.0 * 8.0
 
-    namelist['thermodynamics'] = {}
-    # namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic_1M'
-    # namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     namelist['microphysics']['phase_partitioning'] = 'Arctic'
     namelist['microphysics']['n0_ice'] = 1.0e7
-
-    namelist['forcing'] = {}
-    namelist['forcing']['merra2'] = False
 
     namelist["sgs"] = {}
     namelist["sgs"]['scheme'] = 'Smagorinsky'
@@ -863,7 +857,6 @@ def Isdac():
     namelist['radiation']['RRTM']['buffer_points'] = 15
     namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
     namelist['radiation']['RRTM']['adjes'] = 0.0
-    # namelist['radiation']['RRTM']['coszen'] = 0.0
 
     namelist["diffusion"] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -932,9 +925,6 @@ def IsdacCC():
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 3600.0 * 8.0
 
-    namelist['thermodynamics'] = {}
-    # namelist['thermodynamics']['latentheat'] = 'constant'
-
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic_1M'
     namelist['microphysics']['phase_partitioning'] = 'Arctic'
@@ -983,7 +973,6 @@ def IsdacCC():
     namelist['radiation']['RRTM']['buffer_points'] = 15
     namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
     namelist['radiation']['RRTM']['adjes'] = 0.0
-    # namelist['radiation']['RRTM']['coszen'] = 0.0
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -1037,7 +1026,6 @@ def Mpace():
     namelist['time_stepping']['t_max'] = 3600.0 * 12.0
 
     namelist['thermodynamics'] = {}
-    # namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic_1M'
@@ -1056,7 +1044,6 @@ def Mpace():
     namelist['radiation']['RRTM']['buffer_points'] = 15
     namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
     namelist['radiation']['RRTM']['dyofyr'] = 283
-    # namelist['radiation']['RRTM']['coszen'] = 0.0
     namelist['radiation']['RRTM']['daily_mean_sw'] = False
     namelist['radiation']['RRTM']['hourz'] = 17.0
     namelist['radiation']['RRTM']['latitude'] = 71.75
@@ -1130,7 +1117,6 @@ def Sheba():
     namelist['time_stepping']['t_max'] = 3600.0 * 12.0
 
     namelist['thermodynamics'] = {}
-    # namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'Arctic_1M'
@@ -1150,7 +1136,6 @@ def Sheba():
     namelist['radiation']['RRTM']['stretch_factor'] = 1.2
     namelist['radiation']['RRTM']['patch_pressure'] = 500.0*100.0
     namelist['radiation']['RRTM']['dyofyr'] = 127
-    # namelist['radiation']['RRTM']['coszen'] = 0.0
     namelist['radiation']['RRTM']['daily_mean_sw'] = False
     namelist['radiation']['RRTM']['hourz'] = 12.0
     namelist['radiation']['RRTM']['latitude'] = 76.0
