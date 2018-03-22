@@ -1,6 +1,6 @@
 #!python
 #cython: boundscheck=False
-#cython: wraparound=True
+#cython: wraparound=False
 #cython: initializedcheck=False
 #cython: cdivision=True
 
@@ -12,6 +12,10 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport TimeStepping
 cimport Surface
+from Forcing cimport AdjustedMoistAdiabat
+from Thermodynamics cimport LatentHeat
+# import pylab as plt
+
 import numpy as np
 cimport numpy as np
 import netCDF4 as nc
@@ -23,27 +27,32 @@ from profiles import profile_data
 # import matplotlib.pyplot as plt
 import sys
 
-def RadiationFactory(namelist, ParallelMPI.ParallelMPI Pa):
+
+def RadiationFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
     # if namelist specifies RRTM is to be used, this will override any case-specific radiation schemes
     try:
         use_rrtm = namelist['radiation']['use_RRTM']
     except:
         use_rrtm = False
     if use_rrtm:
-        return RadiationRRTM(namelist)
+        return RadiationRRTM(namelist,LH, Pa)
     else:
         casename = namelist['meta']['casename']
         if casename == 'DYCOMS_RF01':
-            return RadiationDyCOMS_RF01()
+            return RadiationDyCOMS_RF01(namelist)
         elif casename == 'DYCOMS_RF02':
             #Dycoms RF01 and RF02 use the same radiation
-            return RadiationDyCOMS_RF01()
+            return RadiationDyCOMS_RF01(namelist)
         elif casename == 'SMOKE':
             return RadiationSmoke()
         elif casename == 'Isdac':
             return RadiationIsdac()
         elif casename == 'IsdacCC':
-            return RadiationIsdac()
+            return RadiationRRTM(namelist,LH, Pa)
+        elif casename == 'CGILS':
+            return RadiationRRTM(namelist,LH, Pa)
+        elif casename == 'ZGILS':
+            return RadiationRRTM(namelist, LH, Pa)
         else:
             return RadiationNone()
 
@@ -109,23 +118,36 @@ cdef class RadiationBase:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid.Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
-            Py_ssize_t i
+            Py_ssize_t i,j,k
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t ishift, jshift, ijk
+
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             double [:] entropy_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
             double [:] tmp
 
         # Now update entropy tendencies
         with nogil:
-            for i in xrange(Gr.dims.npg):
-                entropy_tendency[i] =  self.heating_rate[i] / DV.values[i + t_shift]
+            for i in xrange(gw,imax):
+                ishift = i * istride
+                for j in xrange(gw,jmax):
+                    jshift = j * jstride
+                    for k in xrange(gw,kmax):
+                        ijk = ishift + jshift + k
+                        entropy_tendency[ijk] =  self.heating_rate[ijk] * Ref.alpha0_half[k] / DV.values[ijk + t_shift]
 
         tmp = Pa.HorizontalMean(Gr, &self.heating_rate[0])
         NS.write_profile('radiative_heating_rate', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -197,8 +219,8 @@ cdef class RadiationNone(RadiationBase):
                      Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -206,10 +228,13 @@ cdef class RadiationNone(RadiationBase):
 
 
 cdef class RadiationDyCOMS_RF01(RadiationBase):
-    def __init__(self):
+    def __init__(self, namelist):
         self.alpha_z = 1.0
         self.kap = 85.0
-        self.f0 = 70.0
+        try:
+            self.f0 = namelist['radiation']['dycoms_f0']
+        except:
+            self.f0 = 70.0
         self.f1 = 22.0
         self.divergence = 3.75e-6
 
@@ -225,8 +250,8 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -315,7 +340,8 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
                         PV.tendencies[
-                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
+                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] 
+                        self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift]) 
 
         return
 
@@ -327,7 +353,7 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
         return
 
 
-cdef class RadiationSmoke:
+cdef class RadiationSmoke(RadiationBase):
     '''
     Radiation for the smoke cloud case
 
@@ -353,8 +379,8 @@ cdef class RadiationSmoke:
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -415,7 +441,8 @@ cdef class RadiationSmoke:
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
                         PV.tendencies[
-                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
+                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] * Ref.alpha0_half[k]
+                        self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpd * Ref.alpha0_half[k]
 
         return
 
@@ -566,8 +593,11 @@ cdef extern:
 
 
 
-cdef class RadiationRRTM:
-    def __init__(self, namelist):
+cdef class RadiationRRTM(RadiationBase):
+
+    def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
+
+
         # Required for surface energy budget calculations, can also be used for stats io
         self.srf_lw_down = 0.0
         self.srf_sw_down = 0.0
@@ -579,18 +609,37 @@ cdef class RadiationRRTM:
         self.toa_lw_up = 0.0
         self.toa_sw_up = 0.0
         casename = namelist['meta']['casename']
+        self.modified_adiabat = False
+
         if casename == 'Sheba':
             self.profile_name = 'arctic'
-        elif casename == 'DYCOMS_RF01':
-            self.profile_name = 'cgils_s12'
         elif casename == 'Isdac':
             self.profile_name = 'arctic'
         elif casename == 'IsdacCC':
             self.profile_name = 'arctic'
         elif casename == 'Mpace':
             self.profile_name = 'arctic'
+        elif casename == 'DYCOMS_RF01':
+            self.profile_name = 'cgils_ctl_s12'
+        elif casename == 'CGILS':
+            loc = namelist['meta']['CGILS']['location']
+            is_p2 = namelist['meta']['CGILS']['P2']
+            if is_p2:
+                self.profile_name = 'cgils_p2_s'+str(loc)
+            else:
+                self.profile_name = 'cgils_ctl_s'+str(loc)
+        elif casename == 'ZGILS':
+            loc = namelist['meta']['ZGILS']['location']
+            self.profile_name = 'cgils_ctl_s'+str(loc)
+            self.modified_adiabat = True
+            self.reference_profile = AdjustedMoistAdiabat(namelist, LH, Pa)
+            self.Tg_adiabat = 295.0
+            self.Pg_adiabat = 1000.0e2
+            self.RH_adiabat = 0.3
+
         else:
-            self.profile_name = 'default'
+            Pa.root_print('RadiationRRTM: Case ' + casename + ' has no known extension profile')
+            Pa.kill()
 
         # Namelist options related to the profile extension
         try:
@@ -605,7 +654,7 @@ cdef class RadiationRRTM:
         try:
             self.patch_pressure = namelist['radiation']['RRTM']['patch_pressure']
         except:
-            self.patch_pressure = 600.00*100.0
+            self.patch_pressure = 1000.00*100.0
 
         # Namelist options related to gas concentrations
         try:
@@ -630,8 +679,8 @@ cdef class RadiationRRTM:
         try:
             self.adjes = namelist['radiation']['RRTM']['adjes']
         except:
-            print('Insolation adjustive factor not set so RadiationRRTM takes default value: adjes = 1.0.')
-            self.adjes = 1.0
+            Pa.root_print('Insolation adjustive factor not set so RadiationRRTM takes default value: adjes = 0.5 (12 hour of daylight).')
+            self.adjes = 0.5
 
         try:
             self.daily_mean_sw = namelist['radiation']['RRTM']['daily_mean_sw']
@@ -643,8 +692,8 @@ cdef class RadiationRRTM:
             try:
                 self.coszen = namelist['radiation']['RRTM']['coszen']
             except:
-                self.coszen = 0.0
-                print('Coszen not provided for daily mean SW radiation in RRTM! Set the default value: coszen = 0.0, no SW!')
+                Pa.root_print('Mean Daytime cos(SZA) not set so RadiationRRTM takes default value: coszen = 2.0/pi .')
+                self.coszen = 2.0/pi
         else:
             try:
                 self.latitude = namelist['radiation']['RRTM']['latitude']
@@ -656,24 +705,16 @@ cdef class RadiationRRTM:
                 print('Hourz, latitude, or longitude not set. Cannot calculate RRTM SW. Exit now!')
                 sys.exit()
 
-
         try:
             self.scon = namelist['radiation']['RRTM']['solar_constant']
         except:
-            print('Solar Constant not set so RadiationRRTM takes default value: scon = 1360.0 .')
+            Pa.root_print('Solar Constant not set so RadiationRRTM takes default value: scon = 1360.0 .')
             self.scon = 1360.0
-
-        # try:
-        #     self.coszen =namelist['radiation']['RRTM']['coszen']
-        # except:
-        #     print('Mean Daytime cos(SZA) not set so RadiationRRTM takes default value: coszen = 2.0/pi .')
-        #     self.coszen = 2.0/pi
-
 
         try:
             self.adif = namelist['radiation']['RRTM']['adif']
         except:
-            print('Surface diffusive albedo not set so RadiationRRTM takes default value: adif = 0.06 .')
+            Pa.root_print('Surface diffusive albedo not set so RadiationRRTM takes default value: adif = 0.06 .')
             self.adif = 0.06
 
         try:
@@ -683,19 +724,21 @@ cdef class RadiationRRTM:
                 self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
             else:
                 self.adir = 0.0
-            print('Surface direct albedo not set so RadiationRRTM computes value: adif = %5.4f .'%(self.adir))
+            Pa.root_print('Surface direct albedo not set so RadiationRRTM computes value: adif = %5.4f .'%(self.adir))
 
         try:
             self.uniform_reliq = namelist['radiation']['RRTM']['uniform_reliq']
         except:
-            print('uniform_reliq not set so RadiationRRTM takes default value: uniform_reliq = False.')
+            Pa.root_print('uniform_reliq not set so RadiationRRTM takes default value: uniform_reliq = False.')
             self.uniform_reliq = False
 
         try:
             self.radiation_frequency = namelist['radiation']['RRTM']['frequency']
         except:
-            print('radiation_frequency not set so RadiationRRTM takes default value: radiation_frequency = 0.0 (compute at every step).')
+            Pa.root_print('radiation_frequency not set so RadiationRRTM takes default value: radiation_frequency = 0.0 (compute at every step).')
             self.radiation_frequency = 0.0
+
+
 
         self.next_radiation_calculate = 0.0
 
@@ -741,15 +784,36 @@ cdef class RadiationRRTM:
             Py_ssize_t nz = Gr.dims.n[2]
             Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t i,k
+            Py_ssize_t n_adiabat
+            double [:] pressures_adiabat
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
-        pressures = profile_data[self.profile_name]['pressure'][:]
-        temperatures = profile_data[self.profile_name]['temperature'][:]
-        # vapor_mixing_ratios = profile_data[self.profile_name]['vapor_mixing_ratio'][:]
-        specific_humidity = profile_data[self.profile_name]['specific_humidity'][:]
+        if self.modified_adiabat:
+            # pressures = profile_data[self.profile_name]['pressure'][:]
+            pressures = np.arange(25*100, 1015*100, 10*100)
+            pressures = np.array(pressures[::-1], dtype=np.double)
+            n_adiabat = np.shape(pressures)[0]
+            self.reference_profile.initialize(Pa, pressures, n_adiabat, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat)
+            temperatures =np.array( self.reference_profile.temperature)
+            vapor_mixing_ratios = np.array(self.reference_profile.rv)
 
-        n_profile = len(pressures[pressures<=self.patch_pressure]) # nprofile = # of points in the fixed profile to use
+        else:
+            pressures = profile_data[self.profile_name]['pressure'][:]
+            temperatures = profile_data[self.profile_name]['temperature'][:]
+            vapor_mixing_ratios = profile_data[self.profile_name]['vapor_mixing_ratio'][:]
+
+        # Sanity check that patch_pressure < minimum LES domain pressure
+        dp = np.abs(Ref.p0_half_global[nz + gw -1] - Ref.p0_half_global[nz + gw -2])
+        self.patch_pressure = np.minimum(self.patch_pressure, Ref.p0_half_global[nz + gw -1] - dp  )
+
+        #n_profile = len(pressures[pressures<=self.patch_pressure]) # nprofile = # of points in the fixed profile to use
+        # above syntax tends to cause problems so use a more robust way
+        n_profile = 0
+        for pressure in pressures:
+            if pressure <= self.patch_pressure:
+                n_profile += 1
+
         self.n_ext =  n_profile + self.n_buffer # n_ext = total # of points to add to LES domain (buffer portion + fixed profile portion)
 
 
@@ -761,29 +825,37 @@ cdef class RadiationRRTM:
         self.t_ext = np.zeros((self.n_ext,),dtype=np.double)
         self.rv_ext = np.zeros((self.n_ext,),dtype=np.double)
         cdef Py_ssize_t count = 0
-        for k in xrange(len(pressures)-n_profile, len(pressures)):
-            self.p_ext[self.n_buffer+count] = pressures[k]
-            qt_new = get_humidity(temperatures[k], specific_humidity[k], pressures[k], temperatures[k]+self.IsdacCC_dT, Th)
-            self.t_ext[self.n_buffer+count] = temperatures[k] + self.IsdacCC_dT
-            self.rv_ext[self.n_buffer+count] = qt_new / (1.0 - qt_new)
-            count += 1
+        if self.IsdacCC_dT == 0.0:
+            for k in xrange(len(pressures)-n_profile, len(pressures)):
+                self.p_ext[self.n_buffer+count] = pressures[k]
+                self.t_ext[self.n_buffer+count] = temperatures[k]
+                self.rv_ext[self.n_buffer+count] = vapor_mixing_ratios[k]
+                count += 1
+        else:
+            specific_humidity = vapor_mixing_ratios / (1.0 + vapor_mixing_ratios)
+            for k in xrange(len(pressures)-n_profile, len(pressures)):
+                self.p_ext[self.n_buffer+count] = pressures[k]
+                qt_new = get_humidity(temperatures[k], specific_humidity[k], pressures[k], temperatures[k]+self.IsdacCC_dT, Th)
+                self.t_ext[self.n_buffer+count] = temperatures[k] + self.IsdacCC_dT
+                self.rv_ext[self.n_buffer+count] = qt_new / (1.0 - qt_new)
+                count += 1
 
 
         # Now  create the buffer zone
         if self.n_buffer > 0:
             dp = np.abs(Ref.p0_half_global[nz + gw -1] - Ref.p0_half_global[nz + gw -2])
             self.p_ext[0] = Ref.p0_half_global[nz + gw -1] - dp
-            # print(self.p_ext[0])
             for i in range(1,self.n_buffer):
                 self.p_ext[i] = self.p_ext[i-1] - (i+1.0)**self.stretch_factor * dp
 
-            # for i in xrange(self.n_ext):
-                # print i, self.p_ext[i]
+
+            # Sanity check the buffer zone
+            if self.p_ext[self.n_buffer-1] < self.p_ext[self.n_buffer]:
+                Pa.root_print('Radiation buffer zone extends too far')
+                Pa.kill()
 
             # Pressures of "data" points for interpolation, must be INCREASING pressure
             xi = np.array([self.p_ext[self.n_buffer+1],self.p_ext[self.n_buffer],Ref.p0_half_global[nz + gw -1],Ref.p0_half_global[nz + gw -2] ],dtype=np.double)
-            # print(xi)
-
 
             # interpolation for temperature
             ti = np.array([self.t_ext[self.n_buffer+1],self.t_ext[self.n_buffer], t_pencils[0,nz-1],t_pencils[0,nz-2] ], dtype = np.double)
@@ -796,16 +868,24 @@ cdef class RadiationRRTM:
                 self.rv_ext[i] = pchip_interpolate(xi, ri, self.p_ext[i] )
                 self.t_ext[i] = pchip_interpolate(xi,ti, self.p_ext[i])
 
-        # # Plotting to evaluate implementation of buffer zone
+        #--- Plotting to evaluate implementation of buffer zone
+        #--- Comment out when not running locally
+        for i in xrange(Gr.dims.nlg[2]):
+            qv_pencils[0,i] = qv_pencils[0, i]/ (1.0 - qv_pencils[0, i])
+        #
+        # Plotting to evaluate implementation of buffer zone
         # plt.figure(1)
-        # plt.scatter(self.rv_ext,self.p_ext)
-        # plt.plot(specific_humidity, pressures)
-        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw])
+        # plt.plot(self.rv_ext,self.p_ext,'or')
+        # plt.plot(vapor_mixing_ratios, pressures)
+        # plt.plot(qv_pencils[0,:], Ref.p0_half_global[gw:-gw],'ob')
+        # plt.gca().invert_yaxis()
         # plt.figure(2)
-        # plt.scatter(self.t_ext,self.p_ext)
+        # plt.plot(self.t_ext,self.p_ext,'-or')
         # plt.plot(temperatures,pressures)
-        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw])
+        # plt.plot(t_pencils[0,:], Ref.p0_half_global[gw:-gw],'-ob')
+        # plt.gca().invert_yaxis()
         # plt.show()
+        #---END Plotting to evaluate implementation of buffer zone
 
 
         self.p_full = np.zeros((self.n_ext+nz,), dtype=np.double)
@@ -827,7 +907,7 @@ cdef class RadiationRRTM:
             use_o3in = True
         except:
             try:
-                o3_trace = profile_data[self.profile_name]['o3_mr'][:]*28.97/47.9982   # O3 MR converted to VMR
+                o3_trace = profile_data[self.profile_name]['o3_mmr'][:]*28.97/47.9982   # O3 MR converted to VMR
                 o3_pressure = profile_data[self.profile_name]['pressure'][:]/100.0       # Pressure (from SRF to TOP) in hPa
                 # can't do simple interpolation... Need to conserve column path !!!
                 use_o3in = True
@@ -879,7 +959,6 @@ cdef class RadiationRRTM:
             if (self.pi_full[i-1]/100.0 > lw_pressure[0]):
                 trpath[i,:] = trpath[i,:] + (self.pi_full[i-1]/100.0 - np.max((self.pi_full[i]/100.0,lw_pressure[0])))/g*trace[:,0]
             for m in xrange(1,lw_np):
-                #print i, m
                 plow = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, lw_pressure[m-1]))))
                 pupp = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, lw_pressure[m]))))
                 if (plow > pupp):
@@ -907,7 +986,6 @@ cdef class RadiationRRTM:
                 if (self.pi_full[i-1]/100.0 > o3_pressure[0]):
                     trpath_o3[i] = trpath_o3[i] + (self.pi_full[i-1]/100.0 - np.max((self.pi_full[i]/100.0,o3_pressure[0])))/g*o3_trace[0]
                 for m in xrange(1,o3_np):
-                    #print i, m
                     plow = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m-1]))))
                     pupp = np.min((self.pi_full[i-1]/100.0,np.max((self.pi_full[i]/100.0, o3_pressure[m]))))
                     if (plow > pupp):
@@ -931,19 +1009,18 @@ cdef class RadiationRRTM:
         self.cfc22vmr = np.array( tmpTrace[:,7],dtype=np.double, order='F')
         self.ccl4vmr  =  np.array(tmpTrace[:,8],dtype=np.double, order='F')
 
-        return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
-
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,
+                 ParallelMPI.ParallelMPI Pa):
 
         if TS.rk_step == 0:
             if self.radiation_frequency <= 0.0:
                 self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
             elif TS.t >= self.next_radiation_calculate:
                 if not self.daily_mean_sw:
-                    #Calculate coszen
+                    #Update coszen
                     self.dyofyr = np.floor_divide(TS.t, 86400.0) + self.dyofyr_init
                     self.hourz = self.hourz_init + TS.t/3600.0
                     if self.hourz > 24.0:
@@ -958,6 +1035,7 @@ cdef class RadiationRRTM:
             Py_ssize_t imin = Gr.dims.gw
             Py_ssize_t jmin = Gr.dims.gw
             Py_ssize_t kmin = Gr.dims.gw
+
 
             Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
@@ -979,7 +1057,9 @@ cdef class RadiationRRTM:
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
-                        PV.tendencies[s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] * Ref.alpha0_half[k]
+
+                        PV.tendencies[
+                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift] * Ref.alpha0_half[k]
                         self.dTdt_rad[ijk] = self.heating_rate[ijk] * Ref.alpha0_half[k]/cpm_c(PV.values[ijk + qt_shift])
 
         return
@@ -1008,7 +1088,6 @@ cdef class RadiationRRTM:
             qi_shift = DV.get_varshift(Gr, 'qi')
             qi_pencil = self.z_pencil.forward_double(&Gr.dims, Pa, &DV.values[qi_shift])
             # use_ice = True  # testing radiation without ice effect
-
 
 
 
@@ -1068,7 +1147,6 @@ cdef class RadiationRRTM:
             double[:,:] hrc_sw_out = np.zeros((n_pencils,nz_full),dtype=np.double,order='F')
 
             double rv_to_reff = np.exp(np.log(1.2)**2.0)*10.0*1000.0
-
 
         with nogil:
             for k in xrange(nz, nz_full):
@@ -1150,7 +1228,6 @@ cdef class RadiationRRTM:
              &tauaer_lw_in[0,0,0]  ,
              &uflx_lw_out[0,0]    ,&dflx_lw_out[0,0]    ,&hr_lw_out[0,0]      ,&uflxc_lw_out[0,0]   ,&dflxc_lw_out[0,0],  &hrc_lw_out[0,0],
              &duflx_dt_out[0,0],&duflxc_dt_out[0,0] )
-
 
 
         c_rrtmg_sw (

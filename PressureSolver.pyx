@@ -25,8 +25,8 @@ cdef class PressureSolver:
 
     cpdef initialize(self,namelist, Grid.Grid Gr,ReferenceState.ReferenceState RS ,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI PM):
 
-        DV.add_variables('dynamic_pressure','Pa','sym',PM)
-        DV.add_variables('divergence','1/s','sym',PM)
+        DV.add_variables('dynamic_pressure', 'Pa', r'p', 'dynamic pressure', 'sym', PM)
+        DV.add_variables('divergence', '1/s', r'd', '3d divergence', 'sym',PM)
 
         self.divergence = np.zeros(Gr.dims.npl,dtype=np.double, order='c')
         #self.poisson_solver = PressureFFTSerial.PressureFFTSerial()
@@ -48,10 +48,10 @@ cdef class PressureSolver:
             Py_ssize_t pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
             Py_ssize_t div_shift = DV.get_varshift(Gr,'divergence')
 
-        cdef double [:] u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
+
         #Remove mean u3
+        cdef double [:] u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
         remove_mean_u3(&Gr.dims,&u3_mean[0],&PV.values[w_shift])
-        u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
 
         #Zero the divergence array [Perhaps we can replace this with a C-Call to Memset]
         with nogil:

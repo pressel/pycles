@@ -19,7 +19,7 @@ from NetCDFIO cimport NetCDFIO_Stats, NetCDFIO_Fields
 from libc.math cimport fmax, fmin
 
 cdef extern from "thermodynamics_sa.h":
-    inline double alpha_c(double p0, double T, double qt, double qv) nogil
+    double alpha_c(double p0, double T, double qt, double qv) nogil
     void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
     void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
                     double * qv, double * ql, double * qi, double * alpha)
@@ -30,18 +30,18 @@ cdef extern from "thermodynamics_sa.h":
 
 cdef extern from "thermodynamic_functions.h":
     # Dry air partial pressure
-    inline double pd_c(double p0, double qt, double qv) nogil
+    double pd_c(double p0, double qt, double qv) nogil
     # Water vapor partial pressure
-    inline double pv_c(double p0, double qt, double qv) nogil
+    double pv_c(double p0, double qt, double qv) nogil
 
 
 cdef extern from "entropies.h":
     # Specific entropy of dry air
-    inline double sd_c(double pd, double T) nogil
+    double sd_c(double pd, double T) nogil
     # Specific entropy of water vapor
-    inline double sv_c(double pv, double T) nogil
+    double sv_c(double pv, double T) nogil
     # Specific entropy of condensed water
-    inline double sc_c(double L, double T) nogil
+    double sc_c(double L, double T) nogil
 
 
 cdef class ThermodynamicsSA:
@@ -82,19 +82,19 @@ cdef class ThermodynamicsSA:
         :return:
         '''
 
-        PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
-        PV.add_variable('qt', 'kg/kg', "sym", "scalar", Pa)
+        PV.add_variable('s', 'J kg^-1 K^-1', 's', 'specific entropy', "sym", "scalar", Pa)
+        PV.add_variable('qt', 'kg/kg', 'q_t', 'total water mass fraction', "sym", "scalar", Pa)
 
         # Initialize class member arrays
-        DV.add_variables('buoyancy', '--', 'sym', Pa)
-        DV.add_variables('alpha', '--', 'sym', Pa)
-        DV.add_variables('temperature', 'K', 'sym', Pa)
-        DV.add_variables('buoyancy_frequency', '1/s', 'sym', Pa)
-        DV.add_variables('qv', 'kg/kg', 'sym', Pa)
-        DV.add_variables('ql', 'kg/kg', 'sym', Pa)
-        DV.add_variables('qi', 'kg/kg', 'sym', Pa)
-        DV.add_variables('theta_rho', 'K', 'sym', Pa)
-        DV.add_variables('thetali', 'K', 'sym', Pa)
+        DV.add_variables('buoyancy' ,r'ms^{-1}', r'b', 'buoyancy','sym', Pa)
+        DV.add_variables('alpha', r'm^3kg^-2', r'\alpha', 'specific volume', 'sym', Pa)
+        DV.add_variables('temperature', r'K', r'T', r'temperature', 'sym', Pa)
+        DV.add_variables('buoyancy_frequency', r's^-1', r'N', 'buoyancy frequencyt', 'sym', Pa)
+        DV.add_variables('qv', 'kg/kg', r'q_v', 'water vapor specific humidity', 'sym', Pa)
+        DV.add_variables('ql', 'kg/kg', r'q_l', 'liquid water specific humidity', 'sym', Pa)
+        DV.add_variables('qi', 'kg/kg', r'q_i', 'ice water specific humidity', 'sym', Pa)
+        DV.add_variables('theta_rho', 'K', r'\theta_{\rho}', 'density potential temperature', 'sym', Pa)
+        DV.add_variables('thetali', 'K', r'\theta_l', r'liqiud water potential temperature', 'sym', Pa)
 
 
         # Add statistical output
