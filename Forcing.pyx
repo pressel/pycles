@@ -54,7 +54,7 @@ cdef class Forcing:
         elif casename == 'Mpace':
             self.scheme = ForcingMpace()
         elif casename == 'Sheba':
-            self.scheme = ForcingSheba(namelist)
+            self.scheme = ForcingSheba()
         elif casename == 'CGILS':
             self.scheme = ForcingCGILS(namelist, Pa)
         elif casename == 'ZGILS':
@@ -1106,13 +1106,7 @@ cdef class ForcingMpace:
         return
 
 cdef class ForcingSheba:
-    def __init__(self, namelist):
-
-        try:
-            self.input_file = str(namelist['forcing']['input_file'])
-        except:
-            self.input_file = ''
-
+    def __init__(self):
         return
 
     @cython.wraparound(True)
@@ -1140,10 +1134,8 @@ cdef class ForcingSheba:
         self.u0 = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.v0 = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
-        try:
-            data = nc.Dataset(self.input_file, 'r')
-        except:
-            Pa.root_print('Incorrect SHEBA input file! Kill simulation now!')
+        #SHEBA forcing file from https://atmos.washington.edu/~roode/SHEBA.html
+        data = nc.Dataset('./SHEBAdata/EC_tend.nc', 'r')
 
         time_all = data.variables['yymmddhh'][:]
         idx = np.where(time_all==1998050712)[0][0]
