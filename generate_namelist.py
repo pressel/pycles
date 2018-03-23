@@ -45,6 +45,14 @@ def main():
         namelist = SMOKE()
     elif case_name == 'Rico':
         namelist = Rico()
+    elif case_name == 'Isdac':
+        namelist = Isdac()
+    elif case_name == 'IsdacCC':
+        namelist = IsdacCC()
+    elif case_name == 'Mpace':
+        namelist = Mpace()
+    elif case_name == 'Sheba':
+        namelist = Sheba()
     elif case_name == 'CGILS_S6':
         namelist = CGILS_S6(is_p2, is_ctl_omega)
     elif case_name == 'CGILS_S11':
@@ -504,6 +512,11 @@ def DYCOMS_RF01():
     namelist['microphysics']['cloud_sedimentation'] = False
     namelist['microphysics']['ccn'] = 100.0e6
 
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = True
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['frequency'] = 60.0
+
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] = {}
@@ -829,6 +842,376 @@ def Rico():
 
     return namelist
 
+
+def Isdac():
+
+    namelist = {}
+
+    namelist["grid"] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 64
+    namelist['grid']['ny'] = 64
+    namelist['grid']['nz'] = 250
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 50.0
+    namelist['grid']['dy'] = 50.0
+    namelist['grid']['dz'] = 10.0
+
+    namelist["mpi"] = {}
+    namelist["mpi"]["nprocx"] = 1
+    namelist["mpi"]["nprocy"] = 1
+    namelist["mpi"]["nprocz"] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.5
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 8.0
+
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'Arctic_1M'
+    namelist['microphysics']['phase_partitioning'] = 'Arctic'
+    namelist['microphysics']['n0_ice'] = 1.0e7
+
+    namelist["sgs"] = {}
+    namelist["sgs"]['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] = {}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = False
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['frequency'] = 60.0
+    namelist['radiation']['RRTM']['buffer_points'] = 15
+    namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
+    namelist['radiation']['RRTM']['adjes'] = 0.0
+
+    namelist["diffusion"] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5
+    namelist['scalar_transport']['order_sedimentation'] = 5
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 600
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['frequency'] = 30.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = "fields"
+    namelist['fields_io']['frequency'] = 36000.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Isdac'
+    namelist['meta']['casename'] = 'Isdac'
+
+    return namelist
+
+
+def IsdacCC():
+
+    namelist = {}
+
+    namelist["grid"] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 64
+    namelist['grid']['ny'] = 64
+    namelist['grid']['nz'] = 250
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 50.0
+    namelist['grid']['dy'] = 50.0
+    namelist['grid']['dz'] = 10.0
+
+    namelist["mpi"] = {}
+    namelist["mpi"]["nprocx"] = 1
+    namelist["mpi"]["nprocy"] = 1
+    namelist["mpi"]["nprocz"] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.5
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 8.0
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'Arctic_1M'
+    namelist['microphysics']['phase_partitioning'] = 'Arctic'
+    namelist['microphysics']['n0_ice'] = 1.0e7
+
+    namelist['sgs'] = {}
+    namelist["sgs"]['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] = {}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    namelist["diffusion"] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5
+    namelist['scalar_transport']['order_sedimentation'] = 5
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 600
+
+    namelist['initial'] = {}
+    namelist['initial']['SST'] = 265.0 #initial surface temperature
+    namelist['initial']['dTi'] = 7.0 #temperature jump at the inversion
+    namelist['initial']['rh0'] = 0.8 #Surface relative humidity
+    namelist['initial']['gamma'] = 5.0/1000. #free tropospheric lapse rate
+    namelist['initial']['rh'] = 0.6 #free tropospheric relative humidity
+    namelist['initial']['z_top'] = 820.0 #top of mixed layer
+    namelist['initial']['dzi'] = 30.0 #inversion height
+    namelist['initial']['dSST'] = 8.0 #SST change (climate change)
+    namelist['initial']['divergence'] = 5.0e-6 # LS divergence
+    namelist['initial']['fix_dqt'] = True
+
+    namelist['surface'] = {}
+    namelist['surface']['sensible'] = 0.0 #surface sensible heat flux Wm-2
+
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = True
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['frequency'] = 60.0
+    namelist['radiation']['RRTM']['buffer_points'] = 15
+    namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
+    namelist['radiation']['RRTM']['adjes'] = 0.0
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['frequency'] = 30.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = "fields"
+    namelist['fields_io']['frequency'] = 36000.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'IsdacCC'
+    namelist['meta']['casename'] = 'IsdacCC'
+
+    return namelist
+
+
+def Mpace():
+
+    namelist = {}
+
+    namelist["grid"] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 64
+    namelist['grid']['ny'] = 64
+    namelist['grid']['nz'] = 250
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 50.0
+    namelist['grid']['dy'] = 50.0
+    namelist['grid']['dz'] = 10.0
+
+    namelist["mpi"] = {}
+    namelist["mpi"]["nprocx"] = 1
+    namelist["mpi"]["nprocy"] = 1
+    namelist["mpi"]["nprocz"] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.5
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 12.0
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'Arctic_1M'
+    namelist['microphysics']['phase_partitioning'] = 'Arctic'
+    namelist['microphysics']['n0_ice'] = 1.0e7
+
+    namelist["sgs"] = {}
+    namelist["sgs"]['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] = {}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = True
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['frequency'] = 60.0
+    namelist['radiation']['RRTM']['buffer_points'] = 15
+    namelist['radiation']['RRTM']['patch_pressure'] = 600.0*100.0
+    namelist['radiation']['RRTM']['dyofyr'] = 283
+    namelist['radiation']['RRTM']['daily_mean_sw'] = False
+    namelist['radiation']['RRTM']['hourz'] = 17.0
+    namelist['radiation']['RRTM']['latitude'] = 71.75
+    namelist['radiation']['RRTM']['longitude'] = 151.0
+
+    namelist["diffusion"] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5
+    namelist['scalar_transport']['order_sedimentation'] = 5
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 600
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['frequency'] = 30.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = "fields"
+    namelist['fields_io']['frequency'] = 36000.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature']
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Mpace'
+    namelist['meta']['casename'] = 'Mpace'
+
+    return namelist
+
+
+def Sheba():
+
+    namelist = {}
+
+    namelist["grid"] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 64
+    namelist['grid']['ny'] = 64
+    namelist['grid']['nz'] = 250
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 50.0
+    namelist['grid']['dy'] = 50.0
+    namelist['grid']['dz'] = 10.0
+
+    namelist["mpi"] = {}
+    namelist["mpi"]["nprocx"] = 1
+    namelist["mpi"]["nprocy"] = 1
+    namelist["mpi"]["nprocz"] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.5
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 12.0
+
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'Arctic_1M'
+    namelist['microphysics']['phase_partitioning'] = 'Arctic'
+    namelist['microphysics']['n0_ice'] = 1.0e7
+
+    namelist["sgs"] = {}
+    namelist["sgs"]['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] = {}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = True
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['frequency'] = 60.0
+    namelist['radiation']['RRTM']['buffer_points'] = 15
+    namelist['radiation']['RRTM']['stretch_factor'] = 1.2
+    namelist['radiation']['RRTM']['patch_pressure'] = 500.0*100.0
+    namelist['radiation']['RRTM']['dyofyr'] = 127
+    namelist['radiation']['RRTM']['daily_mean_sw'] = False
+    namelist['radiation']['RRTM']['hourz'] = 12.0
+    namelist['radiation']['RRTM']['latitude'] = 76.0
+    namelist['radiation']['RRTM']['longitude'] = 195.0
+    namelist['radiation']['RRTM']['adir'] = 0.827
+
+    namelist["diffusion"] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5
+    namelist['scalar_transport']['order_sedimentation'] = 5
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 600
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['frequency'] = 30.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = "fields"
+    namelist['fields_io']['frequency'] = 36000.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature']
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Sheba'
+    namelist['meta']['casename'] = 'Sheba'
+
+    return namelist
 
 
 

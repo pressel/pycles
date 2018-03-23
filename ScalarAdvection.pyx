@@ -59,6 +59,10 @@ cdef class ScalarAdvection:
             if PV.var_type[i] == 1:
                 NS.add_profile(PV.index_name[i] + '_flux_z',Gr,Pa)
 
+        NS.add_profile('s_flux_z_tendency',Gr,Pa)
+        NS.add_profile('qt_flux_z_tendency',Gr,Pa)
+        NS.add_profile('s_flux_xy_tendency',Gr,Pa)
+        NS.add_profile('qt_flux_xy_tendency',Gr,Pa)
 
         return
 
@@ -118,12 +122,14 @@ cdef class ScalarAdvection:
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t scalar_count =  0, i, d = 2, flux_shift, k
             double[:] tmp
             double [:] tmp_interp = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+            double [:] tmp_tendency = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
+            double [:] mean_tendency = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
         for i in xrange(PV.nv):
             if PV.var_type[i] == 1:
@@ -132,6 +138,47 @@ cdef class ScalarAdvection:
                 for k in xrange(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
                     tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])
                 NS.write_profile(PV.index_name[i] + '_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+                if PV.index_name[i] == 's':
+                    tmp_tendency[:] = 0.0
+                    scalar_flux_divergence(&Gr.dims, &RS.alpha0[0], &RS.alpha0_half[0], &self.flux[flux_shift],
+                                           &tmp_tendency[0], Gr.dims.dx[d], d)
+                    mean_tendency = Pa.HorizontalMean(Gr, &tmp_tendency[0])
+                    NS.write_profile(PV.index_name[i] + '_flux_z_tendency', mean_tendency[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+                    #Now get x direction tendency
+                    tmp_tendency[:] = 0.0
+                    flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + 0 * Gr.dims.npg
+                    scalar_flux_divergence(&Gr.dims, &RS.alpha0[0], &RS.alpha0_half[0], &self.flux[flux_shift],
+                                           &tmp_tendency[0], Gr.dims.dx[0], 0)
+                    #Next y direction
+                    flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + 1 * Gr.dims.npg
+                    scalar_flux_divergence(&Gr.dims, &RS.alpha0[0], &RS.alpha0_half[0], &self.flux[flux_shift],
+                                           &tmp_tendency[0], Gr.dims.dx[1], 1)
+                    mean_tendency = Pa.HorizontalMean(Gr, &tmp_tendency[0])
+                    NS.write_profile(PV.index_name[i] + '_flux_xy_tendency', mean_tendency[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
+                elif PV.index_name[i] == 'qt':
+                    tmp_tendency[:] = 0.0
+                    scalar_flux_divergence(&Gr.dims, &RS.alpha0[0], &RS.alpha0_half[0], &self.flux[flux_shift],
+                                           &tmp_tendency[0], Gr.dims.dx[d], d)
+                    mean_tendency = Pa.HorizontalMean(Gr, &tmp_tendency[0])
+                    NS.write_profile(PV.index_name[i] + '_flux_z_tendency', mean_tendency[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+                    #Now get x direction tendency
+                    tmp_tendency[:] = 0.0
+                    flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + 0 * Gr.dims.npg
+                    scalar_flux_divergence(&Gr.dims, &RS.alpha0[0], &RS.alpha0_half[0], &self.flux[flux_shift],
+                                           &tmp_tendency[0], Gr.dims.dx[0], 0)
+                    #Next y direction
+                    flux_shift = scalar_count * (Gr.dims.dims * Gr.dims.npg) + 1 * Gr.dims.npg
+                    scalar_flux_divergence(&Gr.dims, &RS.alpha0[0], &RS.alpha0_half[0], &self.flux[flux_shift],
+                                           &tmp_tendency[0], Gr.dims.dx[1], 1)
+                    mean_tendency = Pa.HorizontalMean(Gr, &tmp_tendency[0])
+                    NS.write_profile(PV.index_name[i] + '_flux_xy_tendency', mean_tendency[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
                 scalar_count += 1
 
 

@@ -16,6 +16,7 @@ cdef class Restart:
         for the restart files. If one cannot be constructed from the namelist information the restart files are placed
         into the directory containing main.py. The uuid is also stored to make sure the restart files remain unique.
 
+        :type Pa: object
         :param namelist:
         :return:
         '''
@@ -67,11 +68,12 @@ cdef class Restart:
             if namelist['restart']['init_from']:
                 self.input_path = str(namelist['restart']['input_path'])
                 self.is_restart_run = True
+
                 Pa.root_print('This run is restarting from data :' + self.input_path )
             else:
                 Pa.root_print('Not a restarted simulation.')
         except:
-                Pa.root_print('Not a restarted simulation.')
+            Pa.root_print('Not a restarted simulation.')
 
 
 

@@ -483,6 +483,7 @@ cdef class ThermodynamicsSA:
 
             for pi in xrange(z_pencil.n_local_pencils):
                 lwp_weighted_sum += lwp[pi]
+
             lwp_weighted_sum /= mean_divisor
 
         lwp_weighted_sum = Pa.domain_scalar_sum(lwp_weighted_sum)

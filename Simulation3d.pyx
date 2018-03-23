@@ -127,7 +127,7 @@ class Simulation3d:
 
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
-        self.Fo.initialize(self.Gr, self.Ref,self.StatsIO, self.Pa)
+        self.Fo.initialize(self.Gr, self.Ref, self.Th, self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Budg.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Damping.initialize(self.Gr, self.Ref)
@@ -147,7 +147,7 @@ class Simulation3d:
         cdef int rk_step
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
-        self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.StatsIO,self.Pa)
+        self.Ra.initialize_profiles(self.Gr, self.Ref, self.Th, self.DV, self.Sur, self.Pa)
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
@@ -158,7 +158,7 @@ class Simulation3d:
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
                 self.Th.update(self.Gr,self.Ref,PV_,DV_)
-                self.Micro.update(self.Gr, self.Ref, PV_, DV_, self.TS, self.Pa )
+                self.Micro.update(self.Gr, self.Ref, self.Th, PV_, DV_, self.TS, self.Pa)
                 self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.Pa)
                 self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
                 self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
@@ -229,7 +229,7 @@ class Simulation3d:
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.open_files(self.Pa)
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
-                self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa) # do Micro.stats_io prior to DV.stats_io to get sedimentation velocity only in output
+                self.Micro.stats_io(self.Gr, self.Ref, self.Th, self.PV, self.DV, self.StatsIO, self.Pa) # do Micro.stats_io prior to DV.stats_io to get sedimentation velocity only in output
                 self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
 
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
@@ -238,7 +238,7 @@ class Simulation3d:
 
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
-                self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+                self.SA.stats_io(self.Gr, self.Ref,self.PV, self.StatsIO, self.Pa)
                 self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
                 self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
                 self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
@@ -306,11 +306,12 @@ class Simulation3d:
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.Fo.stats_io(
             self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+
         self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.Micro.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Micro.stats_io(self.Gr, self.Ref, self.Th, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke ,self.StatsIO, self.Pa)
-        self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
+        self.SA.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
         self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
         self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)

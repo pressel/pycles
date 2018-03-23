@@ -10,18 +10,18 @@ cimport Thermodynamics
 cdef class Forcing:
     cdef:
         object scheme
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 cdef class ForcingNone:
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
@@ -33,10 +33,10 @@ cdef class ForcingBomex:
         double [:] dqtdt
         double [:] subsidence
         double coriolis_param
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
@@ -45,10 +45,10 @@ cdef class ForcingSullivanPatton:
         double [:] ug
         double [:] vg
         double coriolis_param
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
@@ -57,10 +57,10 @@ cdef class ForcingGabls:
         double [:] ug
         double [:] vg
         double coriolis_param
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
@@ -72,10 +72,10 @@ cdef class ForcingDyCOMS_RF01:
         double [:] subsidence
         double coriolis_param
         bint rf02_flag
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
@@ -89,10 +89,86 @@ cdef class ForcingRico:
         double [:] subsidence
         double coriolis_param
         Py_ssize_t momentum_subsidence
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+cdef class ForcingIsdac:
+    cdef:
+        double [:] dtdt
+        double [:] dqtdt
+        double [:] initial_u
+        double [:] initial_v
+        double [:] initial_entropy
+        double [:] initial_qt
+        double [:] nudge_coeff_velocities
+        double [:] nudge_coeff_scalars
+        double [:] w_half
+        double [:] ls_adv_qt
+        double [:] ls_adv_t
+        double divergence
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+cdef class ForcingIsdacCC:
+    cdef:
+
+        double [:] initial_u
+        double [:] initial_v
+        double [:] initial_entropy
+        double [:] initial_qt
+        double [:] nudge_coeff_velocities
+        double [:] nudge_coeff_scalars
+        double [:] w_half
+        double z_top
+
+        double divergence
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+cdef class ForcingMpace:
+    cdef:
+        double divergence
+        double [:] subsidence
+        double [:] dtdt
+        double [:] dqtdt
+        double [:] u0
+        double [:] v0
+        double [:] nudge_coeff_velocities
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
+                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+
+cdef class ForcingSheba:
+    cdef:
+
+        double [:] subsidence
+        double [:] dtdt
+        double [:] dqtdt
+        double [:] u0
+        double [:] v0
+        double nudge_coeff_velocities
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
+                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
@@ -125,10 +201,10 @@ cdef class ForcingCGILS:
         double [:] source_s_nudge
         double [:] s_ls_adv
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
@@ -159,10 +235,10 @@ cdef class ForcingZGILS:
         AdjustedMoistAdiabat forcing_ref
 
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 

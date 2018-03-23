@@ -12,8 +12,8 @@ inline double theta_c(const double p0, const double T){
 }
 
 inline double thetali_c(const double p0, const double T, const double qt, const double ql, const double qi, const double L){
-    // Liquid ice potential temperature consistent with Triopoli and Cotton (1981)
-    return theta_c(p0, T) * exp(-L*(ql/(1.0 - qt) + qi/(1.0 -qt))/(T*cpd));
+    // Liquid ice potential temperature consistent with Tripoli and Cotton (1981)
+    return theta_c(p0, T) * exp(-L*(ql/(1.0 - qt) + qi/(1.0 - qt))/(T*cpd));
 }
 
 inline double pd_c(const double p0,const double qt, const double qv){
