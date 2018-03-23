@@ -1,9 +1,16 @@
 import numpy as np
 from collections import OrderedDict
+from generate_parameters_a1m import default_arctic
 
 
 def main():
 
+    default() #Parameters defined below
+    default_arctic()  #Parameters defined in default_arctic
+
+    return
+
+def default():
     #########################
     # Users should modify here
     #########################
