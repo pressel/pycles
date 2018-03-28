@@ -21,6 +21,57 @@ except:
 include 'parameters.pxi'
 
 
+def ForcingReferenceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
+    casename =namelist['meta']['casename']
+    if casename == 'ZGILS':
+        try:
+            forcing_type = namelist['forcing']['reference_profile']
+        except:
+            Pa.root_print('Must specify reference profile type')
+            Pa.kill()
+        if forcing_type == 'AdjustedAdiabat':
+            return AdjustedMoistAdiabat(namelist, LH, Pa)
+        elif forcing_type == 'InteractiveRCE' or forcing_type == 'InteractiveRCE_constant':
+            return InteractiveReferenceRCE_new(namelist, LH, Pa)
+        elif forcing_type =='ReferenceFile':
+            return ReferenceRCE(namelist,LH,Pa)
+        else:
+            Pa.root_print('Reference Profile type not recognized')
+            Pa.kill()
+    else:
+        return ForcingReferenceNone()
+
+
+
+
+
+
+
+
+
+cdef extern:
+    void c_rrtmg_lw_init(double *cpdair)
+    void c_rrtmg_lw (
+             int *ncol    ,int *nlay    ,int *icld    ,int *idrv    ,
+             double *play    ,double *plev    ,double *tlay    ,double *tlev    ,double *tsfc    ,
+             double *h2ovmr  ,double *o3vmr   ,double *co2vmr  ,double *ch4vmr  ,double *n2ovmr  ,double *o2vmr,
+             double *cfc11vmr,double *cfc12vmr,double *cfc22vmr,double *ccl4vmr ,double *emis    ,
+             int *inflglw ,int *iceflglw,int *liqflglw,double *cldfr   ,
+             double *taucld  ,double *cicewp  ,double *cliqwp  ,double *reice   ,double *reliq   ,
+             double *tauaer  ,
+             double *uflx    ,double *dflx    ,double *hr      ,double *uflxc   ,double *dflxc,  double *hrc,
+             double *duflx_dt,double *duflxc_dt )
+    void c_rrtmg_sw_init(double *cpdair)
+    void c_rrtmg_sw (int *ncol    ,int *nlay    ,int *icld    ,int *iaer    ,
+             double *play    ,double *plev    ,double *tlay    ,double *tlev    ,double *tsfc    ,
+             double *h2ovmr  ,double *o3vmr   ,double *co2vmr  ,double *ch4vmr  ,double *n2ovmr  ,double *o2vmr,
+             double *asdir   ,double *asdif   ,double *aldir   ,double *aldif   ,
+             double *coszen  ,double *adjes   ,int *dyofyr  ,double *scon    ,
+             int *inflgsw ,int *iceflgsw,int *liqflgsw,double *cldfr   ,
+             double *taucld  ,double *ssacld  ,double *asmcld  ,double *fsfcld  ,
+             double *cicewp  ,double *cliqwp  ,double *reice   ,double *reliq   ,
+             double *tauaer  ,double *ssaaer  ,double *asmaer  ,double *ecaer   ,
+             double *swuflx  ,double *swdflx  ,double *swhr    ,double *swuflxc ,double *swdflxc ,double *swhrc)
 
 cdef extern from "thermodynamics_sa.h":
     void eos_c(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double),
@@ -36,23 +87,6 @@ cdef extern from "entropies.h":
 # These classes compute or read in the reference profiles needed for ZGILS cases
 # The base class
 cdef class ForcingReferenceBase:
-    def __init__(self):
-        return
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH, double co2_factor):
-        cdef Py_ssize_t nz = len(pressure_array)
-        self.s = np.zeros(nz, dtype=np.double, order='c')
-        self.qt = np.zeros(nz, dtype=np.double, order='c')
-        self.temperature = np.zeros(nz, dtype=np.double, order='c')
-        self.rv = np.zeros(nz, dtype=np.double, order='c')
-        self.u = np.zeros(nz, dtype=np.double, order='c')
-        self.v = np.zeros(nz, dtype=np.double, order='c')
-        return
-    cpdef update(self, double [:] pressure_array, double Tg):
-        return
-# Control simulations use AdjustedMoistAdiabat
-# Reference temperature profile correspondends to a moist adiabat
-# Reference moisture profile corresponds to a fixed relative humidity given the reference temperature profile
-cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
     def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
 
         self.L_fp = LH.L_fp
@@ -61,8 +95,17 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
         self.CC.initialize(namelist, LH, Pa)
 
         return
-    cpdef get_pv_star(self, t):
-        return self.CC.LT.fast_lookup(t)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L):
+        cdef Py_ssize_t nz = len(pressure_array)
+        self.s = np.zeros(nz, dtype=np.double, order='c')
+        self.qt = np.zeros(nz, dtype=np.double, order='c')
+        self.temperature = np.zeros(nz, dtype=np.double, order='c')
+        self.rv = np.zeros(nz, dtype=np.double, order='c')
+        self.u = np.zeros(nz, dtype=np.double, order='c')
+        self.v = np.zeros(nz, dtype=np.double, order='c')
+        return
+    cpdef update(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L ):
+        return
 
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
         cdef:
@@ -81,16 +124,55 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
         eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
         return T, ql, qi
 
+cdef class ForcingReferenceNone(ForcingReferenceBase):
+    def __init__(self):
+
+        return
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L):
+        return
+    cpdef update(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L ):
+        return
 
 
-    cpdef initialize(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array,  double Pg, double Tg, double RH, double co2_factor):
+# Control simulations use AdjustedMoistAdiabat
+# Reference temperature profile correspondends to a moist adiabat
+# Reference moisture profile corresponds to a fixed relative humidity given the reference temperature profile
+cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
+    def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
+        ForcingReferenceBase.__init__(self,namelist, LH, Pa)
+        try:
+            self.Tg  = namelist['forcing']['AdjustedMoistAdiabat']['Tg']
+        except:
+            self.Tg = 295.0
+        try:
+            self.Pg = namelist['forcing']['AdjustedMoistAdiabat']['Pg']
+        except:
+            self.Pg = 1000.0e2
+
+        try:
+            self.RH_ref = namelist['forcing']['AdjustedMoistAdiabat']['RH_ref']
+        except:
+            self.RH_ref = 0.3
+
+        return
+    cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
+        ForcingReferenceBase.entropy(self, p0, T, qt, ql, qi)
+        return
+
+    cpdef eos(self, double p0, double s, double qt):
+        ForcingReferenceBase.eos(self, p0, s, qt)
+        return
+
+
+    cpdef initialize(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array,  double S_minus_L):
         '''
         Initialize the forcing reference profiles. These profiles use the temperature corresponding to a moist adiabat,
         but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
         '''
-        ForcingReferenceBase.initialize(self,Pa, pressure_array, Pg, Tg, RH, co2_factor)
+        # Default values correspond to Tan et al 2016
+        ForcingReferenceBase.initialize(self,Pa, pressure_array, S_minus_L)
 
-        cdef double pvg = self.get_pv_star(Tg)
+        cdef double pvg = self.CC.LT.fast_lookup(Tg)
         cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
         cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
 
@@ -101,7 +183,7 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
         # Compute reference state thermodynamic profiles
         for k in xrange(n_levels):
             temperature, ql, qi = self.eos(pressure_array[k], sg, qtg)
-            pv = self.get_pv_star(temperature) * RH
+            pv = self.CC.LT.fast_lookup(temperature) * RH
             self.qt[k] = eps_v * pv / (pressure_array[k] + (eps_v-1.0)*pv)
             self.s[k] = self.entropy(pressure_array[k],temperature, self.qt[k] , 0.0, 0.0)
             self.temperature[k] = temperature
@@ -109,21 +191,28 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
             self.u[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
 
         return
-    cpdef update(self, double [:] pressure_array, double Tg):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L):
         return
+
 
 # Climate change simulations use profiles based on radiative--convective equilibrium solutions obtained as described in
 # Zhihong Tan's dissertation (Section 2.6). Zhihong has provided his reference profiles to be archived with the code, so
 # this class just reads in the data and interpolates to the simulation pressure grid
 
 cdef class ReferenceRCE(ForcingReferenceBase):
-    def __init__(self, filename):
-        self.filename = filename
+    def __init__(self,  namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
+        try:
+            co2_factor=namelist['radiation']['RRTM']['co2_factor']
+        except:
+            co2_factor = 1.0
+        self.filename = './CGILSdata/RCE_'+ str(co2_factor)+'xCO2.nc'
+        ForcingReferenceBase.__init__(self,namelist, LH, Pa)
+
         return
     @cython.wraparound(True)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array,double Pg, double Tg, double RH, double co2_factor):
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array,double S_minus_L):
 
-        ForcingReferenceBase.initialize(self,Pa, pressure_array,  Pg, Tg, RH, co2_factor)
+        ForcingReferenceBase.initialize(self,Pa, pressure_array,  S_minus_L)
         data = nc.Dataset(self.filename, 'r')
         # Arrays must be flipped (low to high pressure) to use numpy interp function
         pressure_ref = data.variables['p_full'][::-1]
@@ -153,117 +242,688 @@ cdef class ReferenceRCE(ForcingReferenceBase):
             self.u[k] = self.u[k]*0.5 - 5.0
 
         return
-    cpdef update(self, double [:] pressure_array, double Tg):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L):
         return
 
 
 # Here we implement the RCE solution algorithm described in Section 2.6 of Zhihong Tan's thesis to allow updates
 # of the Reference profiles as the SST changes
-cdef extern:
-    void c_rrtmg_lw_init(double *cpdair)
-    void c_rrtmg_lw (
-             int *ncol    ,int *nlay    ,int *icld    ,int *idrv    ,
-             double *play    ,double *plev    ,double *tlay    ,double *tlev    ,double *tsfc    ,
-             double *h2ovmr  ,double *o3vmr   ,double *co2vmr  ,double *ch4vmr  ,double *n2ovmr  ,double *o2vmr,
-             double *cfc11vmr,double *cfc12vmr,double *cfc22vmr,double *ccl4vmr ,double *emis    ,
-             int *inflglw ,int *iceflglw,int *liqflglw,double *cldfr   ,
-             double *taucld  ,double *cicewp  ,double *cliqwp  ,double *reice   ,double *reliq   ,
-             double *tauaer  ,
-             double *uflx    ,double *dflx    ,double *hr      ,double *uflxc   ,double *dflxc,  double *hrc,
-             double *duflx_dt,double *duflxc_dt )
-    void c_rrtmg_sw_init(double *cpdair)
-    void c_rrtmg_sw (int *ncol    ,int *nlay    ,int *icld    ,int *iaer    ,
-             double *play    ,double *plev    ,double *tlay    ,double *tlev    ,double *tsfc    ,
-             double *h2ovmr  ,double *o3vmr   ,double *co2vmr  ,double *ch4vmr  ,double *n2ovmr  ,double *o2vmr,
-             double *asdir   ,double *asdif   ,double *aldir   ,double *aldif   ,
-             double *coszen  ,double *adjes   ,int *dyofyr  ,double *scon    ,
-             int *inflgsw ,int *iceflgsw,int *liqflgsw,double *cldfr   ,
-             double *taucld  ,double *ssacld  ,double *asmcld  ,double *fsfcld  ,
-             double *cicewp  ,double *cliqwp  ,double *reice   ,double *reliq   ,
-             double *tauaer  ,double *ssaaer  ,double *asmaer  ,double *ecaer   ,
-             double *swuflx  ,double *swdflx  ,double *swhr    ,double *swuflxc ,double *swdflxc ,double *swhrc)
+#
+#
+# cdef class InteractiveReferenceRCE_old(ForcingReferenceBase):
+#     def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
+#         self.is_init = False
+#
+#         ForcingReferenceBase.__init__(self,namelist, LH, Pa)
+#
+#         try:
+#             self.fix_wv = namelist['radiation']['RRTM']['fix_wv']
+#         except:
+#             self.fix_wv = False
+#
+#         if self.fix_wv:
+#             self.filename = namelist['radiation']['RRTM']['fix_wv_table_file']
+#
+#
+#         try:
+#             self.RH_subtrop = namelist['forcing']['RH_subtropical']
+#         except:
+#             self.RH_subtrop = 0.3
+#
+#
+#         # Radiation parameters
+#         #--Namelist options related to gas concentrations
+#         # try:
+#         #     self.co2_factor = namelist['radiation']['RRTM']['co2_factor']
+#         # except:
+#         #     self.co2_factor = 1.0
+#         #--Namelist options related to insolation
+#         try:
+#             self.dyofyr = namelist['radiation']['RRTM']['dyofyr']
+#         except:
+#             self.dyofyr = 0
+#         try:
+#             self.adjes = namelist['radiation']['RRTM']['adjes']
+#         except:
+#             self.adjes = 0.5
+#         try:
+#             self.scon = namelist['radiation']['RRTM']['solar_constant']
+#         except:
+#             self.scon = 1360.0
+#         try:
+#             self.coszen =namelist['radiation']['RRTM']['coszen']
+#         except:
+#             self.coszen = 2.0/pi
+#         try:
+#             self.adif = namelist['radiation']['RRTM']['adif']
+#         except:
+#             self.adif = 0.06
+#         try:
+#             self.adir = namelist['radiation']['RRTM']['adir']
+#         except:
+#             if (self.coszen > 0.0):
+#                 self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
+#             else:
+#                 self.adir = 0.0
+#         return
+#
+#     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
+#         cdef:
+#             double qv = qt - ql - qi
+#             double qd = 1.0 - qt
+#             double pd = pd_c(p0, qt, qv)
+#             double pv = pv_c(p0, qt, qv)
+#             double Lambda = self.Lambda_fp(T)
+#             double L = self.L_fp(T, Lambda)
+#
+#         return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
+#
+#     cpdef eos(self, double p0, double s, double qt):
+#         cdef:
+#             double T, qv, qc, ql, qi, lam
+#         eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
+#         return T, ql, qi
+#
+#
+#     cpdef initialize_radiation(self, double co2_factor):
+#         #Initialize rrtmg_lw and rrtmg_sw
+#         cdef double cpdair = np.float64(cpd)
+#         c_rrtmg_lw_init(&cpdair)
+#         c_rrtmg_sw_init(&cpdair)
+#
+#         cdef:
+#             Py_ssize_t k
+#             Py_ssize_t nlevels = np.shape(self.p_levels)[0]
+#             Py_ssize_t nlayers = np.shape(self.p_layers)[0]
+#
+#         # Read in trace gas data
+#         lw_input_file = './RRTMG/lw/data/rrtmg_lw.nc'
+#         lw_gas = nc.Dataset(lw_input_file,  "r")
+#
+#         lw_pressure = np.asarray(lw_gas.variables['Pressure'])
+#         lw_absorber = np.asarray(lw_gas.variables['AbsorberAmountMLS'])
+#         lw_absorber = np.where(lw_absorber>2.0, np.zeros_like(lw_absorber), lw_absorber)
+#         lw_ngas = lw_absorber.shape[1]
+#         lw_np = lw_absorber.shape[0]
+#
+#         # 9 Gases: O3, CO2, CH4, N2O, O2, CFC11, CFC12, CFC22, CCL4
+#         # From rad_driver.f90, lines 546 to 552
+#         trace = np.zeros((9,lw_np),dtype=np.double,order='F')
+#         for i in xrange(lw_ngas):
+#             gas_name = ''.join(lw_gas.variables['AbsorberNames'][i,:])
+#             if 'O3' in gas_name:
+#                 trace[0,:] = lw_absorber[:,i].reshape(1,lw_np)
+#             elif 'CO2' in gas_name:
+#                 trace[1,:] = lw_absorber[:,i].reshape(1,lw_np) * co2_factor * 400.0/355.0
+#             elif 'CH4' in gas_name:
+#                 trace[2,:] = lw_absorber[:,i].reshape(1,lw_np)
+#             elif 'N2O' in gas_name:
+#                 trace[3,:] = lw_absorber[:,i].reshape(1,lw_np)
+#             elif 'O2' in gas_name:
+#                 trace[4,:] = lw_absorber[:,i].reshape(1,lw_np)
+#             elif 'CFC11' in gas_name:
+#                 trace[5,:] = lw_absorber[:,i].reshape(1,lw_np)
+#             elif 'CFC12' in gas_name:
+#                 trace[6,:] = lw_absorber[:,i].reshape(1,lw_np)
+#             elif 'CFC22' in gas_name:
+#                 trace[7,:] = lw_absorber[:,i].reshape(1,lw_np)
+#             elif 'CCL4' in gas_name:
+#                 trace[8,:] = lw_absorber[:,i].reshape(1,lw_np)
+#
+#
+#         # From rad_driver.f90, lines 585 to 620
+#         trpath = np.zeros((nlevels, 9),dtype=np.double,order='F')
+#         plev = np.divide(self.p_levels,100.0*np.ones(nlevels))
+#         for i in xrange(1, nlevels):
+#             trpath[i,:] = trpath[i-1,:]
+#             if plev[i-1]> lw_pressure[0]:
+#                 trpath[i,:] = trpath[i,:] + (plev[i-1] - np.max((plev[i],lw_pressure[0])))/g*trace[:,0]
+#             for m in xrange(1,lw_np):
+#                 plow = np.min((plev[i-1],np.max((plev[i], lw_pressure[m-1]))))
+#                 pupp = np.min((plev[i-1],np.max((plev[i],    lw_pressure[m]))))
+#                 if (plow > pupp):
+#                     pmid = 0.5*(plow+pupp)
+#                     wgtlow = (pmid-lw_pressure[m])/(lw_pressure[m-1]-lw_pressure[m])
+#                     wgtupp = (lw_pressure[m-1]-pmid)/(lw_pressure[m-1]-lw_pressure[m])
+#                     trpath[i,:] = trpath[i,:] + (plow-pupp)/g*(wgtlow*trace[:,m-1]  + wgtupp*trace[:,m])
+#             if plev[i] < lw_pressure[lw_np-1]:
+#                 trpath[i,:] = trpath[i,:] + (np.min((plev[i-1],lw_pressure[lw_np-1]))-plev[i])/g*trace[:,lw_np-1]
+#         tmpTrace = np.zeros((nlayers, 9),dtype=np.double,order='F')
+#         for i in xrange(9):
+#             for k in xrange(nlayers):
+#                 tmpTrace[k,i] = g/(plev[k] - plev[k+1])*(trpath[k+1,i]-trpath[k,i])
+#
+#         self.o3vmr  = np.array(tmpTrace[:,0],dtype=np.double, order='F')
+#         self.co2vmr = np.array(tmpTrace[:,1],dtype=np.double, order='F')
+#         self.ch4vmr =  np.array(tmpTrace[:,2],dtype=np.double, order='F')
+#         self.n2ovmr =  np.array(tmpTrace[:,3],dtype=np.double, order='F')
+#         self.o2vmr  =  np.array(tmpTrace[:,4],dtype=np.double, order='F')
+#         self.cfc11vmr =  np.array(tmpTrace[:,5],dtype=np.double, order='F')
+#         self.cfc12vmr =  np.array(tmpTrace[:,6],dtype=np.double, order='F')
+#         self.cfc22vmr = np.array( tmpTrace[:,7],dtype=np.double, order='F')
+#         self.ccl4vmr  =  np.array(tmpTrace[:,8],dtype=np.double, order='F')
+#
+#
+#
+#     cpdef compute_radiation(self):
+#
+#         cdef:
+#             Py_ssize_t k
+#             Py_ssize_t ncols = 1
+#             Py_ssize_t nlayers = self.nlayers
+#             Py_ssize_t nlevels = self.nlevels
+#             double [:,:] play_in = np.array(np.expand_dims(self.p_layers,axis=0), dtype=np.double, order='F')/100.0
+#             double [:,:] plev_in = np.array(np.expand_dims(self.p_levels,axis=0), dtype=np.double, order='F')/100.0
+#             double [:,:] tlay_in = np.array(np.expand_dims(self.t_layers,axis=0), dtype=np.double, order='F')
+#
+#             double [:,:] tlev_in = np.zeros((ncols,nlevels), dtype=np.double, order='F')
+#             double [:] tsfc_in = np.ones((ncols),dtype=np.double,order='F') * self.sst
+#             double [:,:] h2ovmr_in = np.zeros((ncols, nlayers),dtype=np.double,order='F')
+#             double [:,:] o3vmr_in  = np.array(np.expand_dims(self.o3vmr,axis=0),dtype=np.double,order='F')
+#             double [:,:] co2vmr_in = np.array(np.expand_dims(self.co2vmr,axis=0),dtype=np.double,order='F')
+#             double [:,:] ch4vmr_in = np.array(np.expand_dims(self.ch4vmr,axis=0),dtype=np.double,order='F')
+#             double [:,:] n2ovmr_in = np.array(np.expand_dims(self.n2ovmr,axis=0),dtype=np.double,order='F')
+#             double [:,:] o2vmr_in  = np.array(np.expand_dims(self.o2vmr,axis=0),dtype=np.double,order='F')
+#             double [:,:] cfc11vmr_in = np.array(np.expand_dims(self.cfc11vmr,axis=0),dtype=np.double,order='F')
+#             double [:,:] cfc12vmr_in = np.array(np.expand_dims(self.cfc12vmr,axis=0),dtype=np.double,order='F')
+#             double [:,:] cfc22vmr_in = np.array(np.expand_dims(self.cfc22vmr,axis=0),dtype=np.double,order='F')
+#             double [:,:] ccl4vmr_in = np.array(np.expand_dims(self.ccl4vmr,axis=0),dtype=np.double,order='F')
+#             double [:,:] emis_in = np.ones((ncols, 16),dtype=np.double,order='F') * 0.95
+#             double [:,:] cldfr_in  = np.zeros((ncols,nlayers), dtype=np.double,order='F')
+#             double [:,:] cicewp_in = np.zeros((ncols,nlayers),dtype=np.double,order='F')
+#             double [:,:] cliqwp_in = np.zeros((ncols,nlayers),dtype=np.double,order='F')
+#             double [:,:] reice_in  = np.zeros((ncols,nlayers),dtype=np.double,order='F')
+#             double [:,:] reliq_in  = np.ones((ncols,nlayers),dtype=np.double,order='F') * 2.5
+#             double [:] coszen_in = np.ones(ncols,dtype=np.double,order='F') *self.coszen
+#             double [:] asdir_in = np.ones(ncols,dtype=np.double,order='F') * self.adir
+#             double [:] asdif_in = np.ones(ncols,dtype=np.double,order='F') * self.adif
+#             double [:] aldir_in = np.ones(ncols,dtype=np.double,order='F') * self.adir
+#             double [:] aldif_in = np.ones(ncols,dtype=np.double,order='F') * self.adif
+#             double [:,:,:] taucld_lw_in  = np.zeros((16,ncols,nlayers),dtype=np.double,order='F')
+#             double [:,:,:] tauaer_lw_in  = np.zeros((ncols,nlayers,16),dtype=np.double,order='F')
+#             double [:,:,:] taucld_sw_in  = np.zeros((14,ncols,nlayers),dtype=np.double,order='F')
+#             double [:,:,:] ssacld_sw_in  = np.zeros((14,ncols,nlayers),dtype=np.double,order='F')
+#             double [:,:,:] asmcld_sw_in  = np.zeros((14,ncols,nlayers),dtype=np.double,order='F')
+#             double [:,:,:] fsfcld_sw_in  = np.zeros((14,ncols,nlayers),dtype=np.double,order='F')
+#             double [:,:,:] tauaer_sw_in  = np.zeros((ncols,nlayers,14),dtype=np.double,order='F')
+#             double [:,:,:] ssaaer_sw_in  = np.zeros((ncols,nlayers,14),dtype=np.double,order='F')
+#             double [:,:,:] asmaer_sw_in  = np.zeros((ncols,nlayers,14),dtype=np.double,order='F')
+#             double [:,:,:] ecaer_sw_in  = np.zeros((ncols,nlayers,6),dtype=np.double,order='F')
+#
+#             # Output
+#             double[:,:] uflx_lw_out = np.zeros((ncols,nlevels),dtype=np.double,order='F')
+#             double[:,:] dflx_lw_out = np.zeros((ncols,nlevels),dtype=np.double,order='F')
+#             double[:,:] hr_lw_out = np.zeros((ncols,nlayers),dtype=np.double,order='F')
+#             double[:,:] uflxc_lw_out = np.zeros((ncols,nlevels),dtype=np.double,order='F')
+#             double[:,:] dflxc_lw_out = np.zeros((ncols,nlevels),dtype=np.double,order='F')
+#             double[:,:] hrc_lw_out = np.zeros((ncols,nlayers),dtype=np.double,order='F')
+#             double[:,:] duflx_dt_out = np.zeros((ncols,nlevels),dtype=np.double,order='F')
+#             double[:,:] duflxc_dt_out = np.zeros((ncols,nlevels),dtype=np.double,order='F')
+#             double[:,:] uflx_sw_out = np.zeros((ncols,nlevels),dtype=np.double,order='F')
+#             double[:,:] dflx_sw_out = np.zeros((ncols,nlevels),dtype=np.double,order='F')
+#             double[:,:] hr_sw_out = np.zeros((ncols,nlayers),dtype=np.double,order='F')
+#             double[:,:] uflxc_sw_out = np.zeros((ncols,nlevels),dtype=np.double,order='F')
+#             double[:,:] dflxc_sw_out = np.zeros((ncols,nlevels),dtype=np.double,order='F')
+#             double[:,:] hrc_sw_out = np.zeros((ncols,nlayers),dtype=np.double,order='F')
+#
+#             double rv_to_reff = np.exp(np.log(1.2)**2.0)*10.0*1000.0
+#
+#         with nogil:
+#             tlev_in[0,0] = self.sst
+#             for k in xrange(1,nlayers):
+#                 tlev_in[0,k] = 0.5 * (tlay_in[0,k-1]+tlay_in[0,k])
+#             tlev_in[0, nlayers] = 2.0 * tlay_in[0,nlayers-1] - tlev_in[0,nlayers-1]
+#             for k in xrange(nlayers):
+#                 h2ovmr_in[0,k] = self.qv_layers[k]/(1.0 - self.qv_layers[k]) * Rv/Rd
+#
+#
+#
+#
+#         cdef:
+#             int ncol = ncols
+#             int nlay = nlayers
+#             int icld = 1
+#             int idrv = 0
+#             int iaer = 0
+#             int inflglw = 2
+#             int iceflglw = 3
+#             int liqflglw = 1
+#             int inflgsw = 2
+#             int iceflgsw = 3
+#             int liqflgsw = 1
+#
+#         c_rrtmg_lw (
+#             &ncol, &nlay, &icld, &idrv, &play_in[0,0], &plev_in[0,0], &tlay_in[0,0], &tlev_in[0,0], &tsfc_in[0],
+#             &h2ovmr_in[0,0], &o3vmr_in[0,0], &co2vmr_in[0,0], &ch4vmr_in[0,0], &n2ovmr_in[0,0], &o2vmr_in[0,0],
+#             &cfc11vmr_in[0,0], &cfc12vmr_in[0,0], &cfc22vmr_in[0,0], &ccl4vmr_in[0,0], &emis_in[0,0], &inflglw,
+#             &iceflglw,&liqflglw, &cldfr_in[0,0], &taucld_lw_in[0,0,0], &cicewp_in[0,0], &cliqwp_in[0,0], &reice_in[0,0],
+#             &reliq_in[0,0], &tauaer_lw_in[0,0,0], &uflx_lw_out[0,0], &dflx_lw_out[0,0], &hr_lw_out[0,0],
+#             &uflxc_lw_out[0,0], &dflxc_lw_out[0,0], &hrc_lw_out[0,0], &duflx_dt_out[0,0], &duflxc_dt_out[0,0] )
+#
+#         c_rrtmg_sw (
+#             &ncol, &nlay, &icld, &iaer, &play_in[0,0], &plev_in[0,0], &tlay_in[0,0], &tlev_in[0,0],&tsfc_in[0],
+#             &h2ovmr_in[0,0], &o3vmr_in[0,0], &co2vmr_in[0,0], &ch4vmr_in[0,0], &n2ovmr_in[0,0],&o2vmr_in[0,0],
+#             &asdir_in[0], &asdif_in[0], &aldir_in[0], &aldif_in[0], &coszen_in[0], &self.adjes, &self.dyofyr,
+#             &self.scon, &inflgsw, &iceflgsw, &liqflgsw, &cldfr_in[0,0], &taucld_sw_in[0,0,0], &ssacld_sw_in[0,0,0],
+#             &asmcld_sw_in[0,0,0], &fsfcld_sw_in[0,0,0], &cicewp_in[0,0], &cliqwp_in[0,0], &reice_in[0,0], &reliq_in[0,0],
+#             &tauaer_sw_in[0,0,0], &ssaaer_sw_in[0,0,0], &asmaer_sw_in[0,0,0], &ecaer_sw_in[0,0,0], &uflx_sw_out[0,0],
+#             &dflx_sw_out[0,0], &hr_sw_out[0,0], &uflxc_sw_out[0,0], &dflxc_sw_out[0,0], &hrc_sw_out[0,0])
+#
+#
+#         with nogil:
+#             self.toa_flux = -uflx_lw_out[0,nlayers] + dflx_lw_out[0,nlayers] - uflx_sw_out[0,nlayers] + dflx_sw_out[0,nlayers]
+#             self.total_column_influx = self.toa_flux +uflx_lw_out[0,0] - dflx_lw_out[0,0] + uflx_sw_out[0,0] - dflx_sw_out[0,0]
+#             for k in xrange(nlayers):
+#                 self.t_tend_rad[k] = (hr_lw_out[0,k] + hr_sw_out[0,k])/86400.0
+#
+#         return
+#
+#
+#     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double sst_tropical, double S_minus_L):
+#         cdef:
+#             double pv, pd
+#             Py_ssize_t k
+#         ForcingReferenceBase.initialize(self,Pa, pressure_array, sst_tropical, S_minus_L)
+#         self.sst = sst_tropical
+#         self.dt_rce  =3600.0  #1 hr?
+#         self.RH_surf = 0.7 # check this
+#         self.RH_tropical = 0.7
+#
+#
+#         # pressure coordinates
+#         self.nlayers = 100
+#         self.nlevels = self.nlayers + 1
+#         self.p_levels = np.linspace(Pg, 0.0, num=self.nlevels, endpoint=True)
+#         self.p_layers = 0.5 * np.add(self.p_levels[1:],self.p_levels[:-1])
+#
+#
+#         self.initialize_radiation(co2_factor)
+#
+#
+#         self.t_layers = np.zeros(self.nlayers, dtype=np.double, order='c')
+#         self.qv_layers =np.zeros(self.nlayers, dtype=np.double, order='c')
+#         self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
+#
+#         if self.fix_wv:
+#         # Here open pkl
+#         # create t_table_wv and put the values into it
+#         # Interpolate the temperature profile into t_layers
+#         # then get qv_layers which will need to be held fixed
+#             pkl_file = open(self.filename, 'rb')
+#             wv_dict = pickle.load(pkl_file)
+#             dims = np.shape(wv_dict['t_table'][:,:])
+#             self.t_table_wv = LookupProfiles(dims[0], dims[1])
+#             self.t_table_wv.table_vals = wv_dict['t_table'][:,:]
+#             self.t_table_wv.access_vals = wv_dict['sst'][:]
+#             self.t_table_wv.lookup(300.0)
+#             with nogil:
+#                 for k in xrange(self.nlayers):
+#                     # pv = self.CC.LT.fast_lookup(self.t_table_wv.profile_interp[k]) * self.RH_subtrop
+#                     pv = self.CC.LT.fast_lookup(self.t_table_wv.profile_interp[k]) * self.RH_tropical
+#                     pd = self.p_layers[k] - pv
+#                     self.qv_layers[k] = pv/(pd * eps_vi + pv)
+#                 for k in xrange(1,self.nlayers):
+#                     self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
+#
+#
+#
+#         #initialize the lookup table
+#         cdef Py_ssize_t n_sst = 31
+#         self.t_table = LookupProfiles(n_sst,self.nlayers)
+#         self.t_table.access_vals =  np.linspace(Tg-15.0, Tg+15.0,n_sst)
+#
+#         self.p_tropo_store = np.zeros(n_sst, dtype=np.double, order='c')
+#         self.toa_store = np.zeros(n_sst, dtype=np.double, order='c')
+#         self.tci_store = np.zeros(n_sst, dtype=np.double, order='c')
+#
+#
+#         cdef:
+#             Py_ssize_t sst_index
+#
+#
+#         # Set the initial tropopause height guess
+#         if Pa.rank == 0:
+#             k = 0
+#             while self.p_layers[k] > 400.0e2:
+#                 self.index_h_min = k
+#                 self.index_h = self.index_h_min
+#                 k += 1
+#
+#             for sst_index in xrange(n_sst):
+#                 self.sst = self.t_table.access_vals[sst_index]
+#                 # print('doing rce for '+str(self.sst))
+#                 self.rce_step(self.sst)
+#                 self.t_table.table_vals[sst_index,:] = self.t_layers[:]
+#                 self.p_tropo_store[sst_index] = self.p_layers[self.index_h]
+#                 self.tci_store[sst_index] = self.total_column_influx
+#                 self.toa_store[sst_index] = self.toa_flux
+#
+#         self.t_table.communicate(Pa)
+#
+#         ###---Commment out below when running on cluster
+#         # This is just for checking the results
+#
+#         ###############################################################
+#         # data = nc.Dataset('./CGILSdata/RCE_8xCO2.nc', 'r')
+#         # # Arrays must be flipped (low to high pressure) to use numpy interp function
+#         # pressure_ref = data.variables['p_full'][:]
+#         # temperature_ref = data.variables['temp_rc'][:]
+#         #
+#         # self.t_table.lookup(Tg-1.5)
+#         if Pa.rank==0:
+#             dict = {}
+#             dict['t_table'] = np.asarray(self.t_table.table_vals)
+#             dict['sst'] = np.asarray(self.t_table.access_vals)
+#             dict['net_rad_in'] = np.asarray(self.tci_store)
+#             dict['toa_influx'] = np.asarray(self.toa_store)
+#             dict['p_tropo'] = np.asarray(self.p_tropo_store)
+#             pickle.dump(dict, open('IRCE_SST_'+str(int(Tg)) +'_'+str(co2_factor)+'xCO2.pkl', "wb"  ))
+#         #
+#         #
+#         #     plt.figure(1)
+#         #     try:
+#         #         for k in xrange(n_sst):
+#         #             plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-k')
+#         #         # plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
+#         #         # plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
+#         #         plt.xlabel('Temperature, K',fontsize=16)
+#         #         plt.ylabel('Pressure, hPa',fontsize=16)
+#         #         plt.xlim(180,340)
+#         #         plt.gca().invert_yaxis()
+#         #     except:
+#         #         pass
+#         #
+#         #
+#         #     plt.figure(2)
+#         #     try:
+#         #         plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0),'-k')
+#         #         plt.xlabel('SST, K',fontsize=16)
+#         #         plt.ylabel('Pressure at tropopause, hPa',fontsize=16)
+#         #         plt.ylim(50,350)
+#         #         plt.xlim(285,325)
+#         #     except:
+#         #         pass
+#         #
+#         #     plt.figure(3)
+#         #     try:
+#         #         plt.plot(self.t_table.access_vals[:], self.toa_store[:],'-k')
+#         #         plt.xlabel('Tropical SST, K',fontsize=16)
+#         #         plt.ylabel(r'TOA influx, W m$^{-2}$',fontsize=16)
+#         #         plt.ylim(110,160)
+#         #         plt.xlim(285,325)
+#         #     except:
+#         #         pass
+#         #     plt.show()
+#             #################################################################
+#
+#         # Now set the current reference profile (assuming we want it at domain SST+deltaT...)
+#
+#         self.t_table.lookup(Tg)
+#
+#         with nogil:
+#             for k in xrange(self.nlayers):
+#                 self.t_layers[k] = self.t_table.profile_interp[k]
+#                 pv = self.CC.LT.fast_lookup(self.t_layers[k]) * self.RH_subtrop
+#                 pd = self.p_layers[k] - pv
+#                 self.qv_layers[k] = pv/(pd * eps_vi + pv)
+#             for k in xrange(1,self.nlayers):
+#                 self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
+#
+#         self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
+#         self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
+#         cdef:
+#             Py_ssize_t nz = np.shape(pressure_array)[0]
+#
+#         for k in xrange(nz):
+#             self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
+#             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
+#             self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
+#
+#         self.is_init=True
+#
+#         return
+#
+#     cpdef update_qv(self, double p, double t, double rh):
+#         cdef double pv, pd, qv
+#         pv = self.CC.LT.fast_lookup(t) * rh
+#         pd = p - pv
+#         qv = pv/(pd * eps_vi + pv)
+#         return  qv
+#
+#     cpdef compute_adiabat(self, double Tg, double Pg, double RH_surf):
+#         cdef:
+#             double pvg = self.CC.LT.fast_lookup(Tg) * RH_surf
+#             double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
+#             double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
+#
+#
+#         cdef:
+#             double temperature, ql, qi, pv
+#             Py_ssize_t k
+#
+#         # Compute reference state thermodynamic profiles
+#         for k in xrange(self.nlayers):
+#             temperature, ql, qi = self.eos(self.p_layers[k], sg, qtg)
+#             qtg = fmax(qtg-ql, 1e-10)
+#
+#             if np.isnan(temperature):
+#                 self.t_layers[k] = self.t_layers[k-1]
+#             else:
+#                 self.t_layers[k] = temperature
+#
+#             if not self.fix_wv:
+#                 self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical)
+#
+#
+#         return
+#
+#     cpdef rce_step(self, double Tg ):
+#         self.compute_adiabat(Tg,self.p_levels[0], self.RH_surf)
+#         cdef:
+#             Py_ssize_t k, sub
+#             double [:] t_adi = np.array(self.t_layers, dtype=np.double, copy=True, order='c')
+#             double [:] qv_adi = np.array(self.qv_layers, dtype=np.double, copy=True, order='c')
+#             Py_ssize_t index_h_old = 0
+#             double delta_t, rhval, pv, pd
+#         self.tropo_converged = False
+#         self.index_h = self.index_h - 2
+#
+#         while not self.tropo_converged:
+#             # print(self.index_h)
+#             for k in xrange(self.nlayers):
+#                 self.t_layers[k] = t_adi[k]
+#                 if not self.fix_wv:
+#                     self.qv_layers[k] = qv_adi[k]
+#
+#
+#             delta_t = 100.0
+#             while delta_t > 0.001:
+#
+#                 # update temperatures due to radiation
+#                 self.compute_radiation()
+#
+#
+#                 delta_t = 0.0
+#                 with nogil:
+#                     for k in xrange(self.index_h,self.nlayers):
+#                         self.t_layers[k] = self.t_layers[k] + self.t_tend_rad[k] * self.dt_rce
+#                         delta_t = fmax(delta_t, fabs(self.t_tend_rad[k] * self.dt_rce))
+#                         if not self.fix_wv:
+#                             rhval = self.RH_tropical
+#                             pv = self.CC.LT.fast_lookup(self.t_layers[k]) * rhval
+#                             pd = self.p_layers[k] - pv
+#                             self.qv_layers[k] = pv/(pd * eps_vi + pv)
+#                             self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
+#
+#             # print('t_layers ', self.t_layers[self.index_h], 't_adi ', t_adi[self.index_h])
+#             if self.t_layers[self.index_h] < t_adi[self.index_h]:
+#                 self.index_h +=1
+#                 self.tropo_converged = False
+#             else:
+#                 self.tropo_converged = True
+#                 # print('Tropo is converged')
+#             #     print('if option 1')
+#             #     index_h_old = self.index_h
+#             #     k=self.index_h
+#             #     while self.t_layers[k] <= t_adi[k]:
+#             #         print(k, self.t_layers[k], t_adi[k])
+#             #         self.index_h = k
+#             #         k+=1
+#             # elif self.t_layers[self.index_h] > t_adi[self.index_h]:
+#             #     print('if option 2')
+#             #     index_h_old = self.index_h
+#             #     k=self.index_h
+#             #     while self.t_layers[k] >= t_adi[k]:
+#             #         print(k, self.t_layers[k], t_adi[k])
+#             #         self.index_h = k
+#             #         k-=1
+#             # else:
+#             #     print('if option 4')
+#             #     index_h_old = self.index_h
+#             # print('old, new index', index_h_old, self.index_h)
+#             #
+#             # print('total column influx', self.total_column_influx)
+#             # plt.figure('T_profiles')
+#             # plt.plot(self.t_layers, np.divide(self.p_layers[:],100.0), '-sr')
+#             # plt.plot(t_adi, np.divide(self.p_layers[:],100.0), '-sb')
+#             # plt.plot(t_adi[self.index_h], self.p_layers[self.index_h]/100.0,'om')
+#             # plt.plot(self.t_layers[self.index_h], self.p_layers[self.index_h]/100.0,'oc')
+#             # plt.gca().invert_yaxis()
+#             # plt.savefig('SST_'+str(Tg)+'_index_'+str(self.index_h)+'.png')
+#             # plt.close()
+#
+#
+#
+#         return
+#     cpdef update(self, double [:] pressure_array, double Tg):
+#         # Now set the current reference profile
+#         self.t_table.lookup(Tg)
+#         cdef:
+#             double pv, pd
+#             Py_ssize_t k
+#         with nogil:
+#             for k in xrange(self.nlayers):
+#                 self.t_layers[k] = self.t_table.profile_interp[k]
+#                 pv = self.CC.LT.fast_lookup(self.t_layers[k]) * self.RH_subtrop
+#                 pd = self.p_layers[k] - pv
+#                 self.qv_layers[k] = pv/(pd * eps_vi + pv)
+#             for k in xrange(1,self.nlayers):
+#                 self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
+#
+#         cdef:
+#             double [:] temperature_ = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
+#             double [:] qt_ = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
+#
+#         cdef Py_ssize_t nz = np.shape(pressure_array)[0]
+#         for k in xrange(nz):
+#             self.temperature[k] = temperature_[k]
+#             self.qt[k] = qt_[k]
+#             self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
+#             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
+#
+#         return
+#
+#
 
-cdef class InteractiveReferenceRCE(ForcingReferenceBase):
+#################################################################################
+#################################################################################
+#################################################################################
+#################################################################################
+#################################################################################
+#################################################################################
+
+cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
     def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
         self.is_init = False
 
-        self.L_fp = LH.L_fp
-        self.Lambda_fp = LH.Lambda_fp
-        self.CC = ClausiusClapeyron()
-        self.CC.initialize(namelist, LH, Pa)
-
+        ForcingReferenceBase.__init__(self,namelist, LH, Pa)
         try:
-            self.fix_wv = namelist['radiation']['RRTM']['fix_wv']
+            self.verbose = namelist['forcing']['RCE']['verbose']
         except:
-            self.fix_wv = False
+            self.verbose = False
+        try:
+            self.out_dir = str(namelist['forcing']['RCE']['out_dir'])
+        except:
+            self.out_dir = './'
 
-        if self.fix_wv:
-            self.filename = namelist['radiation']['RRTM']['fix_wv_table_file']
 
 
         try:
-            self.RH_subtrop = namelist['forcing']['RH_subtropical']
+            self.RH_subtrop = namelist['forcing'['RCE']['RH_subtropical']
         except:
             self.RH_subtrop = 0.3
 
+        try:
+            self.RH_tropical = namelist['forcing'['RCE']['RH_tropical']
+        except:
+            self.RH_tropical = 0.7
+        try:
+            self.nlayers = namelist['forcing']['RCE']['nlayers']
+        except:
+            self.nlayers = 100
+
+        self.nlevels = self.nlayers + 1
+
+        try:
+            self.p_surface = namelist['forcing']['RCE']['p_surface']
+        except:
+            self.p_surface = 1000.0e2
+        try:
+            self.dt_rce = namelist['forcing']['RCE']['dt_rce']
+        except:
+            self.dt_rce = 3600.0 * 3.0
+        try:
+            self.delta_T_max = namelist['forcing']['RCE']['delta_T_max']
+        except:
+            self.delta_T_max = 1.0e-3/86400.0
+        try:
+            self.toa_error_max = namelist['forcing']['RCE']['toa_error_max']
+        except:
+            self.toa_error_max = 0.05
+        try:
+            self.max_steps = namelist['forcing']['RCE']['max_steps']
+        except:
+            self.max_steps = 100000
 
         # Radiation parameters
         #--Namelist options related to gas concentrations
-        # try:
-        #     self.co2_factor = namelist['radiation']['RRTM']['co2_factor']
-        # except:
-        #     self.co2_factor = 1.0
+        try:
+            self.co2_factor = namelist['forcing']['RCE']['co2_factor']
+        except:
+            try:
+                self.co2_factor = namelist['radiation']['RRTM']['co2_factor']
+            except:
+                self.co2_factor = 1.0
         #--Namelist options related to insolation
         try:
-            self.dyofyr = namelist['radiation']['RRTM']['dyofyr']
+            self.dyofyr = namelist['forcing']['RCE']['dyofyr']
         except:
             self.dyofyr = 0
         try:
-            self.adjes = namelist['radiation']['RRTM']['adjes']
+            self.adjes = namelist['forcing']['RCE']['adjes']
         except:
-            self.adjes = 0.5
+            self.adjes = 1.0
         try:
-            self.scon = namelist['radiation']['RRTM']['solar_constant']
+            self.scon = namelist['forcing']['RCE']['solar_constant']
         except:
-            self.scon = 1360.0
+            self.scon = 1365.0
         try:
-            self.coszen =namelist['radiation']['RRTM']['coszen']
+            self.coszen =namelist['forcing']['RCE']['coszen']
         except:
-            self.coszen = 2.0/pi
+            self.coszen = 0.2916
         try:
-            self.adif = namelist['radiation']['RRTM']['adif']
+            self.adif = namelist['forcing']['RCE']['adif']
         except:
-            self.adif = 0.06
+            self.adif = 0.18
         try:
-            self.adir = namelist['radiation']['RRTM']['adir']
+            self.adir = namelist['forcing']['RCE']['adir']
         except:
-            if (self.coszen > 0.0):
-                self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
-            else:
-                self.adir = 0.0
+            self.adir = 0.18
         return
 
-    cpdef get_pv_star(self, double t):
-        return self.CC.LT.fast_lookup(t)
-    cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
-        cdef:
-            double qv = qt - ql - qi
-            double qd = 1.0 - qt
-            double pd = pd_c(p0, qt, qv)
-            double pv = pv_c(p0, qt, qv)
-            double Lambda = self.Lambda_fp(T)
-            double L = self.L_fp(T, Lambda)
-
-        return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
-
-    cpdef eos(self, double p0, double s, double qt):
-        cdef:
-            double T, qv, qc, ql, qi, lam
-        eos_c(&self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, p0, s, qt, &T, &qv, &ql, &qi)
-        return T, ql, qi
 
 
-    cpdef initialize_radiation(self, double co2_factor):
+    cpdef initialize_radiation(self):
         #Initialize rrtmg_lw and rrtmg_sw
         cdef double cpdair = np.float64(cpd)
         c_rrtmg_lw_init(&cpdair)
@@ -292,7 +952,7 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             if 'O3' in gas_name:
                 trace[0,:] = lw_absorber[:,i].reshape(1,lw_np)
             elif 'CO2' in gas_name:
-                trace[1,:] = lw_absorber[:,i].reshape(1,lw_np) * co2_factor * 400.0/355.0
+                trace[1,:] = np.ones((1,lw_np),dtype=np.double,order='F') * self.co2_factor * 400.0e-6
             elif 'CH4' in gas_name:
                 trace[2,:] = lw_absorber[:,i].reshape(1,lw_np)
             elif 'N2O' in gas_name:
@@ -340,6 +1000,15 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
         self.cfc12vmr =  np.array(tmpTrace[:,6],dtype=np.double, order='F')
         self.cfc22vmr = np.array( tmpTrace[:,7],dtype=np.double, order='F')
         self.ccl4vmr  =  np.array(tmpTrace[:,8],dtype=np.double, order='F')
+
+        self.dTdt_rad_lw = np.zeros((nlayers,), dtype=np.double, order='c')
+        self.dTdt_rad_sw = np.zeros((nlayers,), dtype=np.double, order='c')
+        self.uflux_lw = np.zeros((nlevels,), dtype=np.double, order='c')
+        self.dflux_lw = np.zeros((nlevels,), dtype=np.double, order='c')
+        self.uflux_sw = np.zeros((nlevels,), dtype=np.double, order='c')
+        self.dflux_sw = np.zeros((nlevels,), dtype=np.double, order='c')
+
+        return
 
 
 
@@ -448,164 +1117,249 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             &dflx_sw_out[0,0], &hr_sw_out[0,0], &uflxc_sw_out[0,0], &dflxc_sw_out[0,0], &hrc_sw_out[0,0])
 
 
+
         with nogil:
-            self.toa_flux = -uflx_lw_out[0,nlayers] + dflx_lw_out[0,nlayers] - uflx_sw_out[0,nlayers] + dflx_sw_out[0,nlayers]
-            self.total_column_influx = self.toa_flux +uflx_lw_out[0,0] - dflx_lw_out[0,0] + uflx_sw_out[0,0] - dflx_sw_out[0,0]
             for k in xrange(nlayers):
-                self.t_tend_rad[k] = (hr_lw_out[0,k] + hr_sw_out[0,k])/86400.0
+                self.dTdt_rad_lw[k] = (hr_lw_out[0,k] )/86400.0
+                self.dTdt_rad_sw[k] = (hr_sw_out[0,k]) /86400.0
+            for k in xrange(nlevels):
+                self.uflux_lw[k] = uflx_lw_out[0,k]
+                self.uflux_sw[k] = uflx_sw_out[0,k]
+                self.dflux_lw[k] = dflx_lw_out[0,k]
+                self.dflux_sw[k] = dflx_sw_out[0,k]
+
+        return
+
+    cpdef lapse_rate(self, double p, double T):
+        cdef:
+            double esoverp = self.CC.LT.fast_lookup(T)/p
+            double Lambda = self.Lambda_fp(T)
+            double L = self.L_fp(T, Lambda)
+            double ratio = L/T/Rv
+            double dTdp = ((T / p * kappa * (1 + esoverp * ratio)
+                            / (1 + kappa * (cpv / Rv + (ratio-1) * ratio) * esoverp)))
+
+        return dTdp
+
+    cpdef convective_adjustment(self):
+        cdef:
+            Py_ssize_t k, l, i
+            Py_ssize_t nlv = self.nlevels
+            double [:] T_l =np.zeros(nlv,dtype=np.double, order='c')
+            double [:] p_l = np.zeros(nlv,dtype=np.double, order='c')
+            double [:] q_l = np.zeros(nlv,dtype=np.double, order='c')
+            double [:] Pi_l = np.zeros(nlv,dtype=np.double, order='c')
+            double [:] beta_l = np.zeros(nlv,dtype=np.double, order='c')
+            double [:] alpha_l = np.zeros(nlv,dtype=np.double, order='c')
+            Py_ssize_t [:] n_k = np.zeros(nlv, dtype=np.int, order='c')
+            double [:] s_k =np.zeros(nlv,dtype=np.double, order='c')
+            double [:] t_k = np.zeros(nlv,dtype=np.double, order='c')
+            double [:] theta_k = np.zeros(nlv,dtype=np.double, order='c')
+            double [:] theta_new = np.zeros(nlv,dtype=np.double, order='c')
+            double rho, gamma_l, theta
+            bint done = False
+            Py_ssize_t n, count
+            double dp = self.p_layers[0] - self.p_layers[1]
+
+        T_l[0] = self.sst
+        p_l[0] = self.p_surface
+        T_l[1:] = self.t_layers[0:]
+        p_l[1:] = self.p_layers[0:]
+
+
+        # Set up the array "beta"
+        rho = p_l[0]/T_l[0]/Rd
+        gamma_l = self.lapse_rate(p_l[0], T_l[0]) * rho * g
+        alpha_l[0] = Rd * gamma_l/g
+        # set Pi_l[0] = 1 (see equation 14, with indices shifted by 1)
+        Pi_l[0] = 1.0
+        beta_l[0] = 1/Pi_l[0]
+
+        for k in xrange(1,nlv):
+            rho = p_l[k]/T_l[k]/Rd
+            gamma_l[k] = self.lapse_rate(p_l[k], T_l[k]) * rho * g
+
+
+            alpha_l[k] = Rd * gamma_l/g
+            Pi_l[k] =  Pi_l[k-1] * np.power(p_l[k]/p_l[k-1],alpha_l[k-1])
+            beta_l[k] = 1.0/Pi_l[k]
+
+        q_l[0] = Pi_l[0] * 1.0 * 4.19e3 * 1000.0
+        q_l[1] = Pi_l[1] * cpd/g * dp/2.0
+        q_l[nlv-1] = Pi_l[nlv-1] * cpd * g * dp/2.0
+        for k in xrange(2,nlv-1):
+            q_l[k] = Pi_l[k] * cpd/g * dp
+
+
+        # algorithm step 1 (remember all indices must be shifted by 1)
+        k = 0
+        n_k[0] = 1
+        theta_k[0] = beta_l[0] * T_l[0]
+        for l in xrange(1,nlv):
+            #algorithm step 2
+            n=1
+            theta = beta_l[l] * T_l[l]
+            done = False
+            while not done:
+                if theta_k[k] > theta: # unstable stratification
+                    if n==1:
+                        # algorithm step 3
+                        s = q_l[l]
+                        t =s * theta
+                    if n_k[k] < 2:
+                        # algorith step 4
+                        # lower adjacent level is not an earlier-formed neutral layer
+                        s_k[k] = q_l[l-n]
+                        t_k[k] = s_k[k] * theta_k[k]
+                    # algorithm step 5
+                    n += n_k[k]
+                    s += s_k[k]
+                    s_k[k] = s
+                    t += t_k[k]
+                    t_k[k] = t
+                    theta = t/s
+                    if k==0:
+                        #done checking the layers
+                        done = True
+                    else:
+                        # go back through
+                        k -= 1
+                else: # stable stratification, move to next k
+                    k+=1
+                    done = True
+                n_k[k] = n
+                theta_k[k] = theta
+
+        # update the temperatures
+        count = 0
+        for i in xrange(nlv):
+            for k in xrange(n_k[i]):
+                theta_new[count] = theta_k[i]
+                count+=1
+        self.sst = theta_new[0] * Pi_l[0]
+        for i in xrange(1,nlv):
+            self.t_layers[i-1] = theta_new[i] * Pi_l[i]
+
+
+        return
+
+    cpdef rce_fixed_toa(self, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            Py_ssize_t k, iter=0
+            Py_ssize_t nly = self.nlayers
+            double  net_surface
+            double slab_capacity = 1.0 * 1000.0 * 4.19e3
+            double [:] T_old = np.zeros(self.nlevels, dtype=np.double, order='c')
+            double [:] T_new= np.zeros(self.nlevels, dtype=np.double, order='c')
+
+
+        self.net_toa_computed = 1000.0
+        self.delta_T = self.delta_T_max * 100
+        while self.delta_T > self.delta_T_max  or np.abs(self.net_toa_target-self.net_toa_computed) > self.toa_error_max:# and iter < max_iter + 2:
+            if iter > self.max_steps:
+                Pa.root_print('RCE not converged after max steps reached '+str(self.max_steps))
+                Pa.root_print(self.net_toa_target, self.net_toa_computed, self.ohu, self.sst, self.delta_T)
+                Pa.kill()
+            T_old[0] = self.sst
+            T_old[1:] = self.t_layers[0:]
+
+            #update temperatures due to radiation
+            self.compute_radiation()
+
+            self.net_toa_computed = (self.dflux_sw[nly] - self.uflux_sw[nly]
+                       - (self.uflux_lw[nly] - self.dflux_lw[nly]))
+            net_surface = (self.dflux_sw[0] - self.uflux_sw[0]
+                       - (self.uflux_lw[0] - self.dflux_lw[0]))
+            if self.verbose:
+                Pa.root_print('iter, sst, net_toa '+ str(iter) +', ' +str(np.round(self.sst,4)) + ',  '+ str(np.round(self.net_toa_computed,4)) )
+            self.sst += (net_surface-self.ohu)  * self.dt_rce/slab_capacity
+
+            self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity/10.0 * self.dt_rce
+
+            if self.verbose:
+                Pa.root_print('new ohu '+ str(np.round(self.ohu,4)))
+
+            for k in xrange(nly):
+                self.t_layers[k] += (self.dTdt_rad_lw[k] + self.dTdt_rad_sw[k]) * self.dt_rce
+
+            self.convective_adjustment()
+
+
+            self.qv_layers[0] = self.update_qv(self.p_layers[0],self.t_layers[0],self.RH_tropical, 1.0)
+            for k in xrange(1,nly):
+                self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k],self.RH_tropical, self.qv_layers[k-1])
+
+            T_new[0] = self.sst
+            T_new[1:] = self.t_layers[0:]
+            self.delta_T = np.amax(np.abs(np.subtract(T_new,T_old)))/self.dt_rce
+
+            iter +=1
 
         return
 
 
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double Pg, double Tg, double RH, double co2_factor):
+
+
+
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double  S_minus_L):
         cdef:
             double pv, pd
-            Py_ssize_t k
-        ForcingReferenceBase.initialize(self,Pa, pressure_array,  Pg, Tg, RH, co2_factor)
-        self.sst = Tg
-        self.dt_rce  =3600.0  #1 hr?
-        self.RH_surf = 0.7 # check this
-        self.RH_tropical = 0.7
+            Py_ssize_t k, index_h
+        ForcingReferenceBase.initialize(self,Pa, pressure_array, S_minus_L)
 
-
-        # pressure coordinates
-        self.nlayers = 100
-        self.nlevels = self.nlayers + 1
-        self.p_levels = np.linspace(Pg, 0.0, num=self.nlevels, endpoint=True)
+        # pressure coordinate
+        self.p_levels = np.linspace(self.p_surface, 0.0, num=self.nlevels, endpoint=True)
         self.p_layers = 0.5 * np.add(self.p_levels[1:],self.p_levels[:-1])
 
 
-        self.initialize_radiation(co2_factor)
+        self.initialize_radiation()
 
-
+        # THESE CONTAIN THE ACTUAL RCE SOLUTION
         self.t_layers = np.zeros(self.nlayers, dtype=np.double, order='c')
         self.qv_layers =np.zeros(self.nlayers, dtype=np.double, order='c')
-        self.t_tend_rad = np.zeros(np.shape(self.t_layers),dtype =np.double, order='c')
+        # Set up initial guesses
+        self.sst = 280.0
+        self.initialize_adiabat()
+        k = 0
+        while self.p_layers[k] > 400.0e2:
+            index_h = k
+            k+=1
+        for k in xrange(index_h, self.nlayers):
+            self.t_layers[k] = self.t_layers[self.index_h]
+            self.qv_layers[k] =self.qv_layers[self.index_h]
 
-        if self.fix_wv:
-        # Here open pkl
-        # create t_table_wv and put the values into it
-        # Interpolate the temperature profile into t_layers
-        # then get qv_layers which will need to be held fixed
-            pkl_file = open(self.filename, 'rb')
-            wv_dict = pickle.load(pkl_file)
-            dims = np.shape(wv_dict['t_table'][:,:])
-            self.t_table_wv = LookupProfiles(dims[0], dims[1])
-            self.t_table_wv.table_vals = wv_dict['t_table'][:,:]
-            self.t_table_wv.access_vals = wv_dict['sst'][:]
-            self.t_table_wv.lookup(300.0)
-            with nogil:
-                for k in xrange(self.nlayers):
-                    # pv = self.CC.LT.fast_lookup(self.t_table_wv.profile_interp[k]) * self.RH_subtrop
-                    pv = self.CC.LT.fast_lookup(self.t_table_wv.profile_interp[k]) * self.RH_tropical
-                    pd = self.p_layers[k] - pv
-                    self.qv_layers[k] = pv/(pd * eps_vi + pv)
-                for k in xrange(1,self.nlayers):
-                    self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
-
-
-
-        #initialize the lookup table
-        cdef Py_ssize_t n_sst = 31
-        self.t_table = LookupProfiles(n_sst,self.nlayers)
-        self.t_table.access_vals =  np.linspace(Tg-15.0, Tg+15.0,n_sst)
-
-        self.p_tropo_store = np.zeros(n_sst, dtype=np.double, order='c')
-        self.toa_store = np.zeros(n_sst, dtype=np.double, order='c')
-        self.tci_store = np.zeros(n_sst, dtype=np.double, order='c')
-
+        # Might as well do it on every processor, rather than communicate?
+        # Solution should be unique...
+        self.net_toa_target = S_minus_L
+        self.ohu = S_minus_L
+        self.rce_fixed_toa()
 
         cdef:
-            Py_ssize_t sst_index
-
-
-        # Set the initial tropopause height guess
-        if Pa.rank == 0:
-            k = 0
-            while self.p_layers[k] > 400.0e2:
-                self.index_h_min = k
-                self.index_h = self.index_h_min
-                k += 1
-
-            for sst_index in xrange(n_sst):
-                self.sst = self.t_table.access_vals[sst_index]
-                # print('doing rce for '+str(self.sst))
-                self.rce_step(self.sst)
-                self.t_table.table_vals[sst_index,:] = self.t_layers[:]
-                self.p_tropo_store[sst_index] = self.p_layers[self.index_h]
-                self.tci_store[sst_index] = self.total_column_influx
-                self.toa_store[sst_index] = self.toa_flux
-
-        self.t_table.communicate(Pa)
-
-        ###---Commment out below when running on cluster
-        # This is just for checking the results
-
-        ###############################################################
-        # data = nc.Dataset('./CGILSdata/RCE_8xCO2.nc', 'r')
-        # # Arrays must be flipped (low to high pressure) to use numpy interp function
-        # pressure_ref = data.variables['p_full'][:]
-        # temperature_ref = data.variables['temp_rc'][:]
-        #
-        # self.t_table.lookup(Tg-1.5)
+            Py_ssize_t nly = self.nlayers
         if Pa.rank==0:
             dict = {}
-            dict['t_table'] = np.asarray(self.t_table.table_vals)
-            dict['sst'] = np.asarray(self.t_table.access_vals)
-            dict['net_rad_in'] = np.asarray(self.tci_store)
-            dict['toa_influx'] = np.asarray(self.toa_store)
-            dict['p_tropo'] = np.asarray(self.p_tropo_store)
-            pickle.dump(dict, open('IRCE_SST_'+str(int(Tg)) +'_'+str(co2_factor)+'xCO2.pkl', "wb"  ))
-        #
-        #
-        #     plt.figure(1)
-        #     try:
-        #         for k in xrange(n_sst):
-        #             plt.plot(self.t_table.table_vals[k,:], np.divide(self.p_layers[:],100.0),'-k')
-        #         # plt.plot(temperature_ref, np.divide(pressure_ref,100.0), '--k')
-        #         # plt.plot(self.t_table.profile_interp,np.divide(self.p_layers[:],100.0),'-r' )
-        #         plt.xlabel('Temperature, K',fontsize=16)
-        #         plt.ylabel('Pressure, hPa',fontsize=16)
-        #         plt.xlim(180,340)
-        #         plt.gca().invert_yaxis()
-        #     except:
-        #         pass
-        #
-        #
-        #     plt.figure(2)
-        #     try:
-        #         plt.plot(self.t_table.access_vals[:], np.divide(self.p_tropo_store[:],100.0),'-k')
-        #         plt.xlabel('SST, K',fontsize=16)
-        #         plt.ylabel('Pressure at tropopause, hPa',fontsize=16)
-        #         plt.ylim(50,350)
-        #         plt.xlim(285,325)
-        #     except:
-        #         pass
-        #
-        #     plt.figure(3)
-        #     try:
-        #         plt.plot(self.t_table.access_vals[:], self.toa_store[:],'-k')
-        #         plt.xlabel('Tropical SST, K',fontsize=16)
-        #         plt.ylabel(r'TOA influx, W m$^{-2}$',fontsize=16)
-        #         plt.ylim(110,160)
-        #         plt.xlim(285,325)
-        #     except:
-        #         pass
-        #     plt.show()
+            dict['T_profile'] = np.asarray(self.t_layers)
+            dict['qv_profile'] = np.asarray(self.qv_layers)
+            dict['sst'] = self.sst
+            dict['ohu'] = self.ohu
+            dict['S_minus_L'] = self.net_toa_computed
+            dict['TOA_lw_down']= self.dflux_lw[nly]
+            dict['TOA_lw_up']= self.uflux_lw[nly]
+            dict['TOA_sw_down'] = self.dflux_sw[nly]
+            dict['TOA_sw_up']= self.uflux_sw[nly]
+
+            dict['surface_lw_down']= self.dflux_lw[0]
+            dict['surface_lw_up']= self.uflux_lw[0]
+            dict['surface_sw_down'] = self.dflux_sw[0]
+            dict['surface_sw_up']= self.uflux_sw[0]
+            pickle.dump(dict, open('IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
+
+
+
             #################################################################
 
         # Now set the current reference profile (assuming we want it at domain SST+deltaT...)
 
-        self.t_table.lookup(Tg)
-
-        with nogil:
-            for k in xrange(self.nlayers):
-                self.t_layers[k] = self.t_table.profile_interp[k]
-                pv = self.CC.LT.fast_lookup(self.t_layers[k]) * self.RH_subtrop
-                pd = self.p_layers[k] - pv
-                self.qv_layers[k] = pv/(pd * eps_vi + pv)
-            for k in xrange(1,self.nlayers):
-                self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
 
         self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
         self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
@@ -617,25 +1371,23 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
             self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
 
-        self.is_init=True
+
 
         return
 
-    cpdef update_qv(self, double p, double t, double rh):
+    cpdef update_qv(self, double p, double t, double rh, double maxval):
         cdef double pv, pd, qv
-        pv = self.get_pv_star(t) * rh
+        pv = self.CC.LT.fast_lookup(t) * rh
         pd = p - pv
-        qv = pv/(pd * eps_vi + pv)
+        qv = fmin(pv/(pd * eps_vi + pv),maxval)
         return  qv
 
-    cpdef compute_adiabat(self, double Tg, double Pg, double RH_surf):
+    cpdef initialize_adiabat(self):
         cdef:
-            double pvg = self.get_pv_star(Tg) * RH_surf
-            double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
-            double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
-
-
-        cdef:
+            double pvg = self.CC.LT.fast_lookup(self.sst) * self.RH_tropical
+            double qtg = eps_v * pvg / (self.p_surface + (eps_v-1.0)*pvg)
+            double sg = self.entropy(self.p_surface, self.sst, qtg, 0.0, 0.0)
+            double maxval = 1.0
             double temperature, ql, qi, pv
             Py_ssize_t k
 
@@ -645,120 +1397,58 @@ cdef class InteractiveReferenceRCE(ForcingReferenceBase):
             qtg = fmax(qtg-ql, 1e-10)
 
             if np.isnan(temperature):
-                self.t_layers[k] = self.t_layers[k-1]
+                self.t_layers[k] = fmax(2.0 * self.t_layers[k-1] - self.t_layers[k-2],100)
             else:
                 self.t_layers[k] = temperature
+            if k > 0:
+                maxval = self.qv_layers[k-1]
 
             if not self.fix_wv:
-                self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical)
-
-
-        return
-
-    cpdef rce_step(self, double Tg ):
-        self.compute_adiabat(Tg,self.p_levels[0], self.RH_surf)
-        cdef:
-            Py_ssize_t k, sub
-            double [:] t_adi = np.array(self.t_layers, dtype=np.double, copy=True, order='c')
-            double [:] qv_adi = np.array(self.qv_layers, dtype=np.double, copy=True, order='c')
-            Py_ssize_t index_h_old = 0
-            double delta_t, rhval, pv, pd
-        self.tropo_converged = False
-        self.index_h = self.index_h - 2
-
-        while not self.tropo_converged:
-            # print(self.index_h)
-            for k in xrange(self.nlayers):
-                self.t_layers[k] = t_adi[k]
-                if not self.fix_wv:
-                    self.qv_layers[k] = qv_adi[k]
-
-
-            delta_t = 100.0
-            while delta_t > 0.001:
-
-                # update temperatures due to radiation
-                self.compute_radiation()
-
-
-                delta_t = 0.0
-                with nogil:
-                    for k in xrange(self.index_h,self.nlayers):
-                        self.t_layers[k] = self.t_layers[k] + self.t_tend_rad[k] * self.dt_rce
-                        delta_t = fmax(delta_t, fabs(self.t_tend_rad[k] * self.dt_rce))
-                        if not self.fix_wv:
-                            rhval = self.RH_tropical
-                            pv = self.CC.LT.fast_lookup(self.t_layers[k]) * rhval
-                            pd = self.p_layers[k] - pv
-                            self.qv_layers[k] = pv/(pd * eps_vi + pv)
-                            self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
-
-            # print('t_layers ', self.t_layers[self.index_h], 't_adi ', t_adi[self.index_h])
-            if self.t_layers[self.index_h] < t_adi[self.index_h]:
-                self.index_h +=1
-                self.tropo_converged = False
-            else:
-                self.tropo_converged = True
-                # print('Tropo is converged')
-            #     print('if option 1')
-            #     index_h_old = self.index_h
-            #     k=self.index_h
-            #     while self.t_layers[k] <= t_adi[k]:
-            #         print(k, self.t_layers[k], t_adi[k])
-            #         self.index_h = k
-            #         k+=1
-            # elif self.t_layers[self.index_h] > t_adi[self.index_h]:
-            #     print('if option 2')
-            #     index_h_old = self.index_h
-            #     k=self.index_h
-            #     while self.t_layers[k] >= t_adi[k]:
-            #         print(k, self.t_layers[k], t_adi[k])
-            #         self.index_h = k
-            #         k-=1
-            # else:
-            #     print('if option 4')
-            #     index_h_old = self.index_h
-            # print('old, new index', index_h_old, self.index_h)
-            #
-            # print('total column influx', self.total_column_influx)
-            # plt.figure('T_profiles')
-            # plt.plot(self.t_layers, np.divide(self.p_layers[:],100.0), '-sr')
-            # plt.plot(t_adi, np.divide(self.p_layers[:],100.0), '-sb')
-            # plt.plot(t_adi[self.index_h], self.p_layers[self.index_h]/100.0,'om')
-            # plt.plot(self.t_layers[self.index_h], self.p_layers[self.index_h]/100.0,'oc')
-            # plt.gca().invert_yaxis()
-            # plt.savefig('SST_'+str(Tg)+'_index_'+str(self.index_h)+'.png')
-            # plt.close()
-
-
+                self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical, maxval)
 
         return
-    cpdef update(self, double [:] pressure_array, double Tg):
-        # Now set the current reference profile
-        self.t_table.lookup(Tg)
-        cdef:
-            double pv, pd
-            Py_ssize_t k
-        with nogil:
-            for k in xrange(self.nlayers):
-                self.t_layers[k] = self.t_table.profile_interp[k]
-                pv = self.CC.LT.fast_lookup(self.t_layers[k]) * self.RH_subtrop
-                pd = self.p_layers[k] - pv
-                self.qv_layers[k] = pv/(pd * eps_vi + pv)
-            for k in xrange(1,self.nlayers):
-                self.qv_layers[k] = fmin(self.qv_layers[k], self.qv_layers[k-1])
+
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double [:] pressure_array, double S_minus_L):
+        self.net_toa_target = S_minus_L
+        self.ohu = S_minus_L
+        self.rce_fixed_toa()
 
         cdef:
-            double [:] temperature_ = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
-            double [:] qt_ = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
+            Py_ssize_t nly = self.nlayers
+        if Pa.rank==0:
+            dict = {}
+            dict['T_profile'] = np.asarray(self.t_layers)
+            dict['qv_profile'] = np.asarray(self.qv_layers)
+            dict['sst'] = self.sst
+            dict['ohu'] = self.ohu
+            dict['S_minus_L'] = self.net_toa_computed
+            dict['TOA_lw_down']= self.dflux_lw[nly]
+            dict['TOA_lw_up']= self.uflux_lw[nly]
+            dict['TOA_sw_down'] = self.dflux_sw[nly]
+            dict['TOA_sw_up']= self.uflux_sw[nly]
 
-        cdef Py_ssize_t nz = np.shape(pressure_array)[0]
+            dict['surface_lw_down']= self.dflux_lw[0]
+            dict['surface_lw_up']= self.uflux_lw[0]
+            dict['surface_sw_down'] = self.dflux_sw[0]
+            dict['surface_sw_up']= self.uflux_sw[0]
+            pickle.dump(dict, open('IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
+
+
+
+            #################################################################
+
+        # Now set the current reference profile (assuming we want it at domain SST+deltaT...)
+
+
+        self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
+        self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
+        cdef:
+            Py_ssize_t nz = np.shape(pressure_array)[0]
+
         for k in xrange(nz):
-            self.temperature[k] = temperature_[k]
-            self.qt[k] = qt_[k]
             self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
-
+            self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
         return
 
 
