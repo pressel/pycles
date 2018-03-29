@@ -8,6 +8,8 @@ cdef class ForcingReferenceBase:
         double (*Lambda_fp)(double T) nogil
         Thermodynamics.ClausiusClapeyron CC
         double sst
+        Py_ssize_t npressure
+        double [:] pressure
         double [:] s
         double [:] qt
         double [:] temperature
@@ -15,14 +17,14 @@ cdef class ForcingReferenceBase:
         double [:] u
         double [:] v
         bint is_init
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L)
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,double [:] pressure_array, double S_minus_L)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,double S_minus_L)
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
 
 cdef class ForcingReferenceNone(ForcingReferenceBase):
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L)
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,double [:] pressure_array, double S_minus_L)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,double S_minus_L)
     # cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     # cpdef eos(self, double p0, double s, double qt)
 
@@ -34,8 +36,8 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
         double RH_ref
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L)
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,double [:] pressure_array, double S_minus_L)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
+    cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L)
 
 
 cdef class ReferenceRCE(ForcingReferenceBase):
@@ -43,8 +45,8 @@ cdef class ReferenceRCE(ForcingReferenceBase):
         str filename
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L)
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,double [:] pressure_array, double S_minus_L)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
+    cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L)
 
 # cdef class InteractiveReferenceRCE_old(ForcingReferenceBase):
 #     cdef:
@@ -109,7 +111,9 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         double RH_tropical
         double RH_subtrop
         double  delta_T_max
+        double delta_T
         double toa_error_max
+        double toa_update_criterion
         double max_steps
         double ohu
         double net_toa_target
@@ -153,8 +157,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
     cpdef convective_adjustment(self)
     cpdef lapse_rate(self,double p, double T)
     cpdef rce_fixed_toa(self, ParallelMPI.ParallelMPI Pa)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L)
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,double [:] pressure_array, double S_minus_L)
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
+    cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L)
 
 
 cdef class LookupProfiles:

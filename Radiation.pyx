@@ -131,19 +131,15 @@ cdef class RadiationBase:
         return
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
 
 
         return
-    cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
-        return
-
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         return
 
     cpdef stats_io(self, Grid.Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
@@ -253,14 +249,12 @@ cdef class RadiationNone(RadiationBase):
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         return
-    cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
-        return
+
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa,ForcingReferenceBase FoRef):
         return
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -286,15 +280,12 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
         return
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        return
-    cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -417,16 +408,13 @@ cdef class RadiationSmoke(RadiationBase):
         RadiationBase.initialize(self, Gr, NS, Pa)
         return
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
-        return
-    cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -560,6 +548,10 @@ cdef class RadiationRRTM(RadiationBase):
                 self.profile_name = 'cgils_ctl_s'+str(loc)
         elif casename == 'ZGILS':
             self.use_reference_class = True
+            try:
+                self.reference_type = str(namelist['forcing']['reference_profile'])
+            except:
+                self.reference_type = 'InteractiveRCE'
             loc = namelist['meta']['ZGILS']['location']
             if loc == 12:
                 self.SST_1xCO2  = 290.0
@@ -569,32 +561,24 @@ cdef class RadiationRRTM(RadiationBase):
                 self.SST_1xCO2 = 298.9
 
             try:
-                co2_factor = namelist['radiation']['RRTM']['co2_factor']
-            except:
-                co2_factor = 1.0
-
-            try:
                 self.fix_wv = namelist['radiation']['RRTM']['fix_wv']
             except:
                 self.fix_wv = False
             if self.fix_wv:
                 self.fix_wv_statsfile = namelist['radiation']['RRTM']['fix_wv_statsfile']
+            #
 
-            try:
-                self.reference_type = str(namelist['forcing']['reference_profile'])
-            except:
-                reference_type = 'AdjustedAdiabat'
-            if int(np.log2(co2_factor)) == 0 and self.reference_type == 'AdjustedAdiabat':
-                self.profile_name = 'cgils_ctl_s'+str(loc)
-                self.reference_profile = AdjustedMoistAdiabat(namelist, LH, Pa)
-
-            elif self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
-                self.reference_profile = InteractiveReferenceRCE(namelist, LH, Pa)
-
-            else:
-                self.profile_name = 'cgils_ctl_s'+str(loc)
-                filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
-                self.reference_profile = ReferenceRCE(filename)
+            # if int(np.log2(co2_factor)) == 0 and self.reference_type == 'AdjustedAdiabat':
+            #     self.profile_name = 'cgils_ctl_s'+str(loc)
+            #     self.reference_profile = AdjustedMoistAdiabat(namelist, LH, Pa)
+            #
+            # elif self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
+            #     self.reference_profile = InteractiveReferenceRCE(namelist, LH, Pa)
+            #
+            # else:
+            #     self.profile_name = 'cgils_ctl_s'+str(loc)
+            #     filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
+            #     self.reference_profile = ReferenceRCE(filename)
 
         else:
             Pa.root_print('RadiationRRTM: Case ' + casename + ' has no known extension profile')
@@ -697,7 +681,8 @@ cdef class RadiationRRTM(RadiationBase):
 
 
     cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa,
+                              ForcingReferenceBase FoRef):
 
 
         cdef:
@@ -708,40 +693,21 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t nz = Gr.dims.n[2]
             Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t i,k
-            Py_ssize_t n_adiabat
-            double [:] pressures_adiabat
+
             double deltaT
+            double S_minus_L = 50.0
+            double [:] pressures, temperatures, vapor_mixing_ratios
 
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
         if self.use_reference_class:
-            # pressures = profile_data[self.profile_name]['pressure'][:]
-            pressures = np.arange(25*100, 1015*100, 10*100)
-            pressures = np.array(pressures[::-1], dtype=np.double)
-            n_adiabat = np.shape(pressures)[0]
-            if self.reference_type == 'InteractiveRCE':
-                deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
-                self.RH_adiabat = 0.3 # This value is not used
-                self.reference_profile.initialize(Pa, pressures, Ref.Pg, Sur.T_surface + deltaT, self.RH_adiabat, self.co2_factor)
 
-            elif self.reference_type == 'InteractiveRCE_fix':
-                self.RH_adiabat = 0.3 # This value is not used
-                # Note we only compute the reference profile once for this option!
-                self.reference_profile.initialize(Pa,
-                                                  pressures, Ref.Pg,
-                                                  Sur.T_surface_init + 10.0 + ecs * np.log2(self.co2_factor),
-                                                  self.RH_adiabat, self.co2_factor)
-
-            else:
-                self.Tg_adiabat = 295.0
-                self.Pg_adiabat = 1000.0e2
-                self.RH_adiabat = 0.3
-                self.reference_profile.initialize(Pa, pressures, self.Pg_adiabat, self.Tg_adiabat, self.RH_adiabat, self.co2_factor)
-
-
-            temperatures =np.array( self.reference_profile.temperature)
-            vapor_mixing_ratios = np.array(self.reference_profile.rv)
+            # If already initialized it will return immediately
+            FoRef.initialize(Pa,  S_minus_L )
+            pressures = np.array(FoRef.pressure,copy=True)
+            temperatures =np.array( FoRef.temperature, copy=True)
+            vapor_mixing_ratios = np.array(FoRef.rv,copy=True)
 
         else:
             pressures = profile_data[self.profile_name]['pressure'][:]
@@ -873,7 +839,7 @@ cdef class RadiationRRTM(RadiationBase):
             if 'O3' in gas_name:
                 trace[0,:] = lw_absorber[:,i].reshape(1,lw_np)
             elif 'CO2' in gas_name:
-                trace[1,:] = lw_absorber[:,i].reshape(1,lw_np)*self.co2_factor*400.0/355.0
+                trace[1,:] = np.ones((1,lw_np),dtype=np.double,order='F') * self.co2_factor * 400.0e-6
             elif 'CH4' in gas_name:
                 trace[2,:] = lw_absorber[:,i].reshape(1,lw_np)
             elif 'N2O' in gas_name:
@@ -991,7 +957,7 @@ cdef class RadiationRRTM(RadiationBase):
         return
 
     cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         if not self.use_reference_class:
             return
@@ -1007,18 +973,13 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t nz = Gr.dims.n[2]
             Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t i,k
-            Py_ssize_t n_adiabat
-            double [:] pressures_adiabat
             double deltaT
+            double S_minus_L = 50.0
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
-        cdef double [:] pressures = np.arange(25, 1015, 10) * 100.0
-        pressures = np.array(pressures[::-1], dtype=np.double)
-        n_adiabat = np.shape(pressures)[0]
-
         deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
-        self.reference_profile.update(pressures, Sur.T_surface + deltaT)
+        FoRef.update(Pa, S_minus_L)
 
 
         cdef:
@@ -1026,10 +987,10 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t count = 0
 
 
-        for k in xrange(len(pressures)-n_profile, len(pressures)):
-            self.p_ext[self.n_buffer+count] = pressures[k]
-            self.t_ext[self.n_buffer+count] = self.reference_profile.temperature[k]
-            self.rv_ext[self.n_buffer+count] = self.reference_profile.rv[k]
+        for k in xrange(FoRef.npressure-n_profile, FoRef.npressure):
+            self.p_ext[self.n_buffer+count] = FoRef.pressure[k]
+            self.t_ext[self.n_buffer+count] = FoRef.temperature[k]
+            self.rv_ext[self.n_buffer+count] = FoRef.rv[k]
             count += 1
 
 
@@ -1080,25 +1041,19 @@ cdef class RadiationRRTM(RadiationBase):
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,
-                 ParallelMPI.ParallelMPI Pa):
+                 ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
-        cdef double [:] pressures = np.arange(25, 1015, 10) * 100.0
+        cdef double [:] pressures = np.arange(0, 1000, 10)*100.0
         pressures = np.array(pressures[::-1], dtype=np.double)
         cdef double adjusted_rad_freq = self.radiation_frequency * TS.acceleration_factor
         cdef double deltaT
 
         if TS.rk_step == 0:
             if adjusted_rad_freq <= 0.0:
-                if self.reference_type == 'InteractiveRCE':
-                    deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
-                    self.reference_profile.update(pressures, Sur.T_surface+ deltaT)
-                    self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
+                self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa, FoRef)
                 self.update_RRTM(Gr, Ref, PV, DV,Sur, Pa)
             elif TS.t >= self.next_radiation_calculate:
-                if self.reference_type == 'InteractiveRCE':
-                    deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
-                    self.reference_profile.update(pressures, Sur.T_surface + deltaT)
-                    self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa)
+                self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa, FoRef)
                 self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
                 self.next_radiation_calculate = (TS.t//adjusted_rad_freq + 1.0) * adjusted_rad_freq
 

@@ -42,13 +42,6 @@ def ForcingReferenceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa)
         return ForcingReferenceNone()
 
 
-
-
-
-
-
-
-
 cdef extern:
     void c_rrtmg_lw_init(double *cpdair)
     void c_rrtmg_lw (
@@ -95,16 +88,15 @@ cdef class ForcingReferenceBase:
         self.CC.initialize(namelist, LH, Pa)
 
         return
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L):
-        cdef Py_ssize_t nz = len(pressure_array)
-        self.s = np.zeros(nz, dtype=np.double, order='c')
-        self.qt = np.zeros(nz, dtype=np.double, order='c')
-        self.temperature = np.zeros(nz, dtype=np.double, order='c')
-        self.rv = np.zeros(nz, dtype=np.double, order='c')
-        self.u = np.zeros(nz, dtype=np.double, order='c')
-        self.v = np.zeros(nz, dtype=np.double, order='c')
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L):
+        self.s = np.zeros(self.npressure, dtype=np.double, order='c')
+        self.qt = np.zeros(self.npressure, dtype=np.double, order='c')
+        self.temperature = np.zeros(self.npressure, dtype=np.double, order='c')
+        self.rv = np.zeros(self.npressure, dtype=np.double, order='c')
+        self.u = np.zeros(self.npressure, dtype=np.double, order='c')
+        self.v = np.zeros(self.npressure, dtype=np.double, order='c')
         return
-    cpdef update(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L ):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L ):
         return
 
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
@@ -126,11 +118,12 @@ cdef class ForcingReferenceBase:
 
 cdef class ForcingReferenceNone(ForcingReferenceBase):
     def __init__(self):
+        self.is_init=True
 
         return
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L):
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L):
         return
-    cpdef update(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L ):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L ):
         return
 
 
@@ -139,7 +132,8 @@ cdef class ForcingReferenceNone(ForcingReferenceBase):
 # Reference moisture profile corresponds to a fixed relative humidity given the reference temperature profile
 cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
     def __init__(self,namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
-        ForcingReferenceBase.__init__(self,namelist, LH, Pa)
+        self.is_init=False
+
         try:
             self.Tg  = namelist['forcing']['AdjustedMoistAdiabat']['Tg']
         except:
@@ -153,6 +147,13 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
             self.RH_ref = namelist['forcing']['AdjustedMoistAdiabat']['RH_ref']
         except:
             self.RH_ref = 0.3
+        try:
+            self.npressure = namelist['forcing']['AdjustedMoistAdiabat']['nlayers']
+        except:
+            self.npressure = 100
+        cdef double [:] p_levels = np.linspace(self.Pg, 0.0, num=self.npressure+1, endpoint=True)
+        self.pressure = 0.5 * np.add(p_levels[1:], p_levels[:-1])
+        ForcingReferenceBase.__init__(self,namelist, LH, Pa)
 
         return
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
@@ -164,34 +165,39 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
         return
 
 
-    cpdef initialize(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array,  double S_minus_L):
+    cpdef initialize(self, ParallelMPI.ParallelMPI Pa, double S_minus_L):
+        if self.is_init:
+            return
         '''
         Initialize the forcing reference profiles. These profiles use the temperature corresponding to a moist adiabat,
         but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
         '''
         # Default values correspond to Tan et al 2016
-        ForcingReferenceBase.initialize(self,Pa, pressure_array, S_minus_L)
+        ForcingReferenceBase.initialize(self,Pa, S_minus_L)
 
-        cdef double pvg = self.CC.LT.fast_lookup(Tg)
-        cdef double qtg = eps_v * pvg / (Pg + (eps_v-1.0)*pvg)
-        cdef double sg = self.entropy(Pg, Tg, qtg, 0.0, 0.0)
+        cdef:
+            double pvg = self.CC.LT.fast_lookup(self.Tg)
+            double qtg = eps_v * pvg / (self.Pg + (eps_v-1.0)*pvg)
+            double sg = self.entropy(self.Pg, self.Tg, qtg, 0.0, 0.0)
 
 
-        cdef double temperature, ql, qi, pv
-        cdef Py_ssize_t n_levels = np.shape(pressure_array)[0]
+        cdef double temp, ql, qi, pv
+
 
         # Compute reference state thermodynamic profiles
-        for k in xrange(n_levels):
-            temperature, ql, qi = self.eos(pressure_array[k], sg, qtg)
-            pv = self.CC.LT.fast_lookup(temperature) * RH
-            self.qt[k] = eps_v * pv / (pressure_array[k] + (eps_v-1.0)*pv)
-            self.s[k] = self.entropy(pressure_array[k],temperature, self.qt[k] , 0.0, 0.0)
-            self.temperature[k] = temperature
+        for k in xrange(self.npressure):
+            temp, ql, qi = self.eos(self.pressure[k], sg, qtg)
+            pv = self.CC.LT.fast_lookup(temp) *self.RH_ref
+            self.qt[k] = eps_v * pv / (self.pressure[k] + (eps_v-1.0)*pv)
+            self.s[k] = self.entropy(self.pressure[k],temp, self.qt[k] , 0.0, 0.0)
+            self.temperature[k] = temp
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
-            self.u[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
+            self.u[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(self.pressure[k]-1000.0e2),-4.0)
+
+        self.is_init = True
 
         return
-    cpdef update(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L):
         return
 
 
@@ -201,6 +207,7 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
 
 cdef class ReferenceRCE(ForcingReferenceBase):
     def __init__(self,  namelist,  LatentHeat LH, ParallelMPI.ParallelMPI Pa ):
+        self.is_init=False
         try:
             co2_factor=namelist['radiation']['RRTM']['co2_factor']
         except:
@@ -210,39 +217,52 @@ cdef class ReferenceRCE(ForcingReferenceBase):
 
         return
     @cython.wraparound(True)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array,double S_minus_L):
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double S_minus_L):
+        if self.is_init:
+            return
 
-        ForcingReferenceBase.initialize(self,Pa, pressure_array,  S_minus_L)
+
         data = nc.Dataset(self.filename, 'r')
-        # Arrays must be flipped (low to high pressure) to use numpy interp function
-        pressure_ref = data.variables['p_full'][::-1]
-        temperature_ref = data.variables['temp_rc'][::-1]
-        qt_ref = data.variables['yv_rc'][::-1]
-        u_ref = data.variables['u'][::-1]
-        v_ref = data.variables['v'][::-1]
+        self.pressure = data.variables['p_full']
+        self.npressure = len(self.pressure)
+        ForcingReferenceBase.initialize(self,Pa, S_minus_L)
 
-        self.temperature = np.array(np.interp(pressure_array, pressure_ref, temperature_ref),
-                                    dtype=np.double, order='c')
-        self.qt = np.array(np.interp(pressure_array, pressure_ref, qt_ref), dtype=np.double, order='c')
-        self.u = np.array(np.interp(pressure_array, pressure_ref, u_ref), dtype=np.double, order='c')
-        self.v = np.array(np.interp(pressure_array, pressure_ref, v_ref), dtype=np.double, order='c')
+        self.temperature = data.variables['temp_rc']
+        self.qt = data.variables['yv_rc']
+        self.u = data.variables['u']
+        self.v = data.variables['v']
+
+        # Arrays must be flipped (low to high pressure) to use numpy interp function
+        # pressure_ref = data.variables['p_full'][::-1]
+        # temperature_ref = data.variables['temp_rc'][::-1]
+        # qt_ref = data.variables['yv_rc'][::-1]
+        # u_ref = data.variables['u'][::-1]
+        # v_ref = data.variables['v'][::-1]
+        #
+        # self.temperature = np.array(np.interp(pressure_array, pressure_ref, temperature_ref),
+        #                             dtype=np.double, order='c')
+        # self.qt = np.array(np.interp(pressure_array, pressure_ref, qt_ref), dtype=np.double, order='c')
+        # self.u = np.array(np.interp(pressure_array, pressure_ref, u_ref), dtype=np.double, order='c')
+        # self.v = np.array(np.interp(pressure_array, pressure_ref, v_ref), dtype=np.double, order='c')
 
 
         cdef:
             double pd, pv
             Py_ssize_t k
         # computing entropy assuming sub-saturated
-        for k in xrange(len(pressure_array)):
-            pv = pv_c(pressure_array[k], self.qt[k], self.qt[k])
-            pd = pd_c(pressure_array[k], self.qt[k], self.qt[k])
+        for k in xrange(self.npressure):
+            pv = pv_c(self.pressure[k], self.qt[k], self.qt[k])
+            pd = pd_c(self.pressure[k], self.qt[k], self.qt[k])
 
             self.rv[k] =  self.qt[k]/(1.0-self.qt[k])
             self.s[k] = (sd_c(pd, self.temperature[k]) * (1.0 - self.qt[k])
                          + sv_c(pv, self.temperature[k]) * self.qt[k])
             self.u[k] = self.u[k]*0.5 - 5.0
 
+        self.is_init = True
+
         return
-    cpdef update(self, ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double S_minus_L):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L):
         return
 
 
@@ -849,12 +869,12 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
 
         try:
-            self.RH_subtrop = namelist['forcing'['RCE']['RH_subtropical']
+            self.RH_subtrop = namelist['forcing']['RCE']['RH_subtropical']
         except:
             self.RH_subtrop = 0.3
 
         try:
-            self.RH_tropical = namelist['forcing'['RCE']['RH_tropical']
+            self.RH_tropical = namelist['forcing']['RCE']['RH_tropical']
         except:
             self.RH_tropical = 0.7
         try:
@@ -863,6 +883,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.nlayers = 100
 
         self.nlevels = self.nlayers + 1
+        self.npressure = self.nlayers
 
         try:
             self.p_surface = namelist['forcing']['RCE']['p_surface']
@@ -884,6 +905,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.max_steps = namelist['forcing']['RCE']['max_steps']
         except:
             self.max_steps = 100000
+        try:
+            self.toa_update_criterion = namelist['forcing']['RCE']['toa_update_criterion']
+        except:
+            self.toa_update_criterion= 1.0 # W/m62
 
         # Radiation parameters
         #--Namelist options related to gas concentrations
@@ -1177,7 +1202,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
         for k in xrange(1,nlv):
             rho = p_l[k]/T_l[k]/Rd
-            gamma_l[k] = self.lapse_rate(p_l[k], T_l[k]) * rho * g
+            gamma_l = self.lapse_rate(p_l[k], T_l[k]) * rho * g
 
 
             alpha_l[k] = Rd * gamma_l/g
@@ -1258,7 +1283,11 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         while self.delta_T > self.delta_T_max  or np.abs(self.net_toa_target-self.net_toa_computed) > self.toa_error_max:# and iter < max_iter + 2:
             if iter > self.max_steps:
                 Pa.root_print('RCE not converged after max steps reached '+str(self.max_steps))
-                Pa.root_print(self.net_toa_target, self.net_toa_computed, self.ohu, self.sst, self.delta_T)
+                Pa.root_print('net_toa_target  '+ str(self.net_toa_target))
+                Pa.root_print('net_toa_computed  '+str(self.net_toa_computed))
+                Pa.root_print('ohu  '+str(self.ohu))
+                Pa.root_print('sst ' + str(self.sst))
+                Pa.root_print('delta T '+str(self.delta_T))
                 Pa.kill()
             T_old[0] = self.sst
             T_old[1:] = self.t_layers[0:]
@@ -1301,16 +1330,20 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
 
 
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double  S_minus_L):
+    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double  S_minus_L):
+        if self.is_init:
+            return
+
         cdef:
             double pv, pd
             Py_ssize_t k, index_h
-        ForcingReferenceBase.initialize(self,Pa, pressure_array, S_minus_L)
+
 
         # pressure coordinate
         self.p_levels = np.linspace(self.p_surface, 0.0, num=self.nlevels, endpoint=True)
         self.p_layers = 0.5 * np.add(self.p_levels[1:],self.p_levels[:-1])
-
+        self.pressure = self.p_layers
+        ForcingReferenceBase.initialize(self,Pa, S_minus_L)
 
         self.initialize_radiation()
 
@@ -1325,21 +1358,35 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             index_h = k
             k+=1
         for k in xrange(index_h, self.nlayers):
-            self.t_layers[k] = self.t_layers[self.index_h]
-            self.qv_layers[k] =self.qv_layers[self.index_h]
+            self.t_layers[k] = self.t_layers[index_h]
+            self.qv_layers[k] =self.qv_layers[index_h]
 
         # Might as well do it on every processor, rather than communicate?
         # Solution should be unique...
         self.net_toa_target = S_minus_L
         self.ohu = S_minus_L
-        self.rce_fixed_toa()
+        self.rce_fixed_toa(Pa)
+        Pa.root_print('Success! RCE converged.')
+        Pa.root_print('net_toa_target  '+ str(self.net_toa_target))
+        Pa.root_print('net_toa_computed  '+str(self.net_toa_computed))
+        Pa.root_print('ohu  '+str(self.ohu))
+        Pa.root_print('sst ' + str(self.sst))
+        Pa.root_print('delta T '+str(self.delta_T))
+        Pa.root_print('TOA_lw_down ' + str(np.round(self.dflux_lw[self.nlayers],2)))
+        Pa.root_print('TOA_lw_up ' + str(np.round(self.uflux_lw[self.nlayers],4)))
+        Pa.root_print('TOA_sw_down ' + str(np.round(self.dflux_sw[self.nlayers],4)))
+        Pa.root_print('TOA_sw_up ' + str(np.round(self.uflux_sw[self.nlayers],4)))
 
         cdef:
             Py_ssize_t nly = self.nlayers
         if Pa.rank==0:
             dict = {}
+            dict['nlayers'] = self.nlayers
+            dict['delta_T'] = self.delta_T
             dict['T_profile'] = np.asarray(self.t_layers)
             dict['qv_profile'] = np.asarray(self.qv_layers)
+            dict['p_profile'] = np.asarray(self.p_layers)
+            dict['p_tropo'] = self.p_layers[np.argmin(self.t_layers)]
             dict['sst'] = self.sst
             dict['ohu'] = self.ohu
             dict['S_minus_L'] = self.net_toa_computed
@@ -1347,31 +1394,36 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             dict['TOA_lw_up']= self.uflux_lw[nly]
             dict['TOA_sw_down'] = self.dflux_sw[nly]
             dict['TOA_sw_up']= self.uflux_sw[nly]
-
             dict['surface_lw_down']= self.dflux_lw[0]
             dict['surface_lw_up']= self.uflux_lw[0]
             dict['surface_sw_down'] = self.dflux_sw[0]
             dict['surface_sw_up']= self.uflux_sw[0]
             pickle.dump(dict, open('IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
 
-
-
             #################################################################
 
-        # Now set the current reference profile (assuming we want it at domain SST+deltaT...)
 
+        # OLD--DOING INTERP, NEED TO MOVE THIS EXTERNAL
+        # self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
+        # self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
+        # cdef:
+        #     Py_ssize_t nz = np.shape(pressure_array)[0]
+        #
+        # for k in xrange(nz):
+        #     self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
+        #     self.rv[k] = self.qt[k]/(1.0-self.qt[k])
+        #     self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
 
-        self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
-        self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
-        cdef:
-            Py_ssize_t nz = np.shape(pressure_array)[0]
-
-        for k in xrange(nz):
-            self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
+        # NEW
+        for k in xrange(self.npressure):
+            self.temperature[k] = self.t_layers[k]
+            self.qt[k] = self.qv_layers[k]
+            self.s[k] = self.entropy(self.pressure[k], self.temperature[k], self.qt[k], 0.0, 0.0)
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
-            self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
+            self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(self.pressure[k]-1000.0e2),-4.0)
 
 
+        self.is_init = True
 
         return
 
@@ -1403,22 +1455,31 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             if k > 0:
                 maxval = self.qv_layers[k-1]
 
-            if not self.fix_wv:
-                self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical, maxval)
+            # if not self.fix_wv:
+            #     self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical, maxval)
 
         return
 
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double [:] pressure_array, double S_minus_L):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,   double S_minus_L):
+
+        # check the change in S_minus_L
+        if fabs(self.net_toa_computed - S_minus_L) < self.toa_update_criterion:
+            return
+
         self.net_toa_target = S_minus_L
         self.ohu = S_minus_L
-        self.rce_fixed_toa()
+        self.rce_fixed_toa(Pa)
 
         cdef:
             Py_ssize_t nly = self.nlayers
         if Pa.rank==0:
             dict = {}
+            dict['nlayers'] = self.nlayers
+            dict['delta_T'] = self.delta_T
             dict['T_profile'] = np.asarray(self.t_layers)
             dict['qv_profile'] = np.asarray(self.qv_layers)
+            dict['p_profile'] = np.asarray(self.p_layers)
+            dict['p_tropo'] = self.p_layers[np.argmin(self.t_layers)]
             dict['sst'] = self.sst
             dict['ohu'] = self.ohu
             dict['S_minus_L'] = self.net_toa_computed
@@ -1426,7 +1487,6 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             dict['TOA_lw_up']= self.uflux_lw[nly]
             dict['TOA_sw_down'] = self.dflux_sw[nly]
             dict['TOA_sw_up']= self.uflux_sw[nly]
-
             dict['surface_lw_down']= self.dflux_lw[0]
             dict['surface_lw_up']= self.uflux_lw[0]
             dict['surface_sw_down'] = self.dflux_sw[0]
@@ -1437,18 +1497,27 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
             #################################################################
 
-        # Now set the current reference profile (assuming we want it at domain SST+deltaT...)
+        # OLD--DOING INTERP
+        # self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
+        # self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
+        # cdef:
+        #     Py_ssize_t nz = np.shape(pressure_array)[0]
+        #
+        # for k in xrange(nz):
+        #     self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
+        #     self.rv[k] = self.qt[k]/(1.0-self.qt[k])
+        #     self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
 
+        # NEW
 
-        self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
-        self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
-        cdef:
-            Py_ssize_t nz = np.shape(pressure_array)[0]
-
-        for k in xrange(nz):
-            self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
+        # NEW
+        for k in xrange(self.npressure):
+            self.temperature[k] = self.t_layers[k]
+            self.qt[k] = self.qv_layers[k]
+            self.s[k] = self.entropy(self.pressure[k], self.temperature[k], self.qt[k], 0.0, 0.0)
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
-            self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
+            # self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(self.pressure[k]-1000.0e2),-4.0)
+
         return
 
 

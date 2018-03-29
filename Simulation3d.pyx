@@ -11,6 +11,7 @@ from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
 from Tracers import TracersFactory
+from ForcingReference import ForcingReferenceFactory
 cimport ParallelMPI
 cimport Grid
 cimport PrognosticVariables
@@ -57,6 +58,7 @@ class Simulation3d:
         self.Ref = ReferenceState.ReferenceState(self.Gr)
         self.Sur = SurfaceFactory(namelist, self.LH, self.Pa)
         self.Fo = Forcing.Forcing(namelist, self.LH, self.Pa)
+        self.FoRef = ForcingReferenceFactory(namelist, self.LH, self.Pa)
         self.Ra = RadiationFactory(namelist,self.LH, self.Pa)
         self.Budg = SurfaceBudgetFactory(namelist)
         self.StatsIO = NetCDFIO.NetCDFIO_Stats()
@@ -126,12 +128,12 @@ class Simulation3d:
         else:
             self.Pa.root_print('This is not a restart run!')
             SetInitialConditions = InitializationFactory(namelist)
-            SetInitialConditions(namelist,self.Gr, self.PV, self.Ref, self.Th,  self.Sur, self.StatsIO, self.Pa, self.LH)
+            SetInitialConditions(namelist,self.Gr, self.PV, self.Ref, self.Th,  self.Sur, self.StatsIO, self.Pa, self.LH, self.FoRef)
             del SetInitialConditions
 
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
-        self.Fo.initialize(self.Gr, self.Ref, self.Sur,self.StatsIO, self.Pa)
+        self.Fo.initialize(self.Gr, self.Ref, self.Sur,self.StatsIO, self.Pa, self.FoRef)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Budg.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Damping.initialize(self.Gr, self.Ref)
@@ -151,7 +153,7 @@ class Simulation3d:
         cdef int rk_step
         # DO First Output
         self.Th.update(self.Gr, self.Ref, PV_, DV_)
-        self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV,  self.Sur, self.StatsIO, self.Pa)
+        self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV,  self.Sur, self.StatsIO, self.Pa, self.FoRef)
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
@@ -171,8 +173,8 @@ class Simulation3d:
                 self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
                 self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
                 self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
-                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
-                self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.Ra, self.TS,  self.Pa)
+                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa, self.FoRef)
+                self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.Ra, self.TS,  self.Pa, self.FoRef)
 
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
                 self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa)

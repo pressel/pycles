@@ -15,20 +15,22 @@ cdef class Forcing:
     cdef:
         object scheme
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,  Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS,
+                 ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 cdef class ForcingNone:
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS,
+                 ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -42,10 +44,11 @@ cdef class ForcingBomex:
         double [:] subsidence
         double coriolis_param
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS,
+                 ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -56,10 +59,11 @@ cdef class ForcingSullivanPatton:
         double [:] vg
         double coriolis_param
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS,
+                 ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -70,10 +74,11 @@ cdef class ForcingGabls:
         double [:] vg
         double coriolis_param
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur,Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+                 Surface.SurfaceBase Sur,Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS,
+                 ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -87,10 +92,11 @@ cdef class ForcingDyCOMS_RF01:
         double coriolis_param
         bint rf02_flag
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,TimeStepping.TimeStepping TS,
+                 ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -106,10 +112,11 @@ cdef class ForcingRico:
         double coriolis_param
         Py_ssize_t momentum_subsidence
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,TimeStepping.TimeStepping TS,
+                 ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -144,10 +151,11 @@ cdef class ForcingCGILS:
         double [:] s_ls_adv
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS,
+                 ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -170,6 +178,8 @@ cdef class ForcingZGILS:
         double [:] subsidence
         double [:] ug
         double [:] vg
+        double [:] reference_qt
+        double [:] reference_t
         double [:] source_qt_nudge
         double [:] source_t_nudge
         double [:] source_s_nudge
@@ -186,16 +196,15 @@ cdef class ForcingZGILS:
         double SST_1xCO2
         double divergence_factor
         ClausiusClapeyron CC
-        ForcingReferenceBase forcing_ref
 
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
+                 Surface.SurfaceBase Sur, Radiation.RadiationBase Ra, TimeStepping.TimeStepping TS,
+                 ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
 

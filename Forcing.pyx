@@ -55,14 +55,15 @@ cdef class Forcing:
             Pa.kill()
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.scheme.initialize(Gr, Ref, Sur, NS, Pa)
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+        self.scheme.initialize(Gr, Ref, Sur, NS, Pa, FoRef)
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
-        self.scheme.update(Gr, Ref, PV, DV, Sur, Ra, TS, Pa)
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+        self.scheme.update(Gr, Ref, PV, DV, Sur, Ra, TS, Pa, FoRef)
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -78,12 +79,12 @@ cdef class ForcingNone:
     def __init__(self):
         pass
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
@@ -96,7 +97,7 @@ cdef class ForcingBomex:
         return
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -146,7 +147,7 @@ cdef class ForcingBomex:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -252,7 +253,7 @@ cdef class ForcingSullivanPatton:
 
         return
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
         self.coriolis_param = 1.0e-4 #s^{-1}
@@ -263,7 +264,7 @@ cdef class ForcingSullivanPatton:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -300,7 +301,7 @@ cdef class ForcingGabls:
         return
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * 8.0
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.coriolis_param = 1.39e-4 #s^{-1}
@@ -309,7 +310,7 @@ cdef class ForcingGabls:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -354,7 +355,7 @@ cdef class ForcingDyCOMS_RF01:
         return
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t k
@@ -390,7 +391,7 @@ cdef class ForcingDyCOMS_RF01:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur ,Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -468,7 +469,7 @@ cdef class ForcingRico:
         return
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         cdef Py_ssize_t k
 
         self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
@@ -505,7 +506,7 @@ cdef class ForcingRico:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -604,7 +605,7 @@ cdef class ForcingCGILS:
         return
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -751,7 +752,7 @@ cdef class ForcingCGILS:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -938,24 +939,20 @@ cdef class ForcingZGILS:
         self.alpha_h = 1.2 # ad hoc qt/qt_ref threshold ratio for determining BL height
 
 
-        # Initialize the reference profiles class
-        if int(self.n_double_co2) == 0 and self.reference_type == 'AdjustedAdiabat':
-            # Tan et al 2016 style reference
-            self.forcing_ref = AdjustedMoistAdiabat(namelist, LH, Pa)
-        elif self.reference_type == 'InteractiveRCE' or self.reference_type =='InteractiveRCE_constant':
-            self.forcing_ref = InteractiveReferenceRCE_new(namelist, LH, Pa)
-        else:
-            # Tan et al 2017 style reference
-            filename = './CGILSdata/RCE_'+ str(int(self.co2_factor))+'xCO2.nc'
-            self.forcing_ref = ReferenceRCE(filename, namelist, LH, Pa)
-
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Pa)
 
         return
 
     cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
-                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                     NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+
+        cdef:
+            double S_minus_L = 50.0
+            Py_ssize_t k
+            double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g * self.divergence_factor
+            double pv_star, qv_star, u_right, v_right
+
         self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -967,31 +964,11 @@ cdef class ForcingZGILS:
         self.source_u_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.source_v_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
 
+
         self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
 
-        # compute the reference profiles for forcing/nudging (current/control climate case)
-        cdef double Pg_parcel = 1000.0e2
-        cdef double Tg_parcel = 295.0
-        cdef double RH_ref = 0.3
-
-        if self.reference_type == 'InteractiveRCE':
-            # the reference profile returned here is not actually used, we just need to get the right-ish
-            # value of tropical SST for creating the lookup table
-            # RH_ref is not used, it is read from namelist (defaults to 0.3)
-            self.forcing_ref.initialize(Pa, Ref.p0_half[:], 50.0)
-        elif self.reference_type == 'InteractiveRCE_constant':
-            # We will actually use this reference profile (it is frozen through out simulation)
-            # RH_ref is not used, it is read from namelist (defaults to 0.3)
-            self.forcing_ref.initialize(Pa, Ref.p0_half[:], 50.0)
-        else:
-            # '_parcel' values are used for Tan et al 2016 style reference profile
-            # if Tan et al 2017 reference profiles are used, we just read the file set during the init()
-            self.forcing_ref.initialize(Pa, Ref.p0_half[:], 0.0)
-
-        cdef:
-            Py_ssize_t k
-            double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g * self.divergence_factor
-            double pv_star, qv_star
+        # It will return if already initialized
+        FoRef.initialize(Pa,  S_minus_L)
 
         if self.loc == 12:
             self.SST_1xCO2  = 290.0
@@ -1000,7 +977,7 @@ cdef class ForcingZGILS:
         elif self.loc == 6:
             self.SST_1xCO2 = 298.9
 
-        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
+        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_constant':
             pv_star = self.CC.LT.fast_lookup(self.SST_1xCO2)
             qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
             self.qt_adv_max = self.qt_adv_max/qv_star
@@ -1014,23 +991,27 @@ cdef class ForcingZGILS:
 
 
         # initialize the profiles of geostrophic velocity, subsidence, and large scale advection
-        with nogil:
-            for k in xrange(Gr.dims.nlg[2]):
-                self.ug[k] =  self.forcing_ref.u[k]
-                self.vg[k] = self.forcing_ref.v[k]
+        self.reference_qt = np.interp(Ref.p0_half[:],np.flipud(FoRef.pressure),np.flipud(FoRef.qt))
+        self.reference_t = np.interp(Ref.p0_half[:],np.flipud(FoRef.pressure),np.flipud(FoRef.temperature))
 
-                self.subsidence[k]= sub_factor * (Ref.p0_half[k] - Ref.Pg) * Ref.p0_half[k] * Ref.p0_half[k] * Ref.alpha0_half[k]
+        for k in xrange(Gr.dims.nlg[2]):
+            u_right = FoRef.u[0] + (FoRef.u[1] - FoRef.u[0])/(FoRef.pressure[1] - FoRef.pressure[0]) * (Ref.p0_half[k]-FoRef.pressure[0])
+            v_right = FoRef.v[0] + (FoRef.v[1] - FoRef.v[0])/(FoRef.pressure[1] - FoRef.pressure[0]) * (Ref.p0_half[k]-FoRef.pressure[0])
+            self.ug[k] = np.interp(Ref.p0_half[k],np.flipud(FoRef.pressure),np.flipud(FoRef.u), right=u_right)
+            self.vg[k] = np.interp(Ref.p0_half[k],np.flipud(FoRef.pressure),np.flipud(FoRef.v), right=v_right)
 
-                #Set large scale cooling
-                if Ref.p0_half[k] > 900.0e2:
-                    self.dtdt[k] = self.t_adv_max
-                    self.dqtdt[k] = self.qt_adv_max
-                elif  Ref.p0_half[k]< 800.0e2:
-                    self.dtdt[k] = 0.0
-                    self.dqtdt[k] = 0.0
-                else:
-                    self.dtdt[k] = self.t_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
-                    self.dqtdt[k] = self.qt_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
+            self.subsidence[k]= sub_factor * (Ref.p0_half[k] - Ref.Pg) * Ref.p0_half[k] * Ref.p0_half[k] * Ref.alpha0_half[k]
+
+            #Set large scale cooling
+            if Ref.p0_half[k] > 900.0e2:
+                self.dtdt[k] = self.t_adv_max
+                self.dqtdt[k] = self.qt_adv_max
+            elif  Ref.p0_half[k]< 800.0e2:
+                self.dtdt[k] = 0.0
+                self.dqtdt[k] = 0.0
+            else:
+                self.dtdt[k] = self.t_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
+                self.dqtdt[k] = self.qt_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
 
 
 
@@ -1067,7 +1048,7 @@ cdef class ForcingZGILS:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
 
 
@@ -1092,12 +1073,16 @@ cdef class ForcingZGILS:
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
             double RH = 0.3
             double deltaT
+            double S_minus_L = 50.0
 
 
         # update reference profiles if necessary
         if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
             deltaT = 5.0/Ra.swcre_srf_sc * fmax(fmin(Ra.swcre_srf,Ra.swcre_srf_sc),0.0) + 5.0
-            self.forcing_ref.update(Ref.p0_half[:], Sur.T_surface + deltaT)
+            FoRef.update(Pa, S_minus_L)
+            self.reference_qt = np.interp(Ref.p0_half[:],np.flipud(FoRef.pressure),np.flipud(FoRef.qt))
+            self.reference_t = np.interp(Ref.p0_half[:],np.flipud(FoRef.pressure),np.flipud(FoRef.temperature))
+
 
         #Apply Coriolis Forcing
 
@@ -1112,7 +1097,7 @@ cdef class ForcingZGILS:
         self.h_BL = Gr.z_half[Gr.dims.n[2]]
         with nogil:
             for k in xrange(kmax, gw-1, -1):
-                if qtmean[k] <= self.alpha_h * self.forcing_ref.qt[k]:
+                if qtmean[k] <= self.alpha_h * self.reference_qt[k]:
                     self.h_BL = Gr.zl_half[k]
 
         # Now set the relaxation coefficient (depends on time-varying BL height diagnosed above)
@@ -1126,8 +1111,8 @@ cdef class ForcingZGILS:
                 xi_relax[k] = 0.5*self.tau_relax_inverse*(1.0 -   cos(factor))
 
                 # Here we find the nudging rates
-                self.source_qt_nudge[k] = xi_relax[k] * (self.forcing_ref.qt[k]-qtmean[k])
-                self.source_t_nudge[k]  = xi_relax[k] * (self.forcing_ref.temperature[k]-tmean[k])
+                self.source_qt_nudge[k] = xi_relax[k] * (self.reference_qt[k]-qtmean[k])
+                self.source_t_nudge[k]  = xi_relax[k] * (self.reference_t[k]-tmean[k])
                 self.source_u_nudge[k] = xi_relax[k] * (self.ug[k] - (umean[k] + Ref.u0))
                 self.source_v_nudge[k] = xi_relax[k] * (self.vg[k] - (vmean[k] + Ref.v0))
 
@@ -1138,7 +1123,7 @@ cdef class ForcingZGILS:
         self.qt_ls_factor = 1.0
         self.t_ls_factor = 1.0
 
-        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_fix':
+        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_constant':
             pv_star = self.CC.LT.fast_lookup(Sur.T_surface)
             qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
             self.qt_ls_factor = qv_star
@@ -1231,8 +1216,8 @@ cdef class ForcingZGILS:
 
         NS.write_profile('temperature_ls_adv', np.multiply(self.dtdt[Gr.dims.gw:-Gr.dims.gw], self.t_ls_factor), Pa)
         NS.write_profile('qt_ls_adv', np.multiply(self.dqtdt[Gr.dims.gw:-Gr.dims.gw],self.qt_ls_factor), Pa)
-        NS.write_profile('ref_temperature', self.forcing_ref.temperature[Gr.dims.gw:-Gr.dims.gw], Pa)
-        NS.write_profile('ref_qt', self.forcing_ref.qt[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('ref_temperature', self.reference_t[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('ref_qt', self.reference_qt[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         return
 
