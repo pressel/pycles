@@ -4,6 +4,10 @@ from scipy.special import gamma
 
 
 def main():
+    default_arctic() #Generate the default microphysical parameters for the Arctic Mixed-Phase scheme
+    return
+
+def default_arctic():
 
     #########################
     # Users should modify here
