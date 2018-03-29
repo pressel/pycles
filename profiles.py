@@ -248,7 +248,7 @@ profile_data['arctic']['specific_humidity'] = np.array([2.03999292e-3,   2.07812
                                                         4.01368389e-6,   3.99578403e-6,   3.96328429e-6,   3.93488452e-6])
 profile_data['arctic']['vapor_mixing_ratio'] = profile_data['arctic']['specific_humidity'] / (1.0 -
                                                                     profile_data['arctic']['specific_humidity'])
-profile_data['arctic']['o3_mr'] = np.array([2.29865000e-5,   2.30413000e-5,   2.31245000e-5,   2.32422000e-5,
+profile_data['arctic']['o3_mmr'] = np.array([2.29865000e-5,   2.30413000e-5,   2.31245000e-5,   2.32422000e-5,
                                             2.33976000e-5,   2.36059000e-5,   2.38659000e-5,   2.41841000e-5,
                                             2.45592000e-5,   2.49994000e-5,   2.55411000e-5,   2.61804000e-5,
                                             2.68984000e-5,   2.76856000e-5,   2.80097000e-5,   2.82597000e-5,
