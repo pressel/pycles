@@ -1337,6 +1337,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         cdef:
             double pv, pd
             Py_ssize_t k, index_h
+            double maxval = 1.0
 
 
         # pressure coordinate
@@ -1417,7 +1418,9 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         # NEW
         for k in xrange(self.npressure):
             self.temperature[k] = self.t_layers[k]
-            self.qt[k] = self.qv_layers[k]
+            if k >0:
+                maxval = self.qt[k-1]
+            self.qt[k] = self.update_qv(self.pressure[k],self.temperature[k],self.RH_subtrop,maxval)
             self.s[k] = self.entropy(self.pressure[k], self.temperature[k], self.qt[k], 0.0, 0.0)
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
             self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(self.pressure[k]-1000.0e2),-4.0)
