@@ -888,7 +888,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.p_surface = namelist['forcing']['RCE']['p_surface']
         except:
-            self.p_surface = 1000.0e2
+            self.p_surface = 1020.0e2
         try:
             self.dt_rce = namelist['forcing']['RCE']['dt_rce']
         except:
