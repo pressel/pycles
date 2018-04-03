@@ -271,7 +271,7 @@ cdef class TKE:
 
         cdef:
             Py_ssize_t i
-            double delta = Gr.dims.dx[2] #(Gr.dims.dx[0] * Gr.dims.dx[1] * Gr.dims.dx[2])**(1.0/3.0)
+            double delta = (Gr.dims.dx[0] * Gr.dims.dx[1] * Gr.dims.dx[2])**(1.0/3.0)
             double [:] prt  = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
             double [:] mixing_length = np.zeros((Gr.dims.npg),dtype=np.double,order='c')
 

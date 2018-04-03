@@ -1179,6 +1179,11 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     n_double_co2 = np.log2(co2_factor)
 
     try:
+        do_2d_init = namelist['meta']['ZGILS']['2d_simulation']
+    except:
+        do_2d_init = False
+
+    try:
         init_from_mean = namelist['meta']['ZGILS']['init_from_mean']
     except:
         init_from_mean = False
@@ -1319,8 +1324,11 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[ijk + w_varshift] = 0.0
                 PV.values[ijk + qt_varshift]  = qt[k]
                 if RS.p0_half[k] > 920.0e2:
-                    # theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
-                    theta_pert_ = (theta_pert[ik] - 0.5)* 0.1
+                    if do_2d_init:
+                        theta_pert_ = (theta_pert[ik] - 0.5)* 0.1
+                    else:
+                        theta_pert_ = (theta_pert[ijk] - 0.5)* 0.1
+
                     T,ql = sat_adjst(RS.p0_half[k],thetal[k] + theta_pert_,qt[k])
                     PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T, qt[k], ql, 0.0)
                 else:

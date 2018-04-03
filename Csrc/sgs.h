@@ -4,7 +4,7 @@
 void smagorinsky_update(const struct DimStruct *dims, double* restrict visc, double* restrict diff,
 double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double prt){
 
-    double delta = dims->dx[2]; /*cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);*/
+    double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
 
     for (ssize_t i=0; i<dims->npg; i++){
         visc[i] = cs*cs*delta*delta*strain_rate_mag[i];
@@ -33,7 +33,7 @@ double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_m
     const ssize_t kmax = dims->nlg[2];
 
 
-    double delta = dims->dx[2]; /*cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);*/
+    double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
 
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i*istride ;
@@ -70,7 +70,7 @@ double* restrict diff,double* restrict buoy_freq, double* restrict strain_rate_m
     const ssize_t kmax = dims->nlg[2];
 
 
-    double delta = dims->dx[2]; /*cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);*/
+    double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
 
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i*istride ;
@@ -107,7 +107,7 @@ double tke_ell(double cn, double e, double buoy_freq, double delta){
 }
 void tke_viscosity_diffusivity(const struct DimStruct *dims, double* restrict e, double* restrict buoy_freq,
 double* restrict visc, double* restrict diff, double cn, double ck){
-    double delta = dims->dx[2]; /*cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);*/
+    double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
     double ell = delta;
 
 
@@ -124,7 +124,7 @@ double* restrict visc, double* restrict diff, double cn, double ck){
 
 void tke_dissipation(const struct DimStruct *dims, double* restrict e, double* restrict e_tendency,
 double* restrict buoy_freq, double cn,  double ck){
-    double delta = dims->dx[2]; /*cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);*/
+    double delta = cbrt(dims->dx[0]*dims->dx[1]*dims->dx[2]);
     double ell = delta;
 
 
