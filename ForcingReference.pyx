@@ -72,6 +72,7 @@ cdef extern from "thermodynamics_sa.h":
 cdef extern from "thermodynamic_functions.h":
     inline double pd_c(double p0, double qt, double qv) nogil
     inline double pv_c(double p0, double qt, double qv) nogil
+    inline double qv_star_c(const double p0, const double qt, const double pv)nogil
 cdef extern from "entropies.h":
     inline double sd_c(double pd, double T) nogil
     inline double sv_c(double pv, double T) nogil
@@ -865,8 +866,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.out_dir = str(namelist['forcing']['RCE']['out_dir'])
         except:
             self.out_dir = './'
-
-
+        try:
+            self.lapse_rate_type = str(namelist['forcing']['RCE']['lapse_rate_type'])
+        except:
+            self.lapse_rate_type='saturated'
 
         try:
             self.RH_subtrop = namelist['forcing']['RCE']['RH_subtropical']
@@ -877,6 +880,13 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.RH_tropical = namelist['forcing']['RCE']['RH_tropical']
         except:
             self.RH_tropical = 0.7
+
+        try:
+            self.RH_surface = namelist['forcing']['RCE']['RH_surface']
+        except:
+            self.RH_surface = 0.7
+        if self.lapse_rate_type == 'saturated':
+            self.RH_surface = 1.0
         try:
             self.nlayers = namelist['forcing']['RCE']['nlayers']
         except:
@@ -1155,16 +1165,68 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
         return
 
-    cpdef lapse_rate(self, double p, double T):
-        cdef:
-            double esoverp = self.CC.LT.fast_lookup(T)/p
-            double Lambda = self.Lambda_fp(T)
-            double L = self.L_fp(T, Lambda)
-            double ratio = L/T/Rv
-            double dTdp = ((T / p * kappa * (1 + esoverp * ratio)
-                            / (1 + kappa * (cpv / Rv + (ratio-1) * ratio) * esoverp)))
+    cdef lapse_rate(self, double p, double T, double *qt ):
+        if self.lapse_rate_type == 'saturated':
+            return self.lapse_rate_saturated(p,T, &qt[0])
+        elif self.lapse_rate_type =='subsaturated':
+            return self.lapse_rate_subsaturated(p,T,&qt[0])
+        else:
+            return self.lapse_rate_mixed(p,T,&qt[0])
 
-        return dTdp
+
+    cdef lapse_rate_saturated(self, double p, double T, double *qt ):
+        cdef:
+            double esoverp, Lambda, L, ratio, dTdp, rho
+            double pv_star, pv, gamma, qv_star
+
+
+        pv_star = self.CC.LT.fast_lookup(T)
+        pv = fmin(pv_c(p,qt[0], qt[0]),p)
+        esoverp = pv_star/p
+        qv_star = qv_star_c(p,qt[0],pv_star)
+        Lambda = self.Lambda_fp(T)
+        L = self.L_fp(T, Lambda)
+        ratio = L/T/Rv
+        dTdp = (T / p * kappa * (1 + esoverp * ratio)  / (1 + kappa * (cpv / Rv + (ratio-1) * ratio) * esoverp))
+        rho = p /T/ (Rd*(1.0-qv_star)+Rv*qv_star)
+        gamma = dTdp * rho * g
+        qt[0] = qv_star
+
+        return gamma
+
+
+    cdef lapse_rate_subsaturated(self, double p, double T, double *qt):
+        cdef:
+            double esoverp, Lambda, L, ratio, dTdp, rho
+            double pv_star, pv, gamma, qv_star
+
+        gamma= (1.0 + qt[0])/(1.0+ qt[0] * cpv/cpd) * g/cpd
+
+        return gamma
+
+
+    cdef lapse_rate_mixed(self, double p, double T, double *qt):
+        cdef:
+            double esoverp, Lambda, L, ratio, dTdp, rho
+            double pv_star, pv, gamma, qv_star
+
+
+        pv_star = self.CC.LT.fast_lookup(T)
+        pv = fmin(pv_c(p,qt[0], qt[0]),p)
+        if pv_star > pv:
+            gamma= (1.0 + qt[0])/(1.0+ qt[0] * cpv/cpd) * g/cpd
+        else:
+            esoverp = pv_star/p
+            qv_star = qv_star_c(p,qt[0],pv_star)
+            Lambda = self.Lambda_fp(T)
+            L = self.L_fp(T, Lambda)
+            ratio = L/T/Rv
+            dTdp = (T / p * kappa * (1 + esoverp * ratio)  / (1 + kappa * (cpv / Rv + (ratio-1) * ratio) * esoverp))
+            rho = p /T/ (Rd*(1.0-qv_star)+Rv*qv_star)
+            gamma = dTdp * rho * g
+            qt[0] = qv_star
+
+        return gamma
 
     cpdef convective_adjustment(self):
         cdef:
@@ -1181,10 +1243,14 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             double [:] t_k = np.zeros(nlv,dtype=np.double, order='c')
             double [:] theta_k = np.zeros(nlv,dtype=np.double, order='c')
             double [:] theta_new = np.zeros(nlv,dtype=np.double, order='c')
-            double rho, gamma_l, theta
+            double gamma_l, theta
             bint done = False
             Py_ssize_t n, count
             double dp = self.p_layers[0] - self.p_layers[1]
+            double Rgas
+            double pvg = self.CC.LT.fast_lookup(self.sst) * self.RH_surface
+            double qtg = eps_v * pvg / (self.Gr.P_surface + (eps_v-1.0)*pvg)
+
 
         T_l[0] = self.sst
         p_l[0] = self.p_surface
@@ -1193,19 +1259,18 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
 
         # Set up the array "beta"
-        rho = p_l[0]/T_l[0]/Rd
-        gamma_l = self.lapse_rate(p_l[0], T_l[0]) * rho * g
-        alpha_l[0] = Rd * gamma_l/g
+
+        gamma_l = self.lapse_rate(p_l[0], T_l[0], &qtg)
+        Rgas = Rd * (1.0-qtg) + Rv * qtg
+        alpha_l[0] = Rgas * gamma_l/g
         # set Pi_l[0] = 1 (see equation 14, with indices shifted by 1)
         Pi_l[0] = 1.0
         beta_l[0] = 1/Pi_l[0]
 
         for k in xrange(1,nlv):
-            rho = p_l[k]/T_l[k]/Rd
-            gamma_l = self.lapse_rate(p_l[k], T_l[k]) * rho * g
-
-
-            alpha_l[k] = Rd * gamma_l/g
+            gamma_l = self.lapse_rate(p_l[k], T_l[k], &qtg)
+            Rgas = Rd * (1.0-qtg) + Rv * qtg
+            alpha_l[k] = Rgas * gamma_l/g
             Pi_l[k] =  Pi_l[k-1] * np.power(p_l[k]/p_l[k-1],alpha_l[k-1])
             beta_l[k] = 1.0/Pi_l[k]
 
@@ -1260,7 +1325,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         for i in xrange(nlv):
             for k in xrange(n_k[i]):
                 theta_new[count] = theta_k[i]
-                count+=1
+                count=np.minium(count+1, nlv-1)
         self.sst = theta_new[0] * Pi_l[0]
         for i in xrange(1,nlv):
             self.t_layers[i-1] = theta_new[i] * Pi_l[i]

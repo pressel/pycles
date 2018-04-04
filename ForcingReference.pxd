@@ -110,6 +110,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         double p_surface
         double RH_tropical
         double RH_subtrop
+        double RH_surface
+        str lapse_rate_type
         double  delta_T_max
         double delta_T
         double toa_error_max
@@ -155,7 +157,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
     cpdef update_qv(self, double p, double t, double rh, double maxval)
     cpdef initialize_adiabat(self)
     cpdef convective_adjustment(self)
-    cpdef lapse_rate(self,double p, double T)
+    cdef lapse_rate(self,double p, double T, double *qt)
+    cdef lapse_rate_saturated(self,double p, double T, double *qt)
+    cdef lapse_rate_subsaturated(self,double p, double T, double *qt)
+    cdef lapse_rate_mixed(self,double p, double T, double *qt)
     cpdef rce_fixed_toa(self, ParallelMPI.ParallelMPI Pa)
     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
     cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L)
