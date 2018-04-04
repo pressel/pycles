@@ -1249,7 +1249,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             double dp = self.p_layers[0] - self.p_layers[1]
             double Rgas
             double pvg = self.CC.LT.fast_lookup(self.sst) * self.RH_surface
-            double qtg = eps_v * pvg / (self.Gr.P_surface + (eps_v-1.0)*pvg)
+            double qtg = eps_v * pvg / (self.p_surface + (eps_v-1.0)*pvg)
 
 
         T_l[0] = self.sst
@@ -1464,7 +1464,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             dict['surface_lw_up']= self.uflux_lw[0]
             dict['surface_sw_down'] = self.dflux_sw[0]
             dict['surface_sw_up']= self.uflux_sw[0]
-            pickle.dump(dict, open('IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
+            pickle.dump(dict, open(self.out_dir+'IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
 
             #################################################################
 
@@ -1560,7 +1560,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             dict['surface_lw_up']= self.uflux_lw[0]
             dict['surface_sw_down'] = self.dflux_sw[0]
             dict['surface_sw_up']= self.uflux_sw[0]
-            pickle.dump(dict, open('IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
+            pickle.dump(dict, open(self.out_dir+'IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
 
 
 
