@@ -1325,7 +1325,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         for i in xrange(nlv):
             for k in xrange(n_k[i]):
                 theta_new[count] = theta_k[i]
-                count=np.minium(count+1, nlv-1)
+                count=np.minimum(count+1, nlv-1)
         self.sst = theta_new[0] * Pi_l[0]
         for i in xrange(1,nlv):
             self.t_layers[i-1] = theta_new[i] * Pi_l[i]
