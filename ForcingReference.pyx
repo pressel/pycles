@@ -2,7 +2,7 @@
 #cython: boundscheck=False
 #cython: initializedcheck=False
 #cython: cdivision=True
-
+import os
 import netCDF4 as nc
 from thermodynamic_functions cimport cpm_c, pv_c, pd_c, exner_c
 from entropies cimport sv_c, sd_c, s_tendency_c
@@ -865,7 +865,14 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.out_dir = str(namelist['forcing']['RCE']['out_dir'])
         except:
-            self.out_dir = './'
+            self.out_dir = str(os.path.join(namelist['output']['output_root']
+                                            + 'Output.' + namelist['meta']['simname']
+                                            + '.' + self.uuid[-5:]))
+        if Pa.rank == 0:
+            try:
+                os.mkdir(self.out_dir)
+            except:
+                pass
         try:
             self.lapse_rate_type = str(namelist['forcing']['RCE']['lapse_rate_type'])
         except:
