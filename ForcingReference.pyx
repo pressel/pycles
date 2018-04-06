@@ -1337,13 +1337,13 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         cdef:
             Py_ssize_t k, iter=0
             Py_ssize_t nly = self.nlayers
-            double  net_surface
+            double  net_surface, net_toa_old
             double slab_capacity = 1.0 * 1000.0 * 4.19e3
             double [:] T_old = np.zeros(self.nlevels, dtype=np.double, order='c')
             double [:] T_new= np.zeros(self.nlevels, dtype=np.double, order='c')
 
 
-        self.net_toa_computed = 1000.0
+        self.net_toa_computed = self.ohu + 1.0
         self.delta_T = self.delta_T_max * 100
         while self.delta_T > self.delta_T_max  or np.abs(self.net_toa_target-self.net_toa_computed) > self.toa_error_max:# and iter < max_iter + 2:
             if iter > self.max_steps:
@@ -1360,6 +1360,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             #update temperatures due to radiation
             self.compute_radiation()
 
+            net_toa_old = self.net_toa_computed
             self.net_toa_computed = (self.dflux_sw[nly] - self.uflux_sw[nly]
                        - (self.uflux_lw[nly] - self.dflux_lw[nly]))
             net_surface = (self.dflux_sw[0] - self.uflux_sw[0]
@@ -1368,7 +1369,11 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 Pa.root_print('iter, sst, net_toa '+ str(iter) +', ' +str(np.round(self.sst,4)) + ',  '+ str(np.round(self.net_toa_computed,4)) )
             self.sst += (net_surface-self.ohu)  * self.dt_rce/slab_capacity
 
-            self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity/10.0 * self.dt_rce
+            if self.net_toa_computed > self.net_toa_target and self.net_toa_computed> net_toa_old:
+                self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity/10.0 * self.dt_rce
+            elif self.net_toa_computed < self.net_toa_target and self.net_toa_computed < net_toa_old:
+                self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity/10.0 * self.dt_rce
+
 
             if self.verbose:
                 Pa.root_print('new ohu '+ str(np.round(self.ohu,4)))
