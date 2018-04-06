@@ -865,9 +865,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.out_dir = str(namelist['forcing']['RCE']['out_dir'])
         except:
+            uuid = str(namelist['meta']['uuid'])
             self.out_dir = str(os.path.join(namelist['output']['output_root']
                                             + 'Output.' + namelist['meta']['simname']
-                                            + '.' + self.uuid[-5:]))
+                                            + '.' + uuid[-5:]))
         if Pa.rank == 0:
             try:
                 os.mkdir(self.out_dir)
