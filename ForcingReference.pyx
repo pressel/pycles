@@ -859,6 +859,17 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
         ForcingReferenceBase.__init__(self,namelist, LH, Pa)
         try:
+            self.read_pkl = namelist['forcing']['RCE']['read_pkl']
+        except:
+            self.read_pkl = False
+        if self.read_pkl:
+            try:
+                self.pkl_file = str(namelist['forcing']['RCE']['pkl_file'])
+            except:
+                Pa.root_print('Must specify pkl file')
+                Pa.kill()
+
+        try:
             self.verbose = namelist['forcing']['RCE']['verbose']
         except:
             self.verbose = False
@@ -1416,6 +1427,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             double pv, pd
             Py_ssize_t k, index_h
             double maxval = 1.0
+            Py_ssize_t nly = self.nlayers
 
 
         # pressure coordinate
@@ -1426,74 +1438,76 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
         self.initialize_radiation()
 
-        # THESE CONTAIN THE ACTUAL RCE SOLUTION
-        self.t_layers = np.zeros(self.nlayers, dtype=np.double, order='c')
-        self.qv_layers =np.zeros(self.nlayers, dtype=np.double, order='c')
-        # Set up initial guesses
-        self.sst = 280.0
-        self.initialize_adiabat()
-        k = 0
-        while self.p_layers[k] > 400.0e2:
-            index_h = k
-            k+=1
-        for k in xrange(index_h, self.nlayers):
-            self.t_layers[k] = self.t_layers[index_h]
-            self.qv_layers[k] =self.qv_layers[index_h]
+        if not self.read_pkl:
 
-        # Might as well do it on every processor, rather than communicate?
-        # Solution should be unique...
-        self.net_toa_target = S_minus_L
-        self.ohu = S_minus_L
-        self.rce_fixed_toa(Pa)
-        Pa.root_print('Success! RCE converged.')
-        Pa.root_print('net_toa_target  '+ str(self.net_toa_target))
-        Pa.root_print('net_toa_computed  '+str(self.net_toa_computed))
-        Pa.root_print('ohu  '+str(self.ohu))
-        Pa.root_print('sst ' + str(self.sst))
-        Pa.root_print('delta T '+str(self.delta_T))
-        Pa.root_print('TOA_lw_down ' + str(np.round(self.dflux_lw[self.nlayers],2)))
-        Pa.root_print('TOA_lw_up ' + str(np.round(self.uflux_lw[self.nlayers],4)))
-        Pa.root_print('TOA_sw_down ' + str(np.round(self.dflux_sw[self.nlayers],4)))
-        Pa.root_print('TOA_sw_up ' + str(np.round(self.uflux_sw[self.nlayers],4)))
+            # THESE CONTAIN THE ACTUAL RCE SOLUTION
+            self.t_layers = np.zeros(self.nlayers, dtype=np.double, order='c')
+            self.qv_layers =np.zeros(self.nlayers, dtype=np.double, order='c')
+            # Set up initial guesses
+            self.sst = 280.0
+            self.initialize_adiabat()
+            k = 0
+            while self.p_layers[k] > 400.0e2:
+                index_h = k
+                k+=1
+            for k in xrange(index_h, self.nlayers):
+                self.t_layers[k] = self.t_layers[index_h]
+                self.qv_layers[k] =self.qv_layers[index_h]
 
-        cdef:
-            Py_ssize_t nly = self.nlayers
-        if Pa.rank==0:
-            dict = {}
-            dict['nlayers'] = self.nlayers
-            dict['delta_T'] = self.delta_T
-            dict['T_profile'] = np.asarray(self.t_layers)
-            dict['qv_profile'] = np.asarray(self.qv_layers)
-            dict['p_profile'] = np.asarray(self.p_layers)
-            dict['p_tropo'] = self.p_layers[np.argmin(self.t_layers)]
-            dict['sst'] = self.sst
-            dict['ohu'] = self.ohu
-            dict['S_minus_L'] = self.net_toa_computed
-            dict['TOA_lw_down']= self.dflux_lw[nly]
-            dict['TOA_lw_up']= self.uflux_lw[nly]
-            dict['TOA_sw_down'] = self.dflux_sw[nly]
-            dict['TOA_sw_up']= self.uflux_sw[nly]
-            dict['surface_lw_down']= self.dflux_lw[0]
-            dict['surface_lw_up']= self.uflux_lw[0]
-            dict['surface_sw_down'] = self.dflux_sw[0]
-            dict['surface_sw_up']= self.uflux_sw[0]
-            pickle.dump(dict, open(self.out_dir+'IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
+            # Might as well do it on every processor, rather than communicate?
+            # Solution should be unique...
+            self.net_toa_target = S_minus_L
+            self.ohu = S_minus_L
+            self.rce_fixed_toa(Pa)
+            Pa.root_print('Success! RCE converged.')
+            Pa.root_print('net_toa_target  '+ str(self.net_toa_target))
+            Pa.root_print('net_toa_computed  '+str(self.net_toa_computed))
+            Pa.root_print('ohu  '+str(self.ohu))
+            Pa.root_print('sst ' + str(self.sst))
+            Pa.root_print('delta T '+str(self.delta_T))
+            Pa.root_print('TOA_lw_down ' + str(np.round(self.dflux_lw[self.nlayers],2)))
+            Pa.root_print('TOA_lw_up ' + str(np.round(self.uflux_lw[self.nlayers],4)))
+            Pa.root_print('TOA_sw_down ' + str(np.round(self.dflux_sw[self.nlayers],4)))
+            Pa.root_print('TOA_sw_up ' + str(np.round(self.uflux_sw[self.nlayers],4)))
+
+
+            if Pa.rank==0:
+                dict = {}
+                dict['nlayers'] = self.nlayers
+                dict['delta_T'] = self.delta_T
+                dict['T_profile'] = np.asarray(self.t_layers)
+                dict['qv_profile'] = np.asarray(self.qv_layers)
+                dict['p_profile'] = np.asarray(self.p_layers)
+                dict['p_tropo'] = self.p_layers[np.argmin(self.t_layers)]
+                dict['sst'] = self.sst
+                dict['ohu'] = self.ohu
+                dict['S_minus_L'] = self.net_toa_computed
+                dict['TOA_lw_down']= self.dflux_lw[nly]
+                dict['TOA_lw_up']= self.uflux_lw[nly]
+                dict['TOA_sw_down'] = self.dflux_sw[nly]
+                dict['TOA_sw_up']= self.uflux_sw[nly]
+                dict['surface_lw_down']= self.dflux_lw[0]
+                dict['surface_lw_up']= self.uflux_lw[0]
+                dict['surface_sw_down'] = self.dflux_sw[0]
+                dict['surface_sw_up']= self.uflux_sw[0]
+                pickle.dump(dict, open(self.out_dir+'IRCE_TOA_'
+                                       +str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
 
             #################################################################
+        else:
+
+            file_handle = open(self.pkl_file, 'rb')
+            read_dict = pickle.load(file_handle)
+            if read_dict['nlayers'] != self.nlayers:
+                Pa.root_print('Dict nlayers does not equal namelist nlayers!')
+                Pa.kill()
+            self.t_layers = read_dict['T_profile']
+            self.qv_layers = read_dict['qv_profile']
+            self.sst = read_dict['sst']
+            self.net_toa_computed = read_dict['S_minus_L']
+            self.ohu = read_dict['ohu']
 
 
-        # OLD--DOING INTERP, NEED TO MOVE THIS EXTERNAL
-        # self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
-        # self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
-        # cdef:
-        #     Py_ssize_t nz = np.shape(pressure_array)[0]
-        #
-        # for k in xrange(nz):
-        #     self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
-        #     self.rv[k] = self.qt[k]/(1.0-self.qt[k])
-        #     self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
-
-        # NEW
         for k in xrange(self.npressure):
             self.temperature[k] = self.t_layers[k]
             if k >0:

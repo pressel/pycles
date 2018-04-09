@@ -104,6 +104,8 @@ cdef class ReferenceRCE(ForcingReferenceBase):
 
 cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
     cdef:
+        bint read_pkl
+        str pkl_file
         double dt_rce
         Py_ssize_t nlayers
         Py_ssize_t nlevels
