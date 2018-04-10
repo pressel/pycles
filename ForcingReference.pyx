@@ -13,6 +13,8 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
+from TimeStepping cimport TimeStepping
+from Grid cimport  Grid
 import pylab as plt
 try:
     import cPickle as pickle
@@ -89,7 +91,7 @@ cdef class ForcingReferenceBase:
         self.CC.initialize(namelist, LH, Pa)
 
         return
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L):
+    cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L):
         self.s = np.zeros(self.npressure, dtype=np.double, order='c')
         self.qt = np.zeros(self.npressure, dtype=np.double, order='c')
         self.temperature = np.zeros(self.npressure, dtype=np.double, order='c')
@@ -97,7 +99,9 @@ cdef class ForcingReferenceBase:
         self.u = np.zeros(self.npressure, dtype=np.double, order='c')
         self.v = np.zeros(self.npressure, dtype=np.double, order='c')
         return
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L ):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L, TimeStepping TS ):
+        return
+    cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
@@ -122,11 +126,12 @@ cdef class ForcingReferenceNone(ForcingReferenceBase):
         self.is_init=True
 
         return
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L):
+    cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L):
         return
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L ):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L, TimeStepping TS ):
         return
-
+    cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
 
 # Control simulations use AdjustedMoistAdiabat
 # Reference temperature profile correspondends to a moist adiabat
@@ -166,7 +171,7 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
         return
 
 
-    cpdef initialize(self, ParallelMPI.ParallelMPI Pa, double S_minus_L):
+    cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L):
         if self.is_init:
             return
         '''
@@ -174,7 +179,7 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
         but modify the water vapor content to have a given relative humidity. Thus entropy and qt are not conserved.
         '''
         # Default values correspond to Tan et al 2016
-        ForcingReferenceBase.initialize(self,Pa, S_minus_L)
+        ForcingReferenceBase.initialize(self, Gr, Pa, NS, S_minus_L)
 
         cdef:
             double pvg = self.CC.LT.fast_lookup(self.Tg)
@@ -198,10 +203,11 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
         self.is_init = True
 
         return
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L, TimeStepping TS):
         return
 
-
+    cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
 # Climate change simulations use profiles based on radiative--convective equilibrium solutions obtained as described in
 # Zhihong Tan's dissertation (Section 2.6). Zhihong has provided his reference profiles to be archived with the code, so
 # this class just reads in the data and interpolates to the simulation pressure grid
@@ -218,7 +224,7 @@ cdef class ReferenceRCE(ForcingReferenceBase):
 
         return
     @cython.wraparound(True)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double S_minus_L):
+    cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L):
         if self.is_init:
             return
 
@@ -226,7 +232,7 @@ cdef class ReferenceRCE(ForcingReferenceBase):
         data = nc.Dataset(self.filename, 'r')
         self.pressure = data.variables['p_full']
         self.npressure = len(self.pressure)
-        ForcingReferenceBase.initialize(self,Pa, S_minus_L)
+        ForcingReferenceBase.initialize(self,Gr, Pa,NS, S_minus_L)
 
         self.temperature = data.variables['temp_rc']
         self.qt = data.variables['yv_rc']
@@ -263,10 +269,11 @@ cdef class ReferenceRCE(ForcingReferenceBase):
         self.is_init = True
 
         return
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,  double S_minus_L, TimeStepping TS):
         return
 
-
+    cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
 # Here we implement the RCE solution algorithm described in Section 2.6 of Zhihong Tan's thesis to allow updates
 # of the Reference profiles as the SST changes
 #
@@ -937,7 +944,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.toa_update_criterion = namelist['forcing']['RCE']['toa_update_criterion']
         except:
-            self.toa_update_criterion= 1.0 # W/m62
+            self.toa_update_criterion= 0.5 # W/m62
 
         # Radiation parameters
         #--Namelist options related to gas concentrations
@@ -1419,7 +1426,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
 
 
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double  S_minus_L):
+    cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L):
         if self.is_init:
             return
 
@@ -1434,7 +1441,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         self.p_levels = np.linspace(self.p_surface, 0.0, num=self.nlevels, endpoint=True)
         self.p_layers = 0.5 * np.add(self.p_levels[1:],self.p_levels[:-1])
         self.pressure = self.p_layers
-        ForcingReferenceBase.initialize(self,Pa, S_minus_L)
+        ForcingReferenceBase.initialize(self, Gr, Pa, NS, S_minus_L)
 
         self.initialize_radiation()
 
@@ -1490,7 +1497,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 dict['surface_lw_up']= self.uflux_lw[0]
                 dict['surface_sw_down'] = self.dflux_sw[0]
                 dict['surface_sw_up']= self.uflux_sw[0]
-                pickle.dump(dict, open(self.out_dir+'IRCE_TOA_'
+                pickle.dump(dict, open(self.out_dir+'/IRCE_TOA_'
                                        +str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
 
             #################################################################
@@ -1504,9 +1511,15 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.t_layers = read_dict['T_profile']
             self.qv_layers = read_dict['qv_profile']
             self.sst = read_dict['sst']
-            self.net_toa_computed = read_dict['S_minus_L']
-            self.ohu = read_dict['ohu']
 
+            # Now run radiation on the read-in profile
+            self.compute_radiation()
+            self.net_toa_computed = (self.dflux_sw[nly] - self.uflux_sw[nly]
+                       - (self.uflux_lw[nly] - self.dflux_lw[nly]))
+            self.net_toa_target = self.net_toa_computed
+            self.ohu = (self.dflux_sw[0] - self.uflux_sw[0]
+                       - (self.uflux_lw[0] - self.dflux_lw[0]))
+            Pa.root_print('Read in pkl, computed TOA imbalance is '+str(np.round(self.net_toa_computed,2)))
 
         for k in xrange(self.npressure):
             self.temperature[k] = self.t_layers[k]
@@ -1517,7 +1530,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.rv[k] = self.qt[k]/(1.0-self.qt[k])
             self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(self.pressure[k]-1000.0e2),-4.0)
 
-
+        NS.add_ts('tropical_sst', Gr, Pa)
+        NS.add_ts('tropical_toa_imbalance', Gr, Pa)
         self.is_init = True
 
         return
@@ -1555,15 +1569,29 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
         return
 
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,   double S_minus_L):
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,   double S_minus_L, TimeStepping TS):
 
+        # Update with 10 day timescale
+        self.net_toa_target +=  (S_minus_L-self.net_toa_computed)/(864000.0) * TS.dt
+        Pa.root_print('net_toa_target '+str(np.round(self.net_toa_target,6))
+                      + ' net_toa_computed '+str(np.round(self.net_toa_computed,6)))
         # check the change in S_minus_L
-        if fabs(self.net_toa_computed - S_minus_L) < self.toa_update_criterion:
+        if fabs(self.net_toa_computed - self.net_toa_target) < self.toa_update_criterion:
             return
+        Pa.root_print('Updating Reference Profile for '+str(np.round(self.net_toa_target,2)))
 
-        self.net_toa_target = S_minus_L
-        self.ohu = S_minus_L
+        self.ohu = self.net_toa_target
         self.rce_fixed_toa(Pa)
+        Pa.root_print('Success! RCE converged.')
+        Pa.root_print('net_toa_target  '+ str(self.net_toa_target))
+        Pa.root_print('net_toa_computed  '+str(self.net_toa_computed))
+        Pa.root_print('ohu  '+str(self.ohu))
+        Pa.root_print('sst ' + str(self.sst))
+        Pa.root_print('delta T '+str(self.delta_T))
+        Pa.root_print('TOA_lw_down ' + str(np.round(self.dflux_lw[self.nlayers],2)))
+        Pa.root_print('TOA_lw_up ' + str(np.round(self.uflux_lw[self.nlayers],4)))
+        Pa.root_print('TOA_sw_down ' + str(np.round(self.dflux_sw[self.nlayers],4)))
+        Pa.root_print('TOA_sw_up ' + str(np.round(self.uflux_sw[self.nlayers],4)))
 
         cdef:
             Py_ssize_t nly = self.nlayers
@@ -1618,7 +1646,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
         return
 
-
+    cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.write_ts('tropical_sst', self.sst, Pa)
+        NS.write_ts('tropical_toa_imbalance', self.net_toa_computed, Pa)
+        return
 
 
 cdef class LookupProfiles:

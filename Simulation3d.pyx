@@ -251,6 +251,7 @@ class Simulation3d:
                 self.Ra.stats_io(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
                 self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
                 self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
+                self.FoRef.stats_io(self.StatsIO, self.Pa)
                 self.StatsIO.close_files(self.Pa)
                 self.Pa.root_print('Finished Doing StatsIO')
 
@@ -326,6 +327,7 @@ class Simulation3d:
         self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
 
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
+        self.FoRef.stats_io(self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
         return
 

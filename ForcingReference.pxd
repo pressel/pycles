@@ -1,6 +1,9 @@
 cimport ParallelMPI
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
+from TimeStepping cimport TimeStepping
 cimport Thermodynamics
+from Grid cimport Grid
+from NetCDFIO cimport NetCDFIO_Stats
 
 cdef class ForcingReferenceBase:
     cdef:
@@ -17,14 +20,16 @@ cdef class ForcingReferenceBase:
         double [:] u
         double [:] v
         bint is_init
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,double S_minus_L)
+    cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,double S_minus_L, TimeStepping TS)
+    cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
 
 cdef class ForcingReferenceNone(ForcingReferenceBase):
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
-    cpdef update(self, ParallelMPI.ParallelMPI Pa,double S_minus_L)
+    cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
+    cpdef update(self, ParallelMPI.ParallelMPI Pa,double S_minus_L, TimeStepping TS)
+    cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     # cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     # cpdef eos(self, double p0, double s, double qt)
 
@@ -36,8 +41,9 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
         double RH_ref
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
-    cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L)
+    cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
+    cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L, TimeStepping TS)
+    cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
 cdef class ReferenceRCE(ForcingReferenceBase):
@@ -45,8 +51,9 @@ cdef class ReferenceRCE(ForcingReferenceBase):
         str filename
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
-    cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L)
+    cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
+    cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L, TimeStepping TS)
+    cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 # cdef class InteractiveReferenceRCE_old(ForcingReferenceBase):
 #     cdef:
@@ -164,8 +171,9 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
     cdef lapse_rate_subsaturated(self,double p, double T, double *qt)
     cdef lapse_rate_mixed(self,double p, double T, double *qt)
     cpdef rce_fixed_toa(self, ParallelMPI.ParallelMPI Pa)
-    cpdef initialize(self,  ParallelMPI.ParallelMPI Pa,  double S_minus_L)
-    cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L)
+    cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
+    cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L, TimeStepping TS)
+    cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
 
 cdef class LookupProfiles:

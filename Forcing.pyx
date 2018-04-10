@@ -55,18 +55,18 @@ cdef class Forcing:
             Pa.kill()
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
+    cpdef initialize(self, Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         self.scheme.initialize(Gr, Ref, Sur, NS, Pa, FoRef)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         self.scheme.update(Gr, Ref, PV, DV, Sur, Ra, TS, Pa, FoRef)
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -78,16 +78,16 @@ cdef class Forcing:
 cdef class ForcingNone:
     def __init__(self):
         pass
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
+    cpdef initialize(self, Grid Gr, ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
@@ -96,7 +96,7 @@ cdef class ForcingBomex:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
+    cpdef initialize(self, Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -145,9 +145,9 @@ cdef class ForcingBomex:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -197,7 +197,7 @@ cdef class ForcingBomex:
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -252,7 +252,7 @@ cdef class ForcingSullivanPatton:
     def __init__(self):
 
         return
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
+    cpdef initialize(self, Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
@@ -262,9 +262,9 @@ cdef class ForcingSullivanPatton:
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -273,7 +273,7 @@ cdef class ForcingSullivanPatton:
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -300,7 +300,7 @@ cdef class ForcingGabls:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
+    cpdef initialize(self, Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * 8.0
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -308,9 +308,9 @@ cdef class ForcingGabls:
         NS.add_profile('u_coriolis_tendency', Gr, Pa)
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -319,7 +319,7 @@ cdef class ForcingGabls:
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -354,7 +354,7 @@ cdef class ForcingDyCOMS_RF01:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
+    cpdef initialize(self, Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
@@ -389,9 +389,9 @@ cdef class ForcingDyCOMS_RF01:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur ,Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
@@ -408,7 +408,7 @@ cdef class ForcingDyCOMS_RF01:
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -468,7 +468,7 @@ cdef class ForcingRico:
         self.momentum_subsidence = 0
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
+    cpdef initialize(self, Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         cdef Py_ssize_t k
 
@@ -504,9 +504,9 @@ cdef class ForcingRico:
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -554,7 +554,7 @@ cdef class ForcingRico:
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -604,7 +604,7 @@ cdef class ForcingCGILS:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
+    cpdef initialize(self, Grid Gr, ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -750,9 +750,9 @@ cdef class ForcingCGILS:
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 TimeStepping TS,ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -831,7 +831,7 @@ cdef class ForcingCGILS:
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -944,7 +944,7 @@ cdef class ForcingZGILS:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
+    cpdef initialize(self, Grid Gr,ReferenceState.ReferenceState Ref, Surface.SurfaceBase Sur,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
@@ -968,7 +968,7 @@ cdef class ForcingZGILS:
         self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
 
         # It will return if already initialized
-        FoRef.initialize(Pa,  S_minus_L)
+        FoRef.initialize(Gr, Pa, NS, S_minus_L)
 
         if self.loc == 12:
             self.SST_1xCO2  = 290.0
@@ -1044,11 +1044,14 @@ cdef class ForcingZGILS:
         NS.add_reference_profile('v_geostrophic', Gr, Pa)
         NS.write_reference_profile('v_geostrophic', self.vg[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+
+
+
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, Radiation.RadiationBase Ra,
-                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
 
 
@@ -1078,8 +1081,6 @@ cdef class ForcingZGILS:
 
         # update reference profiles if necessary
         if TS.rk_step == 0 and self.reference_type == 'InteractiveRCE':
-            deltaT = 5.0/Ra.swcre_srf_sc * fmax(fmin(Ra.swcre_srf,Ra.swcre_srf_sc),0.0) + 5.0
-            FoRef.update(Pa, S_minus_L)
             self.reference_qt = np.interp(Ref.p0_half[:],np.flipud(FoRef.pressure),np.flipud(FoRef.qt))
             self.reference_t = np.interp(Ref.p0_half[:],np.flipud(FoRef.pressure),np.flipud(FoRef.temperature))
 
@@ -1158,7 +1159,7 @@ cdef class ForcingZGILS:
                         self.s_ls_adv[ijk]= s_tendency_c(p0,qt, qv, t, self.dqtdt[k] * self.qt_ls_factor, self.dtdt[k] * self.t_ls_factor)
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -1223,7 +1224,7 @@ cdef class ForcingZGILS:
 
 
 
-cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):
+cdef coriolis_force(DimStruct *dims, double *u, double *v, double *ut, double *vt, double *ug, double *vg, double coriolis_param, double u0, double v0 ):
 
     cdef:
         Py_ssize_t imin = dims.gw
@@ -1251,7 +1252,7 @@ cdef coriolis_force(Grid.DimStruct *dims, double *u, double *v, double *ut, doub
     return
 
 
-cdef large_scale_p_gradient(Grid.DimStruct *dims, double *umean, double *vmean, double *ut, double *vt, double *ug, double *vg,
+cdef large_scale_p_gradient(DimStruct *dims, double *umean, double *vmean, double *ut, double *vt, double *ug, double *vg,
                           double coriolis_param, double u0, double v0 ):
 
     cdef:
@@ -1282,7 +1283,7 @@ cdef large_scale_p_gradient(Grid.DimStruct *dims, double *umean, double *vmean, 
 
     return
 
-cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double* values,  double *tendencies):
+cdef apply_subsidence(DimStruct *dims, double *rho0, double *rho0_half, double *subsidence, double* values,  double *tendencies):
 
     cdef:
         Py_ssize_t imin = dims.gw

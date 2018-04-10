@@ -1198,7 +1198,7 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         print('init_from_means', init_time, t[init_time_index])
     else:
         # We will need the reference profiles
-        FoRef.initialize(Pa, S_minus_L)
+        FoRef.initialize(Gr,Pa, NS, S_minus_L)
 
 
 

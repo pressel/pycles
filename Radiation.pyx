@@ -10,7 +10,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
-cimport TimeStepping
+from TimeStepping cimport TimeStepping
 cimport Surface
 from ForcingReference cimport *
 from Thermodynamics cimport LatentHeat
@@ -56,7 +56,7 @@ cdef class RadiationBase:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.z_pencil = ParallelMPI.Pencil()
         self.z_pencil.initialize(Gr, Pa, 2)
         self.heating_rate = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
@@ -130,19 +130,19 @@ cdef class RadiationBase:
         Restart.restart_data['rad']['swcre_srf'] = self.swcre_srf
         return
 
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
 
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 Surface.SurfaceBase Sur, TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         return
 
-    cpdef stats_io(self, Grid.Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -246,17 +246,17 @@ cdef class RadiationBase:
 cdef class RadiationNone(RadiationBase):
     def __init__(self):
         return
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa,ForcingReferenceBase FoRef):
+                 Surface.SurfaceBase Sur, TimeStepping TS, ParallelMPI.ParallelMPI Pa,ForcingReferenceBase FoRef):
         return
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
@@ -274,18 +274,18 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         RadiationBase.initialize(self, Gr, NS, Pa)
 
         return
 
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur,TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 Surface.SurfaceBase Sur, TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -379,7 +379,7 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         RadiationBase.stats_io(self, Gr, Ref, DV, NS,  Pa)
 
@@ -404,17 +404,17 @@ cdef class RadiationSmoke(RadiationBase):
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         RadiationBase.initialize(self, Gr, NS, Pa)
         return
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+                 Surface.SurfaceBase Sur, TimeStepping TS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -480,7 +480,7 @@ cdef class RadiationSmoke(RadiationBase):
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid Gr,  ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         RadiationBase.stats_io(self, Gr, Ref, DV, NS,  Pa)
 
@@ -669,7 +669,7 @@ cdef class RadiationRRTM(RadiationBase):
         return
 
 
-    cpdef initialize(self, Grid.Grid Gr,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid Gr,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         RadiationBase.initialize(self, Gr, NS, Pa)
         #Initialize rrtmg_lw and rrtmg_sw
@@ -680,7 +680,7 @@ cdef class RadiationRRTM(RadiationBase):
 
 
 
-    cpdef initialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef initialize_profiles(self, Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                               Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa,
                               ForcingReferenceBase FoRef):
 
@@ -704,7 +704,7 @@ cdef class RadiationRRTM(RadiationBase):
         if self.use_reference_class:
 
             # If already initialized it will return immediately
-            FoRef.initialize(Pa,  S_minus_L )
+            FoRef.initialize(Gr, Pa, NS, S_minus_L )
             pressures = np.array(FoRef.pressure,copy=True)
             temperatures =np.array( FoRef.temperature, copy=True)
             vapor_mixing_ratios = np.array(FoRef.rv,copy=True)
@@ -956,8 +956,9 @@ cdef class RadiationRRTM(RadiationBase):
 
         return
 
-    cpdef reinitialize_profiles(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
-                              Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
+    cpdef reinitialize_profiles(self, Grid Gr, ReferenceState.ReferenceState Ref,
+                                DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur,
+                                ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef, TimeStepping TS):
 
         if not self.use_reference_class:
             return
@@ -979,7 +980,7 @@ cdef class RadiationRRTM(RadiationBase):
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
         deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
-        FoRef.update(Pa, S_minus_L)
+        FoRef.update(Pa, S_minus_L, TS)
 
 
         cdef:
@@ -1038,9 +1039,9 @@ cdef class RadiationRRTM(RadiationBase):
 
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid Gr, ReferenceState.ReferenceState Ref,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                 Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS,
+                 Surface.SurfaceBase Sur, TimeStepping TS,
                  ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef double [:] pressures = np.arange(0, 1000, 10)*100.0
@@ -1049,11 +1050,10 @@ cdef class RadiationRRTM(RadiationBase):
         cdef double deltaT
 
         if TS.rk_step == 0:
+            self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa, FoRef, TS)
             if adjusted_rad_freq <= 0.0:
-                self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa, FoRef)
                 self.update_RRTM(Gr, Ref, PV, DV,Sur, Pa)
             elif TS.t >= self.next_radiation_calculate:
-                self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa, FoRef)
                 self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
                 self.next_radiation_calculate = (TS.t//adjusted_rad_freq + 1.0) * adjusted_rad_freq
 
@@ -1091,7 +1091,7 @@ cdef class RadiationRRTM(RadiationBase):
 
         return
 
-    cdef update_RRTM(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cdef update_RRTM(self, Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                       DiagnosticVariables.DiagnosticVariables DV, Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t nz = Gr.dims.n[2]
@@ -1399,7 +1399,7 @@ cdef class RadiationRRTM(RadiationBase):
         self.z_pencil.reverse_double(&Gr.dims, Pa, dflux_sw_clear_pencil, &self.dflux_sw_clear[0])
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
+    cpdef stats_io(self, Grid Gr, ReferenceState.ReferenceState Ref, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
