@@ -945,6 +945,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.toa_update_criterion = namelist['forcing']['RCE']['toa_update_criterion']
         except:
             self.toa_update_criterion= 0.5 # W/m62
+        try:
+            self.toa_update_timescale = namelist['forcing']['RCE']['toa_update_timescale']
+        except:
+            self.toa_update_timescale = 10.0 * 86400.0
 
         # Radiation parameters
         #--Namelist options related to gas concentrations
@@ -1572,7 +1576,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
     cpdef update(self, ParallelMPI.ParallelMPI Pa,   double S_minus_L, TimeStepping TS):
 
         # Update with 10 day timescale
-        self.net_toa_target +=  (S_minus_L-self.net_toa_computed)/(864000.0) * TS.dt
+        self.net_toa_target +=  (S_minus_L-self.net_toa_computed)/self.toa_update_timescale * TS.dt
         Pa.root_print('net_toa_target '+str(np.round(self.net_toa_target,6))
                       + ' net_toa_computed '+str(np.round(self.net_toa_computed,6)))
         # check the change in S_minus_L
