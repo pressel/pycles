@@ -126,6 +126,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         double toa_error_max
         double toa_update_criterion
         double toa_update_timescale
+        double toa_update_rate
         double max_steps
         double ohu
         double net_toa_target
