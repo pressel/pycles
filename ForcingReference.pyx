@@ -949,10 +949,6 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.toa_update_timescale = namelist['forcing']['RCE']['toa_update_timescale']
         except:
             self.toa_update_timescale = 10.0 * 86400.0
-        try:
-            self.toa_update_rate = namelist['forcing']['RCE']['toa_update_rate']
-        except:
-            self.toa_update_rate = 1.0/86400.0 # transition by 1 W/m^2 per day
 
         # Radiation parameters
         #--Namelist options related to gas concentrations
@@ -1579,20 +1575,16 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
     cpdef update(self, ParallelMPI.ParallelMPI Pa,   double S_minus_L, TimeStepping TS):
 
-        # Update with 10 day timescale
-        # self.net_toa_target +=  (S_minus_L-self.net_toa_computed)/self.toa_update_timescale * TS.dt
+        # Update with given timescale
+        self.net_toa_target +=  (S_minus_L-self.net_toa_target)/self.toa_update_timescale * TS.dt * TS.acceleration_factor
         # Pa.root_print('net_toa_target '+str(np.round(self.net_toa_target,6))
         #               + ' net_toa_computed '+str(np.round(self.net_toa_computed,6)))
 
-        if  self.net_toa_computed > S_minus_L:
-            self.net_toa_target -= self.toa_update_rate * TS.dt
-            self.net_toa_target = fmax(S_minus_L, self.net_toa_target)
-        else:
-            self.net_toa_target += self.toa_update_rate * TS.dt
-            self.net_toa_target = fmin(S_minus_L, self.net_toa_target)
 
-        # CHEATING TO AVOID NOT GETTING INTO A GAP
-        if fabs(self.net_toa_computed-S_minus_L) > self.toa_error_max and fabs(self.net_toa_computed-self.net_toa_target) < self.toa_update_criterion:
+
+        # HACK TO AVOID GETTING INTO A GAP
+        if (fabs(self.net_toa_computed-S_minus_L) > self.toa_error_max
+            and fabs(self.net_toa_computed-self.net_toa_target) < self.toa_update_criterion):
             self.net_toa_computed = 1000.0
 
         # check the change in S_minus_L
