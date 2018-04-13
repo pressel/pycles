@@ -50,26 +50,15 @@ cdef class SurfaceBudget:
         except:
             self.ocean_heat_flux = 0.0
         try:
-            self.water_depth_initial = namelist['surface_budget']['water_depth_initial']
+            self.water_depth = namelist['surface_budget']['water_depth']
         except:
-            self.water_depth_initial = 1.0
-        try:
-            self.water_depth_final = namelist['surface_budget']['water_depth_final']
-        except:
-            self.water_depth_final = 1.0
-        try:
-            self.water_depth_time = namelist['surface_budget']['water_depth_time']
-        except:
-            self.water_depth_time = 0.0
+            self.water_depth = 1.0
         # Allow spin up time with fixed sst
         try:
             self.fixed_sst_time = namelist['surface_budget']['fixed_sst_time']
         except:
             self.fixed_sst_time = 0.0
 
-
-
-        self.water_depth = self.water_depth_initial
 
         return
 
@@ -100,14 +89,11 @@ cdef class SurfaceBudget:
 
         if Pa.sub_z_rank == 0:
 
-            if TS.t > self.water_depth_time:
-                self.water_depth = self.water_depth_final
-            else:
-                self.water_depth = self.water_depth_initial
+
 
             net_flux =  -self.ocean_heat_flux - Ra.srf_lw_up - Ra.srf_sw_up - mean_shf - mean_lhf + Ra.srf_lw_down + Ra.srf_sw_down
             tendency = net_flux/4.19e3/rho_liquid/self.water_depth
-            Sur.T_surface += tendency *TS.dt
+            Sur.T_surface += tendency * TS.dt * TS.acceleration_factor
 
         mpi.MPI_Bcast(&Sur.T_surface,count,mpi.MPI_DOUBLE,root, Pa.cart_comm_sub_z)
 
