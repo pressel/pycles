@@ -1627,7 +1627,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             dict['surface_lw_up']= self.uflux_lw[0]
             dict['surface_sw_down'] = self.dflux_sw[0]
             dict['surface_sw_up']= self.uflux_sw[0]
-            pickle.dump(dict, open(self.out_dir+'IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
+            pickle.dump(dict, open(self.out_dir+'/IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
 
 
 
