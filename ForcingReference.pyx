@@ -1591,6 +1591,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.net_toa_target += self.toa_update_rate * TS.dt
             self.net_toa_target = fmin(S_minus_L, self.net_toa_target)
 
+        # CHEATING TO AVOID NOT GETTING INTO A GAP
+        if fabs(self.net_toa_computed-S_minus_L) > self.toa_error_max and fabs(self.net_toa_computed-self.net_toa_target) < self.toa_update_criterion:
+            self.net_toa_computed = 1000.0
+
         # check the change in S_minus_L
         if fabs(self.net_toa_computed - self.net_toa_target) < self.toa_update_criterion:
             return
