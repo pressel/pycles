@@ -58,6 +58,14 @@ cdef class SurfaceBudget:
             self.fixed_sst_time = namelist['surface_budget']['fixed_sst_time']
         except:
             self.fixed_sst_time = 0.0
+        try:
+            self.constant_ohu = namelist['surface_budget']['constant_ohu']
+        except:
+            self.constant_ohu = True
+        try:
+            self.ohu_adjustment_timescale = namelist['surface_budget']['ohu_adjustment_timescale']
+        except:
+            self.ohu_adjustment_timescale = 10*86400.0
 
 
         return
@@ -66,6 +74,7 @@ cdef class SurfaceBudget:
 
     cpdef initialize(self, Grid.Grid Gr,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         NS.add_ts('surface_temperature', Gr, Pa)
+        NS.add_ts('ocean_heat_flux',Gr,Pa)
         return
 
     cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
@@ -77,6 +86,7 @@ cdef class SurfaceBudget:
             double mean_shf = Pa.HorizontalMeanSurface(Gr, &Sur.shf[0])
             double mean_lhf = Pa.HorizontalMeanSurface(Gr, &Sur.lhf[0])
             double net_flux, tendency
+            double toa_imbalance = Ra.toa_sw_down-Ra.toa_sw_up - Ra.toa_lw_up
 
 
         if self.constant_sst:
@@ -88,6 +98,8 @@ cdef class SurfaceBudget:
             return
 
         if Pa.sub_z_rank == 0:
+            if not self.constant_ohu:
+                self.ocean_heat_flux -= toa_imbalance/self.ohu_adjustment_timescale * TS.dt * TS.acceleration_factor
 
 
 
@@ -96,10 +108,12 @@ cdef class SurfaceBudget:
             Sur.T_surface += tendency * TS.dt * TS.acceleration_factor
 
         mpi.MPI_Bcast(&Sur.T_surface,count,mpi.MPI_DOUBLE,root, Pa.cart_comm_sub_z)
+        mpi.MPI_Bcast(&self.ocean_heat_flux,count,mpi.MPI_DOUBLE,root, Pa.cart_comm_sub_z)
 
 
 
         return
     cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         NS.write_ts('surface_temperature', Sur.T_surface, Pa)
+        NS.write_ts('ocean_heat_flux', self.ocean_heat_flux, Pa)
         return
