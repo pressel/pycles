@@ -1583,9 +1583,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
 
         # HACK TO AVOID GETTING INTO A GAP
-        if (fabs(self.net_toa_computed-S_minus_L) > self.toa_error_max*1.05
-            and fabs(self.net_toa_computed-S_minus_L) < self.toa_update_criterion):
-            self.net_toa_computed = 1000.0
+        if fabs(self.net_toa_target-S_minus_L) < self.toa_update_criterion :
+            self.net_toa_target = S_minus_L
 
         # check the change in S_minus_L
         if fabs(self.net_toa_computed - self.net_toa_target) < self.toa_update_criterion:
