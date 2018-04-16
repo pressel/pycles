@@ -99,7 +99,8 @@ cdef class SurfaceBudget:
 
         if Pa.sub_z_rank == 0:
             if not self.constant_ohu:
-                self.ocean_heat_flux -= toa_imbalance/self.ohu_adjustment_timescale * TS.dt * TS.acceleration_factor
+                # self.ocean_heat_flux -= toa_imbalance/self.ohu_adjustment_timescale * TS.dt * TS.acceleration_factor
+                self.ocean_heat_flux += toa_imbalance/self.ohu_adjustment_timescale * TS.dt * TS.acceleration_factor
 
 
 
