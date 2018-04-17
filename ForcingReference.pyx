@@ -1507,7 +1507,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 dict['surface_sw_down'] = self.dflux_sw[0]
                 dict['surface_sw_up']= self.uflux_sw[0]
                 pickle.dump(dict, open(self.out_dir+'/IRCE_TOA_'
-                                       +str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
+                                       +str(np.round(self.net_toa_target,2)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
 
             #################################################################
         else:
@@ -1587,11 +1587,12 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
 
 
-        # HACK TO AVOID GETTING INTO A GAP
-        if fabs(self.net_toa_target-S_minus_L) < self.toa_update_criterion :
-            self.net_toa_target = S_minus_L
-            if fabs(self.net_toa_computed - self.net_toa_target) > self.toa_error_max:
-                self.net_toa_computed = 1000.0
+        # HACK TO Force convergence to prescribed, fixed S_minus_L
+        if not self.adjust_S_minus_L:
+            if fabs(self.net_toa_target-S_minus_L) < self.toa_update_criterion :
+                self.net_toa_target = S_minus_L
+                if fabs(self.net_toa_computed - self.net_toa_target) > self.toa_error_max:
+                    self.net_toa_computed = 1000.0
 
 
         # check the change in S_minus_L
@@ -1634,7 +1635,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             dict['surface_lw_up']= self.uflux_lw[0]
             dict['surface_sw_down'] = self.dflux_sw[0]
             dict['surface_sw_up']= self.uflux_sw[0]
-            pickle.dump(dict, open(self.out_dir+'/IRCE_TOA_'+str(int(self.net_toa_target)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
+            pickle.dump(dict, open(self.out_dir+'/IRCE_TOA_'+str(np.round(self.net_toa_target,2)) +'_'+str(self.co2_factor)+'xCO2.pkl', "wb"  ))
 
 
 
