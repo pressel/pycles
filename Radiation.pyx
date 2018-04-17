@@ -979,7 +979,9 @@ cdef class RadiationRRTM(RadiationBase):
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
-        deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
+        # deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
+        if FoRef.adjust_S_minus_L:
+            S_minus_L = 50.0/8.08 * (FoRef.sst - Sur.T_surface)
         FoRef.update(Pa, S_minus_L, TS)
 
 

@@ -950,6 +950,11 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         except:
             self.toa_update_timescale = 10.0 * 86400.0
 
+        try:
+            self.adjust_S_minus_L = namelist['forcing']['RCE']['adjust_S_minus_L']
+        except:
+            self.adjust_S_minus_L = False
+
         # Radiation parameters
         #--Namelist options related to gas concentrations
         try:
