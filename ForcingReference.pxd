@@ -26,6 +26,7 @@ cdef class ForcingReferenceBase:
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)
+    cpdef restart(self, Restart)
 
 cdef class ForcingReferenceNone(ForcingReferenceBase):
     cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
@@ -33,7 +34,7 @@ cdef class ForcingReferenceNone(ForcingReferenceBase):
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     # cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     # cpdef eos(self, double p0, double s, double qt)
-
+    cpdef restart(self, Restart)
 
 cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
     cdef:
@@ -45,7 +46,7 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
     cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
     cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L, TimeStepping TS)
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
+    cpdef restart(self, Restart)
 
 cdef class ReferenceRCE(ForcingReferenceBase):
     cdef:
@@ -55,7 +56,7 @@ cdef class ReferenceRCE(ForcingReferenceBase):
     cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
     cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L, TimeStepping TS)
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
+    cpdef restart(self, Restart)
 # cdef class InteractiveReferenceRCE_old(ForcingReferenceBase):
 #     cdef:
 #         bint fix_wv
@@ -176,7 +177,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
     cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
     cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L, TimeStepping TS)
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
+    cpdef restart(self, Restart)
 
 cdef class LookupProfiles:
     cdef:

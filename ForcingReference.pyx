@@ -103,7 +103,8 @@ cdef class ForcingReferenceBase:
         return
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
-
+    cpdef restart(self, Restart):
+        return
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
         cdef:
             double qv = qt - ql - qi
@@ -132,7 +133,8 @@ cdef class ForcingReferenceNone(ForcingReferenceBase):
         return
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
-
+    cpdef restart(self, Restart):
+        return
 # Control simulations use AdjustedMoistAdiabat
 # Reference temperature profile correspondends to a moist adiabat
 # Reference moisture profile corresponds to a fixed relative humidity given the reference temperature profile
@@ -208,6 +210,8 @@ cdef class AdjustedMoistAdiabat(ForcingReferenceBase):
 
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
+    cpdef restart(self, Restart):
+        return
 # Climate change simulations use profiles based on radiative--convective equilibrium solutions obtained as described in
 # Zhihong Tan's dissertation (Section 2.6). Zhihong has provided his reference profiles to be archived with the code, so
 # this class just reads in the data and interpolates to the simulation pressure grid
@@ -273,6 +277,8 @@ cdef class ReferenceRCE(ForcingReferenceBase):
         return
 
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        return
+    cpdef restart(self, Restart):
         return
 # Here we implement the RCE solution algorithm described in Section 2.6 of Zhihong Tan's thesis to allow updates
 # of the Reference profiles as the SST changes
@@ -1528,7 +1534,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.net_toa_target = self.net_toa_computed
             self.ohu = (self.dflux_sw[0] - self.uflux_sw[0]
                        - (self.uflux_lw[0] - self.dflux_lw[0]))
-            Pa.root_print('Read in pkl, computed TOA imbalance is '+str(np.round(self.net_toa_computed,2)))
+            Pa.root_print('Read in pkl, computed TOA imbalance is '+str(np.round(self.net_toa_computed,5)))
 
         for k in xrange(self.npressure):
             self.temperature[k] = self.t_layers[k]
@@ -1591,14 +1597,16 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         if not self.adjust_S_minus_L:
             if fabs(self.net_toa_target-S_minus_L) < self.toa_update_criterion :
                 self.net_toa_target = S_minus_L
-                if fabs(self.net_toa_computed - self.net_toa_target) > self.toa_error_max:
+                if fabs(self.net_toa_computed - self.net_toa_target) > self.toa_error_max*1.01:
                     self.net_toa_computed = 1000.0
+                    Pa.root_print('Adjusted net_toa_computed for gap fix!')
 
 
         # check the change in S_minus_L
         if fabs(self.net_toa_computed - self.net_toa_target) < self.toa_update_criterion:
             return
-        Pa.root_print('Updating Reference Profile for '+str(np.round(self.net_toa_target,2)))
+        Pa.root_print('Updating Reference Profile for '+str(np.round(self.net_toa_target,5)))
+        Pa.root_print('Computed toa was '+str(np.round(self.net_toa_computed,5)))
 
         self.ohu = self.net_toa_target
         self.rce_fixed_toa(Pa)
@@ -1670,6 +1678,28 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         NS.write_ts('tropical_sst', self.sst, Pa)
         NS.write_ts('tropical_toa_imbalance', self.net_toa_computed, Pa)
         return
+
+    cpdef restart(self, Restart):
+
+        Restart.restart_rce['nlayers'] = self.nlayers
+        Restart.restart_rce['delta_T'] = self.delta_T
+        Restart.restart_rce['T_profile'] = np.asarray(self.t_layers)
+        Restart.restart_rce['qv_profile'] = np.asarray(self.qv_layers)
+        Restart.restart_rce['p_profile'] = np.asarray(self.p_layers)
+        Restart.restart_rce['p_tropo'] = self.p_layers[np.argmin(self.t_layers)]
+        Restart.restart_rce['sst'] = self.sst
+        Restart.restart_rce['ohu'] = self.ohu
+        Restart.restart_rce['S_minus_L'] = self.net_toa_computed
+        Restart.restart_rce['TOA_lw_down']= self.dflux_lw[self.nlayers]
+        Restart.restart_rce['TOA_lw_up']= self.uflux_lw[self.nlayers]
+        Restart.restart_rce['TOA_sw_down'] = self.dflux_sw[self.nlayers]
+        Restart.restart_rce['TOA_sw_up']= self.uflux_sw[self.nlayers]
+        Restart.restart_rce['surface_lw_down']= self.dflux_lw[0]
+        Restart.restart_rce['surface_lw_up']= self.uflux_lw[0]
+        Restart.restart_rce['surface_sw_down'] = self.dflux_sw[0]
+        Restart.restart_rce['surface_sw_up']= self.uflux_sw[0]
+        return
+
 
 
 cdef class LookupProfiles:

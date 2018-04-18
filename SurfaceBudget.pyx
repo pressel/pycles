@@ -35,7 +35,10 @@ cdef class SurfaceBudgetNone:
         return
     cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
-
+    cpdef init_from_restart(self, Restart):
+        return
+    cpdef restart(self, Restart):
+        return
 
 cdef class SurfaceBudget:
     def __init__(self, namelist):
@@ -117,4 +120,15 @@ cdef class SurfaceBudget:
     cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         NS.write_ts('surface_temperature', Sur.T_surface, Pa)
         NS.write_ts('ocean_heat_flux', self.ocean_heat_flux, Pa)
+        return
+    cpdef init_from_restart(self, Restart):
+        try:
+            self.ocean_heat_flux = Restart.restart_data['surface_budget']['ohu']
+        except:
+            print('Ocean heat flux not found in restart files!')
+            print('Using namelist value '+ str(self.ocean_heat_flux))
+        return
+    cpdef restart(self, Restart):
+        Restart.restart_data['surface_budget'] = {}
+        Restart.restart_data['surface_budget']['ohu'] = self.ocean_heat_flux
         return

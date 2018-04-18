@@ -81,6 +81,7 @@ cdef class Restart:
     cpdef initialize(self):
         self.restart_data = {}
         self.last_restart_time = 0.0
+        self.restart_rce = {}
 
 
         return
@@ -118,6 +119,12 @@ cdef class Restart:
 
         with open(path+ '/' + str(Pa.rank) + '.pkl', 'wb') as f:
             pickle.dump(self.restart_data, f,protocol=2)
+
+        if Pa.rank == 0:
+            # Write the restart_rce pkl
+            with open(path+ '/RCE.pkl', 'wb') as f:
+                pickle.dump(self.restart_rce, f,protocol=2)
+
 
         # No point keeping data in dictionary so empty it now
         self.free_memory()

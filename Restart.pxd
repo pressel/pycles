@@ -11,6 +11,7 @@ cdef class Restart:
         public double frequency
         bint delete_old
         list times_retained
+        public dict restart_rce
 
     cpdef initialize(self)
     cpdef write(self, ParallelMPI.ParallelMPI Pa)
