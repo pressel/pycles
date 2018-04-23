@@ -70,6 +70,10 @@ cdef extern from "microphysics_arctic_1m.h":
                                       double (*L_fp)(double, double), double* p0, double* temperature,
                                       double* qt, double* qv, double* precip_rate, double* entropy_tendency)
     void entropy_source_melt(Grid.DimStruct *dims, double* temperature, double* melt_rate, double* entropy_tendency)
+    void get_n_ice(Grid.DimStruct *dims, double* density, double* temperature, double* qi, double n0i, double* n_ice)
+    void get_n_rain(Grid.DimStruct *dims, double* density, double* temperature, double* qrain, double* n0rain, double* n_rain)
+    void get_n_snow(Grid.DimStruct *dims, double* density, double* temperature, double* qsnow, double* n0snow, double* n_snow)
+
 
 
 cdef extern from "microphysics.h":
@@ -189,6 +193,10 @@ cdef class Microphysics_Arctic_1M:
         NS.add_profile('cloud_fraction_mixed_phase', Gr, Pa)
         NS.add_ts('cloud_fraction_ice', Gr, Pa)
         NS.add_ts('cloud_fraction_mixed_phase', Gr, Pa)
+
+        NS.add_profile('n_ice', Gr, Pa)
+        NS.add_profile('n_snow', Gr, Pa)
+        NS.add_profile('n_rain', Gr, Pa)
 
         return
 
@@ -387,6 +395,21 @@ cdef class Microphysics_Arctic_1M:
         entropy_source_melt(&Gr.dims, &DV.values[t_shift], &self.melt_rate[0], &tmp_tendency[0])
         tmp = Pa.HorizontalMean(Gr, &tmp_tendency[0])
         NS.write_profile('micro_s_source_melt', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        dummy[:] = 0.0
+        get_n_ice(&Gr.dims, &Ref.rho0[0], &DV.values[t_shift], &DV.values[qi_shift], self.n0_ice_input, &dummy[0])
+        tmp = Pa.HorizontalMean(Gr, &dummy[0])
+        NS.write_profile('n_ice', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        dummy[:] = 0.0
+        get_n_rain(&Gr.dims, &Ref.rho0[0], &DV.values[t_shift], &DV.values[qrain_shift], &DV.values[nrain_shift], &dummy[0])
+        tmp = Pa.HorizontalMean(Gr, &dummy[0])
+        NS.write_profile('n_rain', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        dummy[:] = 0.0
+        get_n_snow(&Gr.dims, &Ref.rho0[0], &DV.values[t_shift], &DV.values[qsnow_shift], &DV.values[nsnow_shift], &dummy[0])
+        tmp = Pa.HorizontalMean(Gr, &dummy[0])
+        NS.write_profile('n_snow', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         self.ice_stats(Gr, Ref, PV, DV, NS, Pa)
 

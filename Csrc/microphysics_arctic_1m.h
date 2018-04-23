@@ -1103,3 +1103,93 @@ void melt_snow_wrapper(const struct DimStruct *dims, double* density, double* te
     return;
 
 };
+
+void get_n_ice(const struct DimStruct *dims, double* density, double* temperature, double* qi, double n0i, double* n_ice){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double lambda_ = ice_lambda(density[ijk], qi[ijk], n0i);
+                double dmean_ = ice_dmean(density[ijk], qi[ijk], n0i);
+
+                n_ice[ijk] = n0i * exp(-lambda_ * dmean_);
+
+            }
+        }
+    }
+    return;
+
+};
+
+void get_n_rain(const struct DimStruct *dims, double* density, double* temperature, double* qrain, double* n0rain, double* n_rain){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double lambda_ = rain_lambda(density[ijk], qrain[ijk], n0rain[ijk]);
+                double dmean_ = rain_dmean(density[ijk], qrain[ijk], n0rain[ijk]);
+
+                n_rain[ijk] = n0rain[ijk] * exp(-lambda_ * dmean_);
+
+            }
+        }
+    }
+    return;
+
+};
+
+void get_n_snow(const struct DimStruct *dims, double* density, double* temperature, double* qsnow, double* n0snow, double* n_snow){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double lambda_ = snow_lambda(density[ijk], qsnow[ijk], n0snow[ijk]);
+                double dmean_ = snow_dmean(density[ijk], qsnow[ijk], n0snow[ijk]);
+
+                n_snow[ijk] = n0snow[ijk] * exp(-lambda_ * dmean_);
+
+            }
+        }
+    }
+    return;
+
+};
