@@ -1123,9 +1123,8 @@ void get_n_ice(const struct DimStruct *dims, double* density, double* temperatur
                 const ssize_t ijk = ishift + jshift + k;
 
                 double lambda_ = ice_lambda(density[ijk], qi[ijk], n0i);
-                double dmean_ = ice_dmean(density[ijk], qi[ijk], n0i);
 
-                n_ice[ijk] = n0i * exp(-lambda_ * dmean_);
+                n_ice[ijk] = n0i / lambda_;
 
             }
         }
@@ -1153,9 +1152,8 @@ void get_n_rain(const struct DimStruct *dims, double* density, double* temperatu
                 const ssize_t ijk = ishift + jshift + k;
 
                 double lambda_ = rain_lambda(density[ijk], qrain[ijk], n0rain[ijk]);
-                double dmean_ = rain_dmean(density[ijk], qrain[ijk], n0rain[ijk]);
 
-                n_rain[ijk] = n0rain[ijk] * exp(-lambda_ * dmean_);
+                n_rain[ijk] = n0rain[ijk] / lambda_;
 
             }
         }
@@ -1183,9 +1181,8 @@ void get_n_snow(const struct DimStruct *dims, double* density, double* temperatu
                 const ssize_t ijk = ishift + jshift + k;
 
                 double lambda_ = snow_lambda(density[ijk], qsnow[ijk], n0snow[ijk]);
-                double dmean_ = snow_dmean(density[ijk], qsnow[ijk], n0snow[ijk]);
 
-                n_snow[ijk] = n0snow[ijk] * exp(-lambda_ * dmean_);
+                n_snow[ijk] = n0snow[ijk] / lambda_;
 
             }
         }
