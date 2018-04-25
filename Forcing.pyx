@@ -948,7 +948,6 @@ cdef class ForcingZGILS:
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ForcingReferenceBase FoRef):
 
         cdef:
-            double S_minus_L = 50.0
             Py_ssize_t k
             double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g * self.divergence_factor
             double pv_star, qv_star, u_right, v_right
@@ -968,7 +967,7 @@ cdef class ForcingZGILS:
         self.s_ls_adv = np.zeros(Gr.dims.npg,dtype=np.double,order='c')
 
         # It will return if already initialized
-        FoRef.initialize(Gr, Pa, NS, S_minus_L)
+        FoRef.initialize(Gr, Pa, NS, FoRef.S_minus_L_fixed_val)
 
         if self.loc == 12:
             self.SST_1xCO2  = 290.0
@@ -1076,7 +1075,6 @@ cdef class ForcingZGILS:
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
             double RH = 0.3
             double deltaT
-            double S_minus_L = 50.0
 
 
         # update reference profiles if necessary

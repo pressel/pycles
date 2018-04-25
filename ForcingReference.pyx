@@ -934,7 +934,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.dt_rce = namelist['forcing']['RCE']['dt_rce']
         except:
-            self.dt_rce = 3600.0 * 3.0
+            self.dt_rce = 3600.0 * 6.0
         try:
             self.delta_T_max = namelist['forcing']['RCE']['delta_T_max']
         except:
@@ -960,6 +960,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.adjust_S_minus_L = namelist['forcing']['RCE']['adjust_S_minus_L']
         except:
             self.adjust_S_minus_L = False
+        try:
+            self.S_minus_L_fixed_val = namelist['forcing']['RCE']['S_minus_L_fixed_val']
+        except:
+            self.S_minus_L_fixed_val = 50.0
 
         # Radiation parameters
         #--Namelist options related to gas concentrations
@@ -1382,58 +1386,74 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             double slab_capacity = 1.0 * 1000.0 * 4.19e3
             double [:] T_old = np.zeros(self.nlevels, dtype=np.double, order='c')
             double [:] T_new= np.zeros(self.nlevels, dtype=np.double, order='c')
+            double dt_rce_original = self.dt_rce
+            bint converged = False
+
+        while not converged:
+            self.net_toa_computed = self.ohu + 1.0
+            self.delta_T = self.delta_T_max * 100
+            iter = 0
+            while self.delta_T > self.delta_T_max  or np.abs(self.net_toa_target-self.net_toa_computed) > self.toa_error_max:# and iter < max_iter + 2:
+                converged = True
+                if iter > self.max_steps:
+                    converged = False
+                    Pa.root_print('RCE not converged after max steps reached '+str(self.max_steps))
+                    Pa.root_print('net_toa_target  '+ str(self.net_toa_target))
+                    Pa.root_print('net_toa_computed  '+str(self.net_toa_computed))
+                    Pa.root_print('ohu  '+str(self.ohu))
+                    Pa.root_print('sst ' + str(self.sst))
+                    Pa.root_print('delta T '+str(self.delta_T))
+                    Pa.root_print('dt_rce '+ str(self.dt_rce))
+                    Pa.root_print('REDUCING dt_rce to ' + str(self.dt_rce * 0.75))
+                    Pa.barrier()
+                    self.dt_rce = self.dt_rce * 0.75
+                    if self.dt_rce < 3600.0:
+                        self.dt_rce = dt_rce_original
+                        print('Cannot converged even after reducing dt_rce!')
+                        print('Killing simulation!')
+                        Pa.kill()
 
 
-        self.net_toa_computed = self.ohu + 1.0
-        self.delta_T = self.delta_T_max * 100
-        while self.delta_T > self.delta_T_max  or np.abs(self.net_toa_target-self.net_toa_computed) > self.toa_error_max:# and iter < max_iter + 2:
-            if iter > self.max_steps:
-                Pa.root_print('RCE not converged after max steps reached '+str(self.max_steps))
-                Pa.root_print('net_toa_target  '+ str(self.net_toa_target))
-                Pa.root_print('net_toa_computed  '+str(self.net_toa_computed))
-                Pa.root_print('ohu  '+str(self.ohu))
-                Pa.root_print('sst ' + str(self.sst))
-                Pa.root_print('delta T '+str(self.delta_T))
-                Pa.kill()
-            T_old[0] = self.sst
-            T_old[1:] = self.t_layers[0:]
+                T_old[0] = self.sst
+                T_old[1:] = self.t_layers[0:]
 
-            #update temperatures due to radiation
-            self.compute_radiation()
+                #update temperatures due to radiation
+                self.compute_radiation()
 
-            net_toa_old = self.net_toa_computed
-            self.net_toa_computed = (self.dflux_sw[nly] - self.uflux_sw[nly]
-                       - (self.uflux_lw[nly] - self.dflux_lw[nly]))
-            net_surface = (self.dflux_sw[0] - self.uflux_sw[0]
-                       - (self.uflux_lw[0] - self.dflux_lw[0]))
-            if self.verbose:
-                Pa.root_print('iter, sst, net_toa '+ str(iter) +', ' +str(np.round(self.sst,4)) + ',  '+ str(np.round(self.net_toa_computed,4)) )
-            self.sst += (net_surface-self.ohu)  * self.dt_rce/slab_capacity
+                net_toa_old = self.net_toa_computed
+                self.net_toa_computed = (self.dflux_sw[nly] - self.uflux_sw[nly]
+                           - (self.uflux_lw[nly] - self.dflux_lw[nly]))
+                net_surface = (self.dflux_sw[0] - self.uflux_sw[0]
+                           - (self.uflux_lw[0] - self.dflux_lw[0]))
+                if self.verbose:
+                    Pa.root_print('iter, sst, net_toa '+ str(iter) +', ' +str(np.round(self.sst,4)) + ',  '+ str(np.round(self.net_toa_computed,4)) )
+                self.sst += (net_surface-self.ohu)  * self.dt_rce/slab_capacity
 
-            if self.net_toa_computed > self.net_toa_target and self.net_toa_computed> net_toa_old:
-                self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity/10.0 * self.dt_rce
-            elif self.net_toa_computed < self.net_toa_target and self.net_toa_computed < net_toa_old:
-                self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity/10.0 * self.dt_rce
+                if self.net_toa_computed > self.net_toa_target and self.net_toa_computed> net_toa_old:
+                    self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity/10.0 * self.dt_rce
+                elif self.net_toa_computed < self.net_toa_target and self.net_toa_computed < net_toa_old:
+                    self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity/10.0 * self.dt_rce
 
 
-            if self.verbose:
-                Pa.root_print('new ohu '+ str(np.round(self.ohu,4)))
+                if self.verbose:
+                    Pa.root_print('new ohu '+ str(np.round(self.ohu,4)))
 
-            for k in xrange(nly):
-                self.t_layers[k] += (self.dTdt_rad_lw[k] + self.dTdt_rad_sw[k]) * self.dt_rce
+                for k in xrange(nly):
+                    self.t_layers[k] += (self.dTdt_rad_lw[k] + self.dTdt_rad_sw[k]) * self.dt_rce
 
-            self.convective_adjustment()
+                self.convective_adjustment()
 
 
-            self.qv_layers[0] = self.update_qv(self.p_layers[0],self.t_layers[0],self.RH_tropical, 1.0)
-            for k in xrange(1,nly):
-                self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k],self.RH_tropical, self.qv_layers[k-1])
+                self.qv_layers[0] = self.update_qv(self.p_layers[0],self.t_layers[0],self.RH_tropical, 1.0)
+                for k in xrange(1,nly):
+                    self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k],self.RH_tropical, self.qv_layers[k-1])
 
-            T_new[0] = self.sst
-            T_new[1:] = self.t_layers[0:]
-            self.delta_T = np.amax(np.abs(np.subtract(T_new,T_old)))/self.dt_rce
+                T_new[0] = self.sst
+                T_new[1:] = self.t_layers[0:]
+                self.delta_T = np.amax(np.abs(np.subtract(T_new,T_old)))/self.dt_rce
 
-            iter +=1
+                iter +=1
+        self.dt_rce = dt_rce_original
 
         return
 

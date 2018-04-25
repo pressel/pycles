@@ -693,9 +693,6 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t nz = Gr.dims.n[2]
             Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t i,k
-
-            double deltaT
-            double S_minus_L = 50.0
             double [:] pressures, temperatures, vapor_mixing_ratios
 
 
@@ -704,7 +701,7 @@ cdef class RadiationRRTM(RadiationBase):
         if self.use_reference_class:
 
             # If already initialized it will return immediately
-            FoRef.initialize(Gr, Pa, NS, S_minus_L )
+            FoRef.initialize(Gr, Pa, NS, FoRef.S_minus_L_fixed_val )
             pressures = np.array(FoRef.pressure,copy=True)
             temperatures =np.array( FoRef.temperature, copy=True)
             vapor_mixing_ratios = np.array(FoRef.rv,copy=True)
@@ -975,7 +972,7 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t gw = Gr.dims.gw
             Py_ssize_t i,k
             double deltaT
-            double S_minus_L = 50.0
+            double S_minus_L = FoRef.S_minus_L_fixed_val
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)

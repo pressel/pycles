@@ -1168,8 +1168,7 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
               NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH,
               ForcingReferenceBase FoRef):
 
-    cdef:
-        double S_minus_L = 50.0
+
 
 
     try:
@@ -1198,7 +1197,7 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         print('init_from_means', init_time, t[init_time_index])
     else:
         # We will need the reference profiles
-        FoRef.initialize(Gr,Pa, NS, S_minus_L)
+        FoRef.initialize(Gr,Pa, NS, FoRef.S_minus_L_fixed_val)
 
 
 
