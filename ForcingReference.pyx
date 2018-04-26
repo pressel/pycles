@@ -1388,11 +1388,18 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             double [:] T_new= np.zeros(self.nlevels, dtype=np.double, order='c')
             double dt_rce_original = self.dt_rce
             bint converged = False
+            double sst_original = self.sst
+            double [:] t_layers_original = np.array(self.t_layers, copy=True)
+            double [:] qv_layers_original=np.array(self.qv_layers, copy=True)
 
         while not converged:
-            self.net_toa_computed = self.ohu + 1.0
+            self.net_toa_computed = 1000.0
             self.delta_T = self.delta_T_max * 100
             iter = 0
+            self.sst = sst_original
+            for k in xrange(self.nlayers):
+                self.qv_layers[k] = qv_layers_original[k]
+                self.t_layers[k] = t_layers_original[k]
             while self.delta_T > self.delta_T_max  or np.abs(self.net_toa_target-self.net_toa_computed) > self.toa_error_max:# and iter < max_iter + 2:
                 converged = True
                 if iter > self.max_steps:
