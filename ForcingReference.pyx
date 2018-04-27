@@ -1607,7 +1607,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 maxval = self.qv_layers[k-1]
 
             # if not self.fix_wv:
-            #     self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical, maxval)
+            self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical, maxval)
 
         return
 
