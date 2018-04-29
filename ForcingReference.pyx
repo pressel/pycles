@@ -1387,12 +1387,12 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             double [:] T_old = np.zeros(self.nlevels, dtype=np.double, order='c')
             double [:] T_new= np.zeros(self.nlevels, dtype=np.double, order='c')
             double dt_rce_original = self.dt_rce
-            bint converged = False
             double sst_original = self.sst
             double [:] t_layers_original = np.array(self.t_layers, copy=True)
             double [:] qv_layers_original=np.array(self.qv_layers, copy=True)
+            bint converged = False
 
-        while not converged:
+        while self.dt_rce > 1800.0 and not converged:
             self.net_toa_computed = 1000.0
             self.delta_T = self.delta_T_max * 100
             iter = 0
@@ -1400,26 +1400,22 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             for k in xrange(self.nlayers):
                 self.qv_layers[k] = qv_layers_original[k]
                 self.t_layers[k] = t_layers_original[k]
-            while self.delta_T > self.delta_T_max  or np.abs(self.net_toa_target-self.net_toa_computed) > self.toa_error_max:# and iter < max_iter + 2:
-                converged = True
-                if iter > self.max_steps:
-                    converged = False
-                    Pa.root_print('RCE not converged after max steps reached '+str(self.max_steps))
-                    Pa.root_print('net_toa_target  '+ str(self.net_toa_target))
-                    Pa.root_print('net_toa_computed  '+str(self.net_toa_computed))
-                    Pa.root_print('ohu  '+str(self.ohu))
-                    Pa.root_print('sst ' + str(self.sst))
-                    Pa.root_print('delta T '+str(self.delta_T))
-                    Pa.root_print('dt_rce '+ str(self.dt_rce))
-                    Pa.root_print('REDUCING dt_rce to ' + str(self.dt_rce * 0.75))
-                    Pa.barrier()
-                    self.dt_rce = self.dt_rce * 0.75
-                    if self.dt_rce < 3600.0:
-                        self.dt_rce = dt_rce_original
-                        print('Cannot converged even after reducing dt_rce!')
-                        print('Killing simulation!')
-                        Pa.kill()
-
+            while iter < self.max_steps:
+                if self.delta_T < self.delta_T_max  and np.abs(self.net_toa_target-self.net_toa_computed) < self.toa_error_max:
+                    converged=True
+                    plt.figure('Converged')
+                    plt.plot(self.t_layers,self.p_layers)
+                    plt.plot(self.sst, self.p_surface,'o')
+                    plt.gca().invert_yaxis()
+                    plt.show()
+                    Pa.root_print('DONE! RCE converged at  '+str(iter))
+                    Pa.root_print('--net_toa_target  '+ str(self.net_toa_target))
+                    Pa.root_print('--net_toa_computed  '+str(self.net_toa_computed))
+                    Pa.root_print('--ohu  '+str(self.ohu))
+                    Pa.root_print('--sst ' + str(self.sst))
+                    Pa.root_print('--delta T '+str(self.delta_T))
+                    Pa.root_print('--dt_rce '+ str(self.dt_rce))
+                    break
 
                 T_old[0] = self.sst
                 T_old[1:] = self.t_layers[0:]
@@ -1432,24 +1428,26 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                            - (self.uflux_lw[nly] - self.dflux_lw[nly]))
                 net_surface = (self.dflux_sw[0] - self.uflux_sw[0]
                            - (self.uflux_lw[0] - self.dflux_lw[0]))
-                if self.verbose:
-                    Pa.root_print('iter, sst, net_toa '+ str(iter) +', ' +str(np.round(self.sst,4)) + ',  '+ str(np.round(self.net_toa_computed,4)) )
+
                 self.sst += (net_surface-self.ohu)  * self.dt_rce/slab_capacity
 
                 if self.net_toa_computed > self.net_toa_target and self.net_toa_computed> net_toa_old:
-                    self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity/10.0 * self.dt_rce
+                    self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity * self.dt_rce
                 elif self.net_toa_computed < self.net_toa_target and self.net_toa_computed < net_toa_old:
-                    self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity/10.0 * self.dt_rce
+                    self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity * self.dt_rce
 
 
                 if self.verbose:
+                    Pa.root_print('iter, sst, net_toa '+ str(iter) + ', '
+                                  + str(np.round(self.sst,4)) +  ',  '
+                                  + str(np.round(self.net_toa_computed,4)) + ',  '
+                                  + str(np.round(self.net_toa_target,4)))
                     Pa.root_print('new ohu '+ str(np.round(self.ohu,4)))
 
                 for k in xrange(nly):
                     self.t_layers[k] += (self.dTdt_rad_lw[k] + self.dTdt_rad_sw[k]) * self.dt_rce
 
                 self.convective_adjustment()
-
 
                 self.qv_layers[0] = self.update_qv(self.p_layers[0],self.t_layers[0],self.RH_tropical, 1.0)
                 for k in xrange(1,nly):
@@ -1460,6 +1458,17 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 self.delta_T = np.amax(np.abs(np.subtract(T_new,T_old)))/self.dt_rce
 
                 iter +=1
+            if not converged:
+                Pa.root_print('FAIL! Not converged with dt_rce ' + str(self.dt_rce))
+                Pa.root_print('Performed  '+str(iter) + ' iterations')
+                Pa.root_print('--net_toa_target  '+ str(self.net_toa_target))
+                Pa.root_print('--net_toa_computed  '+str(self.net_toa_computed))
+                Pa.root_print('--ohu  '+str(self.ohu))
+                Pa.root_print('--sst ' + str(self.sst))
+                Pa.root_print('--delta T '+str(self.delta_T))
+                Pa.root_print('-- reducing dt_rce '+ str(self.dt_rce*0.75))
+                self.dt_rce *=  0.75
+
         self.dt_rce = dt_rce_original
 
         return
@@ -1493,10 +1502,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.t_layers = np.zeros(self.nlayers, dtype=np.double, order='c')
             self.qv_layers =np.zeros(self.nlayers, dtype=np.double, order='c')
             # Set up initial guesses
-            self.sst = 280.0
+            self.sst = 325.0
             self.initialize_adiabat()
             k = 0
-            while self.p_layers[k] > 400.0e2:
+            while self.p_layers[k] > 300.0e2:
                 index_h = k
                 k+=1
             for k in xrange(index_h, self.nlayers):
@@ -1600,13 +1609,11 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             qtg = fmax(qtg-ql, 1e-10)
 
             if np.isnan(temperature):
-                self.t_layers[k] = fmax(2.0 * self.t_layers[k-1] - self.t_layers[k-2],100)
+                self.t_layers[k] = 2.0 * self.t_layers[k-1] - self.t_layers[k-2]
             else:
                 self.t_layers[k] = temperature
             if k > 0:
                 maxval = self.qv_layers[k-1]
-
-            # if not self.fix_wv:
             self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical, maxval)
 
         return

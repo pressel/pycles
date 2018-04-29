@@ -116,9 +116,9 @@ cdef class Microphysics_Arctic_1M:
             LH.Lambda_fp = lambda_Arctic
 
 
-        LH.L_fp = latent_heat_Arctic
+        LH.L_fp = latent_heat_variable_Arctic
 
-        self.L_fp = latent_heat_Arctic
+        self.L_fp = latent_heat_variable_Arctic
         # self.Lambda_fp = LH.Lambda_fp
 
         self.CC = ClausiusClapeyron()
