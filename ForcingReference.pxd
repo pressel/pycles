@@ -22,6 +22,7 @@ cdef class ForcingReferenceBase:
         bint is_init
         bint adjust_S_minus_L
         double S_minus_L_fixed_val
+        double reference_S_minus_L_subtropical
     cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
     cpdef update(self, ParallelMPI.ParallelMPI Pa,double S_minus_L, TimeStepping TS)
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -162,6 +163,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         double adir
         bint verbose
         str out_dir
+        double first_guess_sst
+        double first_guess_tropo
 
     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
     cpdef eos(self, double p0, double s, double qt)

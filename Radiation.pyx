@@ -14,7 +14,7 @@ from TimeStepping cimport TimeStepping
 cimport Surface
 from ForcingReference cimport *
 from Thermodynamics cimport LatentHeat
-# import pylab as plt
+import pylab as plt
 
 import numpy as np
 cimport numpy as np
@@ -973,12 +973,15 @@ cdef class RadiationRRTM(RadiationBase):
             Py_ssize_t i,k
             double deltaT
             double S_minus_L = FoRef.S_minus_L_fixed_val
+            double TOA_imbalance_subtropical = self.toa_sw_down-self.toa_sw_up - self.toa_lw_up
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
         # deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
         if FoRef.adjust_S_minus_L:
-            S_minus_L = 50.0/8.08 * (FoRef.sst - Sur.T_surface)
+            #S_minus_L = 50.0/8.08 * (FoRef.sst - Sur.T_surface)
+            S_minus_L -= (TOA_imbalance_subtropical-FoRef.reference_S_minus_L_subtropical)/9.0
+
         FoRef.update(Pa, S_minus_L, TS)
 
 
@@ -1012,25 +1015,25 @@ cdef class RadiationRRTM(RadiationBase):
 
         #--- Plotting to evaluate implementation of buffer zone
         #--- Comment out when not running locally
-        # for i in xrange(Gr.dims.nlg[2]):
-        #     qv_mean[i] = qv_mean[i]/ (1.0 - qv_mean[i])
-        # #
-        # # Plotting to evaluate implementation of buffer zone
-        # try:
-        #     plt.figure(1)
-        #     plt.plot(self.rv_ext,self.p_ext,'or')
-        #     plt.plot(self.reference_profile.rv, pressures)
-        #     plt.plot(qv_mean[gw:-gw], Ref.p0_half_global[gw:-gw],'ob')
-        #     plt.gca().invert_yaxis()
-        #     plt.figure(2)
-        #     plt.plot(self.t_ext,self.p_ext,'-or')
-        #     plt.plot(self.reference_profile.temperature,pressures)
-        #     plt.plot(t_mean[gw:-gw], Ref.p0_half_global[gw:-gw],'-ob')
-        #     plt.gca().invert_yaxis()
-        #     plt.show()
-        # except:
-        #     print('error in making plots')
-        #     pass
+        for i in xrange(Gr.dims.nlg[2]):
+            qv_mean[i] = qv_mean[i]/ (1.0 - qv_mean[i])
+        #
+        # Plotting to evaluate implementation of buffer zone
+        try:
+            plt.figure(1)
+            plt.plot(self.rv_ext,self.p_ext,'or')
+            plt.plot(FoRef.rv, FoRef.pressure)
+            plt.plot(qv_mean[gw:-gw], Ref.p0_half_global[gw:-gw],'ob')
+            plt.gca().invert_yaxis()
+            plt.figure(2)
+            plt.plot(self.t_ext,self.p_ext,'-or')
+            plt.plot(FoRef.temperature,FoRef.pressure)
+            plt.plot(t_mean[gw:-gw], Ref.p0_half_global[gw:-gw],'-ob')
+            plt.gca().invert_yaxis()
+            plt.show()
+        except:
+            print('error in making plots')
+            pass
         #---END Plotting to evaluate implementation of buffer zone
 
 

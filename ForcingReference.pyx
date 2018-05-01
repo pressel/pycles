@@ -965,6 +965,22 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         except:
             self.S_minus_L_fixed_val = 50.0
 
+        try:
+            self.reference_S_minus_L_subtropical = namelist['forcing']['RCE']['reference_S_minus_L_subtropical']
+        except:
+            self.reference_S_minus_L_subtropical = 0.0
+
+        try:
+            self.first_guess_sst = namelist['forcing']['RCE']['first_guess_sst']
+        except:
+            self.first_guess_sst = 325.0
+        try:
+            self.first_guess_tropo = namelist['forcing']['RCE']['first_guess_tropo']
+        except:
+            self.first_guess_tropo = 300.0e2
+
+
+
         # Radiation parameters
         #--Namelist options related to gas concentrations
         try:
@@ -1320,10 +1336,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             beta_l[k] = 1.0/Pi_l[k]
 
         q_l[0] = Pi_l[0] * 1.0 * 4.19e3 * 1000.0
-        q_l[1] = Pi_l[1] * cpd/g * dp/2.0
-        q_l[nlv-1] = Pi_l[nlv-1] * cpd * g * dp/2.0
+        q_l[1] = Pi_l[1] * cpd/g * (self.p_layers[0] - self.p_layers[1])/2.0
+        q_l[nlv-1] = Pi_l[nlv-1] * cpd * g * (self.p_layers[nlv-2] - self.p_layers[nlv-1])/2.0
         for k in xrange(2,nlv-1):
-            q_l[k] = Pi_l[k] * cpd/g * dp
+            q_l[k] = Pi_l[k] * cpd/g * (self.p_layers[k-1] - self.p_layers[k])
 
 
         # algorithm step 1 (remember all indices must be shifted by 1)
@@ -1392,14 +1408,15 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             double [:] qv_layers_original=np.array(self.qv_layers, copy=True)
             bint converged = False
 
-        while self.dt_rce > 1800.0 and not converged:
+        while self.dt_rce > 600.0 and not converged:
             self.net_toa_computed = 1000.0
             self.delta_T = self.delta_T_max * 100
             iter = 0
-            self.sst = sst_original
-            for k in xrange(self.nlayers):
-                self.qv_layers[k] = qv_layers_original[k]
-                self.t_layers[k] = t_layers_original[k]
+            # self.sst = sst_original
+            # self.ohu = self.net_toa_target
+            # for k in xrange(self.nlayers):
+            #     self.qv_layers[k] = qv_layers_original[k]
+            #     self.t_layers[k] = t_layers_original[k]
             while iter < self.max_steps:
                 if self.delta_T < self.delta_T_max  and np.abs(self.net_toa_target-self.net_toa_computed) < self.toa_error_max:
                     converged=True
@@ -1435,6 +1452,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                     self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity * self.dt_rce
                 elif self.net_toa_computed < self.net_toa_target and self.net_toa_computed < net_toa_old:
                     self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity * self.dt_rce
+                # self.ohu = fmin( fmax(self.ohu, 44.0), 48.0)
+
 
 
                 if self.verbose:
@@ -1489,7 +1508,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
 
         # pressure coordinate
-        self.p_levels = np.linspace(self.p_surface, 0.0, num=self.nlevels, endpoint=True)
+        # self.p_levels = np.linspace(self.p_surface, 0.0, num=self.nlevels, endpoint=True)
+        self.p_levels = np.logspace(np.log10(self.p_surface), np.log10(10e2),num=self.nlevels)
         self.p_layers = 0.5 * np.add(self.p_levels[1:],self.p_levels[:-1])
         self.pressure = self.p_layers
         ForcingReferenceBase.initialize(self, Gr, Pa, NS, S_minus_L)
@@ -1502,10 +1522,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.t_layers = np.zeros(self.nlayers, dtype=np.double, order='c')
             self.qv_layers =np.zeros(self.nlayers, dtype=np.double, order='c')
             # Set up initial guesses
-            self.sst = 325.0
+            self.sst = self.first_guess_sst
             self.initialize_adiabat()
             k = 0
-            while self.p_layers[k] > 300.0e2:
+            while self.p_layers[k] > self.first_guess_tropo:
                 index_h = k
                 k+=1
             for k in xrange(index_h, self.nlayers):
