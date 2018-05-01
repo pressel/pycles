@@ -14,7 +14,7 @@ from TimeStepping cimport TimeStepping
 cimport Surface
 from ForcingReference cimport *
 from Thermodynamics cimport LatentHeat
-import pylab as plt
+# import pylab as plt
 
 import numpy as np
 cimport numpy as np
@@ -1015,25 +1015,25 @@ cdef class RadiationRRTM(RadiationBase):
 
         #--- Plotting to evaluate implementation of buffer zone
         #--- Comment out when not running locally
-        for i in xrange(Gr.dims.nlg[2]):
-            qv_mean[i] = qv_mean[i]/ (1.0 - qv_mean[i])
-        #
-        # Plotting to evaluate implementation of buffer zone
-        try:
-            plt.figure(1)
-            plt.plot(self.rv_ext,self.p_ext,'or')
-            plt.plot(FoRef.rv, FoRef.pressure)
-            plt.plot(qv_mean[gw:-gw], Ref.p0_half_global[gw:-gw],'ob')
-            plt.gca().invert_yaxis()
-            plt.figure(2)
-            plt.plot(self.t_ext,self.p_ext,'-or')
-            plt.plot(FoRef.temperature,FoRef.pressure)
-            plt.plot(t_mean[gw:-gw], Ref.p0_half_global[gw:-gw],'-ob')
-            plt.gca().invert_yaxis()
-            plt.show()
-        except:
-            print('error in making plots')
-            pass
+        # for i in xrange(Gr.dims.nlg[2]):
+        #     qv_mean[i] = qv_mean[i]/ (1.0 - qv_mean[i])
+        # #
+        # # Plotting to evaluate implementation of buffer zone
+        # try:
+        #     plt.figure(1)
+        #     plt.plot(self.rv_ext,self.p_ext,'or')
+        #     plt.plot(FoRef.rv, FoRef.pressure)
+        #     plt.plot(qv_mean[gw:-gw], Ref.p0_half_global[gw:-gw],'ob')
+        #     plt.gca().invert_yaxis()
+        #     plt.figure(2)
+        #     plt.plot(self.t_ext,self.p_ext,'-or')
+        #     plt.plot(FoRef.temperature,FoRef.pressure)
+        #     plt.plot(t_mean[gw:-gw], Ref.p0_half_global[gw:-gw],'-ob')
+        #     plt.gca().invert_yaxis()
+        #     plt.show()
+        # except:
+        #     print('error in making plots')
+        #     pass
         #---END Plotting to evaluate implementation of buffer zone
 
 
