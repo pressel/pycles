@@ -974,13 +974,14 @@ cdef class RadiationRRTM(RadiationBase):
             double deltaT
             double S_minus_L = FoRef.S_minus_L_fixed_val
             double TOA_imbalance_subtropical = self.toa_sw_down-self.toa_sw_up - self.toa_lw_up
+            double area_factor = FoRef.subtropical_area_fraction/(1.0-FoRef.subtropical_area_fraction)
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
         # deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
         if FoRef.adjust_S_minus_L:
             #S_minus_L = 50.0/8.08 * (FoRef.sst - Sur.T_surface)
-            S_minus_L -= (TOA_imbalance_subtropical-FoRef.reference_S_minus_L_subtropical)/9.0
+            S_minus_L -= (TOA_imbalance_subtropical-FoRef.reference_S_minus_L_subtropical)*area_factor
 
         FoRef.update(Pa, S_minus_L, TS)
 

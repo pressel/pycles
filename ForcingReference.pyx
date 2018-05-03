@@ -969,6 +969,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             self.reference_S_minus_L_subtropical = namelist['forcing']['RCE']['reference_S_minus_L_subtropical']
         except:
             self.reference_S_minus_L_subtropical = 0.0
+        try:
+            self.subtropical_area_fraction = namelist['forcing']['RCE']['subtropical_area_fraction']
+        except:
+            self.subtropical_area_fraction = 0.1
 
         try:
             self.first_guess_sst = namelist['forcing']['RCE']['first_guess_sst']

@@ -23,6 +23,7 @@ cdef class ForcingReferenceBase:
         bint adjust_S_minus_L
         double S_minus_L_fixed_val
         double reference_S_minus_L_subtropical
+        double subtropical_area_fraction
     cpdef initialize(self, Grid Gr, ParallelMPI.ParallelMPI Pa, NetCDFIO_Stats NS, double  S_minus_L)
     cpdef update(self, ParallelMPI.ParallelMPI Pa,double S_minus_L, TimeStepping TS)
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
