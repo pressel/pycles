@@ -1564,6 +1564,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 dict['sst'] = self.sst
                 dict['ohu'] = self.ohu
                 dict['S_minus_L'] = self.net_toa_computed
+                dict['lw_down'] = np.asarray(self.dflux_lw)
+                dict['lw_up'] = np.asarray(self.uflux_lw)
+                dict['sw_down'] = np.asarray(self.dflux_sw)
+                dict['sw_up'] = np.asarray(self.uflux_sw)
                 dict['TOA_lw_down']= self.dflux_lw[nly]
                 dict['TOA_lw_up']= self.uflux_lw[nly]
                 dict['TOA_sw_down'] = self.dflux_sw[nly]
@@ -1692,6 +1696,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             dict['p_tropo'] = self.p_layers[np.argmin(self.t_layers)]
             dict['sst'] = self.sst
             dict['ohu'] = self.ohu
+            dict['lw_down'] = np.asarray(self.dflux_lw)
+            dict['lw_up'] = np.asarray(self.uflux_lw)
+            dict['sw_down'] = np.asarray(self.dflux_sw)
+            dict['sw_up'] = np.asarray(self.uflux_sw)
             dict['S_minus_L'] = self.net_toa_computed
             dict['TOA_lw_down']= self.dflux_lw[nly]
             dict['TOA_lw_up']= self.uflux_lw[nly]
