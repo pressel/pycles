@@ -135,6 +135,25 @@ cdef class UpdraftTracers:
         NS.add_profile('updraft_qt_thetali', Gr, Pa, units=r'kg kg^{-1} K', nice_name=r'(q_t \theta_{li})_u',
                        desc=r'updraft product of q_t and \theta_{li}')
 
+
+
+        NS.add_profile('updraft_bvf', Gr, Pa, units=r's^{-1}', nice_name=r'N_{b,u}',
+                       desc=r'updraft buoyancy frequency')
+        NS.add_profile('updraft_thetarho', Gr, Pa, units=r'K', nice_name=r'\theta_{\rho,u}',
+                       desc=r'updraft density potential temperature')
+
+        NS.add_profile('updraft_temperature', Gr, Pa, units=r'K', nice_name=r'T_{u}',
+                       desc=r'updraft temperature')
+        NS.add_profile('updraft_temperature2', Gr, Pa, units=r'K^2', nice_name=r'T_{u}^2',
+                       desc=r'updraft temperature square')
+        NS.add_profile('updraft_qv', Gr, Pa, units=r'kg kg^{-1}',nice_name=r'q_{v,u}',
+                       desc=r'updraft vapor specific humidity')
+        NS.add_profile('updraft_qv2', Gr, Pa, units=r'kg^{2} kg^{-2}',nice_name=r'q_{v,u}^2',
+                       desc=r'updraft vapor specific humidity square')
+        NS.add_profile('updraft_cloudfraction', Gr, Pa, units=r'--', nice_name= r'f_{c,u}',
+                       desc=r'updraft cloud fraction')
+
+
         NS.add_profile('env_fraction', Gr, Pa, units=r'-',nice_name=r'a_e',
                        desc=r'environment area fraction' )
         NS.add_profile('env_w', Gr, Pa, units=r'm s^{-1}', nice_name=r'w_e',
@@ -167,6 +186,31 @@ cdef class UpdraftTracers:
                        desc=r'environment product of w and \theta_{li}')
         NS.add_profile('env_qt_thetali', Gr, Pa, units=r'kg kg^{-1} K', nice_name=r'(q_t \theta_{li})_e',
                        desc=r'environment product of q_t and \theta_{li}')
+
+        NS.add_profile('env_th', Gr, Pa, units=r'K', nice_name=r'T_{e}',
+                       desc=r'environment temperature')
+        NS.add_profile('env_temperature2', Gr, Pa, units=r'K^2', nice_name=r'T_{e}^2',
+                       desc=r'environment temperature square')
+
+        NS.add_profile('env_bvf', Gr, Pa, units=r's^{-1}', nice_name=r'N_{b,e}',
+                       desc=r'environment buoyancy frequency')
+
+
+        NS.add_profile('env_temperature', Gr, Pa, units=r'K', nice_name=r'T_{e}',
+                       desc=r'environment temperature')
+        NS.add_profile('env_temperature2', Gr, Pa, units=r'K^2', nice_name=r'T_{e}^2',
+                       desc=r'environment temperature square')
+        NS.add_profile('env_qv', Gr, Pa, units=r'kg kg^{-1}',nice_name=r'q_{v,e}',
+                       desc=r'environment vapor specific humidity')
+        NS.add_profile('env_qv2', Gr, Pa, units=r'kg^{2} kg^{-2}',nice_name=r'q_{v,e}^2',
+                       desc=r'environment vapor specific humidity square')
+
+        NS.add_profile('env_cloudfraction', Gr, Pa, units=r'--', nice_name= r'f_{c,e}',
+                       desc=r'environment cloud fraction')
+        NS.add_profile('env_thetarho', Gr, Pa, units=r'K', nice_name=r'\theta_{\rho,e}',
+                       desc=r'environment density potential temperature')
+
+
         if 'ql' in DV.name_index:
             NS.add_profile('updraft_ql', Gr, Pa, units=r'kg kg^{-1}',nice_name=r'q_{l,u}',
                        desc=r'updraft liquid water specific humidity')
@@ -325,7 +369,12 @@ cdef class UpdraftTracers:
             Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_15')
             Py_ssize_t b_shift = DV.get_varshift(Gr, 'buoyancy')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
+            Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t ql_shift, th_shift, qr_shift
+            double [:] cloudfraction = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] tracer_normed = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] env_indicator = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] u_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
@@ -426,6 +475,24 @@ cdef class UpdraftTracers:
         NS.write_profile('updraft_qt_thetali', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[t_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_temperature', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[t_shift], &DV.values[t_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_temperature2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[qv_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_qv', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[qv_shift], &DV.values[qv_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_qv2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[thr_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_thetarho', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[bvf_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_bvf', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
+
 
         tmp = Pa.HorizontalMean(Gr, &env_indicator[0])
         NS.write_profile('env_fraction', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -470,6 +537,22 @@ cdef class UpdraftTracers:
         NS.write_profile('env_qt_thetali', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[t_shift], &env_indicator[0])
+        NS.write_profile('env_temperature', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[t_shift], &DV.values[t_shift], &env_indicator[0])
+        NS.write_profile('env_temperature2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[qv_shift], &env_indicator[0])
+        NS.write_profile('env_qv', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[qv_shift], &DV.values[qv_shift], &env_indicator[0])
+        NS.write_profile('env_qv2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[thr_shift], &env_indicator[0])
+        NS.write_profile('env_thetarho', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[bvf_shift], &env_indicator[0])
+        NS.write_profile('env_bvf', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
         if 'ql' in DV.name_index:
             ql_shift = DV.get_varshift(Gr, 'ql')
             tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[ql_shift], &self.updraft_indicator[0])
@@ -481,6 +564,22 @@ cdef class UpdraftTracers:
             NS.write_profile('env_ql', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
             tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[ql_shift], &DV.values[ql_shift], &env_indicator[0])
             NS.write_profile('env_ql2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+            with nogil:
+                for i in range(Gr.dims.nlg[0]):
+                    ishift = i * istride
+                    for j in range(Gr.dims.nlg[1]):
+                        jshift = j * jstride
+                        for k in range(Gr.dims.nlg[2]):
+                            ijk = ishift + jshift + k
+                            if DV.values[ql_shift+ ijk] >= ql_threshold:
+                                cloudfraction[ijk] = 1.0
+
+            tmp = Pa.HorizontalMeanConditional(Gr, &cloudfraction[0], &self.updraft_indicator[0])
+            NS.write_profile('updraft_cloudfraction', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &cloudfraction[0], &env_indicator[0])
+            NS.write_profile('env_cloudfraction', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
 
 
         if 'qr' in PV.name_index:
