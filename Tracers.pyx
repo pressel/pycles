@@ -187,11 +187,6 @@ cdef class UpdraftTracers:
         NS.add_profile('env_qt_thetali', Gr, Pa, units=r'kg kg^{-1} K', nice_name=r'(q_t \theta_{li})_e',
                        desc=r'environment product of q_t and \theta_{li}')
 
-        NS.add_profile('env_th', Gr, Pa, units=r'K', nice_name=r'T_{e}',
-                       desc=r'environment temperature')
-        NS.add_profile('env_temperature2', Gr, Pa, units=r'K^2', nice_name=r'T_{e}^2',
-                       desc=r'environment temperature square')
-
         NS.add_profile('env_bvf', Gr, Pa, units=r's^{-1}', nice_name=r'N_{b,e}',
                        desc=r'environment buoyancy frequency')
 
