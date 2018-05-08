@@ -888,7 +888,8 @@ cdef class ForcingZGILS:
         # climate change cases
         if self.loc == 12:
             self.divergence = 6.0e-6
-            self.coriolis_param = 2.0 * omega * sin(34.5/180.0*pi)
+            # self.coriolis_param = 2.0 * omega * sin(34.5/180.0*pi) --- Modifying for Sc transition study
+            self.coriolis_param = 2.0 * omega * sin(30.0/180.0*pi)
         elif self.loc == 11:
             self.divergence = 3.5e-6
             self.coriolis_param = 2.0 * omega * sin(31.5/180.0*pi)

@@ -911,12 +911,12 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.RH_tropical = namelist['forcing']['RCE']['RH_tropical']
         except:
-            self.RH_tropical = 0.7
+            self.RH_tropical = 0.6
 
         try:
             self.RH_surface = namelist['forcing']['RCE']['RH_surface']
         except:
-            self.RH_surface = 0.7
+            self.RH_surface = 0.8
         if self.lapse_rate_type == 'saturated':
             self.RH_surface = 1.0
         try:
@@ -942,7 +942,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.toa_error_max = namelist['forcing']['RCE']['toa_error_max']
         except:
-            self.toa_error_max = 0.05
+            self.toa_error_max = 0.01
         try:
             self.max_steps = namelist['forcing']['RCE']['max_steps']
         except:
@@ -950,7 +950,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.toa_update_criterion = namelist['forcing']['RCE']['toa_update_criterion']
         except:
-            self.toa_update_criterion= 0.5 # W/m62
+            self.toa_update_criterion= 0.2 # W/m62
         try:
             self.toa_update_timescale = namelist['forcing']['RCE']['toa_update_timescale']
         except:
@@ -963,7 +963,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.S_minus_L_fixed_val = namelist['forcing']['RCE']['S_minus_L_fixed_val']
         except:
-            self.S_minus_L_fixed_val = 50.0
+            self.S_minus_L_fixed_val = 31.0
 
         try:
             self.reference_S_minus_L_subtropical = namelist['forcing']['RCE']['reference_S_minus_L_subtropical']
@@ -972,7 +972,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.subtropical_area_fraction = namelist['forcing']['RCE']['subtropical_area_fraction']
         except:
-            self.subtropical_area_fraction = 0.1
+            self.subtropical_area_fraction = 0.065
 
         try:
             self.first_guess_sst = namelist['forcing']['RCE']['first_guess_sst']
@@ -1067,6 +1067,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 trace[7,:] = lw_absorber[:,i].reshape(1,lw_np)
             elif 'CCL4' in gas_name:
                 trace[8,:] = lw_absorber[:,i].reshape(1,lw_np)
+            # plt.figure(gas_name)
+            # plt.plot(lw_absorber[:,i].flatten(), lw_pressure)
+            # plt.gca().invert_yaxis()
+        # plt.show()
 
 
         # From rad_driver.f90, lines 585 to 620
@@ -1107,6 +1111,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         self.dflux_lw = np.zeros((nlevels,), dtype=np.double, order='c')
         self.uflux_sw = np.zeros((nlevels,), dtype=np.double, order='c')
         self.dflux_sw = np.zeros((nlevels,), dtype=np.double, order='c')
+
+
 
         return
 
@@ -1479,11 +1485,11 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             while iter < self.max_steps:
                 if self.delta_T < self.delta_T_max  and np.abs(self.net_toa_target-self.net_toa_computed) < self.toa_error_max:
                     converged=True
-                    plt.figure('Converged')
-                    plt.plot(self.t_layers,self.p_layers)
-                    plt.plot(self.sst, self.p_surface,'o')
-                    plt.gca().invert_yaxis()
-                    plt.show()
+                    # plt.figure('Converged')
+                    # plt.plot(self.t_layers,self.p_layers)
+                    # plt.plot(self.sst, self.p_surface,'o')
+                    # plt.gca().invert_yaxis()
+                    # plt.show()
                     Pa.root_print('DONE! RCE converged at  '+str(iter))
                     Pa.root_print('--net_toa_target  '+ str(self.net_toa_target))
                     Pa.root_print('--net_toa_computed  '+str(self.net_toa_computed))

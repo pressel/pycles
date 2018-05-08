@@ -795,7 +795,7 @@ cdef class RadiationRRTM(RadiationBase):
         self.p_full[0:nz] = Ref.p0_half_global[gw:nz+gw]
         self.p_full[nz:]=self.p_ext[:]
 
-        self.pi_full[0:nz] = Ref.p0_global[gw:nz+gw]
+        self.pi_full[0:nz] = Ref.p0_global[gw-1:nz+gw-1]
         for i in range(nz,self.n_ext+nz):
             self.pi_full[i] = (self.p_full[i] + self.p_full[i-1]) * 0.5
         self.pi_full[self.n_ext +  nz] = 2.0 * self.p_full[self.n_ext + nz -1 ] - self.pi_full[self.n_ext + nz -1]
@@ -1016,10 +1016,10 @@ cdef class RadiationRRTM(RadiationBase):
 
         #--- Plotting to evaluate implementation of buffer zone
         #--- Comment out when not running locally
-        # for i in xrange(Gr.dims.nlg[2]):
-        #     qv_mean[i] = qv_mean[i]/ (1.0 - qv_mean[i])
-        # #
-        # # Plotting to evaluate implementation of buffer zone
+        for i in xrange(Gr.dims.nlg[2]):
+            qv_mean[i] = qv_mean[i]/ (1.0 - qv_mean[i])
+        #
+        # Plotting to evaluate implementation of buffer zone
         # try:
         #     plt.figure(1)
         #     plt.plot(self.rv_ext,self.p_ext,'or')
@@ -1261,6 +1261,15 @@ cdef class RadiationRRTM(RadiationBase):
                     plev_in[ip,k] = self.pi_full[k]/100.0
                 tlev_in[ip, nz_full] = 2.0*tlay_in[ip,nz_full-1] - tlev_in[ip,nz_full-1]
                 plev_in[ip,nz_full] = self.pi_full[nz_full]/100.0
+
+
+        # Plotting
+        # plt.figure(100)
+        # plt.plot(tlev_in[0,:], plev_in[0,:], '-ok',label='levels')
+        # plt.plot(tlay_in[0,:], play_in[0,:], '-or', label='layers')
+        # plt.gca().invert_yaxis()
+        # plt.legend()
+        # plt.show()
 
 
         cdef:
