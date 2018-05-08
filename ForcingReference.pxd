@@ -60,59 +60,7 @@ cdef class ReferenceRCE(ForcingReferenceBase):
     cpdef update(self, ParallelMPI.ParallelMPI Pa, double S_minus_L, TimeStepping TS)
     cpdef stats_io(self, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef restart(self, Restart)
-# cdef class InteractiveReferenceRCE_old(ForcingReferenceBase):
-#     cdef:
-#         bint fix_wv
-#         str filename
-#         double dt_rce
-#         double [:] p_tropo_store
-#         double [:] toa_store
-#         double [:] tci_store
-#         double RH_surf
-#         double RH_tropical
-#         double RH_subtrop
-#         Py_ssize_t index_h
-#         Py_ssize_t index_h_min
-#         bint tropo_converged
-#         double toa_flux
-#         double total_column_influx
-#         Py_ssize_t nlayers
-#         Py_ssize_t nlevels
-#         double [:] p_levels
-#         double [:] p_layers
-#         double [:] t_layers
-#         double [:] qv_layers
-#         double [:] t_tend_rad
-#         double [:] o3vmr
-#         double [:] co2vmr
-#         double [:] ch4vmr
-#         double [:] n2ovmr
-#         double [:] o2vmr
-#         double [:] cfc11vmr
-#         double [:] cfc12vmr
-#         double [:] cfc22vmr
-#         double [:] ccl4vmr
-#         double co2_factor
-#         int dyofyr
-#         double scon
-#         double adjes
-#         double solar_constant
-#         double coszen
-#         double adif
-#         double adir
-#         LookupProfiles t_table
-#         LookupProfiles t_table_wv
-#
-#     cpdef entropy(self,double p0, double T,double qt, double ql, double qi)
-#     cpdef eos(self, double p0, double s, double qt)
-#     cpdef initialize_radiation(self, double co2_factor)
-#     cpdef compute_radiation(self)
-#     cpdef update_qv(self, double p, double t, double rh)
-#     cpdef compute_adiabat(self, double Tg, double Pg, double RH_surf)
-#     cpdef rce_step(self, double Tg)
-#     cpdef initialize(self,  ParallelMPI.ParallelMPI Pa, double [:] pressure_array, double sst_tropical,
-#                      double S_minus_L)
-#     cpdef update(self, double [:] pressure_array, double Tg)
+
 
 cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
     cdef:
