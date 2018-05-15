@@ -306,8 +306,11 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             try:
                 self.fix_wv_pkl = str(namelist['forcing']['RCE']['fix_wv_pkl'])
             except:
-                Pa.root_print('Must specify pkl file')
-                Pa.kill()
+                try:
+                    self.fix_wv_pkl= str(namelist['forcing']['RCE']['pkl_file'])
+                except:
+                    Pa.root_print('Must specify pkl file')
+                    Pa.kill()
 
 
 
