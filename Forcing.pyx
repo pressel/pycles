@@ -918,6 +918,10 @@ cdef class ForcingZGILS:
             self.varsub = namelist['forcing']['VarSub']
         except:
             self.varsub = False
+        try:
+            self.varsub_factor = namelist['forcing']['VarSub_factor']
+        except:
+            self.varsub_factor = 0.14
 
         # Change subsidence by a fixed factor (i.e. 20% reduction--> divergence_factor = 0.8)
         try:
@@ -987,7 +991,7 @@ cdef class ForcingZGILS:
         # Adjust the subsidence if a VarSub climate change case is being run
         # As in Tan et al 2017
         if self.varsub:
-            sub_factor = sub_factor * (0.86) ** self.n_double_co2
+            sub_factor = sub_factor * (1.0-self.varsub_factor) ** self.n_double_co2
 
 
         # initialize the profiles of geostrophic velocity, subsidence, and large scale advection

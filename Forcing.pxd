@@ -193,6 +193,7 @@ cdef class ForcingZGILS:
     cdef:
         Py_ssize_t loc
         bint varsub
+        double varsub_factor
         bint adjust_t_adv
         double co2_factor
         double n_double_co2

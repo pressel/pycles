@@ -299,6 +299,20 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 Pa.kill()
 
         try:
+            self.fix_wv = namelist['forcing']['RCE']['fix_wv']
+        except:
+            self.fix_wv = False
+        if self.fix_wv:
+            try:
+                self.fix_wv_pkl = str(namelist['forcing']['RCE']['fix_wv_pkl'])
+            except:
+                Pa.root_print('Must specify pkl file')
+                Pa.kill()
+
+
+
+
+        try:
             self.verbose = namelist['forcing']['RCE']['verbose']
         except:
             self.verbose = False
@@ -629,60 +643,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             &reliq_in[0,0], &tauaer_lw_in[0,0,0], &uflx_lw_out[0,0], &dflx_lw_out[0,0], &hr_lw_out[0,0],
             &uflxc_lw_out[0,0], &dflxc_lw_out[0,0], &hrc_lw_out[0,0], &duflx_dt_out[0,0], &duflxc_dt_out[0,0] )
 
-#         cdef:
-#             double [:] qv_fixed_data = np.array([0.012597329000849975,
-# 0.008530484632532623,
-# 0.007372241875908052,
-# 0.006286394652182358,
-# 0.005278312452495475,
-# 0.004352078790544593,
-# 0.003512968150856815,
-# 0.002766787403490045,
-# 0.002118743683950275,
-# 0.0015708300168502116,
-# 0.0011241094463933603,
-# 0.0007737030814280714,
-# 0.0005115344029130635,
-# 0.0003245518987240921,
-# 0.00019790547335440966,
-# 0.000116268211515127,
-# 8.323362477018246e-05,
-# 6.968838749075567e-05,
-# 6.200829198932014e-05,
-# 5.721115564516859e-05,
-# 5.419148163534886e-05,
-# 5.2118739807719884e-05,
-# 5.078533192976215e-05,
-# 5.025966251675073e-05,
-# 5.025966251675073e-05,
-# 5.025966251675073e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05,
-# 5.0021947951777934e-05])
-#         with nogil:
-#             for k in xrange(nlayers):
-#                 h2ovmr_in[0,k] = qv_fixed_data[k]/(1.0 - qv_fixed_data[k]) * Rv/Rd
+
 
         c_rrtmg_sw (
             &ncol, &nlay, &icld, &iaer, &play_in[0,0], &plev_in[0,0], &tlay_in[0,0], &tlev_in[0,0],&tsfc_in[0],
@@ -884,20 +845,12 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             double [:] T_old = np.zeros(self.nlevels, dtype=np.double, order='c')
             double [:] T_new= np.zeros(self.nlevels, dtype=np.double, order='c')
             double dt_rce_original = self.dt_rce
-            double sst_original = self.sst
-            double [:] t_layers_original = np.array(self.t_layers, copy=True)
-            double [:] qv_layers_original=np.array(self.qv_layers, copy=True)
             bint converged = False
 
         while self.dt_rce > 600.0 and not converged:
             self.net_toa_computed = 1000.0
             self.delta_T = self.delta_T_max * 100
             iter = 0
-            # self.sst = sst_original
-            # self.ohu = self.net_toa_target
-            # for k in xrange(self.nlayers):
-            #     self.qv_layers[k] = qv_layers_original[k]
-            #     self.t_layers[k] = t_layers_original[k]
             while iter < self.max_steps:
                 if self.delta_T < self.delta_T_max  and np.abs(self.net_toa_target-self.net_toa_computed) < self.toa_error_max:
                     converged=True
@@ -948,10 +901,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                     self.t_layers[k] += (self.dTdt_rad_lw[k] + self.dTdt_rad_sw[k]) * self.dt_rce
 
                 self.convective_adjustment()
-
-                self.qv_layers[0] = self.update_qv(self.p_layers[0],self.t_layers[0],self.RH_tropical, 1.0)
-                for k in xrange(1,nly):
-                    self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k],self.RH_tropical, self.qv_layers[k-1])
+                if not self.fix_wv:
+                    self.qv_layers[0] = self.update_qv(self.p_layers[0],self.t_layers[0],self.RH_tropical, 1.0)
+                    for k in xrange(1,nly):
+                        self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k],self.RH_tropical, self.qv_layers[k-1])
 
                 T_new[0] = self.sst
                 T_new[1:] = self.t_layers[0:]
@@ -997,11 +950,20 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
         self.initialize_radiation()
 
+        if self.fix_wv:
+            file_handle = open(self.fix_wv_pkl, 'rb')
+            wv_dict = pickle.load(file_handle)
+            if wv_dict['nlayers'] != self.nlayers:
+                Pa.root_print('Fix wv dict nlayers does not equal namelist nlayers!')
+                Pa.kill()
+            self.qv_layers = wv_dict['qv_profile']
+
         if not self.read_pkl:
 
             # THESE CONTAIN THE ACTUAL RCE SOLUTION
             self.t_layers = np.zeros(self.nlayers, dtype=np.double, order='c')
-            self.qv_layers =np.zeros(self.nlayers, dtype=np.double, order='c')
+            if not self.fix_wv:
+                self.qv_layers =np.zeros(self.nlayers, dtype=np.double, order='c')
             # Set up initial guesses
             self.sst = self.first_guess_sst
             self.initialize_adiabat()
@@ -1011,7 +973,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 k+=1
             for k in xrange(index_h, self.nlayers):
                 self.t_layers[k] = self.t_layers[index_h]
-                self.qv_layers[k] =self.qv_layers[index_h]
+                if not self.fix_wv:
+                    self.qv_layers[k] =self.qv_layers[index_h]
 
             # Might as well do it on every processor, rather than communicate?
             # Solution should be unique...
@@ -1065,7 +1028,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 Pa.root_print('Dict nlayers does not equal namelist nlayers!')
                 Pa.kill()
             self.t_layers = read_dict['T_profile']
-            self.qv_layers = read_dict['qv_profile']
+            if not self.fix_wv:
+                self.qv_layers = read_dict['qv_profile']
             self.sst = read_dict['sst']
 
             # Now run radiation on the read-in profile
@@ -1119,7 +1083,8 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
                 self.t_layers[k] = temperature
             if k > 0:
                 maxval = self.qv_layers[k-1]
-            self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical, maxval)
+            if not self.fix_wv:
+                self.qv_layers[k] = self.update_qv(self.p_layers[k], self.t_layers[k], self.RH_tropical, maxval)
 
         return
 
@@ -1192,20 +1157,6 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
             #################################################################
 
-        # OLD--DOING INTERP
-        # self.temperature = np.array(np.interp(pressure_array, self.p_layers[::-1], self.t_layers[::-1]), dtype=np.double, order='c')
-        # self.qt = np.array(np.interp(pressure_array, self.p_layers[::-1], self.qv_layers[::-1]), dtype=np.double, order='c')
-        # cdef:
-        #     Py_ssize_t nz = np.shape(pressure_array)[0]
-        #
-        # for k in xrange(nz):
-        #     self.s[k] = self.entropy(pressure_array[k], self.temperature[k], self.qt[k], 0.0, 0.0)
-        #     self.rv[k] = self.qt[k]/(1.0-self.qt[k])
-        #     self.u[k] = fmin(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(pressure_array[k]-1000.0e2),-4.0)
-
-        # NEW
-
-        # NEW
         for k in xrange(self.npressure):
             self.temperature[k] = self.t_layers[k]
             if k > 0:
