@@ -922,6 +922,7 @@ cdef class ForcingZGILS:
             self.varsub_factor = namelist['forcing']['VarSub_factor']
         except:
             self.varsub_factor = 0.14
+        print('VarSub_factor is '+str(self.varsub_factor))
 
         # Change subsidence by a fixed factor (i.e. 20% reduction--> divergence_factor = 0.8)
         try:
