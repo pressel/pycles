@@ -942,7 +942,7 @@ cdef class RadiationRRTM(RadiationBase):
         if self.fix_wv:
             if Pa.rank == 0:
                 wvdat = nc.Dataset(self.fix_wv_statsfile,  "r")
-                h2o_prof = np.mean(wvdat.groups['toa_profiles'].variables['h2ovmr'][1:,:], axis=0)
+                h2o_prof = np.mean(wvdat.groups['toa_profiles'].variables['h2ovmr'][625:,:], axis=0)
                 wvdat.close()
                 if len(h2o_prof) != nz_full:
                     print("Problem with toa stats profile?!")
