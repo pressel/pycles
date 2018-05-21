@@ -763,6 +763,11 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         T_l[1:] = self.t_layers[0:]
         p_l[1:] = self.p_layers[0:]
 
+        if self.fix_wv:
+            pvg = self.CC.LT.fast_lookup(299.7744) * self.RH_surface
+            qtg = eps_v * pvg / (self.p_surface + (eps_v-1.0)*pvg)
+
+
 
         # Set up the array "beta"
 
