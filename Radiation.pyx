@@ -565,7 +565,7 @@ cdef class RadiationRRTM(RadiationBase):
             except:
                 self.fix_wv = False
             if self.fix_wv:
-                self.fix_wv_statsfile = namelist['radiation']['RRTM']['fix_wv_statsfile']
+                self.fix_wv_statsfile = str(namelist['radiation']['RRTM']['fix_wv_statsfile'])
             #
 
             # if int(np.log2(co2_factor)) == 0 and self.reference_type == 'AdjustedAdiabat':
