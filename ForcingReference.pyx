@@ -15,7 +15,7 @@ cimport Lookup
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 from TimeStepping cimport TimeStepping
 from Grid cimport  Grid
-# import pylab as plt
+
 try:
     import cPickle as pickle
 except:
@@ -763,9 +763,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         T_l[1:] = self.t_layers[0:]
         p_l[1:] = self.p_layers[0:]
 
-        if self.fix_wv:
-            pvg = self.CC.LT.fast_lookup(299.7744) * self.RH_surface
-            qtg = eps_v * pvg / (self.p_surface + (eps_v-1.0)*pvg)
+        # Should parcel value also be set?
+        # if self.fix_wv:
+        #     pvg = self.CC.LT.fast_lookup(299.7744) * self.RH_surface
+        #     qtg = eps_v * pvg / (self.p_surface + (eps_v-1.0)*pvg)
 
 
 
@@ -855,18 +856,25 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
             double dt_rce_original = self.dt_rce
             bint converged = False
 
+
+
+
         while self.dt_rce > 600.0 and not converged:
             self.net_toa_computed = 1000.0
             self.delta_T = self.delta_T_max * 100
             iter = 0
+            # plt.figure('T '+str(self.dt_rce))
+            # plt.plot(self.t_layers,self.p_layers)
+            # plt.plot(self.sst, self.p_surface,'o')
+            # plt.gca().invert_yaxis()
+            # plt.figure('qv '+str(self.dt_rce))
+            # plt.plot(self.qv_layers,self.p_layers)
+            # plt.gca().invert_yaxis()
+            # plt.show()
             while iter < self.max_steps:
                 if self.delta_T < self.delta_T_max  and np.abs(self.net_toa_target-self.net_toa_computed) < self.toa_error_max:
                     converged=True
-                    # plt.figure('Converged')
-                    # plt.plot(self.t_layers,self.p_layers)
-                    # plt.plot(self.sst, self.p_surface,'o')
-                    # plt.gca().invert_yaxis()
-                    # plt.show()
+
                     Pa.root_print('DONE! RCE converged at  '+str(iter))
                     Pa.root_print('--net_toa_target  '+ str(self.net_toa_target))
                     Pa.root_print('--net_toa_computed  '+str(self.net_toa_computed))
