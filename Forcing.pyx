@@ -899,6 +899,7 @@ cdef class ForcingZGILS:
         else:
             Pa.root_print('FORCING: Unrecognized ZGILS location ' + str(self.loc))
             Pa.kill()
+        self.adjusted_divergence = self.divergence
 
         # Get the multiplying factor for current levels of CO2
         # Then convert to a number of CO2 doublings, which is how forcings are rescaled
@@ -922,13 +923,38 @@ cdef class ForcingZGILS:
             self.varsub_factor = namelist['forcing']['VarSub_factor']
         except:
             self.varsub_factor = 0.14
-        print('VarSub_factor is '+str(self.varsub_factor))
+
+        # Change subsidence by a factor that depends on Tropical column warming as in Tan et al 2017
+        try:
+            self.varsub_sst = namelist['forcing']['VarSub_SST']
+        except:
+            self.varsub_sst = False
+        # Check for consistent options
+        if self.reference_type != 'InteractiveRCE' and self.varsub_sst:
+            Pa.root_print('Must use InteractiveRCE to vary subsidence with tropical SST ')
+            Pa.kill()
+        if self.varsub_sst and self.varsub:
+            Pa.root_print('Cannot use both ECS and tropical SST subsidence reductions')
+            Pa.kill()
+        try:
+            self.varsub_sst_factor = namelist['forcing']['VarSub_SST_factor']
+        except:
+            self.varsub_sst_factor = 0.03
+        try:
+            self.tropical_sst_ref = namelist['forcing']['VarSub_SST_ref_SST']
+        except:
+            self.tropical_sst_ref =  299.77443385
+
+
+
 
         # Change subsidence by a fixed factor (i.e. 20% reduction--> divergence_factor = 0.8)
         try:
             self.divergence_factor = namelist['forcing']['divergence_factor']
         except:
             self.divergence_factor = 1.0
+
+        self.adjusted_divergence = self.divergence * self.divergence_factor
 
         try:
             self.adjust_t_adv = namelist['forcing']['adjust_T_adv']
@@ -955,8 +981,9 @@ cdef class ForcingZGILS:
 
         cdef:
             Py_ssize_t k
-            double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g * self.divergence_factor
+            double sub_factor = self.adjusted_divergence/(Ref.Pg*Ref.Pg)/g
             double pv_star, qv_star, u_right, v_right
+            double delta_SST
 
         self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -992,7 +1019,13 @@ cdef class ForcingZGILS:
         # Adjust the subsidence if a VarSub climate change case is being run
         # As in Tan et al 2017
         if self.varsub:
-            sub_factor = sub_factor * (1.0-self.varsub_factor) ** self.n_double_co2
+            self.adjusted_divergence = self.adjusted_divergence * (1.0-self.varsub_factor) ** self.n_double_co2
+            sub_factor = self.adjusted_divergence/(Ref.Pg*Ref.Pg)/g
+        elif self.varsub_sst:
+            delta_SST = fmax(0.0, FoRef.sst-self.tropical_sst_ref)
+            self.adjusted_divergence = self.adjusted_divergence * (1.0-self.varsub_sst_factor) ** delta_SST
+            sub_factor = self.adjusted_divergence/(Ref.Pg*Ref.Pg)/g
+
 
 
         # initialize the profiles of geostrophic velocity, subsidence, and large scale advection
@@ -1033,6 +1066,7 @@ cdef class ForcingZGILS:
         NS.add_profile('s_ref_nudging', Gr, Pa)
         NS.add_profile('s_ls_adv', Gr, Pa)
         NS.add_ts('nudging_height', Gr, Pa)
+        NS.add_ts('divergence_ls', Gr, Pa)
 
         NS.add_profile('temperature_ls_adv', Gr, Pa)
         NS.add_profile('qt_ls_adv', Gr, Pa)
@@ -1081,6 +1115,7 @@ cdef class ForcingZGILS:
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
             double RH = 0.3
             double deltaT
+            double delta_SST, sub_factor
 
 
         # update reference profiles if necessary
@@ -1095,6 +1130,13 @@ cdef class ForcingZGILS:
                        &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
 
         # Apply Subsidence
+        if self.varsub_sst:
+            delta_SST = fmax(0.0, FoRef.sst-self.tropical_sst_ref)
+            self.adjusted_divergence = self.adjusted_divergence * (1.0-self.varsub_sst_factor) ** delta_SST
+            sub_factor = self.adjusted_divergence/(Ref.Pg*Ref.Pg)/g
+            for k in xrange(Gr.dims.nlg[2]):
+                self.subsidence[k]= sub_factor * (Ref.p0_half[k] - Ref.Pg) * Ref.p0_half[k] * Ref.p0_half[k] * Ref.alpha0_half[k]
+
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
         apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
 
@@ -1218,6 +1260,7 @@ cdef class ForcingZGILS:
         NS.write_profile('s_ls_adv',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         NS.write_ts('nudging_height',self.h_BL, Pa)
+        NS.write_ts('divergence_ls', self.adjusted_divergence, Pa)
 
         NS.write_profile('temperature_ls_adv', np.multiply(self.dtdt[Gr.dims.gw:-Gr.dims.gw], self.t_ls_factor), Pa)
         NS.write_profile('qt_ls_adv', np.multiply(self.dqtdt[Gr.dims.gw:-Gr.dims.gw],self.qt_ls_factor), Pa)
