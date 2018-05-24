@@ -898,10 +898,10 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
 
                 self.sst += (net_surface-self.ohu)  * self.dt_rce/slab_capacity
 
-                if self.net_toa_computed > self.net_toa_target and self.net_toa_computed> net_toa_old:
-                    self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity * self.dt_rce
-                elif self.net_toa_computed < self.net_toa_target and self.net_toa_computed < net_toa_old:
-                    self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity * self.dt_rce
+                #if self.net_toa_computed > self.net_toa_target and self.net_toa_computed> net_toa_old:
+                self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity * self.dt_rce
+                #elif self.net_toa_computed < self.net_toa_target and self.net_toa_computed < net_toa_old:
+                #    self.ohu += (self.net_toa_target-self.net_toa_computed)/slab_capacity * self.dt_rce
                 # self.ohu = fmin( fmax(self.ohu, 44.0), 48.0)
 
 
