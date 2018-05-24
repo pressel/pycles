@@ -1019,11 +1019,11 @@ cdef class ForcingZGILS:
         # Adjust the subsidence if a VarSub climate change case is being run
         # As in Tan et al 2017
         if self.varsub:
-            self.adjusted_divergence = self.adjusted_divergence * (1.0-self.varsub_factor) ** self.n_double_co2
+            self.adjusted_divergence = self.divergence * self.divergence_factor * (1.0-self.varsub_factor) ** self.n_double_co2
             sub_factor = self.adjusted_divergence/(Ref.Pg*Ref.Pg)/g
         elif self.varsub_sst:
             delta_SST = fmax(0.0, FoRef.sst-self.tropical_sst_ref)
-            self.adjusted_divergence = self.adjusted_divergence * (1.0-self.varsub_sst_factor) ** delta_SST
+            self.adjusted_divergence = self.divergence * self.divergence_factor* (1.0-self.varsub_sst_factor) ** delta_SST
             sub_factor = self.adjusted_divergence/(Ref.Pg*Ref.Pg)/g
 
 
@@ -1132,7 +1132,7 @@ cdef class ForcingZGILS:
         # Apply Subsidence
         if self.varsub_sst:
             delta_SST = fmax(0.0, FoRef.sst-self.tropical_sst_ref)
-            self.adjusted_divergence = self.adjusted_divergence * (1.0-self.varsub_sst_factor) ** delta_SST
+            self.adjusted_divergence = self.divergence * self.divergence_factor * (1.0-self.varsub_sst_factor) ** delta_SST
             sub_factor = self.adjusted_divergence/(Ref.Pg*Ref.Pg)/g
             for k in xrange(Gr.dims.nlg[2]):
                 self.subsidence[k]= sub_factor * (Ref.p0_half[k] - Ref.Pg) * Ref.p0_half[k] * Ref.p0_half[k] * Ref.alpha0_half[k]
