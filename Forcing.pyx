@@ -1022,8 +1022,11 @@ cdef class ForcingZGILS:
             self.adjusted_divergence = self.divergence * self.divergence_factor * (1.0-self.varsub_factor) ** self.n_double_co2
             sub_factor = self.adjusted_divergence/(Ref.Pg*Ref.Pg)/g
         elif self.varsub_sst:
-            delta_SST = fmax(0.0, FoRef.sst-self.tropical_sst_ref)
-            self.adjusted_divergence = self.divergence * self.divergence_factor* (1.0-self.varsub_sst_factor) ** delta_SST
+            delta_SST =  FoRef.sst-self.tropical_sst_ref
+            if delta_SST > 0.0:
+                self.adjusted_divergence = self.divergence * self.divergence_factor* (1.0-self.varsub_sst_factor) ** delta_SST
+            else:
+                self.adjusted_divergence = self.divergence * self.divergence_factor* (1.0+self.varsub_sst_factor) ** fabs(delta_SST)
             sub_factor = self.adjusted_divergence/(Ref.Pg*Ref.Pg)/g
 
 
