@@ -7,13 +7,19 @@ import sys
 import platform
 import subprocess as sp
 import os.path
-import string 
+import string
 
 
 # Now get include paths from relevant python modules
 include_path = [mpi4py.get_include()]
 include_path += [np.get_include()]
 include_path += ['./Csrc']
+
+def get_netcdf_include():
+    return sp.check_output(['nc-config', '--includedir']).strip().decode()
+
+def get_netcdf_prefix():
+    return sp.check_output(['nc-config', '--prefix']).strip().decode()
 
 if sys.platform == 'darwin':
     #Compile flags for MacOSX
@@ -23,11 +29,14 @@ if sys.platform == 'darwin':
     extra_compile_args = []
     extra_compile_args += ['-O3', '-march=native', '-Wno-unused', '-Wno-#warnings','-fPIC']
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
-    netcdf_include = '/opt/local/include'
-    netcdf_lib = '/opt/local/lib'
+    # netcdf_include = '/opt/local/include'
+    netcdf_include = get_netcdf_include()
+    # netcdf_lib = '/opt/local/lib'
+    netcdf_lib = os.path.join(get_netcdf_prefix(), 'lib')
     # f_compiler = 'gfortran'
     f_compiler = 'gfortran-mp-4.8'
-elif 'euler' in platform.node():
+# elif 'euler' in platform.node():
+elif 'eu' in platform.node():
     #Compile flags for euler @ ETHZ
     library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
     libraries = []
@@ -41,9 +50,9 @@ elif 'euler' in platform.node():
     netcdf_include = '/cluster/apps/netcdf/4.3.1/x86_64/gcc_4.8.2/openmpi_1.6.5/include'
     netcdf_lib = '/cluster/apps/netcdf/4.3.1/x86_64/gcc_4.8.2/openmpi_1.6.5/lib'
     f_compiler = 'gfortran'
-elif platform.machine()  == 'x86_64':
+elif (platform.machine()  == 'x86_64') and ('LD_LIBRARY_PATH' in os.environ):
     #Compile flags for fram @ Caltech
-    library_dirs = string.split(os.environ['LD_LIBRARY_PATH'],':')  
+    library_dirs = os.environ['LD_LIBRARY_PATH'].split(':')
     libraries = []
     libraries.append('mpi')
     libraries.append('gfortran')
@@ -52,13 +61,29 @@ elif platform.machine()  == 'x86_64':
     extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
                          '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
-    netcdf_include = '/opt/netcdf4/include'
-    netcdf_lib = '/opt/netcdf4/lib'
+    netcdf_include = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/include'
+    netcdf_lib = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/lib'
     f_compiler = 'gfortran'
 
 else:
-    print('Unknown system platform: ' + sys.platform  + 'or unknown system name: ' + platform.node())
-    sys.exit()
+    if platform.system()=='Linux':
+        #Best guess at compile flags for a Linux computer
+        library_dirs = os.environ['PATH'].split(':')
+        libraries = []
+        libraries.append('mpi')
+        libraries.append('gfortran')
+        extensions = []
+        extra_compile_args=[]
+        extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
+                             '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
+        extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
+        netcdf_include = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/include'
+        netcdf_lib = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/lib'
+        f_compiler = 'gfortran'
+
+    else: 
+        print('Unknown system platform: ' + sys.platform  + 'or unknown system name: ' + platform.node())
+        sys.exit()
 
 _ext = Extension('Grid', ['Grid.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
@@ -71,6 +96,11 @@ _ext = Extension('Initialization', ['Initialization.pyx'], include_dirs=include_
 extensions.append(_ext)
 
 _ext = Extension('Microphysics', ['Microphysics.pyx'], include_dirs=include_path,
+                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+                 runtime_library_dirs=library_dirs)
+extensions.append(_ext)
+
+_ext = Extension('Microphysics_Arctic_1M', ['Microphysics_Arctic_1M.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)

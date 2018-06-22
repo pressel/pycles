@@ -6,12 +6,13 @@
 
 cimport numpy as np
 import numpy as np
-cimport Grid
 cimport Lookup
+cimport ParallelMPI
+from Microphysics_Arctic_1M cimport Microphysics_Arctic_1M
+cimport Grid
+cimport ReferenceState
 cimport PrognosticVariables
 cimport DiagnosticVariables
-cimport ReferenceState
-cimport ParallelMPI
 cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
@@ -22,6 +23,7 @@ cdef extern from "microphysics.h":
     void microphysics_stokes_sedimentation_velocity(Grid.DimStruct *dims, double* density, double ccn, double*  ql, double*  qt_velocity)
 cdef extern from "scalar_advection.h":
     void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme) nogil
+
 
 cdef extern from "microphysics_sb.h":
     void sb_sedimentation_velocity_liquid(Grid.DimStruct *dims, double*  density, double ccn, double* ql, double* qt_velocity)nogil
@@ -34,9 +36,9 @@ cdef class No_Microphysics_Dry:
         return
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
         return
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
 '''
@@ -83,13 +85,13 @@ cdef class No_Microphysics_SA:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         if self.cloud_sedimentation:
-            DV.add_variables('w_qt', 'm/s', 'sym', Pa)
+            DV.add_variables('w_qt', 'm/s', r'w_ql', 'cloud liquid water sedimentation velocity', 'sym', Pa)
             NS.add_profile('qt_sedimentation_flux', Gr, Pa)
             NS.add_profile('s_qt_sedimentation_source',Gr,Pa)
 
 
         return
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS,ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t wqt_shift
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
@@ -103,7 +105,7 @@ cdef class No_Microphysics_SA:
 
 
         return
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t gw = Gr.dims.gw
             double[:] dummy =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
@@ -263,18 +265,18 @@ cdef class Microphysics_SB_Liquid:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         # add prognostic variables for mass and number of rain
-        PV.add_variable('nr', '1/kg', 'sym','scalar',Pa)
-        PV.add_variable('qr', 'kg/kg', 'sym','scalar',Pa)
+        PV.add_variable('nr', '1/kg', r'n_r', 'rain droplet number concentration','sym','scalar',Pa)
+        PV.add_variable('qr', 'kg/kg', r'q_r', 'rain water specific humidity','sym','scalar',Pa)
 
         # add sedimentation velocities as diagnostic variables
-        DV.add_variables('w_qr', 'm/s', 'sym', Pa)
-        DV.add_variables('w_nr', 'm/s', 'sym', Pa)
+        DV.add_variables('w_qr', 'm/s', r'w_{qr}', 'rain mass sedimentation veloctiy', 'sym', Pa)
+        DV.add_variables('w_nr', 'm/s', r'w_{nr}', 'rain number sedimentation velocity', 'sym', Pa)
         if self.cloud_sedimentation:
-            DV.add_variables('w_qt', 'm/s', 'sym', Pa)
+            DV.add_variables('w_qt', 'm/s', r'w_ql', 'cloud liquid water sedimentation velocity', 'sym', Pa)
             NS.add_profile('qt_sedimentation_flux', Gr, Pa)
             NS.add_profile('s_qt_sedimentation_source',Gr,Pa)
         # add wet bulb temperature
-        DV.add_variables('temperature_wb', 'K', 'sym', Pa)
+        DV.add_variables('temperature_wb', 'K', r'T_{wb}','wet bulb temperature','sym', Pa)
 
 
         # add statistical output for the class
@@ -293,7 +295,7 @@ cdef class Microphysics_SB_Liquid:
         NS.add_profile('s_precip_drag', Gr, Pa)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         cdef:
 
 
@@ -363,7 +365,7 @@ cdef class Microphysics_SB_Liquid:
         return
 
     #
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t i, j, k, ijk
             Py_ssize_t gw = Gr.dims.gw
@@ -490,12 +492,10 @@ cdef class Microphysics_SB_Liquid:
 
 
 cdef extern from "entropies.h":
-    inline double sd_c(double pd, double T) nogil
-    inline double sv_c(double pv, double T) nogil
+    double sd_c(double pd, double T) nogil
+    double sv_c(double pv, double T) nogil
 cdef extern from "thermodynamic_functions.h":
-    inline double qv_star_c(const double p0, const double qt, const double pv)nogil
-
-
+    double qv_star_c(const double p0, const double qt, const double pv)nogil
 
 
 cdef cython_wetbulb(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double *p0, double *s, double *qt, double *T, double *Twet):
@@ -560,8 +560,6 @@ cdef cython_wetbulb(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double *p0, d
 
 
 
-
-
 def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
     if(namelist['microphysics']['scheme'] == 'None_Dry'):
         Par.root_print('No Microphysics dry')
@@ -572,3 +570,5 @@ def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
     elif(namelist['microphysics']['scheme'] == 'SB_Liquid'):
         Par.root_print('Microphysics SG liquid')
         return Microphysics_SB_Liquid(Par, LH, namelist)
+    elif(namelist['microphysics']['scheme'] == 'Arctic_1M'):
+        return Microphysics_Arctic_1M(Par, LH, namelist)
