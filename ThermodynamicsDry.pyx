@@ -113,12 +113,11 @@ cdef class ThermodynamicsDry:
         cdef Py_ssize_t theta_shift = DV.get_varshift(Gr,'theta')
         cdef Py_ssize_t bvf_shift = DV.get_varshift(Gr,'buoyancy_frequency')
 
-
         eos_update(&Gr.dims,&RS.p0_half[0],&PV.values[s_shift],&DV.values[t_shift],&DV.values[alpha_shift])
         buoyancy_update(&Gr.dims,&RS.alpha0_half[0],&DV.values[alpha_shift],&DV.values[buoyancy_shift],&PV.tendencies[w_shift])
         bvf_dry(&Gr.dims,&RS.p0_half[0],&DV.values[t_shift],&DV.values[theta_shift],&DV.values[bvf_shift])
         # __
-        self.debug_tend('Thermodynamics Dry: ',PV,DV,Gr)
+        # self.debug_tend('Thermodynamics Dry: ',PV,DV,Gr)
         #  __
         return
 

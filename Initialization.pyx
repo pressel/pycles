@@ -265,10 +265,12 @@ def InitSullivanPatton(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVaria
 
 def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+
     #First generate the reference profiles
     RS.Pg = 1.015e5  #Pressure at ground
     RS.Tg = 300.4  #Temperature at ground
     RS.qtg = 0.02245   #Total water mixing ratio at surface
+
     RS.initialize(Gr, Th, NS, Pa)
 
     try:

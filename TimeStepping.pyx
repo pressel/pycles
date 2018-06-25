@@ -221,7 +221,7 @@ cdef class TimeStepping:
         return
 
     cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
-        Pa.root_print('Computing CFL Max')
+        # Pa.root_print('Computing CFL Max')
         cdef:
             double cfl_max_local = -9999.0
             double [3] dxi = Gr.dims.dxi

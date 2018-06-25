@@ -210,7 +210,7 @@ cdef class ThermodynamicsSA:
         if self.do_qt_clipping:
             clip_qt(&Gr.dims, &PV.values[qt_shift], 1e-11)
         # __
-        self.debug_tend('ThermodynamicsSA: ',PV,DV,Gr)#,Pa)
+        # self.debug_tend('ThermodynamicsSA: ',PV,DV,Gr)#,Pa)
         #  __
         # print('calling eos_update')
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],

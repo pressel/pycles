@@ -57,7 +57,6 @@ cdef class ConditionalStatistics:
 
         #loop over class instances and class stats_io
         for _class in self.CondStatsClasses:
-            # print('in stats_io:', _class)
             _class.stats_io(Gr, RS, PV, DV, NC, Pa)
 
         return

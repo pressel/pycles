@@ -54,7 +54,7 @@ cdef class ClausiusClapeyron:
 
         try:
             Tmin = namelist['ClausiusClapeyron']['temperature_min']
-            Par.root_print('Clausius-Clapeyron lookup table temperature_min given in namelist as'+str(Tmin))
+            Par.root_print('Clausius-Clapeyron lookup table temperature_min given in namelist as '+str(Tmin))
         except:
             Par.root_print('Clasius-Clayperon lookup table temperature_min not '
                            'given in name list taking default of 100.15 K')
@@ -62,7 +62,7 @@ cdef class ClausiusClapeyron:
 
         try:
             Tmax = namelist['ClausiusClapeyron']['temperature_max']
-            Par.root_print('Clausius-Clapeyron lookup table temperature_max given in namelist as'+str(Tmax))
+            Par.root_print('Clausius-Clapeyron lookup table temperature_max given in namelist as '+str(Tmax))
         except:
             Par.root_print('Clasius-Clayperon lookup table temperature_max not '
                            'given in name list taking default of 380.0 K')

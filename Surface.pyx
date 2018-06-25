@@ -236,6 +236,7 @@ cdef class SurfaceSullivanPatton(SurfaceBase):
         return
 
 
+
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         # Since this case is completely dry, the computation of entropy flux from sensible heat flux is very simple
