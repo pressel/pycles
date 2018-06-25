@@ -225,7 +225,6 @@ _ext = Extension('Surface', ['Surface.pyx'], include_dirs=include_path,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-
 _ext = Extension('SurfaceBudget', ['SurfaceBudget.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
@@ -260,6 +259,7 @@ _ext = Extension('ConditionalStatistics', ['ConditionalStatistics.pyx'], include
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
+
 _ext = Extension('Tracers', ['Tracers.pyx'], include_dirs=include_path,
                  extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
                  runtime_library_dirs=library_dirs)

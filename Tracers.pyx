@@ -254,7 +254,8 @@ cdef class PassiveTracers:
         self.tracer_dict['phi']['kmin'] = self.kmin
         self.tracer_dict['phi']['kmax'] = self.kmax
 
-        PV.add_variable('phi', '-', "sym", "scalar", Pa)
+        PV.add_variable('phi', '-', 'phi', 'passive tracer', "sym", "scalar", Pa)
+        # >> new in PV.add_variable: nice_name = 'phi' (second time), desc = 'passive tracer'
         NS.add_ts('phi_sum', Gr, Pa)
 
         # Initialize
