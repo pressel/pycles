@@ -48,6 +48,8 @@ def SurfaceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         casename = namelist['meta']['casename']
         if casename == 'SullivanPatton':
            return SurfaceSullivanPatton(LH)
+        elif casename == 'ColdPoolDry':
+            return SurfaceSoares(LH)    # constant sfc pot temp and pot temp-flux
         elif casename == 'Bomex':
             return SurfaceBomex(LH)
         elif casename == 'Gabls':

@@ -64,6 +64,8 @@ cdef class Forcing:
             self.scheme = ForcingSoares()
         elif casename == 'DCBLSoares_moist':
             self.scheme = ForcingSoares()
+        elif casename == 'ColdPoolDry':
+            self.scheme = ForcingNone()
         else:
             Pa.root_print('No forcing for casename: ' +  casename)
             Pa.root_print('Killing simulation now!!!')

@@ -26,10 +26,13 @@ include 'parameters.pxi'
 
 
 def InitializationFactory(namelist):
-
         casename = namelist['meta']['casename']
+
         if casename == 'SullivanPatton':
             return InitSullivanPatton
+        elif casename == 'ColdPoolDry':
+            print('calling Initialization ColdPoolDry')
+            return InitColdPoolDry
         elif casename == 'StableBubble':
             return InitStableBubble
         elif casename == 'SaturatedBubble':
@@ -64,6 +67,118 @@ def InitializationFactory(namelist):
             return InitSoares_moist
         else:
             pass
+
+
+
+def InitColdPoolDry(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH):
+    Pa.root_print('')
+    Pa.root_print('Initialization: Dry Cold Pool')
+    Pa.root_print('')
+    # set zero ground humidity, no horizontal wind at ground
+    # ASSUME COLDPOOLS DON'T HAVE AN INITIAL HORIZONTAL VELOCITY
+
+    #Generate reference profiles
+    RS.Pg = 1.0e5
+    RS.Tg = 300.0
+    RS.qtg = 0.0
+    #Set velocities for Galilean transformation
+    RS.u0 = 0.0
+    RS.v0 = 0.0
+
+    RS.initialize(Gr, Th, NS, Pa)
+
+    #Get the variable number for each of the velocity components
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift
+        # Py_ssize_t istride_2d = Gr.dims.nlg[1]
+        Py_ssize_t ij, ijk
+        double t
+        double dist
+
+    # set the left + right coldpool temperature anomalies
+    # for i in xrange(20):
+    #     ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+    #     ishift_inv = (Gr.dims.nlg[1]-i) * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+    #     for j in xrange(Gr.dims.nlg[1]):
+    #         jshift = j * Gr.dims.nlg[2]
+    #         for k in xrange(20):    # for dz=20m, up to 1km
+    #             ijk = ishift + jshift + k
+    #             ijk_inv = ishift_inv + jshift + k
+    #             PV.values[u_varshift + ijk] = 0.0
+    #             PV.values[v_varshift + ijk] = 0.0
+    #             PV.values[w_varshift + ijk] = 0.0
+    #             PV.values[u_varshift + ijk_inv] = 0.0
+    #             PV.values[v_varshift + ijk_inv] = 0.0
+    #             PV.values[w_varshift + ijk_inv] = 0.0
+    #
+    #             t = RS.Tg - 10.0
+    #             PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+    #             PV.values[s_varshift + ijk_inv] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+
+
+    # set a centered, rectangular temperature anomaly near ground
+    cdef:
+        Py_ssize_t k_max = np.int(1000.0/Gr.dims.dx[2])        # initial height of coldpool [m]
+        double r2 = 1000.0**2                                  # initial radius of coldpool [m]
+        double rx, ry, dist2
+
+    print('dimensions: ', Gr.y_half[Gr.dims.n[1]/2], Gr.dims.n[1], Gr.dims.n[1]/2, Gr.y_half[:])
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        rx = (Gr.x_half[i + Gr.dims.indx_lo[0]] - Gr.x_half[Gr.dims.ng[0]/2])**2
+        for j in xrange(Gr.dims.nlg[1]):
+            ij = i * Gr.dims.nlg[1] + j
+            jshift = j * Gr.dims.nlg[2]
+            ry = (Gr.y_half[j + Gr.dims.indx_lo[1]] - Gr.y_half[Gr.dims.ng[1]/2])**2
+            dist2 = rx + ry
+            if dist2 <= r2:
+                # print('i', i, 'j', j, 'd', dist2, 'r', r2)
+                for k in xrange(k_max):
+                    ijk = ishift + jshift + k
+                    PV.values[u_varshift + ijk] = 0.0
+                    PV.values[v_varshift + ijk] = 0.0
+                    PV.values[w_varshift + ijk] = 0.0
+                    t = RS.Tg - 10.0
+                    PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
+
+
+    cdef:
+        PrognosticVariables.PrognosticVariables PV_ = PV
+        # DiagnosticVariables.DiagnosticVariables DV_ = DV
+
+    var_name = 's'
+    var_shift = PV_.get_varshift(Gr, var_name)
+    var1 = PV_.get_variable_array(var_name, Gr)
+    # var_name = 'temperature'
+    # var_shift = DV_.get_varshift(Gr, var_name)
+    # var2 = DV_.get_variable_array(var_name, Gr)
+
+    plt.figure(1, figsize=(12,6))
+    plt.subplot(1,2,1)
+    plt.contourf(var1[:,Gr.dims.ng[1]/2,:].T)
+    plt.xlabel('x')
+    plt.ylabel('z')
+    plt.colorbar()
+    plt.subplot(1,2,2)
+    plt.contourf(var1[Gr.dims.gw:Gr.dims.ng[0]-Gr.dims.gw,Gr.dims.gw:Gr.dims.ng[1]-Gr.dims.gw,1].T)
+    plt.grid(linestyle='-', linewidth=2)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.colorbar()
+    plt.suptitle(var_name)
+    plt.savefig('ColdPool_init.png')
+    plt.show()
+    # plt.close()
+
+    return
+
+
 
 def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH):
@@ -107,8 +222,10 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
                 t = (300.0 )*exner_c(RS.p0_half[k]) - 15.0*( cos(np.pi * dist) + 1.0) /2.0
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
 
-
     return
+
+
+
 
 def InitSaturatedBubble(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
