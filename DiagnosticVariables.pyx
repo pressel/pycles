@@ -159,6 +159,9 @@ cdef class DiagnosticVariables:
             double tmp2
 
         for var_name in self.name_index.keys():
+
+            Pa.root_print('Diagnostic Variables: write profile: ' + var_name)
+
             var_shift = self.get_varshift(Gr,var_name)
 
             #Compute and write mean
