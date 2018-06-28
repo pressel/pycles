@@ -6,11 +6,16 @@
 
 from libc.math cimport fmin, fmax, sin
 import cython
+import netCDF4 as nc
 import numpy as np
 cimport ParallelMPI as ParallelMPI
 cimport PrognosticVariables as PrognosticVariables
 cimport Grid as Grid
+cimport ReferenceState
+cimport DiagnosticVariables
 cimport numpy as np
+from thermodynamic_functions cimport pd_c, pv_c
+from entropies cimport sv_c, sd_c
 
 
 include 'parameters.pxi'
@@ -23,24 +28,27 @@ cdef class Damping:
         elif(namelist['damping']['scheme'] == 'Rayleigh'):
             self.scheme = Rayleigh(namelist, Pa)
             Pa.root_print('Using Rayleigh Damping')
+
         return
 
-    cpdef initialize(self, Grid.Grid Gr):
-        self.scheme.initialize(Gr)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
+        self.scheme.initialize(Gr, RS)
         return
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
-        self.scheme.update(Gr, PV, Pa)
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+        self.scheme.update(Gr, RS, PV, DV, Pa)
         return
 
 cdef class Dummy:
     def __init__(self, namelist, ParallelMPI.ParallelMPI Pa):
         return
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         return
 
-    cpdef initialize(self, Grid.Grid Gr):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
         return
 
 cdef class Rayleigh:
@@ -62,7 +70,7 @@ cdef class Rayleigh:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS):
         cdef:
             int k
             double z_top
@@ -83,8 +91,8 @@ cdef class Rayleigh:
                         k] = self.gamma_r * sin((pi / 2.0) * (1.0 - (z_top - Gr.zl[k]) / self.z_d))**2.0
         return
 
-    cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa):
-
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t var_shift
             Py_ssize_t imin = Gr.dims.gw
@@ -120,3 +128,6 @@ cdef class Rayleigh:
                                 ijk = ishift + jshift + k
                                 PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_z[k]
         return
+
+
+
