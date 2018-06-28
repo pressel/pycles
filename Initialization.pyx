@@ -122,23 +122,50 @@ def InitColdPoolDry(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariabl
     #             PV.values[s_varshift + ijk_inv] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
 
 
-    # set a centered, rectangular temperature anomaly near ground
-    cdef:
-        Py_ssize_t k_max = np.int(1000.0/Gr.dims.dx[2])        # initial height of coldpool [m]
-        double r2 = 1000.0**2                                  # initial radius of coldpool [m]
-        double rx, ry, dist2
+    # # set a 2D centered, rectangular temperature anomaly near ground
+    # cdef:
+    #     Py_ssize_t k_max = np.int(1000.0/Gr.dims.dx[2])        # initial height of coldpool [m]
+    #     double r2 = 1000.0**2                                  # initial radius of coldpool [m]
+    #     double rx, ry, dist2
+    # for i in xrange(Gr.dims.nlg[0]):
+    #     ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+    #     rx = (Gr.x_half[i + Gr.dims.indx_lo[0]] - Gr.x_half[Gr.dims.ng[0]/2])**2
+    #     for j in xrange(Gr.dims.nlg[1]):
+    #         ij = i * Gr.dims.nlg[1] + j
+    #         jshift = j * Gr.dims.nlg[2]
+    #         ry = (Gr.y_half[j + Gr.dims.indx_lo[1]] - Gr.y_half[Gr.dims.ng[1]/2])**2
+    #         dist2 = rx + ry
+    #         if dist2 <= r2:
+    #             # print('i', i, 'j', j, 'd', dist2, 'r', r2)
+    #             for k in xrange(k_max):
+    #                 ijk = ishift + jshift + k
+    #                 PV.values[u_varshift + ijk] = 0.0
+    #                 PV.values[v_varshift + ijk] = 0.0
+    #                 PV.values[w_varshift + ijk] = 0.0
+    #                 t = RS.Tg - 10.0
+    #                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
 
-    print('dimensions: ', Gr.y_half[Gr.dims.n[1]/2], Gr.dims.n[1], Gr.dims.n[1]/2, Gr.y_half[:])
-    for i in xrange(Gr.dims.nlg[0]):
+    # one 1D cos2(x)-shaped compact coldpool at centre of domain
+    cdef:
+        double xstar = 1000.0     # half-width of initial cold-pool [m]
+        double zstar = 1000.0
+        double kstar = zstar / Gr.dims.dx[2]       # initial height of cold-pool [m]
+        double xc = Gr.x_half[Gr.dims.ng[0]/2]      # center of cold-pool
+        double x
+        Py_ssize_t k_max
+        k_max_arr = np.zeros((Gr.dims.ng[0]))
+    print('...., xc', xc, 'xmax', Gr.dims.nlg[0]*Gr.dims.dx[0], 'xstar', xstar)
+    print(Gr.x_half.shape, k_max_arr.shape)
+    for i in xrange(Gr.dims.nlg[0]):        # x_half has dimension Gr.dims.ng[0]
         ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        rx = (Gr.x_half[i + Gr.dims.indx_lo[0]] - Gr.x_half[Gr.dims.ng[0]/2])**2
-        for j in xrange(Gr.dims.nlg[1]):
-            ij = i * Gr.dims.nlg[1] + j
-            jshift = j * Gr.dims.nlg[2]
-            ry = (Gr.y_half[j + Gr.dims.indx_lo[1]] - Gr.y_half[Gr.dims.ng[1]/2])**2
-            dist2 = rx + ry
-            if dist2 <= r2:
-                # print('i', i, 'j', j, 'd', dist2, 'r', r2)
+        x = Gr.x_half[i + Gr.dims.indx_lo[0]]
+        if np.abs(x - xc) <= xstar:
+            z_max = zstar * (np.cos( (x-xc) / (xstar-xc) * np.pi/2)**2)
+            k_max = np.int(z_max / Gr.dims.dx[2])
+            print('x', x, x-xc, xstar, z_max, k_max)
+            k_max_arr[i] = k_max
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
                 for k in xrange(k_max):
                     ijk = ishift + jshift + k
                     PV.values[u_varshift + ijk] = 0.0
@@ -148,33 +175,25 @@ def InitColdPoolDry(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariabl
                     PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
 
 
+
+    from Init_plot import plot_k_profile, plot_s_profile
+    plot_k_profile(Gr.x_half[:], k_max_arr)
+
+    var_name = 's'
     cdef:
         PrognosticVariables.PrognosticVariables PV_ = PV
         # DiagnosticVariables.DiagnosticVariables DV_ = DV
-
-    var_name = 's'
     var_shift = PV_.get_varshift(Gr, var_name)
     var1 = PV_.get_variable_array(var_name, Gr)
     # var_name = 'temperature'
     # var_shift = DV_.get_varshift(Gr, var_name)
     # var2 = DV_.get_variable_array(var_name, Gr)
+    j0 = np.int(np.floor(Gr.dims.ng[1] / 2))
+    plot_s_profile(var_name, var1[:,:,:], j0)
 
-    plt.figure(1, figsize=(12,6))
-    plt.subplot(1,2,1)
-    plt.contourf(var1[:,Gr.dims.ng[1]/2,:].T)
-    plt.xlabel('x')
-    plt.ylabel('z')
-    plt.colorbar()
-    plt.subplot(1,2,2)
-    plt.contourf(var1[Gr.dims.gw:Gr.dims.ng[0]-Gr.dims.gw,Gr.dims.gw:Gr.dims.ng[1]-Gr.dims.gw,1].T)
-    plt.grid(linestyle='-', linewidth=2)
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.colorbar()
-    plt.suptitle(var_name)
-    plt.savefig('ColdPool_init.png')
-    plt.show()
-    # plt.close()
+
+
+
 
     return
 
