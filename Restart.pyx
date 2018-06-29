@@ -15,6 +15,8 @@ cdef class Restart:
         Init method for Restart class. Take the namelist dictionary as an argument and determines the output path
         for the restart files. If one cannot be constructed from the namelist information the restart files are placed
         into the directory containing main.py. The uuid is also stored to make sure the restart files remain unique.
+
+        :type Pa: object
         :param namelist:
         :return:
         '''
@@ -66,11 +68,12 @@ cdef class Restart:
             if namelist['restart']['init_from']:
                 self.input_path = str(namelist['restart']['input_path'])
                 self.is_restart_run = True
+
                 Pa.root_print('This run is restarting from data :' + self.input_path )
             else:
                 Pa.root_print('Not a restarted simulation.')
         except:
-                Pa.root_print('Not a restarted simulation.')
+            Pa.root_print('Not a restarted simulation.')
 
 
 
@@ -116,7 +119,7 @@ cdef class Restart:
                 os.mkdir(path)
         Pa.barrier()
 
-        with open(path+ '/' + str(Pa.rank) + '.pkl', 'wb') as f:
+        with open(path + '/' + str(Pa.rank) + '.pkl', 'wb') as f:
             pickle.dump(self.restart_data, f,protocol=2)
 
         # No point keeping data in dictionary so empty it now
@@ -179,3 +182,4 @@ cdef class Restart:
             prefix = new_dir[:-4]
             os.rename(new_dir, prefix)
         return
+
