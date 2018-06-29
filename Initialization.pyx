@@ -26,7 +26,6 @@ include 'parameters.pxi'
 
 def InitializationFactory(namelist):
         casename = namelist['meta']['casename']
-
         if casename == 'SullivanPatton':
             return InitSullivanPatton
         elif casename == 'StableBubble':
@@ -300,17 +299,16 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
         qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
 
-        double dz = 50.0
     for k in xrange(Gr.dims.nlg[2]):
-
         #Set Thetal profile
+
         if Gr.zl_half[k] <= 520.:
             thetal[k] = 298.7
-        if Gr.zl_half[k] <= 520.0 and Gr.zl_half[k] <= 1480.0:
-            thetal[k] = 298.7 + (Gr.zl_half[k] - 520.0)  * (302.4 - 298.7)/(1480.0 - 520.0)
-        if Gr.zl_half[k] > 1480.0 and Gr.zl_half[k] <= 2000:
+        elif Gr.zl_half[k] > 520.0 and Gr.zl_half[k] <= 1480.0:                               # 3.85 K / km
+            thetal[k] = 298.7 + (Gr.zl_half[k] - 520)  * (302.4 - 298.7)/(1480.0 - 520.0)
+        elif Gr.zl_half[k] > 1480.0 and Gr.zl_half[k] <= 2000:        # 11.15 K / km
             thetal[k] = 302.4 + (Gr.zl_half[k] - 1480.0) * (308.2 - 302.4)/(2000.0 - 1480.0)
-        if Gr.zl_half[k] > 2000.0:
+        elif Gr.zl_half[k] > 2000.0:                                  # 3.65 K / km
             thetal[k] = 308.2 + (Gr.zl_half[k] - 2000.0) * (311.85 - 308.2)/(3000.0 - 2000.0)
 
         #Set qt profile
@@ -331,6 +329,7 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             u[k] = -8.75
         if Gr.zl_half[k] > 700.0:
             u[k] = -8.75 + (Gr.zl_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
+
 
     #Set velocities for Galilean transformation
     RS.v0 = 0.0
@@ -1699,6 +1698,7 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
     return
+
 
 
 
