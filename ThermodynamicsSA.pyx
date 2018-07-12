@@ -25,6 +25,7 @@ cdef extern from "thermodynamics_sa.h":
     void eos_c_refstate(Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double p0, double s, double qt, double *T, double *qv, double *ql, double *qi) nogil
     void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
                     double * qv, double * ql, double * qi, double * alpha, int * n_nan)
+    # __
     # void eos_update(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *s, double *qt, double *T,
     #                 double * qv, double * ql, double * qi, double * alpha)
     # __
@@ -85,13 +86,11 @@ cdef class ThermodynamicsSA:
         :return:
         '''
 
-        # PV.add_variable('s', 'm/s', "sym", "scalar", Pa)
-        # PV.add_variable('qt', 'kg/kg', "sym", "scalar", Pa)
         PV.add_variable('s', 'J kg^-1 K^-1', 's', 'specific entropy', "sym", "scalar", Pa)
         PV.add_variable('qt', 'kg/kg', 'q_t', 'total water mass fraction', "sym", "scalar", Pa)
         # __
         # Pa.root_print('adding passive scalar phi as prognostic variable')
-        # PV.add_variable('phi', '-', "sym", "scalar", Pa)
+        # PV.add_variable('phi', '-', 'phi', 'passive scalar', "sym", "scalar", Pa)
         # __
 
         # Initialize class member arrays

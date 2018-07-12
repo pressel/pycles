@@ -46,7 +46,7 @@ cdef class Forcing:
             self.scheme = ForcingRico()
         elif casename == 'StableBubble':
             self.scheme = ForcingNone()
-        elif casename == 'SaturatedBubble': 
+        elif casename == 'SaturatedBubble':
             self.scheme = ForcingNone()
         elif casename == 'Isdac':
             self.scheme = ForcingIsdac()

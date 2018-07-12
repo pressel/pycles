@@ -1,5 +1,6 @@
 
 import numpy as np
+# import mpi4py
 from mpi4py import MPI
 cimport numpy as np
 import os
@@ -46,9 +47,9 @@ cdef class VisualizationOutput:
 
     cpdef initialize(self):
         self.last_vis_time = 0.0
-        #__
-        self.count = 0
-        #__
+        # #__
+        # self.count = 0
+        # #__
 
         return
 
@@ -114,12 +115,14 @@ cdef class VisualizationOutput:
         cdef:
             double [:,:] local_var
             double [:,:] reduced_var
-            list pv_vars = ['phi','s', 'w', 'v', 'u']
-            list dv_vars = ['potential_temperature','temperature','diffusivity']
+            list pv_vars = ['qt', 's', 'w']
+            list dv_vars = ['potential_temperature', 'ql', 'diffusivity']
 
+        # __
         if 'qt' in PV.name_index:
-            pv_vars = ['phi','qt', 's', 'w', 'v', 'u']
+        #     pv_vars = ['phi','qt', 's', 'w', 'v', 'u']
             dv_vars = ['potential_temperature','temperature','ql', 'diffusivity']
+        # # __
 
         for var in pv_vars:
             local_var = np.zeros((Gr.dims.n[1], Gr.dims.n[2]), dtype=np.double, order='c')
