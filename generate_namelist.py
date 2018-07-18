@@ -163,13 +163,13 @@ def ColdPoolDry():
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 3
-    namelist['grid']['nx'] = 100
+    namelist['grid']['nx'] = 200
     namelist['grid']['ny'] = 5
-    namelist['grid']['nz'] = 100
+    namelist['grid']['nz'] = 150
     namelist['grid']['gw'] = 5
-    namelist['grid']['dx'] = 100.0
-    namelist['grid']['dy'] = 100.0
-    namelist['grid']['dz'] = 50.0
+    namelist['grid']['dx'] = 200.0
+    namelist['grid']['dy'] = 200.0
+    namelist['grid']['dz'] = 100.0
 
     namelist['mpi'] = {}
     namelist['mpi']['nprocx'] = 1
@@ -234,6 +234,9 @@ def ColdPoolDry():
     namelist['meta'] = {}
     namelist['meta']['casename'] = 'ColdPoolDry'
     namelist['meta']['simname'] = 'ColdPoolDry'
+
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 20.0
 
     return namelist
 
