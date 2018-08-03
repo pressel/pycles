@@ -1104,7 +1104,7 @@ void melt_snow_wrapper(const struct DimStruct *dims, double* density, double* te
 
 };
 
-void get_n_ice(const struct DimStruct *dims, double* density, double* temperature, double* qi, double n0i, double* n_ice){
+void get_n_ice(const struct DimStruct *dims, double* density, double* qi, double n0i, double* n_ice){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -1133,7 +1133,7 @@ void get_n_ice(const struct DimStruct *dims, double* density, double* temperatur
 
 };
 
-void get_n_rain(const struct DimStruct *dims, double* density, double* temperature, double* qrain, double* n0rain, double* n_rain){
+void get_n_rain(const struct DimStruct *dims, double* density, double* qrain, double* n0rain, double* n_rain){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
@@ -1162,7 +1162,7 @@ void get_n_rain(const struct DimStruct *dims, double* density, double* temperatu
 
 };
 
-void get_n_snow(const struct DimStruct *dims, double* density, double* temperature, double* qsnow, double* n0snow, double* n_snow){
+void get_n_snow(const struct DimStruct *dims, double* density, double* qsnow, double* n0snow, double* n_snow){
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
