@@ -164,6 +164,9 @@ cdef class Microphysics_Arctic_1M:
         # add wet bulb temperature
         DV.add_variables('temperature_wb', 'K', r'T_{wb}','wet bulb temperature', 'sym', Pa)
 
+        # add micro variables to DV
+        DV.add_variables('snow_depo', 'kg kg^-1 s^-1', r'dqsnow/dt', 'snow deposition tendency', 'sym', Pa)
+
         NS.add_profile('evap_rate', Gr, Pa)
         NS.add_profile('precip_rate', Gr, Pa)
         NS.add_profile('melt_rate', Gr, Pa)
@@ -414,6 +417,23 @@ cdef class Microphysics_Arctic_1M:
         self.ice_stats(Gr, Ref, PV, DV, NS, Pa)
 
         return
+
+    cpdef micro_fields(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                   DiagnosticVariables.DiagnosticVariables DV):
+
+        cdef:
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t qsnow_shift = PV.get_varshift(Gr, 'qsnow')
+            Py_ssize_t nsnow_shift = DV.get_varshift(Gr, 'nsnow')
+            Py_ssize_t depo_shift = DV.get_varshift(Gr, 'snow_depo')
+
+        evaporation_snow_wrapper(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.rho0_half[0],
+                                 &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &PV.values[qsnow_shift],
+                                 &DV.values[nsnow_shift], &DV.values[depo_shift])
+
+        return
+
 
     cpdef ice_stats(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):

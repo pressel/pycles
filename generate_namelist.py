@@ -1022,7 +1022,7 @@ def IsdacCC():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = "fields"
     namelist['fields_io']['frequency'] = 36000.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['snow_depo', 'buoyancy', 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'IsdacCC'
