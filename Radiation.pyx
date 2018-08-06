@@ -749,6 +749,12 @@ cdef class RadiationRRTM(RadiationBase):
         except:
             self.IsdacCC_dT = 0.0
 
+        try:
+            self.IsdacCC_dHf = namelist['initial']['rh'] - 0.6
+            print('IsdacCC case: RRTM profiles are shifted according to %2.2f RH change in free troposphere.'%(self.IsdacCC_dHf))
+        except:
+            self.IsdacCC_dHf = 0.0
+
         return
 
 
@@ -835,7 +841,8 @@ cdef class RadiationRRTM(RadiationBase):
             specific_humidity = vapor_mixing_ratios / (1.0 + vapor_mixing_ratios)
             for k in xrange(len(pressures)-n_profile, len(pressures)):
                 self.p_ext[self.n_buffer+count] = pressures[k]
-                qt_new = get_humidity(temperatures[k], specific_humidity[k], pressures[k], temperatures[k]+self.IsdacCC_dT, Th)
+                qt_new = get_humidity(temperatures[k], specific_humidity[k], pressures[k],
+                                      temperatures[k]+self.IsdacCC_dT, self.IsdacCC_dHf, Th)
                 self.t_ext[self.n_buffer+count] = temperatures[k] + self.IsdacCC_dT
                 self.rv_ext[self.n_buffer+count] = qt_new / (1.0 - qt_new)
                 count += 1
@@ -1357,10 +1364,12 @@ cdef double cos_sza(double jday, double hourz, double dlat, double dlon) nogil:
 
     return cos_sza
 
-def get_humidity(temperature_old, qt_old, pressure, temperature_new, Th):
+def get_humidity(temperature_old, qt_old, pressure, temperature_new, dHf, Th):
     pv_star_1 = Th.get_pv_star(temperature_old)
     pv_1 = (pressure * qt_old) / (eps_v * (1.0 - qt_old) + qt_old)
-    rh_ = pv_1 / pv_star_1
+    rh_ = pv_1 / pv_star_1 + dHf
+    if rh_ > 1.0:
+        rh_ = 1.0
     pv_star_2 = Th.get_pv_star(temperature_new)
     pv_2 = rh_ * pv_star_2
     qt_new = 1.0/(eps_vi * (pressure - pv_2)/pv_2 + 1.0)

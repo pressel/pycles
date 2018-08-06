@@ -165,6 +165,7 @@ cdef class RadiationRRTM(RadiationBase):
         double [:, :] uflx_sw_pencils
         double [:, :] dflx_sw_pencils
         double IsdacCC_dT
+        double IsdacCC_dHf
 
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
