@@ -141,6 +141,8 @@ cdef class RadiationRRTM(RadiationBase):
         double coszen
         double adif
         double adir
+        double adif_lw
+        double adir_lw
         double radiation_frequency
         double next_radiation_calculate
         bint daily_mean_sw

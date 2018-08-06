@@ -18,7 +18,7 @@ from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c,
 cimport ReferenceState
 from Forcing cimport AdjustedMoistAdiabat
 from Thermodynamics cimport LatentHeat
-from libc.math cimport sqrt, fmin, cos, exp, fabs
+from libc.math cimport sqrt, fmin, fmax, cos, exp, fabs
 include 'parameters.pxi'
 # import matplotlib.pyplot as plt
 
@@ -35,6 +35,8 @@ def InitializationFactory(namelist):
             return InitSaturatedBubble
         elif casename == 'Bomex':
             return InitBomex
+        elif casename == 'ARM2017':
+            return InitARM2017
         elif casename == 'Gabls':
             return InitGabls
         elif casename == 'DYCOMS_RF01':
@@ -366,6 +368,116 @@ def InitBomex(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
 
     return
+
+def InitARM2017(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+
+
+    #Read in ARM Data
+    rt_grp = nc.Dataset('./ARMData/data_arm_2017.nc', 'r')
+    init_grp = rt_grp['initial']
+
+    z_in = init_grp['z'][:]
+    tp_in = init_grp['tp'][:]
+    q_in = init_grp['q'][:]
+    #u_in = init_grp['u'][:]
+    #v_in = init_grp['v'][:]
+
+
+    forcing_grp = rt_grp['forcing']
+    p_force = forcing_grp['p'][::-1]*100.0
+    u_in = forcing_grp['uls'][0, ::-1]
+    v_in = forcing_grp['vls'][0, ::-1]
+
+
+
+
+    #First generate the reference profiles
+    RS.Pg = .97e5  #Pressure at ground
+    RS.Tg = 294.97  #Temperature at ground
+    RS.qtg = 0.01344   #Total water mixing ratio at surface
+
+    RS.initialize(Gr, Th, NS, Pa)
+
+
+
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
+    np.random.seed(Pa.rank * random_seed_factor)
+
+    #Get the variable number for each of the velocity components
+
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift
+        Py_ssize_t ijk, e_varshift
+        double temp
+        double qt_
+        double [:] temperature = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        double [:] v = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
+        Py_ssize_t count
+
+        theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
+        qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
+
+    u = np.interp(np.array(RS.p0_half), p_force, u_in)
+    v = np.interp(np.array(RS.p0_half), p_force, v_in)
+    temperature = np.interp(np.array(Gr.zl_half), z_in, tp_in)
+    qt = np.interp(np.array(Gr.zl_half), z_in, q_in)/1000.0
+
+
+    print np.array(z_in)
+    print np.array(qt)
+    print np.array(temperature)
+
+    #Set velocities for Galilean transformation
+    RS.v0 = 0.0
+    RS.u0 = 0.0
+
+
+    #Now loop and set the initial condition
+    #First set the velocities
+    count = 0
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = u[k] - RS.u0
+                PV.values[v_varshift + ijk] = v[k] - RS.v0
+                PV.values[w_varshift + ijk] = 0.0
+                if Gr.zl_half[k] <= 500.0:
+                    temp = (temperature[k] + theta_pert[count])* exner_c(RS.p0_half[k])
+                else:
+                    temp = temperature[k] * exner_c(RS.p0_half[k])
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,fmax(qt[k], 1e-7),0.0,0.0)
+                PV.values[qt_varshift + ijk] = fmax(qt[k], 1e-7)
+                count += 1
+
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[e_varshift + ijk] = 1.0-Gr.zl_half[k]/3000.0
+
+
+    return
+
 
 def InitGabls(namelist,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):

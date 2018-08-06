@@ -21,6 +21,7 @@ from entropies cimport sv_c, sd_c
 from libc.math cimport sqrt, log, fabs,atan, exp, fmax
 cimport numpy as np
 import numpy as np
+import netCDF4 as nc
 include "parameters.pxi"
 
 import cython
@@ -50,6 +51,8 @@ def SurfaceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
            return SurfaceSullivanPatton(LH)
         elif casename == 'Bomex':
             return SurfaceBomex(LH)
+        elif casename == 'ARM2017':
+            return SurfaceARM2017(LH)
         elif casename == 'Gabls':
             return SurfaceGabls(namelist,LH)
         elif casename == 'DYCOMS_RF01':
@@ -375,6 +378,119 @@ cdef class SurfaceBomex(SurfaceBase):
 
 
         return
+
+cdef class SurfaceARM2017(SurfaceBase):
+    def __init__(self,  LatentHeat LH):
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+        self.dry_case = False
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+        self.qt_flux = np.add(self.qt_flux,5.2e-5)
+
+        self.theta_flux = 8.0e-3 # K m/s
+        self.ustar_ = 0.0
+        self.theta_surface = 0.0#K
+        self.qt_surface = 0.0# kg/kg
+        self.buoyancy_flux = 0.0 #g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux[0]
+                                #                                   + self.qt_surface *self.theta_flux))
+                              #/(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))
+
+        rt_grp = nc.Dataset('./ARMData/data_arm_2017.nc', 'r')
+        forcing_grp = rt_grp['surface']
+
+        self.sst_array = forcing_grp['sst'][:]
+        self.lhf_array = forcing_grp['LE'][:]
+        self.shf_array = forcing_grp['H'][:]
+
+
+        print np.array(self.sst_array)
+        #p_in = forcing_grp['p'][:]
+        #print forcing_grp
+        rt_grp.close()
+
+
+
+
+        return
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+
+        if Pa.sub_z_rank != 0:
+            return
+
+
+        cdef :
+            Py_ssize_t hr_indx
+            Py_ssize_t i
+            Py_ssize_t j
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t ijk, ij
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t istride_2d = Gr.dims.nlg[1]
+            Py_ssize_t temp_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            double bflux
+            double cp_, sv, sd, lam, lv, pd, pv
+            double fq, ft
+            double [:] windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
+        #Hour index
+        hr_indx = int(TS.t // 3600)
+        self.T_surface = self.sst_array[hr_indx] +  (TS.t - hr_indx * 3600.0)*(self.sst_array[hr_indx + 1] -  self.sst_array[hr_indx])/(3600.0)
+        ft = self.shf_array[hr_indx] +  (TS.t - hr_indx * 3600.0)*(self.shf_array[hr_indx + 1] -  self.shf_array[hr_indx])/(3600.0)
+        fq = self.lhf_array[hr_indx] +  (TS.t - hr_indx * 3600.0)*(self.lhf_array[hr_indx + 1] -  self.lhf_array[hr_indx])/(3600.0)
+
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0], Ref.u0, Ref.v0, 1e-9)
+
+        # Get the scalar flux
+        with nogil:
+            for i in xrange(gw-1, imax-gw+1):
+                for j in xrange(gw-1, jmax-gw+1):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    lam = self.Lambda_fp(DV.values[temp_shift+ijk])
+                    lv = self.L_fp(DV.values[temp_shift+ijk],lam)
+                    cp_ = cpm_c(PV.values[qt_shift+ijk])
+                    pv = pv_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                    pd = pd_c(Ref.p0_half[gw], PV.values[ijk + qt_shift], PV.values[ijk + qt_shift] - DV.values[ijk + ql_shift])
+                    sv = sv_c(pv,DV.values[temp_shift+ijk])
+                    sd = sd_c(pd,DV.values[temp_shift+ijk])
+                    self.qt_flux[ij] = fq / lv  * Ref.alpha0_half[gw]
+                    self.s_flux[ij] = Ref.alpha0_half[gw] * (ft/DV.values[temp_shift+ijk] + fq*(sv - sd)/lv)
+                    bflux = g * Ref.alpha0_half[gw]/cp_/DV.values[ijk + temp_shift] * \
+                                          (ft + (eps_vi-1.0)*cp_*DV.values[ijk + temp_shift]*fq/lv)
+                    self.friction_velocity[ij] = compute_ustar(windspeed[ij], bflux, 0.035, Gr.dims.dx[2]/2.0)
+            for i in xrange(gw, imax-gw):
+                for j in xrange(gw, jmax-gw):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    self.u_flux[ij] = -self.friction_velocity[ij]*self.friction_velocity[ij] / interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -self.friction_velocity[ij]*self.friction_velocity[ij] / interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+
+
+        SurfaceBase.update(self, Gr, Ref, PV, DV, Pa, TS)
+
+        return
+
+
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.stats_io(self, Gr, NS, Pa)
+
+
+        return
+
+
 
 
 cdef class SurfaceGabls(SurfaceBase):

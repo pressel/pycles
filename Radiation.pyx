@@ -53,6 +53,8 @@ def RadiationFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
             return RadiationRRTM(namelist,LH, Pa)
         elif casename == 'ZGILS':
             return RadiationRRTM(namelist, LH, Pa)
+        elif casename == 'ARM2017':
+            return RadiationRRTM(namelist, LH, Pa)
         else:
             return RadiationNone()
 
@@ -621,6 +623,8 @@ cdef class RadiationRRTM(RadiationBase):
             self.profile_name = 'arctic'
         elif casename == 'DYCOMS_RF01':
             self.profile_name = 'cgils_ctl_s12'
+        elif casename == 'ARM2017':
+            self.profile_name = 'cgils_ctl_s12'
         elif casename == 'CGILS':
             loc = namelist['meta']['CGILS']['location']
             is_p2 = namelist['meta']['CGILS']['P2']
@@ -1027,6 +1031,15 @@ cdef class RadiationRRTM(RadiationBase):
                         self.hourz = np.remainder(self.hourz, 24.0)
                     self.coszen = cos_sza(self.dyofyr, self.hourz, self.latitude, self.longitude)
 
+
+                    #This is for arm only
+                    self.adir = 1.4 * 0.06/(1.0 + 0.8 * self.coszen)
+                    self.adif = 1.2 * 0.06
+                    self.adir_lw = 1.4 * 0.24/(1.0 + 0.8 * self.coszen)
+                    self.adif_lw = 1.2 * 0.24
+
+
+                    print np.arccos(self.coszen)*180.0/np.pi, self.adir, self.adif
                 self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
                 self.next_radiation_calculate = (TS.t//self.radiation_frequency + 1.0) * self.radiation_frequency
 
@@ -1117,8 +1130,8 @@ cdef class RadiationRRTM(RadiationBase):
             double [:] coszen_in = np.ones((n_pencils),dtype=np.double,order='F') *self.coszen
             double [:] asdir_in = np.ones((n_pencils),dtype=np.double,order='F') * self.adir
             double [:] asdif_in = np.ones((n_pencils),dtype=np.double,order='F') * self.adif
-            double [:] aldir_in = np.ones((n_pencils),dtype=np.double,order='F') * self.adir
-            double [:] aldif_in = np.ones((n_pencils),dtype=np.double,order='F') * self.adif
+            double [:] aldir_in = np.ones((n_pencils),dtype=np.double,order='F') * self.adir_lw
+            double [:] aldif_in = np.ones((n_pencils),dtype=np.double,order='F') * self.adif_lw
             double [:,:,:] taucld_lw_in  = np.zeros((16,n_pencils,nz_full),dtype=np.double,order='F')
             double [:,:,:] tauaer_lw_in  = np.zeros((n_pencils,nz_full,16),dtype=np.double,order='F')
             double [:,:,:] taucld_sw_in  = np.zeros((14,n_pencils,nz_full),dtype=np.double,order='F')

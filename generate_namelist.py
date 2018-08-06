@@ -35,6 +35,8 @@ def main():
         namelist = SullivanPatton()
     elif case_name == 'Bomex':
         namelist = Bomex()
+    elif case_name == 'ARM2017':
+        namelist = ARM2017()
     elif case_name == 'Gabls':
         namelist = Gabls()
     elif case_name == 'DYCOMS_RF01':
@@ -391,6 +393,102 @@ def Bomex():
     namelist['initialization']['random_seed_factor'] = 1
 
     return namelist
+
+def ARM2017():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 64
+    namelist['grid']['ny'] = 64
+    namelist['grid']['nz'] = 320
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 100.0
+    namelist['grid']['dy'] = 100.0
+    namelist['grid']['dz'] = 50
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 12.0 * 3600.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_SA'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5
+
+
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = True
+    namelist['radiation']['RRTM'] = {}
+    namelist['radiation']['RRTM']['frequency'] = 60.0
+    namelist['radiation']['RRTM']['latitude'] = 36.5
+    namelist['radiation']['RRTM']['longitude'] =  82.5
+    namelist['radiation']['RRTM']['hourz'] = 10.5
+    namelist['radiation']['RRTM']['dyofyr'] = 205.0
+    namelist['radiation']['RRTM']['daily_mean_sw'] =  False
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 600
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['Cumulus','TKE']
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'ARM2017'
+    namelist['meta']['casename'] = 'ARM2017'
+
+    namelist['initialization'] = {}
+    namelist['initialization']['random_seed_factor'] = 1
+
+    return namelist
+
 
 
 def Gabls():
