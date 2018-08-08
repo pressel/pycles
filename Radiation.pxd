@@ -135,7 +135,7 @@ cdef class RadiationRRTM(RadiationBase):
         double h2o_factor
         double SST_1xCO2
         int dyofyr
-        int dyofyr_init
+        double dyofyr_real
         bint daily_mean_sw
         double hourz_init
         double hourz

@@ -614,8 +614,8 @@ cdef class RadiationRRTM(RadiationBase):
         try:
             self.dyofyr = namelist['radiation']['RRTM']['dyofyr']
         except:
-            self.dyofyr = 196 # July 15 for ZGILS
-        self.dyofyr_init = self.dyofyr
+            self.dyofyr = 192 # July 11 for ZGILS
+
         try:
             self.adjes = namelist['radiation']['RRTM']['adjes']
         except:
@@ -648,7 +648,7 @@ cdef class RadiationRRTM(RadiationBase):
             try:
                 self.longitude = namelist['radiation']['RRTM']['longitude']
             except:
-                self.longitude = 120.0
+                self.longitude = 125.0
             try:
                 self.hourz_init = namelist['radiation']['RRTM']['hourz']
             except:
@@ -656,6 +656,7 @@ cdef class RadiationRRTM(RadiationBase):
             self.hourz = self.hourz_init
             self.coszen = cos_sza(self.dyofyr_init, self.hourz_init, self.latitude, self.longitude)
             Pa.root_print('Calculated cos(sza) based on time and location, cos(sza) = '+ str((self.coszen)))
+            self.dyofyr_real = self.dyofyr + self.hourz_init/24.0
 
 
         try:
@@ -1078,29 +1079,33 @@ cdef class RadiationRRTM(RadiationBase):
         cdef double [:] pressures = np.arange(0, 1000, 10)*100.0
         pressures = np.array(pressures[::-1], dtype=np.double)
         cdef double adjusted_rad_freq = self.radiation_frequency * TS.acceleration_factor
-        cdef double deltaT
+        cdef double deltaTx
+        cdef:
+            double current_day_real
+
+
 
         if TS.rk_step == 0:
             self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa, FoRef, TS)
+            if not self.daily_mean_sw:
+                self.hourz +=self.hourz + TS.dt/3600.0
+                if self.hourz > 24.0:
+                    self.hourz -= 24.0
+                    # DYOFYR FIXED AT JULY 11
+                self.coszen = cos_sza(self.dyofyr, self.hourz, self.latitude, self.longitude)
+                if not self.constant_adir:
+                    if (self.coszen > 0.0):
+                        self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
+                    else:
+                        self.adir = 0.0
+
+
             if adjusted_rad_freq <= 0.0:
                 self.update_RRTM(Gr, Ref, PV, DV,Sur, Pa)
             elif TS.t >= self.next_radiation_calculate:
                 self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
                 self.next_radiation_calculate = (TS.t//adjusted_rad_freq + 1.0) * adjusted_rad_freq
-                if not self.daily_mean_sw:
-                    #Update coszen
-                    #TODO--this needs to be checked but should be ok if hourz_init = 0
-                    # For ZGILS we fix day of year anyway
-                    #self.dyofyr = np.floor_divide(TS.t, 86400.0) + self.dyofyr_init
-                    self.hourz = self.hourz_init + TS.t/3600.0
-                    if self.hourz > 24.0:
-                        self.hourz = np.remainder(self.hourz, 24.0)
-                    self.coszen = cos_sza(self.dyofyr, self.hourz, self.latitude, self.longitude)
-                    if not self.constant_adir:
-                        if (self.coszen > 0.0):
-                            self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
-                        else:
-                            self.adir = 0.0
+
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
