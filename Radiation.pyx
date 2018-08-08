@@ -654,9 +654,9 @@ cdef class RadiationRRTM(RadiationBase):
             except:
                 self.hourz_init = 0.0
             self.hourz = self.hourz_init
-            self.coszen = cos_sza(self.dyofyr_init, self.hourz_init, self.latitude, self.longitude)
+            self.coszen = cos_sza(self.dyofyr, self.hourz, self.latitude, self.longitude)
             Pa.root_print('Calculated cos(sza) based on time and location, cos(sza) = '+ str((self.coszen)))
-            self.dyofyr_real = self.dyofyr + self.hourz_init/24.0
+            self.dyofyr_real = self.dyofyr + self.hourz/24.0
 
 
         try:
