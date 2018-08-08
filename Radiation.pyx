@@ -20,7 +20,7 @@ import numpy as np
 cimport numpy as np
 import netCDF4 as nc
 from scipy.interpolate import pchip_interpolate
-from libc.math cimport pow, cbrt, exp, fmin, fmax
+from libc.math cimport pow, cbrt, exp, fmin, fmax, cos, sin, sqrt
 from thermodynamic_functions cimport cpm_c
 include 'parameters.pxi'
 from profiles import profile_data
@@ -614,7 +614,8 @@ cdef class RadiationRRTM(RadiationBase):
         try:
             self.dyofyr = namelist['radiation']['RRTM']['dyofyr']
         except:
-            self.dyofyr = 0
+            self.dyofyr = 196 # July 15 for ZGILS
+        self.dyofyr_init = self.dyofyr
         try:
             self.adjes = namelist['radiation']['RRTM']['adjes']
         except:
@@ -628,10 +629,34 @@ cdef class RadiationRRTM(RadiationBase):
             self.scon = 1360.0
 
         try:
-            self.coszen =namelist['radiation']['RRTM']['coszen']
+            self.daily_mean_sw = namelist['radiation']['RRTM']['daily_mean_sw']
         except:
-            Pa.root_print('Mean Daytime cos(SZA) not set so RadiationRRTM takes default value: coszen = 2.0/pi .')
-            self.coszen = 2.0/pi
+            print('Use daily mean sw in RRTM!')
+            self.daily_mean_sw = True
+
+        if self.daily_mean_sw:
+            try:
+                self.coszen =namelist['radiation']['RRTM']['coszen']
+            except:
+                Pa.root_print('Mean Daytime cos(SZA) not set so RadiationRRTM takes default value: coszen = 2.0/pi .')
+                self.coszen = 2.0/pi
+        else:
+            try:
+                self.latitude = namelist['radiation']['RRTM']['latitude']
+            except:
+                self.latitude = 30.0
+            try:
+                self.longitude = namelist['radiation']['RRTM']['longitude']
+            except:
+                self.longitude = 120.0
+            try:
+                self.hourz_init = namelist['radiation']['RRTM']['hourz']
+            except:
+                self.hourz_init = 0.0
+            self.hourz = self.hourz_init
+            self.coszen = cos_sza(self.dyofyr_init, self.hourz_init, self.latitude, self.longitude)
+            Pa.root_print('Calculated cos(sza) based on time and location, cos(sza) = '+ str((self.coszen)))
+
 
         try:
             self.adif = namelist['radiation']['RRTM']['adif']
@@ -641,12 +666,14 @@ cdef class RadiationRRTM(RadiationBase):
 
         try:
             self.adir = namelist['radiation']['RRTM']['adir']
+            self.constant_adir = True
         except:
+            self.constant_adir = False
             if (self.coszen > 0.0):
                 self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
             else:
                 self.adir = 0.0
-            Pa.root_print('Surface direct albedo not set so RadiationRRTM computes value: adif = %5.4f .'%(self.adir))
+            Pa.root_print('Surface direct albedo not set so RadiationRRTM computes value: adir = '+ str(self.adir))
 
         try:
             self.uniform_reliq = namelist['radiation']['RRTM']['uniform_reliq']
@@ -1060,7 +1087,20 @@ cdef class RadiationRRTM(RadiationBase):
             elif TS.t >= self.next_radiation_calculate:
                 self.update_RRTM(Gr, Ref, PV, DV, Sur, Pa)
                 self.next_radiation_calculate = (TS.t//adjusted_rad_freq + 1.0) * adjusted_rad_freq
-
+                if not self.daily_mean_sw:
+                    #Update coszen
+                    #TODO--this needs to be checked but should be ok if hourz_init = 0
+                    # For ZGILS we fix day of year anyway
+                    #self.dyofyr = np.floor_divide(TS.t, 86400.0) + self.dyofyr_init
+                    self.hourz = self.hourz_init + TS.t/3600.0
+                    if self.hourz > 24.0:
+                        self.hourz = np.remainder(self.hourz, 24.0)
+                    self.coszen = cos_sza(self.dyofyr, self.hourz, self.latitude, self.longitude)
+                    if not self.constant_adir:
+                        if (self.coszen > 0.0):
+                            self.adir = (.026/(self.coszen**1.7 + .065)+(.15*(self.coszen-0.10)*(self.coszen-0.50)*(self.coszen- 1.00)))
+                        else:
+                            self.adir = 0.0
 
         cdef:
             Py_ssize_t imin = Gr.dims.gw
@@ -1436,3 +1476,22 @@ cdef class RadiationRRTM(RadiationBase):
 
 
         return
+
+#Calculate cos(solar zenith angle) from radiation.f90 in JPLLES provided by Colleen
+cdef double cos_sza(double jday, double hourz, double dlat, double dlon) nogil:
+
+    cdef double epsiln = 0.016733
+    cdef double sinob = 0.3978
+    cdef double dpy = 365.242 #degrees per year
+    cdef double dph = 15.0 #degrees per hour
+    cdef double day_angle = 2.0*pi*(jday-1.)/dpy
+    #Hours of Meridian Passage (true solar noon)
+    cdef double homp = (12.0 + 0.12357*sin(day_angle) - 0.004289*cos(day_angle) + 0.153809*sin(2*day_angle) + 0.060783*cos(2*day_angle))
+    cdef double hour_angle = dph*(hourz - homp) - dlon
+    cdef double ang = 279.9348*pi/180. + day_angle
+    cdef double sigma = (ang*180./pi + 0.4087*sin(ang) + 1.8724*cos(ang) - 0.0182*sin(2.*ang) + 0.0083*cos(2.*ang))*pi/180.
+    cdef double sindlt = sinob*sin(sigma)
+    cdef double cosdlt = sqrt(1. - sindlt*sindlt)
+    cdef double cos_sza = fmax(sindlt*sin(pi/180.*dlat) +cosdlt*cos(pi/180.*dlat)*cos(pi/180.*hour_angle), 0.0)
+
+    return cos_sza
