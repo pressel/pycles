@@ -1088,9 +1088,9 @@ cdef class RadiationRRTM(RadiationBase):
         if TS.rk_step == 0:
             self.reinitialize_profiles(Gr, Ref, DV, Sur, Pa, FoRef, TS)
             if not self.daily_mean_sw:
-                self.hourz +=self.hourz + TS.dt/3600.0
+                self.hourz =self.hourz + TS.dt/3600.0
                 if self.hourz > 24.0:
-                    self.hourz -= 24.0
+                    self.hourz = self.hourz-24.0
                     # DYOFYR FIXED AT JULY 11
                 self.coszen = cos_sza(self.dyofyr, self.hourz, self.latitude, self.longitude)
                 if not self.constant_adir:
