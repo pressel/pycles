@@ -35,26 +35,31 @@ def main():
     parser.add_argument("path")
     parser.add_argument("casename")
     parser.add_argument("--var_name")
+    parser.add_argument("--time_min")
     args = parser.parse_args()
     path = args.path
     case_name = args.casename
     if args.var_name:
         var_list = [args.var_name]
     else:
-        var_list = ['w', 's', 'potential_temperature', 'temperature', 'ql', 'qt', 'u', 'v']
+        var_list = ['w', 's', 'theta', 'temperature', 'ql', 'qt', 'u', 'v']
+    if args.time_min:
+        t_min = np.int(args.time_min)
+    else:
+        t_min = 0
 
 
     global fullpath_out, file_name
-    global t, dt, dx, dz
+    global t, dt, dx, dz, nx
     # case_name = 'Bomex'
 
     # path_list = ['../bomex/161130_test/n24/2_full_old_EV12/']
     # path = '../bomex/161130_test/n24/2_QL_old_EV12/'
     path_list = [path]
     for path in path_list:
-        fullpath_out = os.path.join(path,'vis/')
+        fullpath_out = os.path.join(path,'Visualization/')
         print('fullpath_out', fullpath_out)
-        scheme = 'QL, 2nd, TKE, CFL = 0.1'
+        #     scheme = 'QL, 2nd, TKE, CFL = 0.1'
 
         nml = simplejson.loads(open(os.path.join(path,case_name + '.in')).read())
         # namelist_files = glob.glob(path +'*.in')
@@ -64,10 +69,11 @@ def main():
         dt = nml['visualization']['frequency']
         dx = nml['grid']['dx']
         dz = nml['grid']['dz']
+        nx = nml['grid']['nx']
         print('vis dt:' + str(dt) +', dz: '+ str(dz))
 
         # files = os.listdir(os.path.join(path, 'vis/*.pkl'))       # type = list
-        files = os.listdir(os.path.join(path, 'vis'))  # type = list
+        files = os.listdir(os.path.join(path, 'Visualization'))  # type = list
         print('visualisation files: ', str(files))
         print('')
 
@@ -89,26 +95,43 @@ def main():
         #     fullpath_in = fullpath_out + file_name  + '.pkl'
         #     print('fullpath_in: ' + fullpath_in)
 
+        ''' (A) setting levels '''
+        file_name = files[0]
+        i = 0
+        while file_name[-4:] != '.pkl':
+            i += 1
+            file_name = files[i]
+        f = open(fullpath_out + file_name)
+        data0 = pickle.load(f)
+
+
+        ''' (B) plotting '''
         for file_name in files:
             if file_name[-4:] == '.pkl':
-                t = np.int(file_name[0:-4])
-                fullpath_in = fullpath_out + file_name
+                t = np.int(file_name[0:-4]) - 1e7
+                if t > t_min:
+                    fullpath_in = fullpath_out + file_name
+                    print('fullpath_in: ' + fullpath_in)
 
-                f = open(fullpath_in)
-                data = pickle.load(f)
-                for var_name in var_list:
-                    print(var_name+ ', fullpath_in: ' + fullpath_in)
-                    try:
-                        var = data[var_name]
-                    except:
-                        print("No variable " + var_name)
-                        print " "
-                        continue
+                    f = open(fullpath_in)
+                    data = pickle.load(f)
+                    for var_name in var_list:
+                        try:
+                            var = data[var_name]
+                            print(var_name)
+                        except:
+                            print("No variable " + var_name)
+                            continue
 
-                    levels = np.linspace(np.amin(var), np.amax(var), 100)
-
-                    plot_data_levels(var, var_name, t, levels)
-                    plot_data(var, var_name, t)
+                        if np.amin(var) != np.amax(var):
+                            if var_name == 'w':
+                                levels = np.linspace(-2.0, 5.0, 100)
+                            else:
+                                var0 = data0[var_name]
+                                levels = np.linspace(np.amin(var0), np.amax(var0), 100)
+                            plot_data_levels(var, var_name, t, levels)
+                            # plot_data(var, var_name, t)
+                    print " "
 
 
     print('Ende')
@@ -152,38 +175,45 @@ def plot_data(data, var_name, t):
     # plt.show()
     plt.colorbar()
     plt.title(var_name + ', (t=' + np.str(t) + 's)')
-    plt.xlabel('x (dx=' + np.str(dx) + 'm)')
+    plt.xlabel('x (dx=' + np.str(dx) + 'm, nx='+np.str(nx)+')')
     plt.ylabel('height z (dz=' + np.str(dz) + 'm)')
     plt.savefig(os.path.join(fullpath_out, 'pdf', var_name + '_' + str(t) + '.pdf'))
-    plt.savefig(fullpath_out + var_name + '_' + str(t) + '.png')
+    plt.savefig(fullpath_out + var_name + '_' + str(t + 1e7) + '.png')
     plt.close()
     return
 
 
 def plot_data_levels(data, var_name, t, levels_):
     # print(data.shape)
-    plt.figure()
+    plt.figure(figsize=(12,8))
     if var_name == 'w':
         # print('bwr')
         # plt.contourf(data.T, levels=levels_, cmap=plt.cm.bwr)
-        plt.contourf(data.T, cmap=cm.bwr, levels=levels_)
+        '''set out - of - bounds colors'''
+        cs = plt.contourf(data.T, cmap=cm.bwr, levels=levels_, extend="both")
+        cs.cmap.set_under('navy')
+        cs.cmap.set_over('darkred') #crimson
     else:
-        plt.contourf(data.T, levels=levels_)
-    # plt.contourf(data.T)
-    # plt.show()
+        cs = plt.contourf(data.T, levels=levels_, extend="both")
+        cs.cmap.set_under('k')
+        cs.cmap.set_over('0.5')
+
     plt.title(var_name + ', (t=' + np.str(t) + 's)')
-    plt.xlabel('x (dx=' + np.str(dx) + 'm)')
+    plt.xlabel('x (dx=' + np.str(dx) + 'm, nx=' + np.str(nx) + ')')
     plt.ylabel('height z (dz=' + np.str(dz) + 'm)')
     plt.colorbar()
-    plt.savefig(os.path.join(fullpath_out, 'pdf', 'levels_' + var_name + '_' + str(t) + '.pdf'))
-    plt.savefig(fullpath_out + 'levels_' + var_name + '_' + str(t) + '_levels.png')
+    path_out = os.path.join(fullpath_out, 'pdf')
+    if not os.path.exists(path_out):
+        os.mkdir(path_out)
+    # plt.savefig(os.path.join(path_out, 'levels_' + var_name + '_' + str(t) + '.pdf'))
+    plt.savefig(fullpath_out + 'levels_' + var_name + '_' + str(t + 1e7) + '.png')
     plt.close()
     return
 
 
 
 def plot_data_levels_cont(var_field,var_name_field,levels_field,var_cont,var_name_cont,levels_cont):
-    print('cont print')
+    # print('cont print')
     plt.figure()
     if var_name_field == 'w':
         ax1 = plt.contourf(var_field.T, cmap=cm.bwr, levels=levels_field)
