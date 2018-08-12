@@ -109,7 +109,7 @@ def main():
         for file_name in files:
             if file_name[-4:] == '.pkl':
                 t = np.int(file_name[0:-4]) - 1e7
-                if t > t_min:
+                if t >= t_min:
                     fullpath_in = fullpath_out + file_name
                     print('fullpath_in: ' + fullpath_in)
 
@@ -125,7 +125,7 @@ def main():
 
                         if np.amin(var) != np.amax(var):
                             if var_name == 'w':
-                                levels = np.linspace(-2.0, 5.0, 100)
+                                levels = np.linspace(-5., 5.0, 100)
                             else:
                                 var0 = data0[var_name]
                                 levels = np.linspace(np.amin(var0), np.amax(var0), 100)

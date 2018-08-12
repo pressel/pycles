@@ -31,8 +31,10 @@ def main():
         namelist = StableBubble()
     elif case_name == 'SaturatedBubble':
         namelist = SaturatedBubble()
-    elif case_name == 'ColdPoolDry':
-        namelist = ColdPoolDry()
+    elif case_name == 'ColdPoolDry_2D':
+        namelist = ColdPoolDry_2D('single')
+    elif case_name == 'ColdPoolDry_double_2D':
+        namelist = ColdPoolDry_2D('double')
     elif case_name == 'SullivanPatton':
         namelist = SullivanPatton()
     elif case_name == 'Bomex':
@@ -157,7 +159,7 @@ def SullivanPatton():
 
 
 
-def ColdPoolDry():
+def ColdPoolDry_2D(number):
 
     namelist = {}
 
@@ -171,6 +173,11 @@ def ColdPoolDry():
     namelist['grid']['dy'] = 200.0
     namelist['grid']['dz'] = 100.0
 
+    namelist['init'] = {}
+    namelist['init']['dTh'] = 10.0      # temperature anomaly
+    namelist['init']['shape'] = 1       # shape of temperature anomaly: 1 = cos2-shape
+    namelist['init']['h'] = 2000.0      # initial height of temperature anomaly
+
     namelist['mpi'] = {}
     namelist['mpi']['nprocx'] = 1
     namelist['mpi']['nprocy'] = 1
@@ -181,7 +188,7 @@ def ColdPoolDry():
     namelist['time_stepping']['cfl_limit'] = 0.3
     namelist['time_stepping']['dt_initial'] = 10.0
     namelist['time_stepping']['dt_max'] = 10.0
-    namelist['time_stepping']['t_max'] = 1000.0
+    namelist['time_stepping']['t_max'] = 1500.0
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
@@ -232,8 +239,12 @@ def ColdPoolDry():
     namelist['fields_io']['diagnostic_fields'] = ['temperature']
 
     namelist['meta'] = {}
-    namelist['meta']['casename'] = 'ColdPoolDry'
-    namelist['meta']['simname'] = 'ColdPoolDry'
+    if number == 'single':
+        namelist['meta']['casename'] = 'ColdPoolDry_2D'
+        namelist['meta']['simname'] = 'ColdPoolDry_2D'
+    elif number == 'double':
+        namelist['meta']['casename'] = 'ColdPoolDry_double_2D'
+        namelist['meta']['simname'] = 'ColdPoolDry_double_2D'
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 20.0
