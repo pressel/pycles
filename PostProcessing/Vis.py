@@ -178,7 +178,7 @@ def plot_data(data, var_name, t):
     plt.xlabel('x (dx=' + np.str(dx) + 'm, nx='+np.str(nx)+')')
     plt.ylabel('height z (dz=' + np.str(dz) + 'm)')
     plt.savefig(os.path.join(fullpath_out, 'pdf', var_name + '_' + str(t) + '.pdf'))
-    plt.savefig(fullpath_out + var_name + '_' + str(t + 1e7) + '.png')
+    plt.savefig(fullpath_out + var_name + '_' + str(np.int(t + 1e7)) + '.png')
     plt.close()
     return
 
@@ -206,7 +206,7 @@ def plot_data_levels(data, var_name, t, levels_):
     if not os.path.exists(path_out):
         os.mkdir(path_out)
     # plt.savefig(os.path.join(path_out, 'levels_' + var_name + '_' + str(t) + '.pdf'))
-    plt.savefig(fullpath_out + 'levels_' + var_name + '_' + str(t + 1e7) + '.png')
+    plt.savefig(fullpath_out + 'levels_' + var_name + '_' + str(np.int(t + 1e7)) + '.png')
     plt.close()
     return
 
