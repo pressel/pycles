@@ -35,6 +35,8 @@ def main():
         namelist = ColdPoolDry_2D('single')
     elif case_name == 'ColdPoolDry_double_2D':
         namelist = ColdPoolDry_2D('double')
+    elif case_name == 'ColdPoolDry_single_3D':
+        namelist = ColdPoolDry_3D('single')
     elif case_name == 'SullivanPatton':
         namelist = SullivanPatton()
     elif case_name == 'Bomex':
@@ -250,6 +252,101 @@ def ColdPoolDry_2D(number):
     namelist['visualization']['frequency'] = 20.0
 
     return namelist
+
+
+
+def ColdPoolDry_3D(number):
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 200
+    namelist['grid']['ny'] = 200
+    namelist['grid']['nz'] = 150
+    namelist['grid']['gw'] = 5
+    namelist['grid']['dx'] = 200.0
+    namelist['grid']['dy'] = 200.0
+    namelist['grid']['dz'] = 100.0
+
+    namelist['init'] = {}
+    namelist['init']['dTh'] = 10.0      # temperature anomaly
+    namelist['init']['shape'] = 1       # shape of temperature anomaly: 1 = cos2-shape
+    namelist['init']['h'] = 2000.0      # initial height of temperature anomaly
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.3
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 1500.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_Dry'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    # namelist['sgs']['scheme'] = 'UniformViscosity'
+    # namelist['sgs']['UniformViscosity'] = {}
+    # namelist['sgs']['UniformViscosity']['viscosity'] = 0.0
+    # namelist['sgs']['UniformViscosity']['diffusivity'] = 0.0
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'None'
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+
+    namelist['conditional_stats'] = {}
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['None']
+    namelist['stats_io']['frequency'] = 100.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 100.0
+    # namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['temperature']
+
+    namelist['meta'] = {}
+    if number == 'single':
+        namelist['meta']['casename'] = 'ColdPoolDry_3D'
+        namelist['meta']['simname'] = 'ColdPoolDry_3D'
+    elif number == 'double':
+        namelist['meta']['casename'] = 'ColdPoolDry_double_3D'
+        namelist['meta']['simname'] = 'ColdPoolDry_double_3D'
+
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 20.0
+
+    return namelist
+
 
 
 

@@ -37,38 +37,41 @@ def InitializationFactory(namelist):
         elif casename == 'ColdPoolDry_double_2D':
             print('calling Initialization double ColdPoolDry 2D')
             return InitColdPoolDry_double_2D
-        # elif casename == 'StableBubble':
-        #     return InitStableBubble
-        # elif casename == 'SaturatedBubble':
-        #     return InitSaturatedBubble
-        # elif casename == 'Bomex':
-        #     return InitBomex
-        # elif casename == 'Gabls':
-        #     return InitGabls
-        # elif casename == 'DYCOMS_RF01':
-        #     return InitDYCOMS_RF01
-        # elif casename == 'DYCOMS_RF02':
-        #     return InitDYCOMS_RF02
-        # elif casename == 'SMOKE':
-        #     return InitSmoke
-        # elif casename == 'Rico':
-        #     return InitRico
-        # elif casename == 'Isdac':
-        #     return InitIsdac
-        # elif casename == 'IsdacCC':
-        #     return InitIsdacCC
-        # elif casename == 'Mpace':
-        #     return InitMpace
-        # elif casename == 'Sheba':
-        #     return InitSheba
-        # elif casename == 'CGILS':
-        #     return  InitCGILS
-        # elif casename == 'ZGILS':
-        #     return  InitZGILS
-        # elif casename == 'DCBLSoares':
-        #     return InitSoares
-        # elif casename == 'DCBLSoares_moist':
-        #     return InitSoares_moist
+        elif casename == 'ColdPoolDry_3D':
+            print('calling Initialization single ColdPoolDry 3D')
+            return InitColdPoolDry_single_3D
+        elif casename == 'StableBubble':
+            return InitStableBubble
+        elif casename == 'SaturatedBubble':
+            return InitSaturatedBubble
+        elif casename == 'Bomex':
+            return InitBomex
+        elif casename == 'Gabls':
+            return InitGabls
+        elif casename == 'DYCOMS_RF01':
+            return InitDYCOMS_RF01
+        elif casename == 'DYCOMS_RF02':
+            return InitDYCOMS_RF02
+        elif casename == 'SMOKE':
+            return InitSmoke
+        elif casename == 'Rico':
+            return InitRico
+        elif casename == 'Isdac':
+            return InitIsdac
+        elif casename == 'IsdacCC':
+            return InitIsdacCC
+        elif casename == 'Mpace':
+            return InitMpace
+        elif casename == 'Sheba':
+            return InitSheba
+        elif casename == 'CGILS':
+            return  InitCGILS
+        elif casename == 'ZGILS':
+            return  InitZGILS
+        elif casename == 'DCBLSoares':
+            return InitSoares
+        elif casename == 'DCBLSoares_moist':
+            return InitSoares_moist
         else:
             pass
 
@@ -341,7 +344,7 @@ def InitColdPoolDry_double_2D(namelist, Grid.Grid Gr,PrognosticVariables.Prognos
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift, ishift2
-        Py_ssize_t ij, ijk, ijk2
+        Py_ssize_t ij, ijk
 
 
     ''' !!! '''
@@ -363,9 +366,9 @@ def InitColdPoolDry_double_2D(namelist, Grid.Grid Gr,PrognosticVariables.Prognos
         double xstar = 5000.0                               # half of the width of initial cold-pools [m]
         double zstar = namelist['init']['h']                # initial height of cold-pools [m]
         int kstar = np.int(np.round(zstar / Gr.dims.dx[2]))
+        Py_ssize_t istar = np.int(xstar/Gr.dims.dx[0])
         # double marg = 0.25
         int marg_i = 10                                     # width of margin
-        Py_ssize_t istar = np.int(xstar/Gr.dims.dx[0])
         Py_ssize_t isep = 4*istar
         Py_ssize_t ic1 = np.int(Gr.dims.n[0]/3)
         Py_ssize_t ic2 = ic1 + isep
@@ -507,18 +510,170 @@ def InitColdPoolDry_double_2D(namelist, Grid.Grid Gr,PrognosticVariables.Prognos
     # var1 = PV_.get_variable_array(var_name, Gr)
     # plot_s_profile(var_name, var1[:,:,:], j0, Gr.x_half[:], Gr.y_half[:], Gr.z_half[:])
     del var1
-    #
-    # # __
-    # istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-    # jstride = Gr.dims.nlg[2]
-    # ijk_max = Gr.dims.nlg[0]*istride + Gr.dims.nlg[1]*jstride + Gr.dims.nlg[2]
-    # if np.isnan(PV.values[s_varshift:]).any():   # nans
-    #     print('nan in s')
-    # else:
-    #     print('No nan in s')
-    # # __
 
     return
+
+
+
+
+
+def InitColdPoolDry_single_3D(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH):
+    Pa.root_print('')
+    Pa.root_print('Initialization: Single Dry Cold Pool (3D)')
+    Pa.root_print('')
+    # set zero ground humidity, no horizontal wind at ground
+    # ASSUME COLDPOOLS DON'T HAVE AN INITIAL HORIZONTAL VELOCITY
+
+    # # for plotting
+    from Init_plot import plot_k_profile_3D, plot_var_image, plot_imshow
+    cdef:
+        PrognosticVariables.PrognosticVariables PV_ = PV
+    j0 = np.int(np.floor(Gr.dims.ng[1] / 2))
+
+    #Generate reference profiles
+    RS.Pg = 1.0e5
+    RS.Tg = 300.0
+    RS.qtg = 0.0
+    #Set velocities for Galilean transformation
+    RS.u0 = 0.0
+    RS.v0 = 0.0
+    RS.initialize(Gr, Th, NS, Pa)
+
+    #Get the variable number for each of the velocity components
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift, ishift2
+        Py_ssize_t ij, ijk
+
+    # parameters
+    cdef:
+        # xstar = 5000.0  # half of the width of initial cold-pools [m]
+        # ystar = 5000.0  # half of the width of initial cold-pools [m]
+        # istar = np.int(np.round(xstar / dx))
+        # jstar = np.int(np.round(ystar / dx))
+        # imin = ic - istar - marg_i
+        # imax = imin + 2*istar + 2*marg_i
+        # jmin = jc - jstar - marg_i
+        # jmax = jmin + 2*jstar + 2*marg_i
+        double rstar = 5000.0  # half of the width of initial cold-pools [m]
+        Py_ssize_t irstar = np.int(np.round(rstar / Gr.dims.dx[0]))
+        double zstar = namelist['init']['h']
+        Py_ssize_t kstar = np.int(np.round(zstar / Gr.dims.dx[2]))
+        Py_ssize_t marg_i = 10  # width of margin
+        Py_ssize_t ic = np.int(Gr.dims.ng[0] / 2)
+        double xc = Gr.x_half[ic]       # center of cold-pool
+        Py_ssize_t jc = np.int(Gr.dims.ng[1] / 2)
+        double yc = Gr.y_half[jc]       # center of cold-pool
+        Py_ssize_t ir
+        double [:,:,:] k_max_arr = np.zeros((2, Gr.dims.ng[0], Gr.dims.ng[1]), dtype=np.double)
+        double k_max = 0
+        # double [:,:] ir_arr = np.ones((nxg, nyg), dtype=np.double)
+        # double [:,:] ir_arr_marg = np.ones((nxg, nyg), dtype=np.double)
+
+    i = ic
+    j = jc
+    ir = np.int(np.round(np.sqrt((i-ic)**2 + (j-jc)**2)))
+    while (ir <= irstar):
+        while (ir <= irstar):
+            k_max = kstar * (np.cos( np.double(ir)/irstar * np.pi / 2 ) ) ** 2
+            k_max_arr[0,i,j] = np.int(np.round(k_max))
+            k_max_arr[0,2*ic-i,j] = k_max_arr[0,i,j]
+            k_max_arr[0,2*ic-i,2*jc-j] = k_max_arr[0,i,j]
+            k_max_arr[0,i,2*jc-j] = k_max_arr[0,i,j]
+
+            # ir_arr[i,j] = ir
+            # ir_arr[2*ic-i,j] = ir_arr[i,j]
+            # ir_arr[2*ic-i,2*jc-j] = ir_arr[i,j]
+            # ir_arr[i,2*jc-j] = ir_arr[i,j]
+
+            j += 1
+            ir = np.int(np.round(np.sqrt((i - ic) ** 2 + (j - jc) ** 2)))
+        j = jc
+        i += 1
+        ir = np.int(np.round(np.sqrt((i - ic) ** 2 + (j - jc) ** 2)))
+
+    i = ic
+    j = jc
+    ir = np.int(np.round(np.sqrt((i - ic) ** 2 + (j - jc) ** 2)))
+    while (ir <= irstar + marg_i):
+        while (ir <= irstar + marg_i):
+            k_max = (kstar + marg_i) * (np.cos(np.double(ir) / (irstar + marg_i) * np.pi / 2)) ** 2
+            k_max_arr[1, i, j] = np.int(np.round(k_max))
+            k_max_arr[1, 2 * ic - i, j] = k_max_arr[1, i, j]
+            k_max_arr[1, 2 * ic - i, 2 * jc - j] = k_max_arr[1, i, j]
+            k_max_arr[1, i, 2 * jc - j] = k_max_arr[1, i, j]
+
+            # ir_arr_marg[i, j] = ir
+            # ir_arr_marg[2 * ic - i, j] = ir_arr_marg[i, j]
+            # ir_arr_marg[2 * ic - i, 2 * jc - j] = ir_arr_marg[i, j]
+            # ir_arr_marg[i, 2 * jc - j] = ir_arr_marg[i, j]
+
+            j += 1
+            ir = np.int(np.round(np.sqrt((i - ic) ** 2 + (j - jc) ** 2)))
+        j = jc
+        i += 1
+        ir = np.int(np.round(np.sqrt((i - ic) ** 2 + (j - jc) ** 2)))
+
+    ''' theta-anomaly'''
+    # from thermodynamic_functions cimport theta_c
+    cdef:
+        double th
+        double dTh = namelist['init']['dTh']
+        double th_g = 298.7  # value from mixed-layer in BOMEX
+        # ''' ??? correct dimensions with nlg? '''
+        double [:,:,:] theta = th_g * np.ones(shape=(Gr.dims.nlg[0], Gr.dims.nlg[1], Gr.dims.nlg[2]))
+
+    for i in xrange(ic + irstar + 10):
+        for j in xrange(jc + irstar + 10):
+        #for j in xrange(Gr.dims.nlg[1]):
+            if k_max_arr[1, i, j] > 0:
+                for k in xrange(Gr.dims.nlg[2]):
+                    th = th_g
+                    if k <= k_max_arr[0, i, j]:
+                        th = th_g - dTh
+                    elif k <= k_max_arr[1, i, j]:
+                        # th = th_g - dTh
+                        th = th_g - dTh * np.sin((k - k_max_arr[1, i, j]) / (k_max_arr[1, i, j] - k_max_arr[0, i, j])) ** 2
+                    theta[i, j, k] = th
+
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift = i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = 0.0
+                PV.values[v_varshift + ijk] = 0.0
+                PV.values[w_varshift + ijk] = 0.0
+                PV.values[s_varshift + ijk] = entropy_from_thetas_c(theta[i, j, k], 0.0)
+
+    ''' plotting '''
+    var_name = 'theta'
+    plot_var_image(var_name, theta[:, :, :], j0, Gr.x_half[:], Gr.y_half[:], Gr.z_half[:])
+    plot_imshow(var_name, theta[:, :, :], j0, Gr.x_half[:], Gr.y_half[:], Gr.z_half[:])
+    #plot_var_profile(var_name, theta[:, :, :], j0, imin1, imax1, imin2, imax2, marg_i)
+
+    plot_k_profile_3D(Gr.x_half, k_max_arr, Gr.dims.dx[0], Gr.dims.dx[1], Gr.dims.dx[2],
+                      ic, jc)
+
+    var_name = 's'
+    var_shift = PV_.get_varshift(Gr, var_name)
+    var1 = PV_.get_variable_array(var_name, Gr)
+    plot_var_image(var_name, var1[:, :, :], j0, Gr.x_half[:], Gr.y_half[:], Gr.z_half[:])
+    # var_name = 'qt'
+    # var_shift = PV_.get_varshift(Gr, var_name)
+    # var1 = PV_.get_variable_array(var_name, Gr)
+    # plot_s_profile(var_name, var1[:,:,:], j0, Gr.x_half[:], Gr.y_half[:], Gr.z_half[:])
+    del var1
+
+    return
+
+
 
 
 
