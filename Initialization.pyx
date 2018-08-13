@@ -287,10 +287,13 @@ def InitColdPoolDry_2D(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVari
     var_shift = PV_.get_varshift(Gr, var_name)
     var1 = PV_.get_variable_array(var_name, Gr)
     plot_var_image(var_name, var1[:,:,:], j0, Gr.x_half[:], Gr.y_half[:], Gr.z_half[:])
-    # var_name = 'qt'
-    # var_shift = PV_.get_varshift(Gr, var_name)
-    # var1 = PV_.get_variable_array(var_name, Gr)
-    # plot_s_profile(var_name, var1[:,:,:], j0, Gr.x_half[:], Gr.y_half[:], Gr.z_half[:])
+    var_name = 'qt'
+    if 'qt' in PV_.name_index.keys():
+        var_shift = PV_.get_varshift(Gr, var_name)
+        var1 = PV_.get_variable_array(var_name, Gr)
+        plot_var_image(var_name, var1[:,:,:], j0, Gr.x_half[:], Gr.y_half[:], Gr.z_half[:])
+    else:
+        Pa.root_print(var_name + ' not in PV')
     del var1
 
     # __
@@ -302,7 +305,7 @@ def InitColdPoolDry_2D(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVari
     else:
         print('No nan in s')
     # __
-
+    print('')
     return
 
 
@@ -2614,6 +2617,8 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
     Pa.root_print('finished Initialization Soares_moist')
 
     return
+
+
 
 
 

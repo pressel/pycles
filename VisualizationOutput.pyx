@@ -86,7 +86,8 @@ cdef class VisualizationOutput:
             dict out_dict = {}
 
         comm = MPI.COMM_WORLD
-        try:
+        if 'ql' in DV.name_index.keys():
+        # try:
             var_shift =  DV.get_varshift(Gr, 'ql')
             with nogil:
                 for i in xrange(imin, imax):
@@ -106,7 +107,8 @@ cdef class VisualizationOutput:
             if Pa.rank == 0:
                 out_dict['lwp'] = np.array(reduced_lwp,dtype=np.double)
             del reduced_lwp
-        except:
+        else:
+        # except:
             Pa.root_print('Trouble Writing LWP')
 
 
@@ -118,9 +120,9 @@ cdef class VisualizationOutput:
             list dv_vars = ['theta', 'temperature', 'diffusivity']
 
         # __
-        if 'qt' in PV.name_index:
+        if 'qt' in PV.name_index.keys():
         #     pv_vars = ['phi','qt', 's', 'w', 'v', 'u']
-            dv_vars = ['potential_temperature','ql', 'diffusivity']
+            dv_vars = ['theta','ql', 'diffusivity']
         # __
 
         # # output in y-z plane
@@ -187,11 +189,12 @@ cdef class VisualizationOutput:
 
 
         # vis output x-z plane
-        cdef Py_ssize_t j0 = np.int(Gr.dims.n[1]/2)
+        cdef Py_ssize_t j0 = np.int(Gr.dims.ng[1]/2)
         for var in pv_vars:
             local_var = np.zeros((Gr.dims.n[0], Gr.dims.n[2]), dtype=np.double, order='c')
             reduced_var = np.zeros((Gr.dims.n[0], Gr.dims.n[2]), dtype=np.double, order='c')
-            try:
+            if var in PV.name_index.keys():
+            # try:
                 var_shift = PV.get_varshift(Gr, var)
 
                 with nogil:
@@ -213,7 +216,8 @@ cdef class VisualizationOutput:
                     out_dict[var] = np.array(reduced_var, dtype=np.double)
                 del reduced_var
 
-            except:
+            else:
+            # except:
                 Pa.root_print('Trouble Writing ' + var)
 
         for var in dv_vars:
