@@ -37,6 +37,8 @@ def main():
         namelist = ColdPoolDry_2D('double')
     elif case_name == 'ColdPoolDry_single_3D':
         namelist = ColdPoolDry_3D('single')
+    elif case_name == 'ColdPoolDry_double_3D':
+        namelist = ColdPoolDry_3D('double')
     elif case_name == 'SullivanPatton':
         namelist = SullivanPatton()
     elif case_name == 'Bomex':
