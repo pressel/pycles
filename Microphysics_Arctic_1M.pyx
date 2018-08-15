@@ -187,6 +187,10 @@ cdef class Microphysics_Arctic_1M:
 
         NS.add_profile('thetav_mean', Gr, Pa)
         NS.add_profile('thetav_flux_z', Gr, Pa)
+        NS.add_profile('qv_flux_z', Gr, Pa)
+        NS.add_profile('ql_flux_z', Gr, Pa)
+        NS.add_profile('qi_flux_z', Gr, Pa)
+        NS.add_profile('temperature_flux_z', Gr, Pa)
 
         NS.add_ts('iwp', Gr, Pa)
         NS.add_ts('rwp', Gr, Pa)
@@ -378,6 +382,18 @@ cdef class Microphysics_Arctic_1M:
 
         tmp = Pa.HorizontalMeanofSquares(Gr, &PV.values[w_shift], &dummy[0])
         NS.write_profile('thetav_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanofSquares(Gr, &PV.values[w_shift], &DV.values[qv_shift])
+        NS.write_profile('qv_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanofSquares(Gr, &PV.values[w_shift], &DV.values[ql_shift])
+        NS.write_profile('ql_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanofSquares(Gr, &PV.values[w_shift], &DV.values[qi_shift])
+        NS.write_profile('qi_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanofSquares(Gr, &PV.values[w_shift], &DV.values[t_shift])
+        NS.write_profile('temperature_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         #Output entropy source terms due to microphysics
 

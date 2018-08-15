@@ -111,6 +111,7 @@ cdef class ThermodynamicsSA:
         NS.add_profile('theta_mean3', Gr, Pa)
         NS.add_profile('theta_max', Gr, Pa)
         NS.add_profile('theta_min', Gr, Pa)
+        NS.add_profile('theta_flux_z', Gr, Pa)
         NS.add_ts('theta_max', Gr, Pa)
         NS.add_ts('theta_min', Gr, Pa)
 
@@ -269,6 +270,7 @@ cdef class ThermodynamicsSA:
             Py_ssize_t count
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] tmp
 
@@ -349,6 +351,10 @@ cdef class ThermodynamicsSA:
         tmp = Pa.HorizontalMinimum(Gr, &data[0])
         NS.write_profile('theta_min', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_ts('theta_min', np.amin(tmp[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+        # Compute and write vertical flux of theta
+        tmp = Pa.HorizontalMeanofSquares(Gr, &PV.values[w_shift], &data[0])
+        NS.write_profile('theta_flux_z', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
         cdef:
