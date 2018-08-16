@@ -40,12 +40,12 @@ cdef class VisualizationOutput:
         try:
             self.frequency = namelist['visualization']['frequency']
         except:
-            self.frequency = 1e6
+            self.frequency = 30.0
 
         return
 
     cpdef initialize(self):
-        self.last_vis_time = 0.0
+        self.last_vis_time = 17711970.0
 
         return
 
@@ -111,8 +111,8 @@ cdef class VisualizationOutput:
         cdef:
             double [:,:] local_var
             double [:,:] reduced_var
-            list pv_vars = ['qt', 's', 'w']
-            list dv_vars = ['ql', 'diffusivity']
+            list pv_vars = []
+            list dv_vars = []
 
 
         for var in pv_vars:
@@ -176,7 +176,7 @@ cdef class VisualizationOutput:
 
 
         if Pa.rank == 0:
-            with open(self.vis_path+ '/'  + str(10000000 + np.int(self.last_vis_time)) +  '.pkl', 'wb') as f:
+            with open(self.vis_path+ '/'  + str(10000000000 + np.int(self.last_vis_time)) +  '.pkl', 'wb') as f:
                 pickle.dump(out_dict, f, protocol=2)
 
         return
