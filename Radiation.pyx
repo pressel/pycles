@@ -614,7 +614,7 @@ cdef class RadiationRRTM(RadiationBase):
         try:
             self.dyofyr = namelist['radiation']['RRTM']['dyofyr']
         except:
-            self.dyofyr = 192 # July 11 for ZGILS
+            self.dyofyr = 0
 
         try:
             self.adjes = namelist['radiation']['RRTM']['adjes']
@@ -641,6 +641,7 @@ cdef class RadiationRRTM(RadiationBase):
                 Pa.root_print('Mean Daytime cos(SZA) not set so RadiationRRTM takes default value: coszen = 2.0/pi .')
                 self.coszen = 2.0/pi
         else:
+            #self.dyofyrr=192 # July 11 for ZGILS
             try:
                 self.latitude = namelist['radiation']['RRTM']['latitude']
             except:
