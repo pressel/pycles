@@ -39,6 +39,8 @@ def main():
         namelist = ColdPoolDry_3D('single')
     elif case_name == 'ColdPoolDry_double_3D':
         namelist = ColdPoolDry_3D('double')
+    elif case_name == 'ColdPoolDry_triple_3D':
+        namelist = ColdPoolDry_3D('triple')
     elif case_name == 'SullivanPatton':
         namelist = SullivanPatton()
     elif case_name == 'Bomex':
@@ -343,6 +345,9 @@ def ColdPoolDry_3D(number):
     elif number == 'double':
         namelist['meta']['casename'] = 'ColdPoolDry_double_3D'
         namelist['meta']['simname'] = 'ColdPoolDry_double_3D'
+    elif number == 'triple':
+        namelist['meta']['casename'] = 'ColdPoolDry_triple_3D'
+        namelist['meta']['simname'] = 'ColdPoolDry_triple_3D'
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 20.0

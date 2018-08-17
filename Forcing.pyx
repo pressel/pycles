@@ -66,7 +66,7 @@ cdef class Forcing:
             self.scheme = ForcingSoares()
         elif casename == 'ColdPoolDry_2D' or casename == 'ColdPoolDry_double_2D':
             self.scheme = ForcingNone()
-        elif casename == 'ColdPoolDry_3D' or casename == 'ColdPoolDry_double_3D':
+        elif casename == 'ColdPoolDry_3D' or casename == 'ColdPoolDry_double_3D' or casename == 'ColdPoolDry_triple_3D':
             self.scheme = ForcingNone()
         else:
             Pa.root_print('No forcing for casename: ' +  casename)
