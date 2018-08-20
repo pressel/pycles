@@ -112,9 +112,13 @@ cdef class DiagnosticVariables:
         return
 
     cpdef get_variable_array(self,name,Grid.Grid Gr):
+        print('DV get var arr')
         index = self.name_index[name]
+        print('DV 1')
         view = np.array(self.values).view()
+        print('2')
         view.shape = (self.nv,Gr.dims.nlg[0],Gr.dims.nlg[1],Gr.dims.nlg[2])
+        print('3')
         return view[index,:,:,:]
 
     cpdef val_nan(self,PA,message):

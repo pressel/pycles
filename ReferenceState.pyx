@@ -8,13 +8,15 @@ cimport Grid
 cimport Restart
 cimport numpy as np
 import numpy as np
+import pylab as plt
+
 from NetCDFIO cimport NetCDFIO_Stats
 cimport ParallelMPI
 from scipy.integrate import odeint
 include 'parameters.pxi'
 
 cdef extern from "thermodynamic_functions.h":
-    inline double qt_from_pv(double p0, double pv)
+    double qt_from_pv(double p0, double pv)
 
 cdef class ReferenceState:
     def __init__(self, Grid.Grid Gr ):
@@ -47,7 +49,7 @@ cdef class ReferenceState:
         :return:
         '''
 
-
+        print(Pa.root_print('Reference state initialization'))
 
 
         self.sg = Thermodynamics.entropy(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
@@ -138,20 +140,94 @@ cdef class ReferenceState:
         self.rho0_half = 1.0 / np.array(self.alpha0_half)
 
         # Write reference profiles to StatsIO
-        NS.add_reference_profile('alpha0', Gr, Pa)
+        # Output specific volume
+        units = r'm^{3}kg^{-1}'
+        nice_name  = r'\alpha_{0}'
+        desc = r'reference state specific volume at half level'
+
+        NS.add_reference_profile('alpha0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('alpha0', alpha_half[Gr.dims.gw:-Gr.dims.gw], Pa)
-        NS.add_reference_profile('p0', Gr, Pa)
+
+        nice_name = r'\alpha_{0}_{full}'
+        desc = r'reference state specific volume at full level'
+        NS.add_reference_profile('alpha0_full', Gr, Pa, units='m^{3}kg^{-1}', nice_name=nice_name, desc=desc, z_full=True)
+        NS.write_reference_profile('alpha0_full', alpha[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Output pressure
+        units = r'Pa'
+        nice_name = r'p_{0}'
+        desc = r'reference state pressure at half level'
+        NS.add_reference_profile('p0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('p0', p_half[Gr.dims.gw:-Gr.dims.gw], Pa)
-        NS.add_reference_profile('rho0', Gr, Pa)
+
+        nice_name = r'p_{0}^{full}'
+        desc = r'reference state pressure at full level'
+        NS.add_reference_profile('p0_full', Gr, Pa, units=units, nice_name = nice_name, desc=desc, z_full=True)
+        NS.write_reference_profile('p0_full', p[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Output densities
+        units = r'kgm^{-3}'
+        nice_name = r'\rho_{0}'
+        desc = r'reference state density at half level'
+        NS.add_reference_profile('rho0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('rho0', 1.0 / np.array(alpha_half[Gr.dims.gw:-Gr.dims.gw]), Pa)
-        NS.add_reference_profile('temperature0', Gr, Pa)
+
+        nice_name = r'\rho_0^{full}'
+        desc = r'reference state density at full level'
+        NS.add_reference_profile('rho0_full', Gr, Pa, units=units, nice_name = nice_name, desc=desc, z_full=True)
+        NS.write_reference_profile('rho0_full', 1.0 / np.array(alpha[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+        units = r'K'
+        nice_name = r'T_{0}'
+
+        desc = r'reference state temperature at half level'
+        # Output temperature
+        NS.add_reference_profile('temperature0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('temperature0', temperature_half[Gr.dims.gw:-Gr.dims.gw], Pa)
-        NS.add_reference_profile('ql0', Gr, Pa)
+
+        # Output water variable specific humidities
+        units=r'kg/kg'
+        nice_name = r'ql_{0}'
+        desc = r'reference state liquid water specific humidity at half level'
+        NS.add_reference_profile('ql0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('ql0', ql_half[Gr.dims.gw:-Gr.dims.gw], Pa)
-        NS.add_reference_profile('qv0', Gr, Pa)
+
+        nice_name = r'qv_{0}'
+        desc = r'reference state water vapor specific humidity at half level'
+        NS.add_reference_profile('qv0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('qv0', qv_half[Gr.dims.gw:-Gr.dims.gw], Pa)
-        NS.add_reference_profile('qi0', Gr, Pa)
+
+        nice_name = r'qi_{0}'
+        desc = r'reference state ice water specific humidity at half level'
+        NS.add_reference_profile('qi0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
         NS.write_reference_profile('qi0', qi_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
+        # plt.figure(figsize=(6,9))
+        # plt.subplot(2,1,1)
+        # plt.plot(Gr.z_half,self.rho0_half, '-o', label='rho0_half')
+        # plt.plot(Gr.z_half[0:Gr.dims.gw],self.rho0_half[0:Gr.dims.gw], 'ro')
+        # plt.plot(Gr.z_half[Gr.dims.ng[2]-Gr.dims.gw:Gr.dims.ng[2]],self.rho0_half[Gr.dims.ng[2]-Gr.dims.gw:Gr.dims.ng[2]], 'ro')
+        # plt.plot(Gr.z,self.rho0, '-x', label='rho0')
+        # plt.plot(Gr.z[0:Gr.dims.gw], self.rho0[0:Gr.dims.gw], 'rx')
+        # plt.plot(Gr.z[Gr.dims.ng[2]-Gr.dims.gw:Gr.dims.ng[2]], self.rho0[Gr.dims.ng[2]-Gr.dims.gw:Gr.dims.ng[2]], 'rx')
+        # plt.title('rho0')
+        # plt.legend(loc=3)
+        # plt.ylabel('rho0')
+        # plt.xlabel('height z')
+        #
+        # plt.subplot(2,1,2)
+        # plt.plot(Gr.z_half,self.alpha0_half, '-o', label='alpha0_half')
+        # plt.plot(Gr.z_half[0:Gr.dims.gw],self.alpha0_half[0:Gr.dims.gw], 'ro')
+        # plt.plot(Gr.z_half[Gr.dims.ng[2]-Gr.dims.gw:Gr.dims.ng[2]],self.alpha0_half[Gr.dims.ng[2]-Gr.dims.gw:Gr.dims.ng[2]], 'ro')
+        # plt.plot(Gr.z,self.alpha0, '-x', label='alpha0')
+        # plt.plot(Gr.z[0:Gr.dims.gw],self.alpha0[0:Gr.dims.gw], 'rx')
+        # plt.plot(Gr.z[Gr.dims.ng[2]-Gr.dims.gw:Gr.dims.ng[2]],self.alpha0[Gr.dims.ng[2]-Gr.dims.gw:Gr.dims.ng[2]], 'rx')
+        # plt.ylabel('alpha0')
+        # plt.xlabel('height z')
+        # plt.legend(loc=2)
+        # plt.title('alpha0')
+        # plt.savefig('figs/Ref_rho0.pdf')
 
         return
 
@@ -200,7 +276,14 @@ cdef class ReferenceState:
         self.alpha0_half_global = Re.restart_data['Ref']['alpha0_half_global']
         self.rho0_global = 1.0 / Re.restart_data['Ref']['alpha0_global']
         self.rho0_half_global = 1.0 / Re.restart_data['Ref']['alpha0_half_global']
+<<<<<<< HEAD
 
 
 
         return
+=======
+
+
+
+        return
+>>>>>>> 41586439b0206325c7d77f964e0a7889f1881122

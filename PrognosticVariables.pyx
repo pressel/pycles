@@ -77,6 +77,10 @@ cdef class PrognosticVariables:
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.values = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
         self.tendencies = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
+<<<<<<< HEAD
+=======
+        # Pa.root_print('PV.name_index: ' + str(self.name_index.keys()))
+>>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
         #Add prognostic variables to Statistics IO
         Pa.root_print('Setting up statistical output files for Prognostic Variables')
         for var_name in self.name_index.keys():

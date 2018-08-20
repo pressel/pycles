@@ -30,8 +30,13 @@ cdef extern from "sgs.h":
                             double* strain_rate_mag, double cs, double prt)
     void smagorinsky_update_iles(Grid.DimStruct* dims, double* zl_half, double* visc, double* diff, double* buoy_freq,
                             double* strain_rate_mag, double cs, double prt)
+<<<<<<< HEAD
     double buoyancy_adjust(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
                             double* strain_rate_mag, double prt)
+=======
+    # double buoyancy_adjust(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
+    #                         double* strain_rate_mag, double prt)
+>>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
     void const_viscosity_update(Grid.DimStruct* dims, double* visc, double* diff, double* buoy_freq,
                             double* strain_rate_mag, double const_visc, double prt)
 
@@ -40,12 +45,19 @@ cdef extern from "sgs.h":
 cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
+            print(namelist['sgs']['scheme'])
             self.scheme = UniformViscosity(namelist)
         elif(namelist['sgs']['scheme'] == 'UniformViscosity_cond'):
+<<<<<<< HEAD
+=======
+            print(namelist['sgs']['scheme'])
+>>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
             self.scheme = UniformViscosity_cond(namelist)
         elif(namelist['sgs']['scheme'] == 'Smagorinsky'):
+            print(namelist['sgs']['scheme'])
             self.scheme = Smagorinsky(namelist)
         elif(namelist['sgs']['scheme'] == 'TKE'):
+            print(namelist['sgs']['scheme'])
             self.scheme = TKE(namelist)
 
         return
@@ -80,7 +92,9 @@ cdef class UniformViscosity:
         except:
             self.const_viscosity = 0.0
 
-        self.is_init = False 
+        self.is_init = False
+        print('SGS const, DV:', self.const_diffusivity)
+        print('SGS const, EV:', self.const_viscosity)
 
         return
 
@@ -127,7 +141,12 @@ cdef class UniformViscosity_cond:
             self.const_viscosity = 0.0
 
         self.prt = 1.0/3.0
+<<<<<<< HEAD
 
+=======
+        print('SGS cond, DV:', self.const_diffusivity)
+        print('SGS cond, EV:', self.const_viscosity)
+>>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
@@ -245,7 +264,7 @@ cdef class TKE:
         return
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        PV.add_variable('e', 'm^2/s^2', 'sym','scalar',Pa)
+        PV.add_variable('e', 'm^2/s^2', 'e', 'turbulence kinetic energy', 'sym','scalar',Pa)
 
 
         self.Z_Pencil = ParallelMPI.Pencil()

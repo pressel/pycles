@@ -5,6 +5,7 @@
 #cython: cdivision=True
 
 cimport mpi4py.libmpi as mpi
+#cimport mpi4py.mpi_c as mpi
 cimport ParallelMPI
 cimport Restart
 cimport numpy as np

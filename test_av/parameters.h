@@ -1,0 +1,27 @@
+//Generated code! Absolutely DO NOT modify this file, parameters should be modified in generate_parameters.py 
+#define pi 3.141592653589793
+#define g 9.80665
+#define Rd 287.1
+#define Rv 461.5
+#define eps_v 0.6221018418201517
+#define eps_vi 1.6074538488331591
+#define cpd 1004.0
+#define cpv 1859.0
+#define cl 4218.0
+#define ci 2106.0
+#define kappa 0.2859561752988048
+#define Tf 273.15
+#define Tt 273.16
+#define T_tilde 298.15
+#define p_tilde 100000.0
+#define pv_star_t 611.7
+#define sd_tilde 6864.8
+#define sv_tilde 10513.6
+#define omega 7.2921151467064e-05
+#define vkb 0.35
+#define Pr0 0.74
+#define beta_m 4.7
+#define beta_h 6.351351351351352
+#define gamma_m 15.0
+#define gamma_h 9.0
+//End generated code
