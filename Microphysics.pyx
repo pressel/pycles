@@ -41,16 +41,6 @@ cdef class No_Microphysics_Dry:
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
-'''
-in both, dry and SA Microphysics:
-
-LH.Lambda_fp = lambda_constant
-lambda_constant = 1.0 (defined in Microphysics.pxd)
-
-LH.L_fp = latent_heat_variable
-TC = T - 273.15
-L_fp(T, lambda) = (2500.8 - 2.36 * TC + 0.0016 * TC * TC - 0.00006 * TC * TC * TC) * 1000.0
-'''
 
 cdef class No_Microphysics_SA:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
