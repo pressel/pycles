@@ -1297,10 +1297,10 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
     namelist['radiation']['RRTM']['frequency'] = 20.0
     namelist['radiation']['RRTM']['co2_factor'] = co2_factor
     namelist['radiation']['RRTM']['adjes'] = 1.0
-    namelist['radiation']['solar_constant'] = 1365.0
-    namelist['radiation']['coszen'] = 0.345
-    namelist['radiation']['adif'] = 0.1
-    namelist['radiation']['adir'] = 0.1
+    namelist['radiation']['RRTM']['solar_constant'] = 1365.0
+    namelist['radiation']['RRTM']['coszen'] = 0.345
+    namelist['radiation']['RRTM']['adif'] = 0.1
+    namelist['radiation']['RRTM']['adir'] = 0.1
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
