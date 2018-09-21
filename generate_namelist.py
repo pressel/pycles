@@ -1254,7 +1254,7 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
 
     namelist['forcing'] ={}
     namelist['forcing']['VarSub'] = variable_subsidence
-    namelist['forcing']['reference_profile'] = 'RCE' # or 'AdjustedAdiabat' but ONLY if co2_factor = 1
+    namelist['forcing']['reference_profile'] = 'ReferenceFile' # or 'AdjustedAdiabat' but ONLY if co2_factor = 1
 
     namelist['tracers'] = {}
     namelist['tracers']['use_tracers'] = False
