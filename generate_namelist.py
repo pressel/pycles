@@ -1243,9 +1243,6 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'variable'
 
-
-
-
     namelist['microphysics'] = {}
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     namelist['microphysics']['cloud_sedimentation'] = True
