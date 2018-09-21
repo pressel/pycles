@@ -1224,8 +1224,8 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
         namelist['grid']['nz'] = 128
         namelist['damping']['Rayleigh']['z_d'] = 1100.0
     else:
-        namelist['grid']['dz'] = 20.0
-        namelist['grid']['nz'] = 144
+        namelist['grid']['dz'] = 10.0
+        namelist['grid']['nz'] = 288
         namelist['damping']['Rayleigh']['z_d'] = 500.0
 
     namelist['mpi'] = {}
@@ -1294,8 +1294,13 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
 
     namelist['radiation'] = {}
     namelist['radiation']['RRTM'] = {}
-    namelist['radiation']['RRTM']['frequency'] = 90.0
+    namelist['radiation']['RRTM']['frequency'] = 20.0
     namelist['radiation']['RRTM']['co2_factor'] = co2_factor
+    namelist['radiation']['RRTM']['adjes'] = 1.0
+    namelist['radiation']['solar_constant'] = 1365.0
+    namelist['radiation']['coszen'] = 0.345
+    namelist['radiation']['adif'] = 0.1
+    namelist['radiation']['adir'] = 0.1
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
@@ -1307,7 +1312,7 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
-    namelist['fields_io']['frequency'] = 86400.0
+    namelist['fields_io']['frequency'] = 86400.0*5
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy', 'thetali']
 
     namelist['meta'] = {}
@@ -1335,13 +1340,13 @@ def ZGILS(zgils_loc, co2_factor, fixed_sst, variable_subsidence):
     namelist['restart']['output'] = True
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
-    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['frequency'] = 3600.0
     namelist['restart']['delete_old'] = True
-    namelist['restart']['times_retained'] = range(86400, 86400*21, 86400)
+    namelist['restart']['retain_frequency'] = 86400.0*5
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
-    namelist['conditional_stats']['frequency'] = 43200.0
+    namelist['conditional_stats']['frequency'] = 86400.0*100
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
 
