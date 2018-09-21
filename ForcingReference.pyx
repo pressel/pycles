@@ -223,7 +223,7 @@ cdef class ReferenceRCE(ForcingReferenceBase):
             co2_factor=namelist['radiation']['RRTM']['co2_factor']
         except:
             co2_factor = 1.0
-        self.filename = './CGILSdata/RCE_'+ str(co2_factor)+'xCO2.nc'
+        self.filename = './CGILSdata/RCE_'+ str(int(co2_factor))+'xCO2.nc'
         ForcingReferenceBase.__init__(self,namelist, LH, Pa)
 
         return
@@ -234,14 +234,14 @@ cdef class ReferenceRCE(ForcingReferenceBase):
 
 
         data = nc.Dataset(self.filename, 'r')
-        self.pressure = data.variables['p_full']
+        self.pressure = data.variables['p_full'][:]
         self.npressure = len(self.pressure)
         ForcingReferenceBase.initialize(self,Gr, Pa,NS, S_minus_L)
 
-        self.temperature = data.variables['temp_rc']
-        self.qt = data.variables['yv_rc']
-        self.u = data.variables['u']
-        self.v = data.variables['v']
+        self.temperature = data.variables['temp_rc'][:]
+        self.qt = data.variables['yv_rc'][:]
+        self.u = data.variables['u'][:]
+        self.v = data.variables['v'][:]
 
         # Arrays must be flipped (low to high pressure) to use numpy interp function
         # pressure_ref = data.variables['p_full'][::-1]
