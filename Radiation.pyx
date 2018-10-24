@@ -971,7 +971,11 @@ cdef class RadiationRRTM(RadiationBase):
         if self.fix_wv:
             if Pa.rank == 0:
                 wvdat = nc.Dataset(self.fix_wv_statsfile,  "r")
-                h2o_prof = np.mean(wvdat.groups['toa_profiles'].variables['h2ovmr'][625:,:], axis=0)
+                ##---This assumes output each 30 minutes of simulation time (ie 48 outputs per day)
+                ##--not general code, check this is okay for your application!!!!
+                ntimes = np.shape(wvdat.groups['toa_profiles'].variables['t'][:])
+                start_index = np.maximum(0.0, ntimes-20*48)
+                h2o_prof = np.mean(wvdat.groups['toa_profiles'].variables['h2ovmr'][start_index:,:], axis=0)
                 #h2o_prof = np.mean(wvdat.groups['toa_profiles'].variables['h2ovmr'][0:,:], axis=0)
                 wvdat.close()
                 if len(h2o_prof) != nz_full:
