@@ -924,7 +924,7 @@ cdef class ForcingZGILS:
         except:
             self.varsub_factor = 0.14
 
-        # Change subsidence by a factor that depends on Tropical column warming as in Tan et al 2017
+        # Change subsidence by a factor that depends on Tropical column warming
         try:
             self.varsub_sst = namelist['forcing']['VarSub_SST']
         except:
@@ -956,10 +956,6 @@ cdef class ForcingZGILS:
 
         self.adjusted_divergence = self.divergence * self.divergence_factor
 
-        try:
-            self.adjust_t_adv = namelist['forcing']['adjust_T_adv']
-        except:
-            self.adjust_t_adv = False
 
 
         # Current climate/control advection forcing values (modified below for climate change)
@@ -1009,7 +1005,7 @@ cdef class ForcingZGILS:
         elif self.loc == 6:
             self.SST_1xCO2 = 298.9
 
-        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_constant':
+        if self.reference_type == 'InteractiveRCE':
             pv_star = self.CC.LT.fast_lookup(self.SST_1xCO2)
             qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
             self.qt_adv_max = self.qt_adv_max/qv_star
@@ -1176,12 +1172,11 @@ cdef class ForcingZGILS:
         self.qt_ls_factor = 1.0
         self.t_ls_factor = 1.0
 
-        if self.reference_type == 'InteractiveRCE' or self.reference_type == 'InteractiveRCE_constant':
+        if self.reference_type == 'InteractiveRCE':
             pv_star = self.CC.LT.fast_lookup(Sur.T_surface)
             qv_star = eps_v * pv_star/(Ref.Pg + (eps_v-1.0)*pv_star)
             self.qt_ls_factor = qv_star
-        if self.adjust_t_adv:
-            self.t_ls_factor = 1.0 + 0.25 * fmax(Ra.swcre_srf_sc - Ra.swcre_srf, 0.0)/(cpd *1.5e4/g * self.t_adv_max)
+
 
         #Apply large scale source terms (BL advection, Free Tropo relaxation, BL humidity nudging)
         with nogil:

@@ -198,7 +198,6 @@ cdef class ForcingZGILS:
         double varsub_sst_factor
         double adjusted_divergence
         double tropical_sst_ref
-        bint adjust_t_adv
         double co2_factor
         double n_double_co2
         str reference_type

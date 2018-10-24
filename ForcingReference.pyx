@@ -33,7 +33,7 @@ def ForcingReferenceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa)
             Pa.kill()
         if forcing_type == 'AdjustedAdiabat':
             return AdjustedMoistAdiabat(namelist, LH, Pa)
-        elif forcing_type == 'InteractiveRCE' or forcing_type == 'InteractiveRCE_constant':
+        elif forcing_type == 'InteractiveRCE':
             return InteractiveReferenceRCE_new(namelist, LH, Pa)
         elif forcing_type =='ReferenceFile':
             return ReferenceRCE(namelist,LH,Pa)
@@ -334,7 +334,7 @@ cdef class InteractiveReferenceRCE_new(ForcingReferenceBase):
         try:
             self.lapse_rate_type = str(namelist['forcing']['RCE']['lapse_rate_type'])
         except:
-            self.lapse_rate_type='saturated'
+            self.lapse_rate_type='mixed'
 
         try:
             self.RH_subtrop = namelist['forcing']['RCE']['RH_subtropical']
