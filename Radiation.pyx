@@ -528,10 +528,6 @@ cdef class RadiationRRTM(RadiationBase):
         self.toa_lw_up = 0.0
         self.toa_sw_up = 0.0
 
-        # For ZGILS interactive RCE simulations
-        self.swcre_srf_sc = 160.0
-        self.swcre_srf = self.swcre_srf_sc
-
 
         casename = namelist['meta']['casename']
         self.use_reference_class = False
@@ -1012,9 +1008,8 @@ cdef class RadiationRRTM(RadiationBase):
 
 
         # Construct the extension of the profiles, including a blending region between the given profile and LES domain (if desired)
-        # deltaT = 5.0/self.swcre_srf_sc * fmax(fmin(self.swcre_srf,self.swcre_srf_sc),0.0) + 5.0
+
         if FoRef.adjust_S_minus_L:
-            #S_minus_L = 50.0/8.08 * (FoRef.sst - Sur.T_surface)
             S_minus_L -= (TOA_imbalance_subtropical-FoRef.reference_S_minus_L_subtropical)*area_factor
 
         FoRef.update(Pa, S_minus_L, TS)
