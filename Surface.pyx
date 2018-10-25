@@ -914,11 +914,6 @@ cdef class SurfaceZGILS(SurfaceBase):
             co2_factor = 1.0
         n_double_co2 = (np.log2(co2_factor))
 
-        try:
-            constant_sst = namelist['surface_budget']['constant_sst']
-        except:
-            constant_sst = False
-
 
         # Set the initial sst value to the Fixed-SST case value (Tan et al 2016a, Table 1)
         if self.loc == 12:
@@ -931,7 +926,6 @@ cdef class SurfaceZGILS(SurfaceBase):
         # adjust surface temperature for climate change experiments
         self.T_surface = self.T_surface + 3.0 * n_double_co2
 
-        self.T_surface_init = 290.0  # For Item 3 fixed ECS simulations
 
         return
 
