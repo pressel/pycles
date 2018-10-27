@@ -21,10 +21,10 @@ cdef class SurfaceBudget:
     cdef:
         bint constant_sst
         bint constant_ohu
-        double ocean_heat_flux
         double fixed_sst_time
         double water_depth
-        double ohu_adjustment_timescale
+        # double ocean_heat_flux
+        # double ohu_adjustment_timescale
 
 
     cpdef initialize(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

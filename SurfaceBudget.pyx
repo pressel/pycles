@@ -61,15 +61,14 @@ cdef class SurfaceBudget:
             self.fixed_sst_time = namelist['surface_budget']['fixed_sst_time']
         except:
             self.fixed_sst_time = 0.0
-        try:
-            self.constant_ohu = namelist['surface_budget']['constant_ohu']
-        except:
-            self.constant_ohu = True
-        try:
-            self.ohu_adjustment_timescale = namelist['surface_budget']['ohu_adjustment_timescale']
-        except:
-            self.ohu_adjustment_timescale = 10*86400.0
-
+        # try:
+        #     self.constant_ohu = namelist['surface_budget']['constant_ohu']
+        # except:
+        #     self.constant_ohu = True
+        # try:
+        #     self.ohu_adjustment_timescale = namelist['surface_budget']['ohu_adjustment_timescale']
+        # except:
+        #     self.ohu_adjustment_timescale = 10*86400.0
 
         return
 
@@ -80,7 +79,8 @@ cdef class SurfaceBudget:
         NS.add_ts('ocean_heat_flux',Gr,Pa)
         return
 
-    cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+    cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur,
+                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             int root = 0
@@ -101,10 +101,10 @@ cdef class SurfaceBudget:
             return
 
         if Pa.sub_z_rank == 0:
-            if not self.constant_ohu:
-                # self.ocean_heat_flux -= toa_imbalance/self.ohu_adjustment_timescale * TS.dt * TS.acceleration_factor
-                self.ocean_heat_flux += toa_imbalance/self.ohu_adjustment_timescale * TS.dt * TS.acceleration_factor
-
+            # if not self.constant_ohu:
+            #  quite possibly should be toa_imbalance-ref_S_minus_L_subtropical--Colleen
+            #     self.ocean_heat_flux += toa_imbalance/self.ohu_adjustment_timescale * TS.dt * TS.acceleration_factor
+            #
 
 
             net_flux =  -self.ocean_heat_flux - Ra.srf_lw_up - Ra.srf_sw_up - mean_shf - mean_lhf + Ra.srf_lw_down + Ra.srf_sw_down
