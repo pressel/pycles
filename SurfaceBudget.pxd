@@ -20,10 +20,10 @@ cdef class SurfaceBudgetNone:
 cdef class SurfaceBudget:
     cdef:
         bint constant_sst
-        bint constant_ohu
         double fixed_sst_time
         double water_depth
-        # double ocean_heat_flux
+        double ocean_heat_flux
+        # bint constant_ohu
         # double ohu_adjustment_timescale
 
 
