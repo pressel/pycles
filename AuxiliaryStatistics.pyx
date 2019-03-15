@@ -16,8 +16,11 @@ import cython
 cimport numpy as np
 import numpy as np
 from libc.math cimport sqrt
-from thermodynamic_functions cimport thetas_c
 include "parameters.pxi"
+
+cdef extern from "thermodynamic_functions.h":
+    double thetas_c(const double s, const double qt) nogil
+
 
 class AuxiliaryStatistics:
     def __init__(self, namelist):
