@@ -908,8 +908,8 @@ cdef class ForcingIsdacCC:
         with nogil:
             for k in xrange(kmin, kmax):
                 # Nudge mean wind profiles through entire depth
-                self.source_u_nudge[k] = -(umean[k] - self.initial_u[k]) * self.nudge_coeff_velocities[k]
-                self.source_v_nudge[k] = -(vmean[k] - self.initial_v[k]) * self.nudge_coeff_velocities[k]
+                self.source_u_nudge[k] = -(umean[k] + RS.u0 - self.initial_u[k]) * self.nudge_coeff_velocities[k]
+                self.source_v_nudge[k] = -(vmean[k] + RS.v0 - self.initial_v[k]) * self.nudge_coeff_velocities[k]
 
         with nogil:
             for i in xrange(imin,imax):
