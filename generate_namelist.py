@@ -1010,6 +1010,7 @@ def IsdacCC():
     namelist['radiation']['RRTM']['daily_mean_sw'] = True
     namelist['radiation']['RRTM']['hourz'] = 18.0
     namelist['radiation']['RRTM']['adir'] = 0.85 #Spring value from Persson et al. (2002)
+    namelist['radiation']['RRTM']['adif'] = 0.85  # Spring value from Persson et al. (2002)
     namelist['radiation']['RRTM']['coszen'] = 0.233 #Prescribe cosine of solar zenith angle
 
     namelist['output'] = {}
