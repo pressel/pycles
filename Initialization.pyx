@@ -20,7 +20,7 @@ from Forcing cimport AdjustedMoistAdiabat
 from Thermodynamics cimport LatentHeat
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 

@@ -824,7 +824,8 @@ cdef class ForcingIsdacCC:
         self.w_half =  np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.source_u_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.source_v_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
-
+        self.source_s_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        self.source_qt_nudge = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         cdef:
             Py_ssize_t k
 
@@ -896,13 +897,15 @@ cdef class ForcingIsdacCC:
 
         # apply_nudging(&Gr.dims,&self.nudge_coeff_velocities[0],&self.initial_u[0],&PV.values[u_shift],&PV.tendencies[u_shift])
         # apply_nudging(&Gr.dims,&self.nudge_coeff_velocities[0],&self.initial_v[0],&PV.values[v_shift],&PV.tendencies[v_shift])
-        apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_entropy[0],&PV.values[s_shift],&PV.tendencies[s_shift])
-        apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_qt[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
+        # apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_entropy[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        # apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_qt[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
 
         #Get domain mean profiles
         cdef:
             double [:] umean = Pa.HorizontalMean(Gr, &PV.values[u_shift])
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
+            double [:] smean = Pa.HorizontalMean(Gr, &PV.values[s_shift])
+            double [:] qtmean = Pa.HorizontalMean(Gr, &PV.values[qt_shift])
 
         # Calculate nudging
         with nogil:
@@ -910,6 +913,8 @@ cdef class ForcingIsdacCC:
                 # Nudge mean wind profiles through entire depth
                 self.source_u_nudge[k] = -(umean[k] - self.initial_u[k]) * self.nudge_coeff_velocities[k]
                 self.source_v_nudge[k] = -(vmean[k] - self.initial_v[k]) * self.nudge_coeff_velocities[k]
+                self.source_s_nudge[k] = -(smean[k] - self.initial_entropy[k]) * self.nudge_coeff_scalars[k]
+                self.source_qt_nudge[k] = -(qtmean[k] - self.initial_qt[k]) * self.nudge_coeff_scalars[k]
 
         with nogil:
             for i in xrange(imin,imax):
@@ -920,6 +925,8 @@ cdef class ForcingIsdacCC:
                         ijk = ishift + jshift + k
                         PV.tendencies[u_shift + ijk] += self.source_u_nudge[k]
                         PV.tendencies[v_shift + ijk] += self.source_v_nudge[k]
+                        PV.tendencies[s_shift + ijk] += self.source_s_nudge[k]
+                        PV.tendencies[qt_shift + ijk] += self.source_qt_nudge[k]
 
         return
 
@@ -972,17 +979,17 @@ cdef class ForcingIsdacCC:
         # mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('v_nudging_tendency',self.source_v_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        tmp_tendency[:] = 0.0
-        apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_entropy[0],&PV.values[s_shift],
-                      &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('s_nudging_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        # tmp_tendency[:] = 0.0
+        # apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_entropy[0],&PV.values[s_shift],
+        #               &tmp_tendency[0])
+        # mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('s_nudging_tendency',self.source_s_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
 
-        tmp_tendency[:] = 0.0
-        apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_qt[0],&PV.values[qt_shift],
-                      &tmp_tendency[0])
-        mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
-        NS.write_profile('qt_nudging_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
+        # tmp_tendency[:] = 0.0
+        # apply_nudging(&Gr.dims,&self.nudge_coeff_scalars[0],&self.initial_qt[0],&PV.values[qt_shift],
+        #               &tmp_tendency[0])
+        # mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
+        NS.write_profile('qt_nudging_tendency',self.source_qt_nudge[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         return
 
