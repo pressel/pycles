@@ -1012,7 +1012,7 @@ def IsdacCC():
     namelist['radiation']['RRTM']['adir'] = 0.85 #Spring value from Persson et al. (2002)
     namelist['radiation']['RRTM']['adif'] = 0.85  # Spring value from Persson et al. (2002)
     namelist['radiation']['RRTM']['coszen'] = 0.233 #Prescribe cosine of solar zenith angle
-    namelist['radiation']['RRTM']['scon'] = 1360.0*0.233/namelist['radiation']['RRTM']['coszen']
+    namelist['radiation']['RRTM']['solar_constant'] = 1360.0*0.233/namelist['radiation']['RRTM']['coszen']
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
