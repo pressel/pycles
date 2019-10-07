@@ -341,19 +341,26 @@ void accretion_all(double density, double p0, double temperature, double ccn, do
         factor_s = density*GD3_SNOW*nsnow*pi*ALPHA_ACC_SNOW*C_SNOW*0.25*pow(snow_lam, (-D_SNOW-3.0));
     }
 
-    double src_ri = -piacr/density;
-    double src_rl = factor_r*e_rl*ql/density;
-    double src_si = factor_s*e_si*qi/density;
+    double src_ri_r = 0.0;
+    double src_ri_i = 0.0;
+    double src_ri_s = 0.0;
+    double src_sl_r = 0.0;
+    double src_sl_s = 0.0;
+    double src_rl_r = factor_r*e_rl*ql/density;
+    double src_si_s = factor_s*e_si*qi/density;
     double rime_sl = factor_s*e_sl*ql/density;
-    double src_sl = 0.0;
 
     if( temperature > 273.16 ){
-        src_sl = -cvl/lf0*(temperature-273.16)*rime_sl;
-        src_rl = src_rl + rime_sl - src_sl;
+        src_sl_s = -cvl/lf0*(temperature-273.16)*rime_sl;
+        src_sl_r = (1.0 + cvl/lf0*(temperature-273.16))*rime_sl;
     }
     else{
-        src_sl = rime_sl + (factor_r*e_ri*qi + piacr)/density;
+        src_ri_i = factor_r*e_ri*qi/density;
+        src_ri_r = -piacr/density;
+        src_sl_s = rime_sl;
     }
+
+    src_ri_s = -src_ri_r + src_ri_i; //both rain-ice collision terms contribute to snow tendency
 
     /* Now precip-precip interactions */
     double src_r = 0.0;
@@ -376,10 +383,10 @@ void accretion_all(double density, double p0, double temperature, double ccn, do
         }
     }
 
-    *qrain_tendency = src_r + src_rl + src_ri;
-    *qsnow_tendency = src_s + src_sl + src_si;
-    *ql_tendency = -(src_rl + rime_sl);
-    *qi_tendency = -(src_ri + src_si);
+    *qrain_tendency = src_r + src_rl_r + src_ri_r + src_sl_r;
+    *qsnow_tendency = src_s + src_sl_s + src_ri_s + src_si_s;
+    *ql_tendency = -src_rl_r - src_sl_s - src_sl_r;
+    *qi_tendency = -src_ri_i - src_si_s;
 
     return;
 };
