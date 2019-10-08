@@ -111,7 +111,7 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
     //Off-diagonal components
     //Here factor of 2 arises because we invoke symmetry of tensor
     for(ssize_t vi1=0;vi1<dims->dims-1;vi1++){
-        for (ssize_t d=vi1;d<dims->dims;d++){
+        for (ssize_t d=vi1+1;d<dims->dims;d++){
             const ssize_t shift_s = 3 * dims->npg * vi1 + dims->npg * d ;
             for(ssize_t i=imin+1;i<imax;i++){
                 const ssize_t ishift = i*istride;
