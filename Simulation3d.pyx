@@ -98,7 +98,6 @@ class Simulation3d:
         self.MD.initialize(self.Gr,self.PV,self.DV,self.StatsIO, self.Pa)
 
         self.TS.initialize(namelist,self.PV,self.Pa)
-        self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
 
         if self.Restart.is_restart_run:
             self.Pa.root_print('This run is being restarted!')
@@ -125,6 +124,7 @@ class Simulation3d:
             SetInitialConditions(namelist,self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa, self.LH)
             del SetInitialConditions
 
+        self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
         self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Fo.initialize(self.Gr, self.Ref, self.Th, self.StatsIO, self.Pa)
@@ -217,6 +217,7 @@ class Simulation3d:
             if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
                 self.Pa.root_print('Doing 3D FieldIO')
                 self.Th.update(self.Gr, self.Ref, self.PV, self.DV)
+                self.Micro.micro_fields(self.Gr, self.Ref, self.PV, self.DV) #For snow depo only
                 self.FieldsIO.last_output_time = self.TS.t
                 self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
                 self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
@@ -294,6 +295,7 @@ class Simulation3d:
 
         self.Pa.root_print('Doing 3D FieldIO')
         self.Th.update(self.Gr, self.Ref, self.PV, self.DV)
+        self.Micro.micro_fields(self.Gr, self.Ref, self.PV, self.DV) #For snow depo only
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
         self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
         self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)

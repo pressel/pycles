@@ -129,6 +129,10 @@ cdef class ForcingIsdacCC:
         double [:] nudge_coeff_scalars
         double [:] w_half
         double z_top
+        double [:] source_u_nudge
+        double [:] source_v_nudge
+        double [:] source_s_nudge
+        double [:] source_qt_nudge
 
         double divergence
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

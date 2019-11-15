@@ -7,6 +7,7 @@ cimport TimeStepping
 from SurfaceBudget cimport SurfaceBudget
 from Thermodynamics cimport  LatentHeat, ClausiusClapeyron
 from NetCDFIO cimport NetCDFIO_Stats
+cimport Restart
 
 
 cdef class SurfaceBase:
@@ -26,8 +27,8 @@ cdef class SurfaceBase:
         double (*Lambda_fp)(double T) nogil
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef init_from_restart(self, Restart)
-    cpdef restart(self, Restart)
+    cpdef init_from_restart(self, Restart.Restart Re)
+    cpdef restart(self, Restart.Restart Re)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -151,6 +152,7 @@ cdef class SurfaceIsdacCC(SurfaceBase):
         double ft
 
     cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
+    cpdef init_from_restart(self, Restart.Restart Re)
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)

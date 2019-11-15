@@ -341,19 +341,26 @@ void accretion_all(double density, double p0, double temperature, double ccn, do
         factor_s = density*GD3_SNOW*nsnow*pi*ALPHA_ACC_SNOW*C_SNOW*0.25*pow(snow_lam, (-D_SNOW-3.0));
     }
 
-    double src_ri = -piacr/density;
-    double src_rl = factor_r*e_rl*ql/density;
-    double src_si = factor_s*e_si*qi/density;
+    double src_ri_r = 0.0;
+    double src_ri_i = 0.0;
+    double src_ri_s = 0.0;
+    double src_sl_r = 0.0;
+    double src_sl_s = 0.0;
+    double src_rl_r = factor_r*e_rl*ql/density;
+    double src_si_s = factor_s*e_si*qi/density;
     double rime_sl = factor_s*e_sl*ql/density;
-    double src_sl = 0.0;
 
     if( temperature > 273.16 ){
-        src_sl = -cvl/lf0*(temperature-273.16)*rime_sl;
-        src_rl = src_rl + rime_sl - src_sl;
+        src_sl_s = -cvl/lf0*(temperature-273.16)*rime_sl;
+        src_sl_r = (1.0 + cvl/lf0*(temperature-273.16))*rime_sl;
     }
     else{
-        src_sl = rime_sl + (factor_r*e_ri*qi + piacr)/density;
+        src_ri_i = factor_r*e_ri*qi/density;
+        src_ri_r = -piacr/density;
+        src_sl_s = rime_sl;
     }
+
+    src_ri_s = -src_ri_r + src_ri_i; //both rain-ice collision terms contribute to snow tendency
 
     /* Now precip-precip interactions */
     double src_r = 0.0;
@@ -376,10 +383,10 @@ void accretion_all(double density, double p0, double temperature, double ccn, do
         }
     }
 
-    *qrain_tendency = src_r + src_rl + src_ri;
-    *qsnow_tendency = src_s + src_sl + src_si;
-    *ql_tendency = -(src_rl + rime_sl);
-    *qi_tendency = -(src_ri + src_si);
+    *qrain_tendency = src_r + src_rl_r + src_ri_r + src_sl_r;
+    *qsnow_tendency = src_s + src_sl_s + src_ri_s + src_si_s;
+    *ql_tendency = -src_rl_r - src_sl_s - src_sl_r;
+    *qi_tendency = -src_ri_i - src_si_s;
 
     return;
 };
@@ -1096,6 +1103,93 @@ void melt_snow_wrapper(const struct DimStruct *dims, double* density, double* te
                 double qsnow_tmp = fmax(qsnow[ijk], 0.0);
 
                 melt_snow(density[k], temperature[ijk], qsnow_tmp, nsnow[ijk], &qsnow_tendency[ijk]);
+
+            }
+        }
+    }
+    return;
+
+};
+
+void get_n_ice(const struct DimStruct *dims, double* density, double* qi, double n0i, double* n_ice){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double lambda_ = ice_lambda(density[ijk], qi[ijk], n0i);
+
+                n_ice[ijk] = n0i / lambda_;
+
+            }
+        }
+    }
+    return;
+
+};
+
+void get_n_rain(const struct DimStruct *dims, double* density, double* qrain, double* n0rain, double* n_rain){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double lambda_ = rain_lambda(density[ijk], qrain[ijk], n0rain[ijk]);
+
+                n_rain[ijk] = n0rain[ijk] / lambda_;
+
+            }
+        }
+    }
+    return;
+
+};
+
+void get_n_snow(const struct DimStruct *dims, double* density, double* qsnow, double* n0snow, double* n_snow){
+
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t imin = dims->gw;
+    const ssize_t jmin = dims->gw;
+    const ssize_t kmin = dims->gw;
+    const ssize_t imax = dims->nlg[0]-dims->gw;
+    const ssize_t jmax = dims->nlg[1]-dims->gw;
+    const ssize_t kmax = dims->nlg[2]-dims->gw;
+
+    for(ssize_t i=imin; i<imax; i++){
+        const ssize_t ishift = i * istride;
+        for(ssize_t j=jmin; j<jmax; j++){
+            const ssize_t jshift = j * jstride;
+            for(ssize_t k=kmin; k<kmax; k++){
+                const ssize_t ijk = ishift + jshift + k;
+
+                double lambda_ = snow_lambda(density[ijk], qsnow[ijk], n0snow[ijk]);
+
+                n_snow[ijk] = n0snow[ijk] / lambda_;
 
             }
         }

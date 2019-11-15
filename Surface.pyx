@@ -11,6 +11,7 @@ cimport DiagnosticVariables
 cimport ParallelMPI
 cimport TimeStepping
 cimport Radiation
+cimport Restart
 from Thermodynamics cimport LatentHeat,ClausiusClapeyron
 from SurfaceBudget cimport SurfaceBudget
 from NetCDFIO cimport NetCDFIO_Stats
@@ -105,12 +106,12 @@ cdef class SurfaceBase:
         NS.add_ts('buoyancy_flux_surface_mean', Gr, Pa)
 
         return
-    cpdef init_from_restart(self, Restart):
-        self.T_surface = Restart.restart_data['surf']['T_surf']
+    cpdef init_from_restart(self, Restart.Restart Re):
+        self.T_surface = Re.restart_data['surf']['T_surf']
         return
-    cpdef restart(self, Restart):
-        Restart.restart_data['surf'] = {}
-        Restart.restart_data['surf']['T_surf'] = self.T_surface
+    cpdef restart(self, Restart.Restart Re):
+        Re.restart_data['surf'] = {}
+        Re.restart_data['surf']['T_surf'] = self.T_surface
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
@@ -1076,6 +1077,9 @@ cdef class SurfaceIsdacCC(SurfaceBase):
         SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
         return
 
+    cpdef init_from_restart(self, Restart.Restart Re):
+        SurfaceBase.init_from_restart(self, Re)
+        return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):

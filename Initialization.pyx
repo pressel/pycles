@@ -1231,62 +1231,44 @@ def InitSheba(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
         double [:] thetal = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        double [:] wt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double p_inv = 95700.0
-        double [:] ps
-        double [:] us
-        double [:] vs
         double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
         double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
 
-    for k in xrange(Gr.dims.nlg[2]):
 
-        #Set thetal and qt profile
-        if RS.p0_half[k] > p_inv:
-            thetal[k] = 255.7 #257.0
-            wt[k] = 0.91 #0.915 #Mixing ratio in g/kg
-        else:
-            thetal[k] = 255.7+6.9 #263.9
-            wt[k] = 0.8
+    sheba_init = np.loadtxt('./SHEBAdata/sheba_init.txt', comments='!')
+    sheba_p = sheba_init[:, 0]
+    sheba_t = sheba_init[:, 1]
+    sheba_rh = sheba_init[:, 2]
+    sheba_rl = sheba_init[:, 3]
+    sheba_thetal = sheba_t*(p_tilde/sheba_p)**(Rd/cpd)*np.exp(-(sheba_rl*2.501e6) / (sheba_t*cpd))
+    sheba_u = sheba_init[:, 4]
+    sheba_v = sheba_init[:, 5]
 
-    for k in xrange(Gr.dims.nlg[2]-1):
-        if RS.p0_half[k] < p_inv:
-            thetal[k+1] = thetal[k] + ((1.0/exner_c(RS.p0_half[k+1]))*fmin(3.631e-8*(p_inv - RS.p0_half[k+1]), 5.7e-4))*(RS.p0_half[k]-RS.p0_half[k+1])
-            wt[k+1] = wt[k] - 1.4e-5*(RS.p0_half[k]-RS.p0_half[k+1])
-
-        #Convert mixing ratio to specific humidity
-        qt[k] = wt[k]/(1.0 + wt[k]/1000.0)/1000.0
-
-    #Horizontal wind profiles from Colleen's JPLLES code
-
-    ps = np.array([1017.0,1012.0,1007.0,1002.0,997.0,992.0,987.0,982.0,977.0,972.0,967.0,962.0,957.01,957.0,
-                             956.99,952.0,947.0,942.0,937.0,932.0,927.0,922.0,917.0,912.0,907.0,902.0,897.0,892.0,
-                             887.0,882.0,877.0,872.0,867.0,862.0,857.0,852.0,847.0,842.0,837.0,832.0,827.0,822.0,817.0,
-                             812.0,807.0,802.0,797.0,792.0,787.0,782.0,777.0,772.0,767.0,762.0,757.0,752.0,747.0,742.0,
-                             737.0,732.0,727.0,722.0,717.0,712.0,707.0,702.0,697.0,692.0,687.0,682.0,677.0,672.0,667.0,
-                             662.0,657.0,652.0,647.0,642.0,637.0,632.0,627.0,622.0,617.0,612.0,607.0],dtype=np.double,order='c')*100.0
-
-    us = np.array([2.916,2.8999,2.7895,2.679,2.5568,2.417,2.2772,2.1374,1.9976,1.8856,1.7926,1.6996,1.6066,1.6066,
-                   1.6066,1.5136,1.4205,1.3248,1.2203,1.1159,1.0114,0.90701,0.80257,0.69813,0.59368,0.48564,0.37645,
-                   0.26726,0.15807,0.048881,-0.06031,-0.1695,-0.27869,-0.42739,-0.61744,-0.80748,-0.99753,-1.1876,
-                   -1.3776,-1.5677,-1.7577,-1.9477,-2.0576,-2.1326,-2.2076,-2.2826,-2.3576,-2.4326,-2.5076,-2.5826,
-                   -2.6576,-2.6911,-2.6961,-2.701,-2.7059,-2.7109,-2.7158,-2.7207,-2.7257,-2.7306,-2.7137,-2.653,
-                   -2.5923,-2.5316,-2.4708,-2.4101,-2.3494,-2.2886,-2.2279,-2.1662,-2.08,-1.9938,-1.9076,-1.8214,
-                   -1.7352,-1.649,-1.5629,-1.4767,-1.3905,-1.302,-1.213,-1.124,-1.035,-0.94601,-0.85701],dtype=np.double,order='c')
-
-    vs = np.array([2.8497,2.9023,3.2622,3.6221,3.8701,3.9526,4.0351,4.1177,4.2002,4.2743,4.3427,4.4112,4.4796,4.4796,
-                   4.4796,4.548,4.6165,4.6831,4.744,4.8048,4.8657,4.9266,4.9874,5.0483,5.1092,5.1671,5.2241,5.2811,
-                   5.3381,5.3951,5.4521,5.5091,5.5662,5.6245,5.6844,5.7442,5.8041,5.8639,5.9238,5.9836,6.0434,6.1033,
-                   6.1444,6.1774,6.2105,6.2435,6.2765,6.3096,6.3426,6.3756,6.4086,6.4722,6.5567,6.6412,6.7258,6.8103,
-                   6.8948,6.9794,7.0639,7.1484,7.2388,7.3407,7.4426,7.5446,7.6465,7.7485,7.8504,7.9524,8.0543,8.1574,
-                   8.2893,8.4211,8.553,8.6848,8.8167,8.9485,9.0804,9.2122,9.3441,9.493,9.6463,9.7995,9.9527,10.106,
-                   10.259],dtype=np.double,order='c')
+    sheba_pv = np.zeros_like(sheba_u)
+    for n, t_ in enumerate(sheba_t):
+        sheba_pv[n] = Th.get_pv_star(t_)*sheba_rh[n]/100.0
+    sheba_wt = eps_v * sheba_pv/(sheba_p - sheba_pv) + sheba_rl
+    sheba_qt = sheba_wt/(1.0 + sheba_wt)
+    sheba_ql = sheba_rl/(1.0 + sheba_rl)
 
     #Interpolate to LES grid
     for k in xrange(Gr.dims.nlg[2]):
-        u[k] = interp_pchip(RS.p0[k], ps[::-1], us[::-1])
-        v[k] = interp_pchip(RS.p0[k], ps[::-1], vs[::-1])
+        u[k] = interp_pchip(RS.p0_half[k], sheba_p, sheba_u)
+        v[k] = interp_pchip(RS.p0_half[k], sheba_p, sheba_v)
+        thetal[k] = interp_pchip(RS.p0_half[k], sheba_p, sheba_thetal)
+        qt[k] = interp_pchip(RS.p0_half[k], sheba_p, sheba_qt)
 
+    # plt.figure()
+    # plt.subplot(121)
+    # plt.plot(thetal, RS.p0_half)
+    # plt.plot(sheba_thetal, sheba_p)
+    # plt.ylim([110000, 80000])
+    # plt.subplot(122)
+    # plt.plot(qt, RS.p0_half)
+    # plt.plot(sheba_qt, sheba_p)
+    # plt.ylim([110000, 80000])
+    # plt.show()
 
     RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
     RS.v0 = 0.5 * (np.amax(v)+np.amin(v))
