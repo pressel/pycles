@@ -82,9 +82,9 @@ def SurfaceFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         elif casename == 'CGILS':
             return SurfaceCGILS(namelist, LH, Par)
         elif casename == 'ZGILS':
-            return SurfaceZGILS(namelist, LH, Par)
+            return SurfaceZGILS(LH)
         elif casename == 'DCBLSoares':
-            return SurfaceSoares(namelist, LH, Par)
+            return SurfaceSoares(LH)
         elif casename == 'DCBLSoares_moist':
             return SurfaceSoares_moist(namelist, LH, Par)
         else:
