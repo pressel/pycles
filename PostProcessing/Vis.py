@@ -35,48 +35,33 @@ def main():
     parser.add_argument("path")
     parser.add_argument("casename")
     parser.add_argument("--var_name")
-<<<<<<< HEAD
-=======
     parser.add_argument("--time_min")
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
     args = parser.parse_args()
     path = args.path
     case_name = args.casename
     if args.var_name:
         var_list = [args.var_name]
     else:
-<<<<<<< HEAD
         var_list = ['w', 's', 'potential_temperature', 'temperature', 'ql', 'qt', 'u', 'v']
-
+        var_list = ['w', 's', 'theta', 'temperature', 'ql', 'qt', 'u', 'v']
 
     global fullpath_out, file_name
-    global t, dt, dx, dz
-=======
-        var_list = ['w', 's', 'theta', 'temperature', 'ql', 'qt', 'u', 'v']
+    global t, dt, dx, dz, nx
     if args.time_min:
         t_min = np.int(args.time_min)
     else:
         t_min = 0
 
 
-    global fullpath_out, file_name
-    global t, dt, dx, dz, nx
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
     # case_name = 'Bomex'
 
     # path_list = ['../bomex/161130_test/n24/2_full_old_EV12/']
     # path = '../bomex/161130_test/n24/2_QL_old_EV12/'
     path_list = [path]
     for path in path_list:
-<<<<<<< HEAD
-        fullpath_out = os.path.join(path,'vis/')
-        print('fullpath_out', fullpath_out)
-        scheme = 'QL, 2nd, TKE, CFL = 0.1'
-=======
         fullpath_out = os.path.join(path,'Visualization/')
         print('fullpath_out', fullpath_out)
         #     scheme = 'QL, 2nd, TKE, CFL = 0.1'
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
 
         nml = simplejson.loads(open(os.path.join(path,case_name + '.in')).read())
         # namelist_files = glob.glob(path +'*.in')
@@ -86,18 +71,15 @@ def main():
         dt = nml['visualization']['frequency']
         dx = nml['grid']['dx']
         dz = nml['grid']['dz']
-<<<<<<< HEAD
         print('vis dt:' + str(dt) +', dz: '+ str(dz))
 
         # files = os.listdir(os.path.join(path, 'vis/*.pkl'))       # type = list
         files = os.listdir(os.path.join(path, 'vis'))  # type = list
-=======
         nx = nml['grid']['nx']
         print('vis dt:' + str(dt) +', dz: '+ str(dz))
 
         # files = os.listdir(os.path.join(path, 'vis/*.pkl'))       # type = list
         files = os.listdir(os.path.join(path, 'Visualization'))  # type = list
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
         print('visualisation files: ', str(files))
         print('')
 
@@ -119,7 +101,6 @@ def main():
         #     fullpath_in = fullpath_out + file_name  + '.pkl'
         #     print('fullpath_in: ' + fullpath_in)
 
-<<<<<<< HEAD
         for file_name in files:
             if file_name[-4:] == '.pkl':
                 t = np.int(file_name[0:-4])
@@ -140,7 +121,6 @@ def main():
 
                     plot_data_levels(var, var_name, t, levels)
                     plot_data(var, var_name, t)
-=======
         ''' (A) setting levels '''
         file_name = files[0]
         i = 0
@@ -178,7 +158,6 @@ def main():
                             plot_data_levels(var, var_name, t, levels)
                             # plot_data(var, var_name, t)
                     print " "
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
 
 
     print('Ende')
@@ -222,24 +201,16 @@ def plot_data(data, var_name, t):
     # plt.show()
     plt.colorbar()
     plt.title(var_name + ', (t=' + np.str(t) + 's)')
-<<<<<<< HEAD
-    plt.xlabel('x (dx=' + np.str(dx) + 'm)')
-    plt.ylabel('height z (dz=' + np.str(dz) + 'm)')
-    plt.savefig(os.path.join(fullpath_out, 'pdf', var_name + '_' + str(t) + '.pdf'))
-    plt.savefig(fullpath_out + var_name + '_' + str(t) + '.png')
-=======
     plt.xlabel('x (dx=' + np.str(dx) + 'm, nx='+np.str(nx)+')')
     plt.ylabel('height z (dz=' + np.str(dz) + 'm)')
-    plt.savefig(os.path.join(fullpath_out, 'pdf', var_name + '_' + str(t) + '.pdf'))
     plt.savefig(fullpath_out + var_name + '_' + str(np.int(t + 1e7)) + '.png')
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
+    plt.savefig(os.path.join(fullpath_out, 'pdf', var_name + '_' + str(t) + '.pdf'))
     plt.close()
     return
 
 
 def plot_data_levels(data, var_name, t, levels_):
     # print(data.shape)
-<<<<<<< HEAD
     plt.figure()
     if var_name == 'w':
         # print('bwr')
@@ -255,7 +226,6 @@ def plot_data_levels(data, var_name, t, levels_):
     plt.colorbar()
     plt.savefig(os.path.join(fullpath_out, 'pdf', 'levels_' + var_name + '_' + str(t) + '.pdf'))
     plt.savefig(fullpath_out + 'levels_' + var_name + '_' + str(t) + '_levels.png')
-=======
     plt.figure(figsize=(12,8))
     if var_name == 'w':
         # print('bwr')
@@ -278,18 +248,15 @@ def plot_data_levels(data, var_name, t, levels_):
         os.mkdir(path_out)
     # plt.savefig(os.path.join(path_out, 'levels_' + var_name + '_' + str(t) + '.pdf'))
     plt.savefig(fullpath_out + 'levels_' + var_name + '_' + str(np.int(t + 1e7)) + '.png')
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
     plt.close()
     return
 
 
 
 def plot_data_levels_cont(var_field,var_name_field,levels_field,var_cont,var_name_cont,levels_cont):
-<<<<<<< HEAD
     print('cont print')
-=======
+
     # print('cont print')
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
     plt.figure()
     if var_name_field == 'w':
         ax1 = plt.contourf(var_field.T, cmap=cm.bwr, levels=levels_field)

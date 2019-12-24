@@ -44,13 +44,6 @@ cdef class NetCDFIO_Fields:
         public double frequency
         public bint do_output
 
-<<<<<<< HEAD
-=======
-        # __
-        # int count
-        # __
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
-
     cpdef initialize(self, dict namelist, ParallelMPI.ParallelMPI Pa)
 
     cpdef update(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa)
