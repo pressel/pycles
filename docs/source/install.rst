@@ -156,6 +156,10 @@ Compile PyCLES::
 $ CC=mpicc python setup.py build_ext --inplace
 
 .. note::
+    setup.py looks for netCDF4 libraries at the location specified at `$NETCDF_HOME`. Make sure that `$NETCDF_HOME` is set before building,
+    otherwise it will use the default of `/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a`
+
+.. note::
     In the above command, mpicc should be replaced by the name of your MPI C compiler.
 
 .. note::
