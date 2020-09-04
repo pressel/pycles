@@ -7,10 +7,7 @@ import sys
 import platform
 import subprocess as sp
 import os.path
-<<<<<<< HEAD
-=======
 import string
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
 
 
 # Now get include paths from relevant python modules
@@ -32,29 +29,19 @@ if sys.platform == 'darwin':
     extra_compile_args = []
     extra_compile_args += ['-O3', '-march=native', '-Wno-unused', '-Wno-#warnings','-fPIC']
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
-<<<<<<< HEAD
     netcdf_include = '/opt/local/include'
     netcdf_lib = '/opt/local/lib'
-    # f_compiler = 'gfortran'
-    f_compiler = 'gfortran-mp-4.8'
-elif 'euler' in platform.node():
-=======
-    # netcdf_include = '/opt/local/include'
-    netcdf_include = get_netcdf_include()
-    # netcdf_lib = '/opt/local/lib'
-    netcdf_lib = os.path.join(get_netcdf_prefix(), 'lib')
+    # netcdf_lib = os.path.join(get_netcdf_prefix(), 'lib')
+    # ubsteram: setup
     # f_compiler = 'gfortran'
     f_compiler = 'gfortran-mp-4.8'
 # elif 'euler' in platform.node():
 elif 'eu' in platform.node():
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
     #Compile flags for euler @ ETHZ
     library_dirs = ['/cluster/apps/openmpi/1.6.5/x86_64/gcc_4.8.2/lib/']
     libraries = []
     libraries.append('mpi')
     libraries.append('gfortran')
-<<<<<<< HEAD
-=======
     extensions = []
     extra_compile_args=[]
     extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
@@ -69,21 +56,32 @@ elif (platform.machine()  == 'x86_64') and ('LD_LIBRARY_PATH' in os.environ):
     libraries = []
     libraries.append('mpi')
     libraries.append('gfortran')
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
     extensions = []
     extra_compile_args=[]
     extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
                          '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
     extra_objects=['./RRTMG/rrtmg_build/rrtmg_combined.o']
-<<<<<<< HEAD
     netcdf_include = '/cluster/apps/netcdf/4.3.1/x86_64/gcc_4.8.2/openmpi_1.6.5/include'
     netcdf_lib = '/cluster/apps/netcdf/4.3.1/x86_64/gcc_4.8.2/openmpi_1.6.5/lib'
-=======
     netcdf_include = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/include'
     netcdf_lib = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/lib'
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
     f_compiler = 'gfortran'
 
+    # # Central @ Caltech
+    # extra_compile_args+=['-std=c99', '-O3', '-march=native', '-Wno-unused',
+    #                      '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
+    # netcdf_include = '/central/software/netcdf-c/4.6.1/include'
+    # netcdf_lib = '/central/software/netcdf-c/4.6.1/lib'
+
+    # # Fram @ Caltech
+    # netcdf_include = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/include'
+    # netcdf_lib = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/lib'
+
+    # HPC@ Copenhagen University
+    extra_compile_args+=['-std=c99', '-O3', '-Wno-unused',
+                         '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
+    netcdf_include = '/groups/ocean/software/netcdf4/gcc/4.4.1.1/include'
+    netcdf_lib = '/groups/ocean/software/netcdf4/gcc/4.4.1.1/lib'
 else:
     if platform.system()=='Linux':
         #Best guess at compile flags for a Linux computer
@@ -294,17 +292,14 @@ _ext = Extension('VisualizationOutput', ['VisualizationOutput.pyx'], include_dir
                  runtime_library_dirs=library_dirs)
 extensions.append(_ext)
 
-<<<<<<< HEAD
-=======
 
-## Bettina
-_ext = Extension('StochasticNoise', ['StochasticNoise.pyx'], include_dirs=include_path,
-                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
-                 runtime_library_dirs=library_dirs)
-extensions.append(_ext)
+# # Bettina
+# _ext = Extension('StochasticNoise', ['StochasticNoise.pyx'], include_dirs=include_path,
+#                 extra_compile_args=extra_compile_args, libraries=libraries, library_dirs=library_dirs,
+#                 runtime_library_dirs=library_dirs)
+# extensions.append(_ext)
 
 
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
 #Build RRTMG
 
 rrtmg_compiled = os.path.exists('./RRTMG/rrtmg_build/rrtmg_combined.o')
@@ -312,11 +307,7 @@ if not rrtmg_compiled:
     run_str = 'cd ./RRTMG; '
     run_str += ('FC='+ f_compiler + ' LIB_NETCDF=' + netcdf_lib + ' INC_NETCDF='+
                netcdf_include + ' csh ./compile_RRTMG_combined.csh')
-<<<<<<< HEAD
-    print run_str
-=======
     print(run_str)
->>>>>>> 41586439b0206325c7d77f964e0a7889f1881122
     sp.call([run_str], shell=True)
 else:
     print("RRTMG Seems to be already compiled.")
