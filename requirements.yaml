@@ -1,0 +1,18 @@
+name: pycles
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - pip
+  # runtime
+  - cython
+  - matplotlib
+  - mpi4py
+  - netcdf4
+  - numpy
+  - scipy
+  # build
+  - gfortran
+  - openmpi-mpicc
+  - libnetcdf
+  - libmpi
