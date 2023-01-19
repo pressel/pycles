@@ -746,7 +746,7 @@ def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         elif Gr.zl_half[k] >= 687.5 and Gr.zl_half[k] <= 712.5:
             theta[k] = 288.0 + (Gr.zl_half[k] - 687.5) * 0.28
             smoke[k] = 1.0 - 0.04 * (Gr.zl_half[k] - 687.5)
-            print k, Gr.zl_half[k], smoke[k]
+            print(k, Gr.zl_half[k], smoke[k])
         else:
             theta[k] = 295.0 + (Gr.zl_half[k] - 712.5) * 1e-4
             smoke[k] = 0.0

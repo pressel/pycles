@@ -50,7 +50,7 @@ cdef class NetCDFIO_Stats:
         if os.path.exists(self.path_plus_file):
             for i in range(100):
                 res_name = 'Restart_'+str(i)
-                print "Here " + res_name
+                print("Here " + res_name)
                 if os.path.exists(self.path_plus_file):
                     self.path_plus_file = str( self.stats_path + '/' + 'Stats.' + namelist['meta']['simname']
                            + '.' + res_name + '.nc')
@@ -120,7 +120,7 @@ cdef class NetCDFIO_Stats:
 
     cpdef add_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
 
-        print var_name, units, nice_name, desc
+        print(var_name, units, nice_name, desc)
 
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')

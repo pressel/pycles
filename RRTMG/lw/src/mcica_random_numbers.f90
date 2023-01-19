@@ -18,7 +18,7 @@
 !   
 !   randomNumbers = new_RandomNumberSequence(seed = 100)
 !   do i = 1, 10
-!     print ('(f12.10, 2x)'), getRandomReal(randomNumbers)
+!     print(('(f12.10, 2x)'), getRandomReal(randomNumbers))
 !   end do
 ! end program testRandoms
 ! 
