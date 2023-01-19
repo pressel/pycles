@@ -8,6 +8,7 @@ import platform
 import subprocess as sp
 import os.path
 import string
+import shutil
 
 if not os.environ.get("CC"):
     os.environ["CC"] = "mpicc"
@@ -297,11 +298,18 @@ extensions.append(_ext)
 
 #Build RRTMG
 
+if shutil.which("csh"):
+    CSH = "csh"
+elif shutil.which("tcsh"):
+    CSH = "tcsh"
+else:
+    raise Exception("found neither csh nor tcsh")
+
 rrtmg_compiled = os.path.exists('./RRTMG/rrtmg_build/rrtmg_combined.o')
 if not rrtmg_compiled:
     run_str = 'cd ./RRTMG; '
     run_str += ('FC='+ f_compiler + ' LIB_NETCDF=' + netcdf_lib + ' INC_NETCDF='+
-               netcdf_include + ' csh ./compile_RRTMG_combined.csh')
+               netcdf_include + ' ' + CSH + ' ./compile_RRTMG_combined.csh')
     print(run_str)
     sp.call([run_str], shell=True)
 else:
