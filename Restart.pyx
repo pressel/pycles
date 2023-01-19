@@ -4,7 +4,7 @@ import shutil
 import glob
 try:
     import cPickle as pickle
-except:
+except ImportError:
     import pickle as pickle # for Python 3 users
 
 cimport ParallelMPI
