@@ -161,6 +161,20 @@ $ CC=mpicc python setup.py build_ext --inplace
 .. note::
     If compilation fails with a KeyError, check the flags used in the setup.py to make sure they match the flags in your machine.
 
+Building with conda
++++++++++++++++++++
+
+Steps:
+
+.. code-block:: bash
+
+    conda env create --file requirements.yml  # or environment.yml
+    conda activate pycles
+    python generate_parameters.py
+    CC=mpicc python setup.py build_ext --inplace
+
+Caveat: Tested only on linux.
+
 Site Specific Builds
 --------------------
 
