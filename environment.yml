@@ -1,5 +1,6 @@
 name: pycles
 channels:
+  - atmcirc
   - conda-forge
 dependencies:
   - _libgcc_mutex=0.1
@@ -156,6 +157,7 @@ dependencies:
   - sip=6.7.5
   - six=1.16.0
   - sysroot_linux-64=2.12
+  - tcsh=6.24.07
   - tk=8.6.12
   - toml=0.10.2
   - tornado=6.2
@@ -172,3 +174,4 @@ dependencies:
   - xz=5.2.6
   - zlib=1.2.13
   - zstd=1.5.2
+prefix: /home/stefan/conda-envs/pycles

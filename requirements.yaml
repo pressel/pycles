@@ -16,3 +16,4 @@ dependencies:
   - openmpi-mpicc
   - libnetcdf
   - libmpi
+  - tcsh
