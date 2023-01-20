@@ -933,9 +933,9 @@ cdef class Pencil:
     cdef complex [:,:] forward_complex(self, Grid.DimStruct *dims, ParallelMPI Pa ,complex *data):
 
         cdef:
-            complex [:] local_transpose = np.empty((dims.npl,),dtype=np.complex_,order='c')
-            complex [:] recv_buffer = np.empty((self.n_local_pencils * self.pencil_length),dtype=np.complex_,order='c')
-            complex [:,:] pencils = np.empty((self.n_local_pencils,self.pencil_length),dtype=np.complex_,order='c')
+            complex [:] local_transpose = np.empty((dims.npl,),dtype=np.cdouble,order='c')
+            complex [:] recv_buffer = np.empty((self.n_local_pencils * self.pencil_length),dtype=np.cdouble,order='c')
+            complex [:,:] pencils = np.empty((self.n_local_pencils,self.pencil_length),dtype=np.cdouble,order='c')
 
         #Build send buffer
         self.build_buffer_complex(dims, data, &local_transpose[0])
@@ -963,8 +963,8 @@ cdef class Pencil:
     cdef void reverse_complex(self, Grid.DimStruct *dims, ParallelMPI Pa, complex [:,:] pencils, complex *data):
 
         cdef:
-            complex [:] send_buffer = np.empty(self.n_local_pencils * self.pencil_length,dtype=np.complex_,order='c')
-            complex [:] recv_buffer = np.empty(dims.npl,dtype=np.complex_,order='c')
+            complex [:] send_buffer = np.empty(self.n_local_pencils * self.pencil_length,dtype=np.cdouble,order='c')
+            complex [:] recv_buffer = np.empty(dims.npl,dtype=np.cdouble,order='c')
 
         #This is exactly the inverse operation to forward_double so that the send_counts can be used as the recv_counts
         #and vice versa

@@ -165,8 +165,8 @@ cdef class PressureFFTParallel:
             double [:,:] x_pencil
             complex [:,:] x_pencil_fft, x_pencil_ifft, x_pencil_complex
             complex [:,:] y_pencil, y_pencil_fft, z_pencil
-            complex [:] div_fft= np.zeros(Gr.dims.npg,dtype=np.complex_,order='c')
-            complex [:] pres = np.zeros(Gr.dims.npg,dtype=np.complex_,order='c')
+            complex [:] div_fft= np.zeros(Gr.dims.npg,dtype=np.cdouble,order='c')
+            complex [:] pres = np.zeros(Gr.dims.npg,dtype=np.cdouble,order='c')
 
         #Do fft in x direction
         x_pencil = self.X_Pencil.forward_double(&Gr.dims, Pa, &DV.values[div_shift])
