@@ -93,7 +93,7 @@ cdef class Restart:
 
         self.restart_data['last_restart_time'] = self.last_restart_time
         #Set up path for writing restart files
-        path = self.restart_path + '/' + str(np.int(self.last_restart_time))
+        path = self.restart_path + '/' + str(np.int_(self.last_restart_time))
 
 
         # Some preliminary renaming of directories if we are using the 'delete_old' option

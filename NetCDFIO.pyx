@@ -319,7 +319,7 @@ cdef class NetCDFIO_Fields:
         dimgrp = rootgrp.createGroup('dims')
         fieldgrp = rootgrp.createGroup('fields')
 
-        fieldgrp.createDimension('nl', np.int(Gr.dims.npl))
+        fieldgrp.createDimension('nl', np.int_(Gr.dims.npl))
         dimgrp.createDimension('d1', 1)
 
         nl_0 = dimgrp.createVariable('nl_0', 'i4', ('d1'))

@@ -26,8 +26,8 @@ cdef class PrognosticVariables:
         self.nv_scalars = 0
         self.nv_velocities = 0
         self.bc_type = np.array([], dtype=np.double, order='c')
-        self.var_type = np.array([], dtype=np.int, order='c')
-        self.velocity_directions = np.zeros((Gr.dims.dims,),dtype=np.int,order='c')
+        self.var_type = np.array([], dtype=np.int_, order='c')
+        self.velocity_directions = np.zeros((Gr.dims.dims,),dtype=np.int_,order='c')
         self.velocity_names_directional = ["" for dim in range(Gr.dims.dims)]
         return
 
@@ -186,7 +186,7 @@ cdef class PrognosticVariables:
         cdef double* recv_buffer
         cdef double a =0
         cdef double b = 0
-        cdef Py_ssize_t [:] shift = np.array([-1,1],dtype=np.int,order='c')
+        cdef Py_ssize_t [:] shift = np.array([-1,1],dtype=np.int_,order='c')
         cdef Py_ssize_t d, i, s
         cdef Py_ssize_t ierr
         cdef int dest_rank, source_rank

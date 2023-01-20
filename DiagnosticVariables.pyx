@@ -32,7 +32,7 @@ cdef class DiagnosticVariables:
         self.units_2d = {}
         self.nv_2d = 0
         # keep track of which indices are associated with sedimentation velocity
-        self.sedv_index  = np.array([],dtype=np.int,order='c')
+        self.sedv_index  = np.array([],dtype=np.int_,order='c')
         self.nsedv = 0
 
     cpdef add_variables(self, name, units, nice_name, desc, bc_type,  ParallelMPI.ParallelMPI Pa):
@@ -69,7 +69,7 @@ cdef class DiagnosticVariables:
             double*  recv_buffer
             long d, s
             long var_shift, buffer_var_shift
-            long [:] shift = np.array([-1,1],dtype=np.int,order='c')
+            long [:] shift = np.array([-1,1],dtype=np.int_,order='c')
             int ierr, source_rank, dest_rank
             mpi.MPI_Status status
 
