@@ -18,9 +18,16 @@ import numpy as np
 from libc.math cimport sqrt
 include "parameters.pxi"
 
+# SR/INLINE {
+# SR Inline thetas_c as is causes "undefined symbol" runtime error on ch4
+# SR Curiously, cpm_c works... Maybe b/c thetas_c contains exp?
+# SR (On zaurier, "undefined symbol" error refers to sth. like "_ZGVbN2v_exp")
+# cdef extern from "c_thermodynamic_functions.h":
+#     double thetas_c(const double s, const double qt) nogil
 cdef extern from "thermodynamic_functions.h":
-    double thetas_c(const double s, const double qt) nogil
-
+    double cpm_c(const double qt) nogil
+from libc.math cimport exp
+# SR/INLINE }
 
 class AuxiliaryStatistics:
     def __init__(self, namelist):
@@ -249,7 +256,15 @@ class CumulusStatistics:
                         jshift = j * jstride
                         for k in range(kmin, kmax):
                             ijk = ishift + jshift + k
-                            data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
+                            # SR/INLINE {
+                            # data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
+                            data[count] = T_tilde * exp((
+                                    PV.values[s_shift + ijk]
+                                    - (1.0 - PV.values[qt_shift + ijk]) * sd_tilde
+                                    - PV.values[qt_shift + ijk] * sv_tilde
+                                ) / cpm_c(PV.values[qt_shift + ijk])
+                            )
+                            # SR/INLINE }
 
                             count += 1
             tmp = Pa.HorizontalMeanConditional(Gr, &data[0], &cloudmask[0])
