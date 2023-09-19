@@ -190,8 +190,6 @@ class Simulation3d:
 
         self.Restart.cleanup()
 
-        self.postprocess()
-
         return
 
     def io(self):

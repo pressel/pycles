@@ -32,21 +32,19 @@ cdef class PostProcessing:
     
     cpdef combine3d(self):
 
-        fields_dir = self.fields_dir
-        out_dir = self.out_dir
+        fields_path = self.fields_path
+        out_path = self.out_path
 
-        directories = os.listdir(fields_dir)
-        print('Found the following directories', directories)
-        print('Beginning combination of files')
+        directories = os.listdir(fields_path)
+        print('\nBeginning combination of ranks in time step directories', directories)
 
-        for d in directories:
-            print('\t Combining ' + d)
-            d_path = os.path.join(fields_dir, d)
-            ranks = os.listdir(d_path)
-            print('\t\t Combining files')
+        for d in directories: # time steps
+            d_path = os.path.join(fields_path, d)
+            ranks = os.listdir(d_path) # different processes (cpus)
 
-            print(ranks)
-            file_path = os.path.join(fields_dir, d, ranks[0])
+            print(f'\t Combining ranks {ranks} of time step (dir) {d}')
+
+            file_path = os.path.join(fields_path, d, ranks[0])
             rootgrp = nc.Dataset(file_path, 'r')
             field_keys = rootgrp.groups['fields'].variables.keys()
             dims = rootgrp.groups['dims'].variables
@@ -57,14 +55,15 @@ cdef class PostProcessing:
 
             rootgrp.close()
 
-            out_path = os.path.join(out_dir, str(d) + '.nc')
-            if not os.path.exists(out_path):
-                self.create_file(out_path)
+            out_path_full = os.path.join(out_path, str(d) + '.nc')
+            if not os.path.exists(out_path_full):
+                self.create_file(out_path_full)
+
             for f in field_keys:
                 f_data_3d = np.empty((n_0, n_1, n_2), dtype=np.double, order='c')
                 for r in ranks:
                     if r[-3:] == '.nc':
-                        file_path = os.path.join(fields_dir, d, r)
+                        file_path = os.path.join(fields_path, d, r)
                         rootgrp = nc.Dataset(file_path, 'r')
                         fields = rootgrp.groups['fields'].variables
                         dims = rootgrp.groups['dims'].variables
@@ -83,13 +82,13 @@ cdef class PostProcessing:
 
                         f_data = fields[f][:]
 
-                        # cython part
                         self.to_3d(
                             f_data, nl_0, nl_1, nl_2, indx_lo_0, indx_lo_1, indx_lo_2, f_data_3d
                         )
 
                         rootgrp.close()
-                self.write_field(out_path, f, f_data_3d)
+                self.write_field(out_path_full, f, f_data_3d)
+        print('Finished combining ranks per time step.\n')
         return
 
     cpdef to_3d(self, double[:] f_data, int nl_0, int nl_1, int nl_2, int indx_lo_0,
