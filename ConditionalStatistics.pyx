@@ -100,6 +100,9 @@ cdef class SpectraStatistics:
 
         # set up the names of the variables
         NC.add_condstat('energy_spectrum', 'spectra', 'wavenumber', Gr, Pa)
+        NC.add_condstat('energy_spectrum_u', 'spectra', 'wavenumber', Gr, Pa)
+        NC.add_condstat('energy_spectrum_v', 'spectra', 'wavenumber', Gr, Pa)
+        NC.add_condstat('energy_spectrum_w', 'spectra', 'wavenumber', Gr, Pa)
         if 's' in PV.name_index:
             NC.add_condstat('s_spectrum', 'spectra', 'wavenumber', Gr, Pa)
         if 'qt' in PV.name_index:
@@ -185,6 +188,9 @@ cdef class SpectraStatistics:
 
         spec = np.add(np.add(spec_u,spec_v), spec_w)
         NC.write_condstat('energy_spectrum', 'spectra', spec[:,:], Pa)
+        NC.write_condstat('energy_spectrum_u', 'spectra', spec_u[:,:], Pa)
+        NC.write_condstat('energy_spectrum_v', 'spectra', spec_v[:,:], Pa)
+        NC.write_condstat('energy_spectrum_w', 'spectra', spec_w[:,:], Pa)
 
         if 's' in PV.name_index:
             var_shift = PV.get_varshift(Gr, 's')
@@ -319,6 +325,8 @@ cdef class SpectraStatistics:
             double dk = self.dk
             double kmag
             double [:,:] spec = np.zeros((Gr.dims.nl[2],self.nwave),dtype=np.double, order ='c')
+            # double [:] count = np.zeros((self.nwave,),dtype=np.double, order ='c') 
+            # # count summands in k compartments for averaging
 
         with nogil:
             for i in xrange(Gr.dims.nl[0]):
@@ -331,6 +339,11 @@ cdef class SpectraStatistics:
                         kg = k + gw
                         ijk = ishift + jshift + kg
                         spec[k, ik] += data_fft[ijk].real *  data_fft[ijk].real +  data_fft[ijk].imag *  data_fft[ijk].imag
+            #             count[ik] += 1
+            # # average each k compartment
+            # for ik in xrange(self.nwave):
+            #     for k in xrange(Gr.dims.nl[2]):
+            #         spec[k,ik] /= count[ik]
 
         for k in xrange(Gr.dims.nl[2]):
             for ik in xrange(nwave):
