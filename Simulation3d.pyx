@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import os
 cimport numpy as np
 from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
@@ -11,6 +12,7 @@ from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
 from Tracers import TracersFactory
+from PostProcessing import PostProcessing # XXX
 cimport ParallelMPI
 cimport Grid
 cimport PrognosticVariables
@@ -31,6 +33,7 @@ cimport Forcing
 cimport Radiation
 cimport Restart
 cimport Surface
+## cimport PostProcessing # XXX ?
 
 class Simulation3d:
 
@@ -65,6 +68,9 @@ class Simulation3d:
         self.Damping = Damping.Damping(namelist, self.Pa)
         self.TS = TimeStepping.TimeStepping()
         self.Tr = TracersFactory(namelist)
+
+        self.PP = PostProcessing(namelist) # XXX
+        self.PP.initialize(namelist)
 
         # Add new prognostic variables
         self.PV.add_variable('u', 'm/s', 'u', 'u velocity component',"sym", "velocity", self.Pa)
@@ -134,7 +140,6 @@ class Simulation3d:
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
-
         return
 
     def run(self):
@@ -185,6 +190,7 @@ class Simulation3d:
 
         self.Restart.cleanup()
 
+        self.postprocess()
 
         return
 
@@ -323,3 +329,14 @@ class Simulation3d:
         self.StatsIO.close_files(self.Pa)
         return
 
+    def postprocess(self): # XXX
+        print('Simulation3d.postprocess()')
+        
+        self.PP.combine3d()
+
+        #fields_dir = self.FieldsIO.fields_path
+        #out_dir = os.path.dirname(fields_dir) # parent
+        #print(fields_dir, out_dir)
+
+        #Combine3d(fields_dir, out_dir)
+        
