@@ -33,7 +33,6 @@ cimport Forcing
 cimport Radiation
 cimport Restart
 cimport Surface
-## cimport PostProcessing # XXX ?
 
 class Simulation3d:
 
@@ -69,7 +68,7 @@ class Simulation3d:
         self.TS = TimeStepping.TimeStepping()
         self.Tr = TracersFactory(namelist)
 
-        self.PP = PostProcessing(namelist) # XXX
+        self.PP = PostProcessing(namelist)
         self.PP.initialize(namelist)
 
         # Add new prognostic variables
@@ -285,12 +284,7 @@ class Simulation3d:
 
                 self.Restart.write(self.Pa)
                 self.Pa.root_print('Finished Dumping Restart Files!')
-
-
-
-
-
-
+                
         return
 
     def force_io(self):
@@ -327,14 +321,5 @@ class Simulation3d:
         self.StatsIO.close_files(self.Pa)
         return
 
-    def postprocess(self): # XXX
-        print('Simulation3d.postprocess()')
-        
+    def postprocess(self):        
         self.PP.combine3d()
-
-        #fields_dir = self.FieldsIO.fields_path
-        #out_dir = os.path.dirname(fields_dir) # parent
-        #print(fields_dir, out_dir)
-
-        #Combine3d(fields_dir, out_dir)
-        
