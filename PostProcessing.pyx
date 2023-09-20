@@ -86,9 +86,9 @@ cdef class PostProcessing:
                             f_data, nl_0, nl_1, nl_2, indx_lo_0, indx_lo_1, indx_lo_2, f_data_3d
                         )
 
-                        variables_to_save[f] = (('x','y','z'), f_data_3d)
+                        variables_to_save[f] = (('x','y','z','t'), np.expand_dims(f_data_3d, axis=3)) # adding one dim for time
 
-            self.save_timestep(save_path, variables_to_save)
+            self.save_timestep(save_path, variables_to_save, d)
             
             # clean up
             shutil.rmtree(d_path)
@@ -118,7 +118,7 @@ cdef class PostProcessing:
                             indx_lo_0 + i, indx_lo_1 + j, indx_lo_2 + k] = f_data[ijk]
                             
 
-    cpdef save_timestep(self, fname, variables):
+    cpdef save_timestep(self, fname, variables, time):
         
         nx, ny, nz = self.gridsize
         dx, dy, dz = self.gridspacing
@@ -126,8 +126,9 @@ cdef class PostProcessing:
         domain_size = [dx*nx, dy*ny, dz*nz]
         gridpoints = [np.linspace(0,l,n) for (n,l) in zip(self.gridsize,domain_size)]
         coords = {'x':gridpoints[0],
-                'y':gridpoints[1],
-                'z':gridpoints[2]}
+                  'y':gridpoints[1],
+                  'z':gridpoints[2],
+                  't':[float(time)]}
 
         ds_save = xr.Dataset(variables, coords=coords)
         ds_save.to_netcdf(fname)
