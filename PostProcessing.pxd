@@ -12,6 +12,7 @@ cdef class PostProcessing:
         str out_path
         str fields_path
         list gridsize
+        list gridspacing
 
     cpdef initialize(self, namelist)
     cpdef combine3d(self)

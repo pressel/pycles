@@ -8,6 +8,7 @@
 
 import cython
 import netCDF4 as nc
+import xarray as xr
 import os
 cimport numpy as np
 import numpy as np
@@ -19,6 +20,7 @@ cdef class PostProcessing:
         self.out_path = ''
         self.fields_path = ''
         self.gridsize = [0,0,0]
+        self.gridspacing = [0,0,0]
         return
 
     cpdef initialize(self, namelist):
@@ -27,10 +29,16 @@ cdef class PostProcessing:
         self.out_path = out_path
         self.fields_path = str(os.path.join(out_path, namelist['fields_io']['fields_dir'])) # see NetCDFIO.pyx
         self.gridsize = [namelist["grid"]["nx"], namelist["grid"]["ny"], namelist["grid"]["nz"]]
+        self.gridspacing = [namelist["grid"]["dx"], namelist["grid"]["dy"], namelist["grid"]["dz"]]
         return
 
     
     cpdef combine3d(self):
+        '''
+        Before: every time step is a directory with .nc fiels for each rank (i.e. processor)
+        After: every time step is one .nc file
+        '''
+        nx, ny, nz = self.gridsize
 
         fields_path = self.fields_path
         out_path = self.out_path
@@ -38,56 +46,47 @@ cdef class PostProcessing:
         directories = os.listdir(fields_path)
         print('\nBeginning combination of ranks in time step directories', directories)
 
-        for d in directories: # time steps
+        for d in directories:
             d_path = os.path.join(fields_path, d)
-            ranks = os.listdir(d_path) # different processes (cpus)
+            ranks = os.listdir(d_path)
 
             print(f'\t Combining ranks {ranks} of time step (dir) {d}')
 
             file_path = os.path.join(fields_path, d, ranks[0])
-            rootgrp = nc.Dataset(file_path, 'r')
-            field_keys = rootgrp.groups['fields'].variables.keys()
-            dims = rootgrp.groups['dims'].variables
+            with xr.open_dataset(file_path, group='fields') as ds:
+                field_keys = ds.variables
 
-            n_0 = dims['n_0'][0]
-            n_1 = dims['n_1'][0]
-            n_2 = dims['n_2'][0]
-
-            rootgrp.close()
-
-            out_path_full = os.path.join(out_path, str(d) + '.nc')
-            if not os.path.exists(out_path_full):
-                self.create_file(out_path_full)
+            save_path = os.path.join(out_path,'fields/', str(d) + '.nc')
+            if not os.path.exists(save_path):
+                self.create_file(save_path)
 
             for f in field_keys:
-                f_data_3d = np.empty((n_0, n_1, n_2), dtype=np.double, order='c')
+                f_data_3d = np.empty((nx, ny, nz), dtype=np.double, order='c')
+
                 for r in ranks:
                     if r[-3:] == '.nc':
                         file_path = os.path.join(fields_path, d, r)
-                        rootgrp = nc.Dataset(file_path, 'r')
-                        fields = rootgrp.groups['fields'].variables
-                        dims = rootgrp.groups['dims'].variables
-                        ng = dims['ng'][0]
-                        nl_0 = dims['nl_0'][0]
+
+                        with xr.open_dataset(file_path, group='fields') as ds:
+                            f_data = ds[f].to_numpy()
+                        with xr.open_dataset(file_path, group='dims') as ds:
+                            dims = ds.variables
+
+                        nl_0 = dims['nl_0'][0] # grid size per processor
                         nl_1 = dims['nl_1'][0]
                         nl_2 = dims['nl_2'][0]
-
-                        n_0 = dims['n_0'][0]
-                        n_1 = dims['n_1'][0]
-                        n_2 = dims['n_2'][0]
 
                         indx_lo_0 = dims['indx_lo_0'][0]
                         indx_lo_1 = dims['indx_lo_1'][0]
                         indx_lo_2 = dims['indx_lo_2'][:]
 
-                        f_data = fields[f][:]
 
                         self.to_3d(
                             f_data, nl_0, nl_1, nl_2, indx_lo_0, indx_lo_1, indx_lo_2, f_data_3d
                         )
 
-                        rootgrp.close()
-                self.write_field(out_path_full, f, f_data_3d)
+                self.write_field(save_path, f, f_data_3d)
+
         print('Finished combining ranks per time step.\n')
         return
 
@@ -114,22 +113,27 @@ cdef class PostProcessing:
                             
     cpdef create_file(self, fname):
         nx, ny, nz = self.gridsize
-        
-        rootgrp = nc.Dataset(fname, 'w', format='NETCDF4')
-        fieldgrp = rootgrp.createGroup('fields')
-        fieldgrp.createDimension('nx', nx)
-        fieldgrp.createDimension('ny', ny)
-        fieldgrp.createDimension('nz', nz)
 
-        rootgrp.close()
+        dx, dy, dz = self.gridspacing
+        domain_size = [dx*nx, dy*ny, dz*nz]
+        gridpoints = [np.linspace(0,l,n) for (n,l) in zip(self.gridsize,domain_size)]
+        coords = {'x':gridpoints[0],
+                  'y':gridpoints[1],
+                  'z':gridpoints[2]}
+        
+        ds = xr.Dataset(coords=coords)
+        ds.to_netcdf(fname, group='fields')
+        ds.close()
+
         return
 
 
     cpdef write_field(self, fname, f, data):
-        rootgrp = nc.Dataset(fname, 'r+')
-        fields = rootgrp.groups['fields']
-        var = fields.createVariable(f, 'f8', ('nx', 'ny', 'nz'))
-        var[:, :, :] = data
+        print('write_field')
+        with xr.open_dataset(fname, group='fields', mode='w') as ds:
+            ds_new = ds.assign(variables={
+                f:(('x','y','z'), data)
+                })
+        ds_new.to_netcdf(fname, group='fields')
 
-        rootgrp.close()
         return 
