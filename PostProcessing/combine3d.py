@@ -6,25 +6,20 @@ import numpy as np
 import combine3d
 
 
-def main():
+def Combine3d(fields_dir, out_dir):
 
-    parser = argparse.ArgumentParser(prog='PyCLES')
-    parser.add_argument("fields_dir")
-    parser.add_argument("out_dir")
-    args = parser.parse_args()
-
-    directories = os.listdir(args.fields_dir)
+    directories = os.listdir(fields_dir)
     print('Found the following directories', directories)
     print('Beginning combination of files')
 
     for d in directories:
         print('\t Combining ' + d)
-        d_path = os.path.join(args.fields_dir, d)
+        d_path = os.path.join(fields_dir, d)
         ranks = os.listdir(d_path)
         print('\t\t Combining files')
 
         print(ranks)
-        file_path = os.path.join(args.fields_dir, d, ranks[0])
+        file_path = os.path.join(fields_dir, d, ranks[0])
         rootgrp = nc.Dataset(file_path, 'r')
         field_keys = rootgrp.groups['fields'].variables.keys()
         dims = rootgrp.groups['dims'].variables
@@ -35,14 +30,14 @@ def main():
 
         rootgrp.close()
 
-        out_path = os.path.join(args.out_dir, str(d) + '.nc')
+        out_path = os.path.join(out_dir, str(d) + '.nc')
         if not os.path.exists(out_path):
             create_file(out_path, n_0, n_1, n_2)
         for f in field_keys:
             f_data_3d = np.empty((n_0, n_1, n_2), dtype=np.double, order='c')
             for r in ranks:
                 if r[-3:] == '.nc':
-                    file_path = os.path.join(args.fields_dir, d, r)
+                    file_path = os.path.join(fields_dir, d, r)
                     rootgrp = nc.Dataset(file_path, 'r')
                     fields = rootgrp.groups['fields'].variables
                     dims = rootgrp.groups['dims'].variables
@@ -90,4 +85,9 @@ def write_field(fname, f, data):
     rootgrp.close()
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(prog='PyCLES')
+    parser.add_argument("fields_dir")
+    parser.add_argument("out_dir")
+    args = parser.parse_args()
+    
+    Combine3d(args.fields_dir, args.out_dir)

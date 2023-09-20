@@ -25,6 +25,7 @@ def main3d(namelist):
     Simulation = Simulation3d.Simulation3d(namelist)
     Simulation.initialize(namelist)
     Simulation.run()
+    Simulation.postprocess()
 
     return
 

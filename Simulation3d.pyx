@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import os
 cimport numpy as np
 from Initialization import InitializationFactory, AuxillaryVariables
 from Thermodynamics import ThermodynamicsFactory
@@ -11,6 +12,7 @@ from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
 from Tracers import TracersFactory
+from PostProcessing import PostProcessing # XXX
 cimport ParallelMPI
 cimport Grid
 cimport PrognosticVariables
@@ -65,6 +67,9 @@ class Simulation3d:
         self.Damping = Damping.Damping(namelist, self.Pa)
         self.TS = TimeStepping.TimeStepping()
         self.Tr = TracersFactory(namelist)
+
+        self.PP = PostProcessing(namelist)
+        self.PP.initialize(namelist)
 
         # Add new prognostic variables
         self.PV.add_variable('u', 'm/s', 'u', 'u velocity component',"sym", "velocity", self.Pa)
@@ -134,7 +139,6 @@ class Simulation3d:
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
-
         return
 
     def run(self):
@@ -184,7 +188,6 @@ class Simulation3d:
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
 
         self.Restart.cleanup()
-
 
         return
 
@@ -281,12 +284,7 @@ class Simulation3d:
 
                 self.Restart.write(self.Pa)
                 self.Pa.root_print('Finished Dumping Restart Files!')
-
-
-
-
-
-
+                
         return
 
     def force_io(self):
@@ -323,3 +321,5 @@ class Simulation3d:
         self.StatsIO.close_files(self.Pa)
         return
 
+    def postprocess(self):        
+        self.PP.combine3d()
