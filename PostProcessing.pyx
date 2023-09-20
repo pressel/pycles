@@ -10,6 +10,7 @@ import cython
 import netCDF4 as nc
 import xarray as xr
 import os
+import shutil
 cimport numpy as np
 import numpy as np
 include "parameters.pxi"
@@ -53,15 +54,15 @@ cdef class PostProcessing:
             print(f'\t Combining ranks {ranks} of time step (dir) {d}')
 
             file_path = os.path.join(fields_path, d, ranks[0])
+            save_path = os.path.join(out_path,'fields/', str(d) + '.nc')
             with xr.open_dataset(file_path, group='fields') as ds:
                 field_keys = ds.variables
 
-            save_path = os.path.join(out_path,'fields/', str(d) + '.nc')
-            if not os.path.exists(save_path):
-                self.create_file(save_path)
 
+            variables_to_save = {}
             for f in field_keys:
                 f_data_3d = np.empty((nx, ny, nz), dtype=np.double, order='c')
+
 
                 for r in ranks:
                     if r[-3:] == '.nc':
@@ -85,7 +86,12 @@ cdef class PostProcessing:
                             f_data, nl_0, nl_1, nl_2, indx_lo_0, indx_lo_1, indx_lo_2, f_data_3d
                         )
 
-                self.write_field(save_path, f, f_data_3d)
+                        variables_to_save[f] = (('x','y','z'), f_data_3d)
+
+            self.save_timestep(save_path, variables_to_save)
+            
+            # clean up
+            shutil.rmtree(d_path)
 
         print('Finished combining ranks per time step.\n')
         return
@@ -111,29 +117,17 @@ cdef class PostProcessing:
                         f_data_3d[
                             indx_lo_0 + i, indx_lo_1 + j, indx_lo_2 + k] = f_data[ijk]
                             
-    cpdef create_file(self, fname):
-        nx, ny, nz = self.gridsize
 
+    cpdef save_timestep(self, fname, variables):
+        
+        nx, ny, nz = self.gridsize
         dx, dy, dz = self.gridspacing
+        
         domain_size = [dx*nx, dy*ny, dz*nz]
         gridpoints = [np.linspace(0,l,n) for (n,l) in zip(self.gridsize,domain_size)]
         coords = {'x':gridpoints[0],
-                  'y':gridpoints[1],
-                  'z':gridpoints[2]}
-        
-        ds = xr.Dataset(coords=coords)
-        ds.to_netcdf(fname, group='fields')
-        ds.close()
+                'y':gridpoints[1],
+                'z':gridpoints[2]}
 
-        return
-
-
-    cpdef write_field(self, fname, f, data):
-        print('write_field')
-        with xr.open_dataset(fname, group='fields', mode='w') as ds:
-            ds_new = ds.assign(variables={
-                f:(('x','y','z'), data)
-                })
-        ds_new.to_netcdf(fname, group='fields')
-
-        return 
+        ds_save = xr.Dataset(variables, coords=coords)
+        ds_save.to_netcdf(fname, group='fields')
