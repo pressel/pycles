@@ -36,7 +36,7 @@ cdef class PostProcessing:
     
     cpdef combine3d(self):
         '''
-        Before: every time step is a directory with .nc fiels for each rank (i.e. processor)
+        Before: every time step is a directory with .nc files for each rank (i.e. processor)
         After: every time step is one .nc file
         '''
         nx, ny, nz = self.gridsize
@@ -130,4 +130,4 @@ cdef class PostProcessing:
                 'z':gridpoints[2]}
 
         ds_save = xr.Dataset(variables, coords=coords)
-        ds_save.to_netcdf(fname, group='fields')
+        ds_save.to_netcdf(fname)
