@@ -4,25 +4,18 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
-## XXX imports
-
 import cython
 import netCDF4 as nc
 import xarray as xr
 import os
 import shutil
-cimport numpy as np
 import numpy as np
-include "parameters.pxi"
+cimport numpy as np
 
 cdef class PostProcessing:
 
     def __init__(self,namelist) :
-        self.out_path = ''
-        self.fields_path = ''
-        self.gridsize = [0,0,0]
-        self.gridspacing = [0,0,0]
-        return
+        pass
 
     cpdef initialize(self, namelist):
         uuid = str(namelist['meta']['uuid'])

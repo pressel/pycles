@@ -4,9 +4,6 @@
 #cython: initializedcheck=False
 #cython: cdivision=True
 
-### IMPORTS = none?
-include "parameters.pxi"
-
 cdef class PostProcessing:
     cdef:
         str out_path
