@@ -59,6 +59,8 @@ class AuxiliaryStatistics:
             self.AuxStatsClasses.append(TKEStatistics(Gr, NS, Pa))
         if 'Flux' in auxiliary_statistics:
             self.AuxStatsClasses.append(FluxStatistics(Gr,PV, DV, NS, Pa))
+        if 'PBLheight' in auxiliary_statistics:
+            self.AuxStatsClasses.append(PBLheightStatistics(Gr, NS, Pa))
         return
 
 
@@ -854,5 +856,94 @@ class FluxStatistics:
 
         NS.write_profile('resolved_x_vel_flux', upwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('resolved_y_vel_flux', vpwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        return
+
+
+    
+class PBLheightStatistics: ### structure from SmokeStats
+    def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts(
+            'boundary_layer_height',
+            Gr, Pa,
+            units='m', nice_name='Planetary Boundary Layer height', desc='z_i from Sullivan and Patton 2011'
+        )
+        return
+
+
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,
+                 MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
+                 ParallelMPI.ParallelMPI Pa):
+
+        #Here we compute the boundary layer height consistent with Sullivan and Patton 2011 (sorces therein)
+        cdef:
+            Py_ssize_t i, j, k, ij, ij2d, ijk
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            # no z stride I guess as it is the last dimension?
+            Py_ssize_t T_shift = DV.get_varshift(Gr, 'temperature') ### XXX ?
+
+            #### using nlg instead of n: has to do with mpi, Grid.compute_local_dims()
+
+            double [:] blh_field = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c') # flattened field in x,y
+            double blh # final result
+
+            double height_threshold = 600 # [m] consider only heights above
+            double dz = Gr.dims.dx[2]
+            
+            # tempraries
+            double T1
+            double T2 
+            double dz_T
+            double height
+
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                for j in xrange(Gr.dims.nlg[1]):
+                    ij = i * istride + j * jstride
+                    ij2d = i * Gr.dims.nlg[1] + j
+                    
+                    # # central difference: field in x,y,z
+                    # for iz in range(1,nz-1):
+                    for k in xrange(Gr.dims.nlg[2]):
+                        ijk = ij + k # used to index in DV
+                        height = Gr.zl_half[k]
+
+                        # # single differences at extremes
+                        if k == 0: # forward diff
+                            # dzT[0] = (T[1] - T[0])/dz
+                            T1 = DV.values[T_shift + ijk]
+                            T2 = DV.values[T_shift + ijk+1]
+                            dz_T = (T2 - T1) / dz
+
+                        elif k == Gr.dims.nlg[2] - 1: # backward diff
+                            # dzT[-1] = (T[-1] - T[-2])/dz
+                            T1 = DV.values[T_shift + ijk-1]
+                            T2 = DV.values[T_shift + ijk]
+                            dz_T = (T2 - T1) / dz
+
+                        else: # central diff
+                            # dzT[iz] = (T[iz+1] - T[iz-1])/(2*dz)
+                            T1 = DV.values[T_shift + ijk-1]
+                            T2 = DV.values[T_shift + ijk+1]
+                            dz_T = (T2 - T1) / (2*dz)
+
+
+                        # # zi field in x,y
+                        # zi_xy = dzT.argmax('z')* dz
+                        if dz_T > blh_field[ij2d]: # argmax_z for every x,y, init 0
+                            
+                            # # only average maxima over height_threshold [m] height (avoid local maxima at ground)
+                            # zi_xy = zi_xy.where(zi_xy > height_threshold) 
+                            if height > height_threshold:
+
+                                blh_field[ij2d] = Gr.zl_half[k] # height
+
+        # # scalar zi
+        # zi = zi_xy.mean('x', skipna=True).mean('y', skipna=True)
+        blh = Pa.HorizontalMeanSurface(Gr, &blh_field[0]) # XXX why [0] ? 
+
+        NS.write_ts('boundary_layer_height', blh, Pa) # ts = time series: append one value
 
         return
