@@ -123,5 +123,6 @@ cdef class PostProcessing:
                   'z':gridpoints[2],
                   't':[float(time)]}
 
-        ds_save = xr.Dataset(variables, coords=coords)
-        ds_save.to_netcdf(fname)
+        ds = xr.Dataset(variables, coords=coords)
+        ds = ds.sortby('t')
+        ds.to_netcdf(fname)
