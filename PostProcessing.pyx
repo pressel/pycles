@@ -11,6 +11,7 @@ import os
 import shutil
 import numpy as np
 cimport numpy as np
+cimport ParallelMPI
 
 cdef class PostProcessing:
 
@@ -27,66 +28,72 @@ cdef class PostProcessing:
         return
 
     
-    cpdef combine3d(self):
+    cpdef combine3d(self, ParallelMPI.ParallelMPI Pa):
+    # cpdef combine3d(self):
         '''
         Before: every time step is a directory with .nc files for each rank (i.e. processor)
         After: every time step is one .nc file
         '''
-        nx, ny, nz = self.gridsize
+        
+        Pa.barrier() # wait for all to finish
 
-        fields_path = self.fields_path
-        out_path = self.out_path
+        if Pa.rank == 0: # MPI: do only in one of the processes. Make sure it has enough memory?
+        
+            nx, ny, nz = self.gridsize
 
-        directories = os.listdir(fields_path)
-        print('\nBeginning combination of ranks in time step directories', directories)
+            fields_path = self.fields_path
+            out_path = self.out_path
 
-        for d in directories:
-            d_path = os.path.join(fields_path, d)
-            ranks = os.listdir(d_path)
+            directories = os.listdir(fields_path)
+            print('\nBeginning combination of ranks in time step directories', directories)
 
-            print(f'\t Combining ranks {ranks} of time step (dir) {d}')
+            for d in directories:
+                d_path = os.path.join(fields_path, d)
+                ranks = os.listdir(d_path)
 
-            file_path = os.path.join(fields_path, d, ranks[0])
-            save_path = os.path.join(out_path,'fields/', str(d) + '.nc')
-            with xr.open_dataset(file_path, group='fields') as ds:
-                field_keys = ds.variables
+                print(f'\t Combining ranks {ranks} of time step (dir) {d}')
 
-
-            variables_to_save = {}
-            for f in field_keys:
-                f_data_3d = np.empty((nx, ny, nz), dtype=np.double, order='c')
-
-
-                for r in ranks:
-                    if r[-3:] == '.nc':
-                        file_path = os.path.join(fields_path, d, r)
-
-                        with xr.open_dataset(file_path, group='fields') as ds:
-                            f_data = ds[f].to_numpy()
-                        with xr.open_dataset(file_path, group='dims') as ds:
-                            dims = ds.variables
-
-                        nl_0 = dims['nl_0'][0] # grid size per processor
-                        nl_1 = dims['nl_1'][0]
-                        nl_2 = dims['nl_2'][0]
-
-                        indx_lo_0 = dims['indx_lo_0'][0]
-                        indx_lo_1 = dims['indx_lo_1'][0]
-                        indx_lo_2 = dims['indx_lo_2'][:]
+                file_path = os.path.join(fields_path, d, ranks[0])
+                save_path = os.path.join(out_path,'fields/', str(d) + '.nc')
+                with xr.open_dataset(file_path, group='fields') as ds:
+                    field_keys = ds.variables
 
 
-                        self.to_3d(
-                            f_data, nl_0, nl_1, nl_2, indx_lo_0, indx_lo_1, indx_lo_2, f_data_3d
-                        )
+                variables_to_save = {}
+                for f in field_keys:
+                    f_data_3d = np.empty((nx, ny, nz), dtype=np.double, order='c')
 
-                        variables_to_save[f] = (('x','y','z','t'), np.expand_dims(f_data_3d, axis=3)) # adding one dim for time
 
-            self.save_timestep(save_path, variables_to_save, d)
-            
-            # clean up
-            shutil.rmtree(d_path)
+                    for r in ranks:
+                        if r[-3:] == '.nc':
+                            file_path = os.path.join(fields_path, d, r)
 
-        print('Finished combining ranks per time step.\n')
+                            with xr.open_dataset(file_path, group='fields') as ds:
+                                f_data = ds[f].to_numpy()
+                            with xr.open_dataset(file_path, group='dims') as ds:
+                                dims = ds.variables
+
+                            nl_0 = dims['nl_0'][0] # grid size per processor
+                            nl_1 = dims['nl_1'][0]
+                            nl_2 = dims['nl_2'][0]
+
+                            indx_lo_0 = dims['indx_lo_0'][0]
+                            indx_lo_1 = dims['indx_lo_1'][0]
+                            indx_lo_2 = dims['indx_lo_2'][:]
+
+
+                            self.to_3d(
+                                f_data, nl_0, nl_1, nl_2, indx_lo_0, indx_lo_1, indx_lo_2, f_data_3d
+                            )
+
+                            variables_to_save[f] = (('x','y','z','t'), np.expand_dims(f_data_3d, axis=3)) # adding one dim for time
+
+                self.save_timestep(save_path, variables_to_save, d)
+                
+                # clean up
+                shutil.rmtree(d_path)
+
+            print('Finished combining ranks per time step.\n')
         return
 
     cpdef to_3d(self, double[:] f_data, int nl_0, int nl_1, int nl_2, int indx_lo_0,
@@ -119,9 +126,9 @@ cdef class PostProcessing:
         domain_size = [dx*nx, dy*ny, dz*nz]
         gridpoints = [np.linspace(0,l,n) for (n,l) in zip(self.gridsize,domain_size)]
         coords = {'x':gridpoints[0],
-                  'y':gridpoints[1],
-                  'z':gridpoints[2],
-                  't':[float(time)]}
+                'y':gridpoints[1],
+                'z':gridpoints[2],
+                't':[float(time)]}
 
         ds = xr.Dataset(variables, coords=coords)
         ds = ds.sortby('t')
