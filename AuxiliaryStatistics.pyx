@@ -684,6 +684,8 @@ class FluxStatistics:
             NS.add_profile('sgs_x_flux_'+name, Gr, Pa)
             NS.add_profile('sgs_y_flux_'+name, Gr, Pa)
             NS.add_profile('sgs_z_flux_'+name, Gr, Pa)
+            
+            NS.add_profile('total_z_flux_'+name, Gr, Pa)
 
         NS.add_profile('resolved_x_vel_flux', Gr, Pa)
         NS.add_profile('resolved_y_vel_flux', Gr, Pa)
@@ -695,7 +697,6 @@ class FluxStatistics:
              MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
              ParallelMPI.ParallelMPI Pa):
 
-        #Here we compute the boundary layer height consistent with Bretherton et al. 1999
         cdef:
             Py_ssize_t i, j, k, ij, ij2d, ijk
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -709,7 +710,6 @@ class FluxStatistics:
             Py_ssize_t th_shift
             Py_ssize_t diff_shift = DV.get_varshift(Gr, 'diffusivity')
             double bp, thp
-
 
             double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
@@ -726,7 +726,6 @@ class FluxStatistics:
             double [:] bpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] bpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
 
-
             double [:] thpup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] thpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] thpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
@@ -735,11 +734,9 @@ class FluxStatistics:
             double [:] b_ysgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] b_zsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
 
-
             double [:] th_xsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] th_ysgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] th_zsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-
 
         if 'theta' in DV.name_index:
             th_shift = DV.get_varshift(Gr,'theta')
@@ -767,6 +764,7 @@ class FluxStatistics:
             double [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
             double [:] bmean = Pa.HorizontalMean(Gr, &DV.values[b_shift])
             double [:] thmean = Pa.HorizontalMean(Gr, &DV.values[th_shift])
+
 
         #Compute the fluxes
         with nogil:
@@ -803,8 +801,6 @@ class FluxStatistics:
                         th_ysgs[ijk] = -DV.values[diff_shift+ijk] * (DV.values[th_shift + ijk + jstride] - DV.values[th_shift + ijk -jstride]) * Gr.dims.dxi[1] * 0.5
                         th_zsgs[ijk] = -DV.values[diff_shift+ijk] * (DV.values[th_shift + ijk + 1] - DV.values[th_shift + ijk -1]) * Gr.dims.dxi[2] * 0.5
 
-
-
         cdef:
             double [:] thpup_mean = Pa.HorizontalMean(Gr, &thpup[0])
             double [:] thpvp_mean = Pa.HorizontalMean(Gr, &thpvp[0])
@@ -825,15 +821,26 @@ class FluxStatistics:
             double [:] b_ysgs_mean = Pa.HorizontalMean(Gr, &b_ysgs[0])
             double [:] b_zsgs_mean = Pa.HorizontalMean(Gr, &b_zsgs[0])
 
+            double [:] total_z_flux_theta = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] total_z_flux_b     = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+
+        #Compute total fluxes
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2]-1):
+                total_z_flux_theta[k] = th_zsgs_mean[k] + thpwp_mean[k]
+                total_z_flux_b[k]     =  b_zsgs_mean[k] +  bpwp_mean[k]
+                       
+
         if 'theta' in DV.name_index:
             NS.write_profile('resolved_x_flux_theta', thpup_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
             NS.write_profile('resolved_y_flux_theta', thpvp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
             NS.write_profile('resolved_z_flux_theta', thpwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-
             NS.write_profile('sgs_x_flux_theta', th_xsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
             NS.write_profile('sgs_y_flux_theta', th_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
             NS.write_profile('sgs_z_flux_theta', th_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+            
+            NS.write_profile('total_z_flux_theta', total_z_flux_theta[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         else:
             NS.write_profile('resolved_x_flux_thetali', thpup_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -845,10 +852,13 @@ class FluxStatistics:
             NS.write_profile('sgs_y_flux_thetali', th_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
             NS.write_profile('sgs_z_flux_thetali', th_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+            NS.write_profile('total_z_flux_thetali', th_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         NS.write_profile('resolved_x_flux_buoyancy', bpup_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('resolved_y_flux_buoyancy', bpvp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('resolved_z_flux_buoyancy', bpwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        NS.write_profile('total_z_flux_buoyancy', th_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         NS.write_profile('sgs_x_flux_buoyancy', b_xsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('sgs_y_flux_buoyancy', b_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
