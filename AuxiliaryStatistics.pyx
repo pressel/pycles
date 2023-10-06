@@ -59,6 +59,8 @@ class AuxiliaryStatistics:
             self.AuxStatsClasses.append(TKEStatistics(Gr, NS, Pa))
         if 'Flux' in auxiliary_statistics:
             self.AuxStatsClasses.append(FluxStatistics(Gr,PV, DV, NS, Pa))
+        if 'PBLheight' in auxiliary_statistics:
+            self.AuxStatsClasses.append(PBLheightStatistics(Gr, NS, Pa))
         return
 
 
@@ -682,6 +684,8 @@ class FluxStatistics:
             NS.add_profile('sgs_x_flux_'+name, Gr, Pa)
             NS.add_profile('sgs_y_flux_'+name, Gr, Pa)
             NS.add_profile('sgs_z_flux_'+name, Gr, Pa)
+            
+            NS.add_profile('total_z_flux_'+name, Gr, Pa)
 
         NS.add_profile('resolved_x_vel_flux', Gr, Pa)
         NS.add_profile('resolved_y_vel_flux', Gr, Pa)
@@ -693,7 +697,6 @@ class FluxStatistics:
              MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
              ParallelMPI.ParallelMPI Pa):
 
-        #Here we compute the boundary layer height consistent with Bretherton et al. 1999
         cdef:
             Py_ssize_t i, j, k, ij, ij2d, ijk
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -707,7 +710,6 @@ class FluxStatistics:
             Py_ssize_t th_shift
             Py_ssize_t diff_shift = DV.get_varshift(Gr, 'diffusivity')
             double bp, thp
-
 
             double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] vc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
@@ -724,7 +726,6 @@ class FluxStatistics:
             double [:] bpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] bpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
 
-
             double [:] thpup = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] thpvp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] thpwp = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
@@ -733,11 +734,9 @@ class FluxStatistics:
             double [:] b_ysgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] b_zsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
 
-
             double [:] th_xsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] th_ysgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
             double [:] th_zsgs = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
-
 
         if 'theta' in DV.name_index:
             th_shift = DV.get_varshift(Gr,'theta')
@@ -765,6 +764,7 @@ class FluxStatistics:
             double [:] wcmean = Pa.HorizontalMean(Gr, &wc[0])
             double [:] bmean = Pa.HorizontalMean(Gr, &DV.values[b_shift])
             double [:] thmean = Pa.HorizontalMean(Gr, &DV.values[th_shift])
+
 
         #Compute the fluxes
         with nogil:
@@ -801,8 +801,6 @@ class FluxStatistics:
                         th_ysgs[ijk] = -DV.values[diff_shift+ijk] * (DV.values[th_shift + ijk + jstride] - DV.values[th_shift + ijk -jstride]) * Gr.dims.dxi[1] * 0.5
                         th_zsgs[ijk] = -DV.values[diff_shift+ijk] * (DV.values[th_shift + ijk + 1] - DV.values[th_shift + ijk -1]) * Gr.dims.dxi[2] * 0.5
 
-
-
         cdef:
             double [:] thpup_mean = Pa.HorizontalMean(Gr, &thpup[0])
             double [:] thpvp_mean = Pa.HorizontalMean(Gr, &thpvp[0])
@@ -823,15 +821,26 @@ class FluxStatistics:
             double [:] b_ysgs_mean = Pa.HorizontalMean(Gr, &b_ysgs[0])
             double [:] b_zsgs_mean = Pa.HorizontalMean(Gr, &b_zsgs[0])
 
+            double [:] total_z_flux_theta = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+            double [:] total_z_flux_b     = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+
+        #Compute total fluxes
+        with nogil:
+            for k in xrange(1, Gr.dims.nlg[2]-1):
+                total_z_flux_theta[k] = th_zsgs_mean[k] + thpwp_mean[k]
+                total_z_flux_b[k]     =  b_zsgs_mean[k] +  bpwp_mean[k]
+                       
+
         if 'theta' in DV.name_index:
             NS.write_profile('resolved_x_flux_theta', thpup_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
             NS.write_profile('resolved_y_flux_theta', thpvp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
             NS.write_profile('resolved_z_flux_theta', thpwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-
             NS.write_profile('sgs_x_flux_theta', th_xsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
             NS.write_profile('sgs_y_flux_theta', th_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
             NS.write_profile('sgs_z_flux_theta', th_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+            
+            NS.write_profile('total_z_flux_theta', total_z_flux_theta[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         else:
             NS.write_profile('resolved_x_flux_thetali', thpup_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -843,10 +852,13 @@ class FluxStatistics:
             NS.write_profile('sgs_y_flux_thetali', th_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
             NS.write_profile('sgs_z_flux_thetali', th_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+            NS.write_profile('total_z_flux_thetali', th_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         NS.write_profile('resolved_x_flux_buoyancy', bpup_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('resolved_y_flux_buoyancy', bpvp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('resolved_z_flux_buoyancy', bpwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        NS.write_profile('total_z_flux_buoyancy', th_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         NS.write_profile('sgs_x_flux_buoyancy', b_xsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('sgs_y_flux_buoyancy', b_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -854,5 +866,94 @@ class FluxStatistics:
 
         NS.write_profile('resolved_x_vel_flux', upwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('resolved_y_vel_flux', vpwp_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        return
+
+
+    
+class PBLheightStatistics: ### structure from SmokeStats
+    def __init__(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts(
+            'boundary_layer_height',
+            Gr, Pa,
+            units='m', nice_name='Planetary Boundary Layer height', desc='z_i from Sullivan and Patton 2011'
+        )
+        return
+
+
+    def stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV,
+                 MomentumAdvection.MomentumAdvection MA, MomentumDiffusion.MomentumDiffusion MD, NetCDFIO_Stats NS,
+                 ParallelMPI.ParallelMPI Pa):
+
+        #Here we compute the boundary layer height consistent with Sullivan and Patton 2011 (sorces therein)
+        cdef:
+            Py_ssize_t i, j, k, ij, ij2d, ijk
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            # no z stride I guess as it is the last dimension?
+            Py_ssize_t T_shift = DV.get_varshift(Gr, 'temperature') ### XXX ?
+
+            #### using nlg instead of n: has to do with mpi, Grid.compute_local_dims()
+
+            double [:] blh_field = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c') # flattened field in x,y
+            double blh # final result
+
+            double height_threshold = 600 # [m] consider only heights above
+            double dz = Gr.dims.dx[2]
+            
+            # tempraries
+            double T1
+            double T2 
+            double dz_T
+            double height
+
+        with nogil:
+            for i in xrange(Gr.dims.nlg[0]):
+                for j in xrange(Gr.dims.nlg[1]):
+                    ij = i * istride + j * jstride
+                    ij2d = i * Gr.dims.nlg[1] + j
+                    
+                    # # central difference: field in x,y,z
+                    # for iz in range(1,nz-1):
+                    for k in xrange(Gr.dims.nlg[2]):
+                        ijk = ij + k # used to index in DV
+                        height = Gr.zl_half[k]
+
+                        # # single differences at extremes
+                        if k == 0: # forward diff
+                            # dzT[0] = (T[1] - T[0])/dz
+                            T1 = DV.values[T_shift + ijk]
+                            T2 = DV.values[T_shift + ijk+1]
+                            dz_T = (T2 - T1) / dz
+
+                        elif k == Gr.dims.nlg[2] - 1: # backward diff
+                            # dzT[-1] = (T[-1] - T[-2])/dz
+                            T1 = DV.values[T_shift + ijk-1]
+                            T2 = DV.values[T_shift + ijk]
+                            dz_T = (T2 - T1) / dz
+
+                        else: # central diff
+                            # dzT[iz] = (T[iz+1] - T[iz-1])/(2*dz)
+                            T1 = DV.values[T_shift + ijk-1]
+                            T2 = DV.values[T_shift + ijk+1]
+                            dz_T = (T2 - T1) / (2*dz)
+
+
+                        # # zi field in x,y
+                        # zi_xy = dzT.argmax('z')* dz
+                        if dz_T > blh_field[ij2d]: # argmax_z for every x,y, init 0
+                            
+                            # # only average maxima over height_threshold [m] height (avoid local maxima at ground)
+                            # zi_xy = zi_xy.where(zi_xy > height_threshold) 
+                            if height > height_threshold:
+
+                                blh_field[ij2d] = Gr.zl_half[k] # height
+
+        # # scalar zi
+        # zi = zi_xy.mean('x', skipna=True).mean('y', skipna=True)
+        blh = Pa.HorizontalMeanSurface(Gr, &blh_field[0]) # XXX why [0] ? 
+
+        NS.write_ts('boundary_layer_height', blh, Pa) # ts = time series: append one value
 
         return
