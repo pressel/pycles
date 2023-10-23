@@ -69,7 +69,7 @@ cdef class PostProcessing:
                             file_path = os.path.join(fields_path, d, r)
 
                             with xr.open_dataset(file_path, group='fields') as ds:
-                                f_data = ds[f].to_numpy()
+                                f_data = ds[f].values # to_numpy()
                             with xr.open_dataset(file_path, group='dims') as ds:
                                 dims = ds.variables
 
