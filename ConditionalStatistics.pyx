@@ -325,8 +325,6 @@ cdef class SpectraStatistics:
             double dk = self.dk
             double kmag
             double [:,:] spec = np.zeros((Gr.dims.nl[2],self.nwave),dtype=np.double, order ='c')
-            # double [:] count = np.zeros((self.nwave,),dtype=np.double, order ='c') 
-            # # count summands in k compartments for averaging
 
         with nogil:
             for i in xrange(Gr.dims.nl[0]):
@@ -339,15 +337,13 @@ cdef class SpectraStatistics:
                         kg = k + gw
                         ijk = ishift + jshift + kg
                         spec[k, ik] += data_fft[ijk].real *  data_fft[ijk].real +  data_fft[ijk].imag *  data_fft[ijk].imag
-            #             count[ik] += 1
-            # # average each k compartment
-            # for ik in xrange(self.nwave):
-            #     for k in xrange(Gr.dims.nl[2]):
-            #         spec[k,ik] /= count[ik]
+                        # the fft does not include scaling -> divide by (N-1)**2
 
         for k in xrange(Gr.dims.nl[2]):
             for ik in xrange(nwave):
                 spec[k, ik] = Pa.domain_scalar_sum(spec[k,ik])
+                # this sum is supposed to be an integral -> divide by square of total number of k (self.nwave)
+                # to agree with SP11, also divide by dk = 2 pi / Lx
 
         return spec
 
