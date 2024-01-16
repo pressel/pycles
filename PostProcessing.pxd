@@ -8,15 +8,16 @@ cimport ParallelMPI
 
 cdef class PostProcessing:
     cdef:
-        str out_path
-        str fields_path
+        str out_dir
+        str fields_dir
+        str stats_file
         list gridsize
         list gridspacing
         bint collapse_y
         bint half_x
+        bint only_T_anomaly
 
     cpdef initialize(self, namelist)
-    # cpdef combine3d(self)
     cpdef combine3d(self, ParallelMPI.ParallelMPI Pa)
     cpdef to_3d(self, double[:] f_data, int nl_0, int nl_1, int nl_2, int indx_lo_0,
                 int indx_lo_1, int indx_lo_2, double[:, :, :] f_data_3d)
