@@ -74,8 +74,25 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
 
     RS.initialize(Gr, Th, NS, Pa)
 
-    #Get the variable number for each of the velocity components
+    #Get shape of the initial perturbation    
+    try:
+        namelist['straka']
+        namelist['straka']['amplitude']
+        namelist['straka']['x_r']
+        namelist['straka']['z_r']
+        namelist['straka']['z_c']
+        straka_kwargs = namelist['straka']
+        print('Using specified initial condition.')
+    except: # default values
+        straka_kwargs = {}
+        straka_kwargs['amplitude'] = 15.0 # [C]
+        straka_kwargs['x_r'] = 4.0 # [km]
+        straka_kwargs['z_r'] = 2.0 # [km]
+        straka_kwargs['z_c'] = 3.0 # [km]
+        print('Using default initial condition.')
+
     cdef:
+        #Get the variable number for each of the velocity components
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
@@ -85,6 +102,13 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
         Py_ssize_t ijk
         double t
         double dist
+
+        #Get shape of the initial perturbation
+        double a =  float(straka_kwargs['amplitude'])
+        double x_r = float(straka_kwargs['x_r'])
+        double z_r = float(straka_kwargs['z_r'])
+        double z_c = float(straka_kwargs['z_c'])
+        double x_c = 25.6 # symmetric
 
     t_min = 9999.9
     for i in xrange(Gr.dims.nlg[0]):
@@ -96,9 +120,9 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
                 PV.values[u_varshift + ijk] = 0.0
                 PV.values[v_varshift + ijk] = 0.0
                 PV.values[w_varshift + ijk] = 0.0
-                dist  = np.sqrt(((Gr.x_half[i + Gr.dims.indx_lo[0]]/1000.0 - 25.6)/4.0)**2.0 + ((Gr.z_half[k + Gr.dims.indx_lo[2]]/1000.0 - 3.0)/2.0)**2.0)
+                dist  = np.sqrt( ((Gr.x_half[i + Gr.dims.indx_lo[0]]/1000.0 - x_c)/x_r)**2.0 + ((Gr.z_half[k + Gr.dims.indx_lo[2]]/1000.0 - z_c)/z_r)**2.0 )
                 dist = fmin(dist,1.0)
-                t = (300.0 )*exner_c(RS.p0_half[k]) - 15.0*( cos(np.pi * dist) + 1.0) /2.0
+                t = (300.0 )*exner_c(RS.p0_half[k]) - a*( cos(np.pi * dist) + 1.0) /2.0
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
 
 
