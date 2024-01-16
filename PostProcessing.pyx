@@ -25,19 +25,29 @@ cdef class PostProcessing:
         self.fields_path = str(os.path.join(out_path, namelist['fields_io']['fields_dir'])) # see NetCDFIO.pyx
         self.gridsize = [namelist["grid"]["nx"], namelist["grid"]["ny"], namelist["grid"]["nz"]]
         self.gridspacing = [namelist["grid"]["dx"], namelist["grid"]["dy"], namelist["grid"]["dz"]]
+        if namelist['postprocessing']['collapse_y']:
+            self.collapse_y = True
+        else:
+            self.collapse_y = False
+        if namelist['postprocessing']['half_x']:
+            self.half_x = True
+        else:
+            self.half_x = False
         return
 
     
     cpdef combine3d(self, ParallelMPI.ParallelMPI Pa):
-    # cpdef combine3d(self):
         '''
-        Before: every time step is a directory with .nc files for each rank (i.e. processor)
-        After: every time step is one .nc file
+        Before: 
+            every time step is a directory with .nc files for each rank (i.e. processor)
+            and data is stored as 1D arrays
+        After: 
+            every time step is one .nc file
+            and data is stored as 3D arrays
         '''
         
-        Pa.barrier() # wait for all to finish
-
-        if Pa.rank == 0: # MPI: do only in one of the processes. Make sure it has enough memory?
+        Pa.barrier()
+        if Pa.rank == 0:
         
             nx, ny, nz = self.gridsize
 
@@ -86,11 +96,10 @@ cdef class PostProcessing:
                                 f_data, nl_0, nl_1, nl_2, indx_lo_0, indx_lo_1, indx_lo_2, f_data_3d
                             )
 
-                            variables_to_save[f] = (('x','y','z','t'), np.expand_dims(f_data_3d, axis=3)) # adding one dim for time
+                            variables_to_save[f] = (('x','y','z','t'), np.expand_dims(f_data_3d, axis=3))
 
+                # save the new file instead of the old directory
                 self.save_timestep(save_path, variables_to_save, d)
-                
-                # clean up
                 shutil.rmtree(d_path)
 
             print('Finished combining ranks per time step.\n')
@@ -132,4 +141,13 @@ cdef class PostProcessing:
 
         ds = xr.Dataset(variables, coords=coords)
         ds = ds.sortby('t')
+
+        if self.collapse_y:
+            ds = ds.isel(y=ny//2)
+        
+        if self.half_x:
+            half_x = nx//2 +1*(nx%2==1)
+            ds = ds.isel(x=slice(0,half_x))
+            ds = ds.drop_vars("y")
+
         ds.to_netcdf(fname)
