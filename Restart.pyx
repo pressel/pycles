@@ -22,6 +22,11 @@ cdef class Restart:
         '''
 
         self.uuid = str(namelist['meta']['uuid'])
+        
+        if namelist['restart']['output']:
+            self.output = True
+        else:
+            self.output = False
 
         try:
             outpath = str(os.path.join(str(namelist['output']['output_root'])

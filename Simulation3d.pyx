@@ -269,7 +269,7 @@ class Simulation3d:
                 self.VO.write(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
 
 
-            if self.Restart.last_restart_time + self.Restart.frequency == self.TS.t:
+            if self.Restart.output and self.Restart.last_restart_time + self.Restart.frequency == self.TS.t:
                 self.Pa.root_print('Dumping Restart Files!')
                 self.Restart.last_restart_time = self.TS.t
                 self.Restart.restart_data['last_stats_output'] = self.StatsIO.last_output_time
