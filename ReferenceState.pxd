@@ -15,6 +15,7 @@ cdef class ReferenceState:
         public double [:] alpha0_half_global
         public double [:] rho0_global
         public double [:] rho0_half_global
+        public double [:] temperature0_unghosted
 
         double sg
 

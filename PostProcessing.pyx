@@ -12,6 +12,7 @@ import shutil
 import numpy as np
 cimport numpy as np
 cimport ParallelMPI
+cimport ReferenceState
 
 cdef class PostProcessing:
 
@@ -42,7 +43,7 @@ cdef class PostProcessing:
         return
 
     
-    cpdef combine3d(self, ParallelMPI.ParallelMPI Pa):
+    cpdef combine3d(self, ParallelMPI.ParallelMPI Pa, ReferenceState.ReferenceState Ref):
         '''
         Before: 
             every time step is a directory with .nc files for each rank (i.e. processor)
@@ -105,7 +106,7 @@ cdef class PostProcessing:
                             variables_to_save[f] = (('x','y','z','t'), np.expand_dims(f_data_3d, axis=3))
 
                 # save the new file instead of the old directory
-                self.save_timestep(save_path, variables_to_save, d)
+                self.save_timestep(save_path, variables_to_save, d, Ref)
                 shutil.rmtree(d_path)
 
             print('Finished combining ranks per time step.\n')
@@ -133,8 +134,8 @@ cdef class PostProcessing:
                             indx_lo_0 + i, indx_lo_1 + j, indx_lo_2 + k] = f_data[ijk]
                             
 
-    cpdef save_timestep(self, fname, variables, time):
-        
+    cpdef save_timestep(self, fname, variables, time, ReferenceState.ReferenceState Ref):
+
         nx, ny, nz = self.gridsize
         dx, dy, dz = self.gridspacing
         
@@ -153,7 +154,7 @@ cdef class PostProcessing:
             ds = ds.drop_vars(["y","v"])
 
         if self.only_T_anomaly:
-            T0 = xr.open_dataset(self.stats_file,group='reference')['temperature0'].to_numpy()
+            T0 = Ref.temperature0_unghosted
             T0 = np.expand_dims(np.ones((nx,nz))*T0,axis=-1)
             ds['temperature_anomaly'] = ds['temperature'] - T0
             ds = ds.drop_vars(["temperature","s"])        

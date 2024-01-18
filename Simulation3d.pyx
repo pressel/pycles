@@ -12,7 +12,7 @@ from AuxiliaryStatistics import AuxiliaryStatistics
 from ConditionalStatistics import ConditionalStatistics
 from Thermodynamics cimport LatentHeat
 from Tracers import TracersFactory
-from PostProcessing import PostProcessing # XXX
+from PostProcessing import PostProcessing
 cimport ParallelMPI
 cimport Grid
 cimport PrognosticVariables
@@ -322,5 +322,4 @@ class Simulation3d:
         return
 
     def postprocess(self):        
-        # self.PP.combine3d()
-        self.PP.combine3d(self.Pa)
+        self.PP.combine3d(self.Pa, self.Ref)

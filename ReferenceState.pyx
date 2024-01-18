@@ -134,6 +134,9 @@ cdef class ReferenceState:
         self.rho0 = 1.0 / np.array(self.alpha0)
         self.rho0_half = 1.0 / np.array(self.alpha0_half)
 
+        # save only for PostProcessing to compute temperature_anomaly
+        self.temperature0_unghosted = Gr.extract_local_ghosted(temperature_half, 2)[Gr.dims.gw:-Gr.dims.gw]
+
         # Write reference profiles to StatsIO
         # Output specific volume
         units = r'm^{3}kg^{-1}'
@@ -219,6 +222,8 @@ cdef class ReferenceState:
         Re.restart_data['Ref']['u0'] = self.u0
         Re.restart_data['Ref']['v0'] = self.v0
 
+        Re.restart_data['Ref']['temperature0'] = np.array(self.temperature0_unghosted)
+
         return
 
 
@@ -244,7 +249,7 @@ cdef class ReferenceState:
         self.alpha0_half_global = Re.restart_data['Ref']['alpha0_half_global']
         self.rho0_global = 1.0 / Re.restart_data['Ref']['alpha0_global']
         self.rho0_half_global = 1.0 / Re.restart_data['Ref']['alpha0_half_global']
-
-
+        
+        self.temperature0_unghosted = Re.restart_data['Ref']['temperature0']
 
         return
