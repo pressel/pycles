@@ -74,7 +74,7 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
 
     RS.initialize(Gr, Th, NS, Pa)
 
-    #Get shape of the initial perturbation    
+    #Get shape of the initial bubble    
     try:
         namelist['straka']
         namelist['straka']['amplitude']
@@ -90,6 +90,19 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
         straka_kwargs['z_r'] = 2.0 # [km]
         straka_kwargs['z_c'] = 3.0 # [km]
         print('Using default initial condition.')
+
+    #Get initial condition perturbation seed
+    try:
+        random_seed_factor = namelist['straka']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+    np.random.seed(Pa.rank * random_seed_factor)
+
+    #Get initial condition perturbation size
+    try:
+        IC_max_pert_ = namelist['straka']['IC_max_pert']
+    except:
+        IC_max_pert_ = 0
 
     cdef:
         #Get the variable number for each of the velocity components
@@ -110,6 +123,11 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
         double z_c = float(straka_kwargs['z_c'])
         double x_c = 25.6 # symmetric
 
+        #Prepare initial temperature perturbations: U( [-IC_max_pert, IC_max_pert) )
+        cdef double [:] t_pert = (np.random.random_sample(Gr.dims.npg) - 0.5)*2
+        cdef double t_pert_
+        double IC_max_pert = float(IC_max_pert_)
+
     t_min = 9999.9
     for i in xrange(Gr.dims.nlg[0]):
         ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -122,7 +140,11 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
                 PV.values[w_varshift + ijk] = 0.0
                 dist  = np.sqrt( ((Gr.x_half[i + Gr.dims.indx_lo[0]]/1000.0 - x_c)/x_r)**2.0 + ((Gr.z_half[k + Gr.dims.indx_lo[2]]/1000.0 - z_c)/z_r)**2.0 )
                 dist = fmin(dist,1.0)
-                t = (300.0 )*exner_c(RS.p0_half[k]) - a*( cos(np.pi * dist) + 1.0) /2.0
+
+                #Add initial perturbation
+                t_pert_ = t_pert[ijk] * IC_max_pert # in K # if dist < 1.0: else:t_pert_ = 0 ### only perturb bubble
+                t = (300.0 + t_pert_)*exner_c(RS.p0_half[k]) - a*( cos(np.pi * dist) + 1.0) /2.0
+
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)
 
 
