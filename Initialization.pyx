@@ -142,7 +142,7 @@ def InitStableBubble(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
                 dist = fmin(dist,1.0)
 
                 #Add initial perturbation
-                t_pert_ = t_pert[ijk] * IC_max_pert # in K # if dist < 1.0: else:t_pert_ = 0 ### only perturb bubble
+                t_pert_ = t_pert[ijk] * IC_max_pert
                 t = (300.0 + t_pert_)*exner_c(RS.p0_half[k]) - a*( cos(np.pi * dist) + 1.0) /2.0
 
                 PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t,0.0,0.0,0.0)

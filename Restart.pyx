@@ -80,8 +80,12 @@ cdef class Restart:
         except:
             Pa.root_print('Not a restarted simulation.')
 
-
-
+        try:
+            self.PV_seed = namelist['restart']['PV_seed']
+            self.PV_max_pert = namelist['restart']['PV_max_pert']
+        except:
+            self.PV_seed = 1
+            self.PV_max_pert = 0
 
         return
 

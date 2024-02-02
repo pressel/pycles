@@ -12,6 +12,8 @@ cdef class Restart:
         public double frequency
         bint delete_old
         list times_retained
+        public int PV_seed
+        public double PV_max_pert
 
     cpdef initialize(self)
     cpdef write(self, ParallelMPI.ParallelMPI Pa)

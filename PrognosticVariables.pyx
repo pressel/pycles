@@ -313,7 +313,7 @@ cdef class PrognosticVariables:
         return
 
 
-    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re):
+    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re, ParallelMPI.ParallelMPI Pa):
 
         self.name_index = Re.restart_data['PV']['name_index']
         self.units  = Re.restart_data['PV']['units']
@@ -326,6 +326,10 @@ cdef class PrognosticVariables:
         self.velocity_directions = Re.restart_data['PV']['velocity_directions']
         self.velocity_names_directional = Re.restart_data['PV']['velocity_names_directional']
 
+
+        #Seed for perturbation
+        random_seed_factor = Re.PV_seed
+        np.random.seed(Pa.rank * random_seed_factor)
 
         cdef:
             double [:] values = Re.restart_data['PV']['values']
@@ -340,6 +344,12 @@ cdef class PrognosticVariables:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
 
+            #Prepare perturbation. Default: max_pert=0, no perturbation
+            double [:] pert = (np.random.random_sample(Gr.dims.npg*self.nv) - 0.5)*2
+            double pert_
+            double max_pert = float(Re.PV_max_pert)
+
+        print('xxx max_pert ',max_pert)
 
         with nogil:
             count = 0
@@ -351,7 +361,8 @@ cdef class PrognosticVariables:
                         jshift = jstride * j
                         for k in xrange(kmin, kmax):
                             ijk = v_shift + ishift + jshift + k
-                            self.values[ijk] =  values[count]
+                            pert_ = pert[ijk] * max_pert
+                            self.values[ijk] =  values[count] + pert_
                             count += 1
 
         return

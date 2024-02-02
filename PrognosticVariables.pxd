@@ -51,4 +51,4 @@ cdef class PrognosticVariables:
     cpdef val_bounds(self,var_name,Grid.Grid Gr)
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef restart(self, Grid.Grid Gr, Restart.Restart Re)
-    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re)
+    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re, ParallelMPI.ParallelMPI Pa)
